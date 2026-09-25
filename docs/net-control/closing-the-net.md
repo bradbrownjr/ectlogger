@@ -55,7 +55,7 @@ What you *can* do:
 
 - **Fix the record.** Everything in the check-in list and the role assignments stays editable after closing, so a mistake in the *log*, a wrong entry or a missing role, is still fixable even though the net itself is done.
 - **Don't compound it by deleting.** Archiving is reversible; deleting is not. If a net was closed too early and needs to keep existing so the record isn't lost, leave it closed (or archive it) rather than deleting it, even if the plan is to start a fresh net for the rest of the session.
-- **Start a new occurrence if the net genuinely needs to keep running.** If it's a recurring schedule, that's a normal create-a-net action from the schedule; if it was ad hoc, create a new net. It won't be the same net record, but it keeps the rest of tonight's traffic and check-ins from being crammed into a log that already says the session ended.
+- **Start a new occurrence if the net genuinely needs to keep running.** Every net has a schedule behind it, even a one-time net, so that's the **Create** button on the net's schedule in the Scheduler. It won't be the same net record, but it keeps the rest of tonight's traffic and check-ins from being crammed into a log that already says the session ended.
 
 ## Next
 

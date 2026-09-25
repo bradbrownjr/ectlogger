@@ -4,7 +4,7 @@ summary: Taking NCS, handing it off, stepping down, and what the paused-net bann
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/roles-and-stepping-away/
@@ -20,7 +20,7 @@ If you're on the schedule's net staff or its NCS rotation for the schedule this 
 
 This doesn't depend on whether the net already has an active NCS. A large exercise with several eligible staff each claiming NCS for their own desk within minutes of each other is the normal pattern, not something the system tries to prevent; [Frequencies and multiple net controls](/docs/net-control/frequencies-and-multi-ncs/) shows what that looks like on screen. The full eligibility rules (who counts as net staff, what a rotation member can do, and the difference between that and a schedule's co-manager tier) are in [Roles and permissions](/docs/reference/roles-and-permissions/); this page assumes you already know whether you're eligible and covers what happens once you act on it.
 
-If it's someone else's ad hoc net with no schedule behind it, self-grant isn't available, so they have to assign you the role directly, covered next.
+If you aren't on the net staff or rotation of the net's schedule, self-grant isn't available, so someone already running the net has to assign you the role directly, covered next.
 
 ## Assigning a role to someone else
 

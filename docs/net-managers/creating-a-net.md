@@ -25,7 +25,7 @@ A brand-new account may not be able to do either one right away. See [a brand-ne
 <figure>
   <img src="/docs/img/net-managers/create-net-tabs.png"
        alt="The Edit Net tab bar: Basic Info, Net Staff, Communication Plan, Net Script, Announcements, and Check-In Fields.">
-  <figcaption>Every net, ad hoc or created from a schedule, is edited through these six tabs.</figcaption>
+  <figcaption>Every net, one-time or from a recurring schedule, is edited through these six tabs.</figcaption>
 </figure>
 
 Only **Net Name** and **at least one frequency** are required. Everything else can be filled in later from **Edit Net**, reachable from the net's own toolbar once it exists.

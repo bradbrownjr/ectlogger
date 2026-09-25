@@ -4,7 +4,7 @@ summary: Owning a net or a schedule. Recurrence, staffing, rotation, and everyth
 kind: Explanation
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-18
+revised: 2026-09-25
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/
@@ -24,7 +24,7 @@ A schedule holds everything that does not change week to week: the name, the fre
 
 Change the schedule and next week's net gets the change. Change tonight's net and only tonight's net gets it. Almost every "how do I make this happen every week" question is answered by putting it on the schedule rather than on the net.
 
-An ad hoc net with no schedule behind it is perfectly normal for a one-off: a drill, a public service event, a storm that is not going to wait.
+A one-time net is perfectly normal for a one-off: a drill, a public service event, a storm that is not going to wait. The dashboard's **+** button makes one, and it still gets a schedule of its own, set to run once. If the one-off turns into a regular thing, you can change that schedule to repeat instead of starting over.
 
 ## What you will be able to do
 

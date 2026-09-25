@@ -4,7 +4,7 @@ summary: The two RSS feeds ECTLogger publishes, what's in them, and where to fin
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/feeds/
@@ -18,7 +18,7 @@ ECTLogger publishes two plain RSS feeds. Both are public and unauthenticated —
 
 | Feed | Address | Contents |
 |---|---|---|
-| Upcoming nets | `/feed/schedule.xml` on your instance's backend address | Every scheduled net occurrence in the next 14 days, across every active recurring schedule and every ad hoc net with a start time set. A cancelled occurrence drops out of the feed entirely rather than appearing crossed out. |
+| Upcoming nets | `/feed/schedule.xml` on your instance's backend address | Every scheduled net occurrence in the next 14 days, across every active recurring schedule and every other net with a start time set, such as a one-time net. A cancelled occurrence drops out of the feed entirely rather than appearing crossed out. |
 | Changelog | `/feed/changelog.xml` on your instance's backend address | The most recent changelog entries (up to 20), newest first, with each entry's full list of changes in the description. |
 
 </div>

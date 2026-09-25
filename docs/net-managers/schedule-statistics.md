@@ -38,7 +38,7 @@ Below the leaderboards is a plain log of the schedule's recent instances, with t
 
 ## Linking an existing net into a schedule
 
-If a net was started as an ad hoc net and only later turned out to belong to this series, **Link Existing Net** attaches it after the fact, so its check-ins count toward these statistics retroactively. It only offers nets you own that aren't already attached to this schedule; a net currently linked to a different one is offered too, and linking it here moves it.
+If a net was started on its own, as a one-time net, and only later turned out to belong to this series, **Link Existing Net** attaches it after the fact, so its check-ins count toward these statistics retroactively. It only offers nets you own that aren't already attached to this schedule; a net currently linked to a different one is offered too, and linking it here moves it.
 
 ## The schedule report
 

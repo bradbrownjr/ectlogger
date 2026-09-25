@@ -45,7 +45,7 @@ A net can have more than one active NCS at once (a multi-desk exercise is a norm
 
 ## Schedule-level tiers
 
-These only apply to nets created from a recurring schedule (a `NetTemplate`); an ad hoc net has none of them.
+These are set on a net's schedule (a `NetTemplate`). Every net has one, including a one-time net, whose schedule simply runs once; they apply only to nets from that schedule.
 
 <div class="table-scroll" markdown="1">
 
@@ -113,7 +113,7 @@ Read this as: given the row's action, which of the columns can do it. "Net manag
 2. The net's manager is not automatically eligible to self-grant NCS the way they are Logger; see "Becoming NCS or Logger" above. A manager can still become NCS the ordinary way (an existing NCS/Logger assigns them the role, or Claim NCS if none exists).
 3. Active net staff on that net's schedule specifically, even with no per-net role assigned yet, and equally anyone in that schedule's NCS rotation. Until 2026-09-19 Start was the one place where those two memberships were not interchangeable: it checked the staff list alone, so somebody in the rotation who had never also been added to the staff list could not start the net on the week the rotation said was theirs. Note that Start gets you as far as the lobby; taking the net from lobby to active needs NCS, so whoever starts it usually checks themselves in as NCS in the same breath.
 4. Archiving, deleting, cancelling, and restoring a net need an active NCS role on this specific net, or being the schedule's manager or an active co-manager for a net created from a schedule. There's no Logger path for any of these four actions. Until 2026-09-25 an NCS who had stepped down kept these four, the one place stepping down didn't take effect.
-5. Being net staff, a rotation member, or a co-manager is not enough by itself for this one: you also need to currently hold an active NCS or Logger role on this specific net. An NCS or Logger handed the role ad hoc, with no staff or rotation membership on that schedule, cannot reassign roles either, even though they're actively running the net. Both halves have to be true at once.
+5. Being net staff, a rotation member, or a co-manager is not enough by itself for this one: you also need to currently hold an active NCS or Logger role on this specific net. An NCS or Logger handed the role directly, with no staff or rotation membership on that schedule, cannot reassign roles either, even though they're actively running the net. Both halves have to be true at once.
 6. Blocked if you are the only active NCS on a net that is currently active; assign someone else first.
 7. These are the two rows where being an admin genuinely does not help. Eligibility to self-grant on check-in is drawn from the schedule's own staff and rotation, and being an admin is not membership of either. It costs an admin nothing: they can assign themselves the role outright in the Manage Net Control Staff dialog, which is the same result in one more click.
 For the underlying permission checks this grid is drawn from, see `backend/app/permissions.py`. For who gets emailed about a role or a net's lifecycle, see [Emails we send](/docs/reference/emails/).

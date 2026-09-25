@@ -14,7 +14,7 @@ permalink: /docs/net-managers/recurring-schedules/
 
 A **schedule** is the plan; a **net** is one session it produces. Everything on this page lives on the schedule, not on any single night's net. Change it here and the change applies starting with the next net the schedule creates. The interface mostly just calls it "schedule," but the underlying record is a `NetTemplate`, so you'll see the word "template" in a URL or an API response now and then; it means the same thing.
 
-There's no button that instantly converts an existing ad hoc net into a schedule. Build the schedule from the Scheduler's **+** button (tooltip **Create new schedule**) instead. The form's tabs mirror [creating a net](/docs/net-managers/creating-a-net/) closely, so if you want to keep a net's frequencies, script, or announcements, the fastest path is to open both side by side and copy them over.
+Every net has a schedule, including a one-time net made with the dashboard's **+** button. Its schedule is set to run once, and it's listed in the Scheduler under the same name, after the recurring schedules. To turn a one-time net into something you run again, edit that schedule and change its **Schedule Type**: **Ad-Hoc** to start it by hand whenever you need it, or **Weekly**, **Monthly**, or **Daily** to run on its own. The frequencies, script, announcements, and staff all carry over, and the nets it already produced stay on it, so their statistics count toward the schedule too. You can change the type again later, for example from Weekly to Ad-Hoc for a season when the group meets for planning sessions or work details instead.
 
 ## A brand-new account may have to wait
 

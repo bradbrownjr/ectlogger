@@ -4,7 +4,7 @@ summary: The script Net Control reads from, standing weekly announcements, one-n
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/scripts-and-announcements/
@@ -44,7 +44,7 @@ During a live or lobby net, the **Script** button in the toolbar opens it for Ne
 
 ## Standing announcements
 
-The schedule's own **Announcements** tab holds text that should show up every week without you re-typing it: club news, DMR network updates, upcoming exam sessions, reminders. During a net, the **Announcements** toolbar button shows this text to everyone watching. It only appears on a net that was created from a schedule; an ad hoc net has no standing announcements to show.
+The schedule's own **Announcements** tab holds text that should show up every week without you re-typing it: club news, DMR network updates, upcoming exam sessions, reminders. During a net, the **Announcements** toolbar button shows this text to everyone watching. It appears once the first station has checked in.
 
 ## Notes for tonight
 

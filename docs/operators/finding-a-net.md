@@ -21,7 +21,7 @@ Each net shows as a card with a status chip:
 - **Active** — happening right now. Check in.
 - **Lobby** — the pre-net waiting room. Chat and check-ins are open, but the net hasn't officially started counting yet — this is common in the minutes before a scheduled start, so early arrivals have somewhere to be instead of nothing to click.
 - **Scheduled** — has a start time in the future.
-- **Draft** — exists but has no start time set yet (an ad hoc net someone is still setting up).
+- **Draft** — exists but has no start time set yet (a net someone is still setting up).
 - **Closed** — finished, its log is final, but it's still easy to find on the dashboard.
 - **Archived** — closed and tucked away; see below.
 - **Cancelled** — a scheduled or draft occurrence that was called off ahead of time rather than deleted, so it doesn't quietly get recreated by the schedule.
@@ -56,7 +56,7 @@ Opening a closed net still shows its full check-in list and report; you don't ne
 
 ## Starring a net you check into often
 
-Click the star icon on a net card to favorite it. Favorited nets always sort to the top of the dashboard, ahead of even an Active net, so the one you show up to every Tuesday doesn't get lost in a long list. This is remembered on the device and browser you set it in, not synced to your account, so it won't follow you if you sign in from a different phone or computer. The star only appears on a net that came from a schedule; a one-off, ad hoc net has nothing to favorite.
+Click the star icon on a net card to favorite it. Favorited nets always sort to the top of the dashboard, ahead of even an Active net, so the one you show up to every Tuesday doesn't get lost in a long list. This is remembered on the device and browser you set it in, not synced to your account, so it won't follow you if you sign in from a different phone or computer. The star belongs to the net's schedule, so starring tonight's net keeps next week's net from the same schedule at the top too.
 
 ## Finding a net that runs on a schedule
 

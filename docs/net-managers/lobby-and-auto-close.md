@@ -4,7 +4,7 @@ summary: Opening the lobby early so stations can arrive before Net Control, and 
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/lobby-and-auto-close/
@@ -24,7 +24,7 @@ Both of these exist to take a chore off a human's plate at exactly the moment th
 
 Turn this on and ECTLogger moves the net into **Lobby** on its own, a set number of minutes ahead of the scheduled start, so stations can check in and chat before Net Control formally begins. Net Control can still open the lobby by hand at any time regardless of this setting, and can click **Go Live** whenever they're ready. The automatic open just means nobody has to remember to do it.
 
-It needs a real scheduled start time to count backward from, so it only applies to a recurring schedule's nets, or a one-time net you've given a start time. An ad hoc net, or a one-time net left with no start time, has nothing to offset against. For those, turning on **"Enable lobby at start of net"** simply means clicking Start opens the lobby immediately instead of going straight to active, with no countdown involved.
+It needs a real scheduled start time to count backward from, so it only applies to a recurring schedule's nets, or a one-time net you've given a start time. A net from an Ad-Hoc schedule, or a one-time net left with no start time, has nothing to offset against. For those, turning on **"Enable lobby at start of net"** simply means clicking Start opens the lobby immediately instead of going straight to active, with no countdown involved.
 
 One case where the automatic open is deliberately skipped: if the schedule's rotation exists and shows nobody on duty for that specific occurrence (an overridden date with no replacement, for instance), the lobby doesn't open on its own. An unstaffed lobby that looks like the net is running would be worse than leaving it scheduled. This is separate from a schedule having no rotation at all, which is treated as staffed by the schedule's manager and opens on schedule as normal; see [why an auto-created net can start with nobody assigned](/docs/net-managers/net-staff-and-rotation/) for the reasoning behind that.
 

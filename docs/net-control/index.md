@@ -4,7 +4,7 @@ summary: Running a live net as Net Control, Logger, or Relay, from the first che
 kind: Explanation
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-18
+revised: 2026-09-25
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/
@@ -28,7 +28,7 @@ Take a net from lobby to closed without touching anything else: log stations as 
 
 Two things are worth doing once, in advance, rather than discovering mid-net:
 
-1. **Find out whether you can actually take control.** If the net comes from a recurring schedule and you are on its net staff, you can take Net Control yourself by checking yourself in as NCS, even on a week you are not scheduled. If it is somebody else's ad hoc net, they have to give you the role. [Roles and stepping away](/docs/net-control/roles-and-stepping-away/) covers which case you are in.
+1. **Find out whether you can actually take control.** If you are on the net staff of the schedule the net comes from, you can take Net Control yourself by checking yourself in as NCS, even on a week you are not scheduled. If you aren't, someone already running the net has to give you the role. [Roles and stepping away](/docs/net-control/roles-and-stepping-away/) covers which case you are in.
 2. **Look at the desk once when nothing is happening.** The net view has a lot on it, and the first time you see it should not be with eleven stations calling. [The net control desk](/docs/net-control/the-net-control-desk/) is a tour with the controls labeled.
 
 ## The pages
