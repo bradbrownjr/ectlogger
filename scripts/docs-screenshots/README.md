@@ -42,13 +42,6 @@ node scripts/docs-screenshots/capture.mjs --only speed-entry   # one figure
 node scripts/docs-screenshots/capture.mjs --list               # dry run
 ```
 
-Pass `DATABASE_URL` as `sqlite:///./demo.db`, **not** `sqlite+aiosqlite:///`.
-`app/database.py` adds the `+aiosqlite` driver itself with a plain string
-replace of `sqlite:///`, and that substring also matches inside
-`aiosqlite:///`, so handing it the driver form produces
-`sqlite+aiosqlite+aiosqlite:///` and a `too many values to unpack` failure out
-of SQLAlchemy's dialect loader.
-
 Output lands in `docs/img/<section>/<id>.png`, plus `docs/img/figures.json`
 mapping every id to its path, alt text, and caption.
 

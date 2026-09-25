@@ -666,9 +666,9 @@ flash: the app should have exactly one "something just happened in this row" ani
       the actual complaint, the fix is an auto-expiry on the away state (or an "away for 20 min"
       age badge), not a return flash. Confirm which before writing code; they are different
       features and only one was asked for
-- [ ] Whichever it is, do not build it on the arrow's broken pattern — see the sneak-in arrow bug
-      above, whose root cause is exactly a flash timer whose lifetime was borrowed from another
-      component's state
+- [ ] Whichever it is, give the flash timer its own lifetime. The sneak-in arrival arrow
+      (fixed 2026-09-08, see the changelog) got stuck on screen because its timer's lifetime was
+      borrowed from another component's state
 
 ### Reopening a Closed Net
 

@@ -4,7 +4,7 @@ summary: Things that are confirmed wrong right now, with workarounds where there
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-24
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/about/known-issues/
@@ -14,25 +14,11 @@ permalink: /docs/about/known-issues/
 
 This page lists confirmed, currently open defects — not roadmap items, not planned features, and not things that were fixed before anyone using the app could hit them. For what's planned or being considered, see the [Roadmap](/docs/ROADMAP/) instead. For how to report something new, see [Getting help](/docs/about/getting-help/).
 
-This page was published on 2026-09-19 with five open defects found while the documentation was being written, by reading the code against what the screens promise. All five were fixed the same day rather than worked around, so only the one below remains. See the [changelog](/docs/CHANGELOG/) for what changed.
+This page was published on 2026-09-19 with five open defects found while the documentation was being written, by reading the code against what the screens promise. All five were fixed the same day rather than worked around. A sixth, where naming the database driver explicitly in a self-hosted `DATABASE_URL` stopped the application from starting, was fixed on 2026-09-22; both the plain and the explicit form now work. See the [changelog](/docs/CHANGELOG/) for what changed.
 
-## Self-hosting: an explicit async driver in `DATABASE_URL` breaks startup
+## Nothing open right now
 
-If `DATABASE_URL` is set to the async-driver form directly, for example:
-
-```
-DATABASE_URL=sqlite+aiosqlite:///./ectlogger.db
-```
-
-the application fails to start. Internally, ECTLogger adds the `+aiosqlite` driver itself by replacing `sqlite:///` with `sqlite+aiosqlite:///` in whatever URL it's given, and that same text also appears inside `sqlite+aiosqlite:///`, so the substitution runs twice and produces `sqlite+aiosqlite+aiosqlite:///`, which SQLAlchemy rejects.
-
-**Workaround**: use the plain form ECTLogger's own example configuration documents, without the driver name:
-
-```
-DATABASE_URL=sqlite:///./ectlogger.db
-```
-
-This is the form every existing installation already uses, so it isn't something you're likely to hit by accident — only by reasonably assuming the explicit form is also accepted.
+There are no confirmed open defects as of this page's revision date.
 
 ## If what you've hit isn't here
 
