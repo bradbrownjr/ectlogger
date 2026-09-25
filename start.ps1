@@ -64,13 +64,20 @@ if (-not (Test-Path "backend\.env")) {
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
 
+# Backend port: BACKEND_PORT from backend\.env, as start.sh and run.sh read it
+$BackendPort = 8000
+if (Test-Path "backend\.env") {
+    $portMatch = Select-String -Path "backend\.env" -Pattern '^\s*BACKEND_PORT\s*=\s*(\d+)' | Select-Object -First 1
+    if ($portMatch) { $BackendPort = $portMatch.Matches[0].Groups[1].Value }
+}
+
 Write-Host ""
 Write-Host "🚀 Starting servers..." -ForegroundColor Green
 Write-Host ""
 
 # Start backend in a new window
-Write-Host "📡 Starting backend server on http://localhost:8000" -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD\backend'; .\venv\Scripts\Activate.ps1; uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+Write-Host "📡 Starting backend server on http://localhost:$BackendPort" -ForegroundColor Cyan
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD\backend'; .\venv\Scripts\Activate.ps1; uvicorn app.main:app --reload --host 0.0.0.0 --port $BackendPort"
 
 # Wait a moment for backend to start
 Start-Sleep -Seconds 3
@@ -83,8 +90,8 @@ Write-Host ""
 Write-Host "✓ ECTLogger is starting!" -ForegroundColor Green
 Write-Host ""
 Write-Host "🌐 Frontend: http://localhost:3000" -ForegroundColor Green
-Write-Host "📡 Backend:  http://localhost:8000" -ForegroundColor Green
-Write-Host "📚 API Docs: http://localhost:8000/docs" -ForegroundColor Green
+Write-Host "📡 Backend:  http://localhost:$BackendPort" -ForegroundColor Green
+Write-Host "📚 API Docs: http://localhost:$BackendPort/docs" -ForegroundColor Green
 Write-Host ""
 
 # Show configured URLs if available

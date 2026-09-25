@@ -12,6 +12,7 @@ from jose import JWTError, jwt
 from app.config import settings
 from app.logger import logger
 from itsdangerous import URLSafeTimedSerializer
+from app.session_config import DEFAULT_SESSION_LIFETIME_DAYS
 
 serializer = URLSafeTimedSerializer(settings.secret_key)
 
@@ -136,7 +137,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
+        # Every login route passes the Admin-configured lifetime; this only
+        # covers a caller that doesn't (tests, scripts).
+        expire = datetime.utcnow() + timedelta(days=DEFAULT_SESSION_LIFETIME_DAYS)
     to_encode.update({"exp": expire})
     logger.debug("AUTH", f"Creating JWT with payload: {to_encode}")
     logger.debug("AUTH", f"Using algorithm: {settings.algorithm}")

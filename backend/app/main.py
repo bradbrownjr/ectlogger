@@ -101,10 +101,11 @@ allowed_origins = [
     "http://127.0.0.1:3000",  # Explicit localhost
 ]
 
-# If frontend_url has an IP address, also allow that IP for backend (port 8000)
+# If frontend_url has an IP address, also allow that IP on the backend's own
+# port (BACKEND_PORT; this was hardcoded to 8000 until 2026-09-25).
 import re
 if match := re.match(r'http://([0-9.]+):3000', settings.frontend_url):
-    allowed_origins.append(f"http://{match.group(1)}:8000")
+    allowed_origins.append(f"http://{match.group(1)}:{settings.backend_port}")
 
 print(f"\n{'='*60}")
 print("ECTLogger Backend Starting")

@@ -214,7 +214,7 @@ However, this defeats the purpose of the enhancement. Consider using at least 1 
 
 ## Related Configuration
 
-- **Session lifetime and rolling renewal**: Configurable in the Admin panel → Security tab → Session Settings. The default is 90 days with rolling renewal enabled. No `.env` change needed — every sign-in explicitly requests the Admin-configured lifetime (falling back to 90 days if no admin has saved Session Settings yet). `ACCESS_TOKEN_EXPIRE_MINUTES` in `.env` is not consulted by the login routes at all, so changing it has no effect on how long a session lasts.
+- **Session lifetime and rolling renewal**: Configurable in the Admin panel → Security tab → Session Settings. The default is 90 days with rolling renewal enabled. No `.env` change needed — every sign-in explicitly requests the Admin-configured lifetime (falling back to 90 days if no admin has saved Session Settings yet). An older `.env` may still contain `ACCESS_TOKEN_EXPIRE_MINUTES`; it is ignored, and can be left in place or deleted.
 - `SECRET_KEY`: JWT signing key (must be secure)
 - `SMTP_*`: Email delivery configuration (required for magic links)
 

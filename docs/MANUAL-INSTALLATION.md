@@ -90,9 +90,8 @@ DATABASE_URL=sqlite:///./ectlogger.db
 # Security - GENERATE A STRONG SECRET KEY!
 SECRET_KEY=your-very-secure-secret-key-change-this-in-production
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=1440  # 24 hours; only used before any admin has saved Session Settings.
-                                   # The real session lifetime (default 90 days, with rolling renewal)
-                                   # is set in Admin > Security > Session Settings instead.
+# Session length (default 90 days, with rolling renewal) is set in
+# Admin > Security > Session Settings, not here.
 
 # Frontend URL
 FRONTEND_URL=http://localhost:3000

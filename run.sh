@@ -2,20 +2,20 @@
 # ECTLogger — consolidated operational script
 #
 # Usage:
-#   ./run                          Interactive startup (prompts to check for updates)
-#   ./run --service                Service mode startup (skips update prompt, for systemd)
-#   ./run -u | --update            Check/apply updates, then exit — does NOT start the app
-#   ./run -m on  | --maintenance on|true|1   Enable server-side maintenance mode, then exit
-#   ./run -m off | --maintenance off|false|0 Disable server-side maintenance mode, then exit
+#   ./run.sh                          Interactive startup (prompts to check for updates)
+#   ./run.sh --service                Service mode startup (skips update prompt, for systemd)
+#   ./run.sh -u | --update            Check/apply updates, then exit — does NOT start the app
+#   ./run.sh -m on  | --maintenance on|true|1   Enable server-side maintenance mode, then exit
+#   ./run.sh -m off | --maintenance off|false|0 Disable server-side maintenance mode, then exit
 #
 # Server-side maintenance mode flags:
 #   --message "text"    Custom message written to maintenance.json (optional)
 #   --eta     "text"    ETA string written to maintenance.json (optional)
 #
 # Examples:
-#   ./run --maintenance on --message "Deploying update" --eta "20:00 UTC"
-#   ./run -m off
-#   ./run -u
+#   ./run.sh --maintenance on --message "Deploying update" --eta "20:00 UTC"
+#   ./run.sh -m off
+#   ./run.sh -u
 
 set -euo pipefail
 

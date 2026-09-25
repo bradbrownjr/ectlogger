@@ -12,7 +12,11 @@ class Settings(BaseSettings):
     # Security
     secret_key: str
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 43200  # 30 days
+    # Unused. Session length is Admin > Security > Session Settings
+    # (session_config.py). Still declared only because existing .env files
+    # carry ACCESS_TOKEN_EXPIRE_MINUTES and Settings rejects unknown keys, so
+    # removing it would stop those installs from starting.
+    access_token_expire_minutes: int = 43200
     magic_link_expire_days: int = 30  # Magic link validity period
     
     # Logging
