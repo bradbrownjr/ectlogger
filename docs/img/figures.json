@@ -121,7 +121,7 @@
   },
   "net-control/identity-padlocks": {
     "path": "/docs/img/net-control/identity-padlocks.png",
-    "alt": "The check-in list of an authenticated net. Each callsign has a padlock beside it: closed and green for N1LAKE, whose identity was verified, open for the others, with K1CAMP's open padlock outlined in red.\n",
+    "alt": "The check-in list of an authenticated net. Each callsign has a padlock beside it: closed and green for N1LAKE, whose identity was verified, greyed out for N1ROVE, whose account has no two-factor set up, and open for the others, with K1CAMP's open padlock outlined in red.\n",
     "caption": "A closed padlock means someone confirmed the station's code. Net Control clicks an open one to check it.\n",
     "page": "/docs/net-control/authenticated-nets/"
   },

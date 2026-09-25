@@ -367,7 +367,11 @@ shots:
       width: 1440
       height: 800
     wait_for: 'table:visible tbody tr'
-    element: 'table:visible'
+    # Cropped to the first four columns, where the padlocks are: the whole
+    # table shrinks to unreadable at phone width.
+    element:
+      - 'table:visible thead th:nth-child(1)'
+      - 'table:visible tr:has-text("N2OAKS") td:nth-child(4)'
     pad: 8
     annotate:
       - selector: 'tr:has-text("K1CAMP") button:has(svg[data-testid="LockOpenIcon"])'
