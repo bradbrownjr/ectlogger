@@ -4,7 +4,7 @@ summary: The net form field by field: frequencies, check-in fields, self check-i
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/creating-a-net/
@@ -12,9 +12,13 @@ permalink: /docs/net-managers/creating-a-net/
 
 # Creating a net
 
-A net is one session: one night, one log, one set of check-ins. If you want the same net to come back every week, don't fill this form out from scratch each time. Build it once as a [schedule](/docs/net-managers/recurring-schedules/) instead, and let ECTLogger create the net for you. This page covers the form itself, which is the same form either way: an ad hoc net you fill in by hand, or a net a schedule just created for you to edit before it goes live.
+A net is one session: one night, one log, one set of check-ins. If you want the same net to come back every week, don't fill this form out from scratch each time. Build it once as a [schedule](/docs/net-managers/recurring-schedules/) instead, and let ECTLogger create the net for you.
 
-To start an ad hoc net with no schedule behind it, use **Create Net** from the dashboard. To create one from an existing schedule, use the **Create** button on that schedule's card in the Scheduler, which opens the same form pre-filled with everything the schedule already knows.
+## Starting a net
+
+Starting a net and editing one go through two different forms. The dashboard's **+** button (tooltip **Create new net**) walks you through the same tabs as [setting up a schedule](/docs/net-managers/recurring-schedules/), pre-set to a one-time occurrence; save it and ECTLogger creates the net and takes you straight there. The **Create** button on an existing schedule's card skips a form entirely, creating the next occurrence on the spot and opening its net view. Either way, this page covers what you land on afterward: **Edit Net**, reachable from any net's own toolbar once it exists.
+
+A brand-new account may not be able to do either one right away. See [a brand-new account may have to wait](/docs/net-managers/recurring-schedules/#a-brand-new-account-may-have-to-wait) for the age, participation, and daily-limit rules your instance may enforce.
 
 ## The six tabs
 

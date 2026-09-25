@@ -4,7 +4,7 @@ summary: Who is allowed to run your net, co-managers, the NCS rotation, and why 
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/net-staff-and-rotation/
@@ -19,7 +19,7 @@ There are two separate lists here, and they answer two different questions. **Au
 <figure>
   <img src="/docs/img/net-managers/staff-and-rotation.png"
        alt="The Net Staff tab of Edit Schedule: the Schedule Manager, an Authorized Net Staff list with a co-manager star and an active/inactive switch per row, and an NCS Rotation list below it with up/down reordering arrows.">
-  <figcaption>Staff can start and run nets the moment they're added. The rotation below is optional; it only decides who gets pre-assigned NCS ahead of time.</figcaption>
+  <figcaption>Staff can start and run nets the moment they're added, and so can anyone in the rotation below even if they were never added as staff. The rotation is optional; its added job is deciding who gets pre-assigned NCS ahead of time.</figcaption>
 </figure>
 
 From a schedule's **Net Staff** tab (or the **Staff** button on its card), add any operator to the **Authorized Net Staff** list and they can start and run nets from that schedule from that point on, with no rotation slot required. The **Schedule Manager**, whoever created the schedule or was later handed it, always has this access implicitly.
@@ -30,7 +30,7 @@ Each staff row has its own switch to disable someone temporarily without removin
 
 ## The NCS rotation (optional)
 
-The rotation is a separate, ordered list. Reorder it with the up/down arrows, or build it in one step from the **Build rotation from staff** button, which adds every active staff member (and the manager) who isn't already in it. Its only job is deciding who gets **pre-assigned** NCS automatically, ahead of time, on each occurrence a recurring schedule creates. If the rotation is empty, nets default to the manager. Deactivate a rotation member the same way as a staff row, to skip them without losing their place in line.
+The rotation is a separate, ordered list. Reorder it with the up/down arrows, or build it in one step from the **Build rotation from staff** button, which adds every active staff member (and the manager) who isn't already in it. Being in the rotation carries the same starting and self-grant access as being on Authorized Net Staff, even for someone added only to the rotation and never to the staff list. On top of that, it's what decides who gets **pre-assigned** NCS automatically, ahead of time, on each occurrence a recurring schedule creates. If the rotation is empty, nets default to the manager. Deactivate a rotation member the same way as a staff row, to skip them without losing their place in line.
 
 A single date can be overridden from the schedule's **Schedule** tab in the Net Staff dialog: swap a specific night to someone else, or mark it as no coverage, without touching the rotation's permanent order.
 

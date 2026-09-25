@@ -4,7 +4,7 @@ summary: Turning a net into a schedule, the recurrence options, what each net it
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/recurring-schedules/
@@ -14,7 +14,11 @@ permalink: /docs/net-managers/recurring-schedules/
 
 A **schedule** is the plan; a **net** is one session it produces. Everything on this page lives on the schedule, not on any single night's net. Change it here and the change applies starting with the next net the schedule creates. The interface mostly just calls it "schedule," but the underlying record is a `NetTemplate`, so you'll see the word "template" in a URL or an API response now and then; it means the same thing.
 
-There's no button that instantly converts an existing ad hoc net into a schedule. Build the schedule from **Scheduler > Create Schedule** instead. The form's tabs mirror [creating a net](/docs/net-managers/creating-a-net/) closely, so if you want to keep a net's frequencies, script, or announcements, the fastest path is to open both side by side and copy them over.
+There's no button that instantly converts an existing ad hoc net into a schedule. Build the schedule from the Scheduler's **+** button (tooltip **Create new schedule**) instead. The form's tabs mirror [creating a net](/docs/net-managers/creating-a-net/) closely, so if you want to keep a net's frequencies, script, or announcements, the fastest path is to open both side by side and copy them over.
+
+## A brand-new account may have to wait
+
+Your instance's admins can require an account to be a minimum age and to have checked into at least one net before it's allowed to create a schedule, as an anti-spam measure, plus a daily cap on how many schedules any one account can create. The defaults are 7 days, 1 net, and 5 a day; your instance may have them turned up, down, or off. This applies to every schedule, including the one-time occurrence the dashboard's **+** button creates behind the scenes when you start a net (see [Creating a net](/docs/net-managers/creating-a-net/#starting-a-net)). Admins are exempt, and can give a specific trusted account early access without changing the instance-wide setting; see [Users and roles](/docs/admins/users-and-roles/#early-access-to-schedule-creation).
 
 ## Recurrence types
 

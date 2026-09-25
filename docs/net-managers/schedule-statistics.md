@@ -4,7 +4,7 @@ summary: Participation over time, the four leaderboards, the net history, and th
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/schedule-statistics/
@@ -38,7 +38,7 @@ Below the leaderboards is a plain log of the schedule's recent instances, with t
 
 ## Linking an existing net into a schedule
 
-If a net was started as an ad hoc net and only later turned out to belong to this series, **Link Existing Net** attaches it after the fact, so its check-ins count toward these statistics retroactively. It only offers nets you own that aren't already attached to another schedule.
+If a net was started as an ad hoc net and only later turned out to belong to this series, **Link Existing Net** attaches it after the fact, so its check-ins count toward these statistics retroactively. It only offers nets you own that aren't already attached to this schedule; a net currently linked to a different one is offered too, and linking it here moves it.
 
 ## The schedule report
 
