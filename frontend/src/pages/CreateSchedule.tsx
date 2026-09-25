@@ -11,9 +11,6 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SaveIcon from '@mui/icons-material/Save';
 import { templateApi, frequencyApi, userApi, templateStaffApi } from '../services/api';
 import api from '../services/api';
@@ -38,6 +35,7 @@ import CommunicationPlanTab from '../components/create-schedule/CommunicationPla
 import NetScriptTab from '../components/create-schedule/NetScriptTab';
 import AnnouncementsTab from '../components/create-schedule/AnnouncementsTab';
 import CheckInFieldsTab from '../components/create-schedule/CheckInFieldsTab';
+import FormWizardFooter from '../components/forms/FormWizardFooter';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -411,7 +409,7 @@ const CreateSchedule: React.FC = () => {
   return (
     <CreateScheduleContext.Provider value={contextValue}>
       <Container maxWidth="md" sx={{ mt: 4, mb: 4, pb: 12 }}>
-        <Paper sx={{ p: 3 }}>
+        <Paper sx={{ p: { xs: 2, sm: 3 } }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
             <Typography variant="h4" component="h1">
               {isEdit
@@ -477,34 +475,21 @@ const CreateSchedule: React.FC = () => {
             </TabPanel>
 
             {/* ========== NAVIGATION BUTTONS ========== */}
-            {/* Wraps on narrow screens so Save never gets pushed off the edge; ml: 'auto' keeps it right-aligned when it drops to its own line */}
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between', mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                <Button type="button" variant="outlined" onClick={() => navigate('/scheduler')} startIcon={<CloseIcon />}>
-                  Cancel
-                </Button>
-                {activeTab > 0 && (
-                  <Button type="button" variant="outlined" onClick={() => setActiveTab(activeTab - 1)} startIcon={<ArrowBackIcon />}>
-                    Previous
-                  </Button>
-                )}
-                {activeTab < 6 && (
-                  <Button type="button" variant="outlined" onClick={handleNextTab} endIcon={<ArrowForwardIcon />}>
-                    Next
-                  </Button>
-                )}
-              </Box>
+            <FormWizardFooter
+              onCancel={() => navigate('/scheduler')}
+              onPrevious={activeTab > 0 ? () => setActiveTab(activeTab - 1) : undefined}
+              onNext={activeTab < 6 ? handleNextTab : undefined}
+            >
               <Button
                 type="submit"
                 variant="contained"
                 color="primary"
                 disabled={isTransitioning || !name || selectedFrequencyIds.length === 0}
                 startIcon={<SaveIcon />}
-                sx={{ ml: 'auto' }}
               >
                 {isEdit ? 'Save Changes' : (scheduleType === 'ad_hoc' || scheduleType === 'one_time' ? 'Create Net' : 'Create Schedule')}
               </Button>
-            </Box>
+            </FormWizardFooter>
           </Box>
         </Paper>
 

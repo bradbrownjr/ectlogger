@@ -279,6 +279,26 @@ with its action buttons at the end) adds `pb: 12` (96 px) to its page
 Dashboard, Scheduler, Create/Edit Net, and Create/Edit Schedule follow this;
 without it, a form's Cancel/Next buttons end up underneath the info button on a phone.
 
+---
+
+## Tabbed Form Footer
+
+The Cancel / Previous / Next / Save footer of the tabbed Create/Edit Net and
+Create/Edit Schedule forms is one shared component,
+`components/forms/FormWizardFooter.tsx`. Never hand-build this row on a page;
+pass callbacks (omit `onPrevious`/`onNext` to hide them) and the submit
+button(s) as children.
+
+- **Desktop:** one row, navigation on the left, submit button(s) pushed right.
+- **Phone (xs):** exactly two rows. Row 1 is Cancel | Previous | Next in equal
+  thirds with no icons, and each button keeps its own column, so Next does not
+  move when Previous is hidden on the first tab. Row 2 is the submit button(s)
+  at full width; two submits split it evenly, and their labels may take two
+  lines on the narrowest phones.
+- A validation hint for a disabled Next (`nextHint`) sits under the navigation
+  row, not inside a button column.
+- The forms' `Paper` uses `p: xs 2, sm 3` so row 1 fits a 320 px phone.
+
 ### Color convention
 | Role | color |
 |---|---|

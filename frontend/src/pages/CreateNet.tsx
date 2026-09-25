@@ -16,10 +16,7 @@ import {
   DialogContentText,
   DialogActions,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { netApi, frequencyApi, userApi, templateApi } from '../services/api';
 import api from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
@@ -33,6 +30,7 @@ import CommunicationPlanPanel from '../components/forms/CommunicationPlanPanel';
 import NetScriptPanel from '../components/forms/NetScriptPanel';
 import AnnouncementsPanel from '../components/forms/AnnouncementsPanel';
 import CheckInFieldsPanel from '../components/forms/CheckInFieldsPanel';
+import FormWizardFooter from '../components/forms/FormWizardFooter';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -469,7 +467,7 @@ const CreateNet: React.FC = () => {
   return (
     <CreateNetContext.Provider value={contextValue}>
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4, pb: 12 }}>
-        <Paper sx={{ p: 3 }}>
+        <Paper sx={{ p: { xs: 2, sm: 3 } }}>
           <Typography variant="h4" component="h1" gutterBottom>
             {isInfoMode ? 'Net Information' : isEditMode ? 'Edit Net' : 'Create New Net'}
           </Typography>
@@ -569,46 +567,20 @@ const CreateNet: React.FC = () => {
           </TabPanel>
 
           {/* ========== ACTION BUTTONS ========== */}
-          {/* Wraps on narrow screens so the submit buttons never get pushed off the edge; ml: 'auto' keeps them right-aligned when they drop to their own line */}
-          <Box sx={{ mt: 4, pt: 2, borderTop: 1, borderColor: 'divider', display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-              <Button
-                variant="outlined"
-                onClick={() => navigate(isEditMode || isInfoMode ? `/nets/${netId}` : '/dashboard')}
-                startIcon={<CloseIcon />}
-              >
-                {isInfoMode ? 'Back' : 'Cancel'}
-              </Button>
-              {activeTab > 0 && (
-                <Button variant="outlined" onClick={() => setActiveTab(activeTab - 1)} startIcon={<ArrowBackIcon />}>
-                  Previous
-                </Button>
-              )}
-              {!isInfoMode && activeTab < 4 && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                  <Button
-                    variant="outlined"
-                    onClick={() => setActiveTab(activeTab + 1)}
-                    endIcon={<ArrowForwardIcon />}
-                    disabled={!canProceedFromTab(activeTab)}
-                  >
-                    Next
-                  </Button>
-                  {activeTab === 2 && selectedFrequencyIds.length === 0 && (
-                    <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                      Select at least one frequency to continue
-                    </Typography>
-                  )}
-                  {activeTab === 0 && !name.trim() && (
-                    <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                      Enter a net name to continue
-                    </Typography>
-                  )}
-                </Box>
-              )}
-            </Box>
+          <FormWizardFooter
+            cancelLabel={isInfoMode ? 'Back' : 'Cancel'}
+            onCancel={() => navigate(isEditMode || isInfoMode ? `/nets/${netId}` : '/dashboard')}
+            onPrevious={activeTab > 0 ? () => setActiveTab(activeTab - 1) : undefined}
+            onNext={!isInfoMode && activeTab < 4 ? () => setActiveTab(activeTab + 1) : undefined}
+            nextDisabled={!canProceedFromTab(activeTab)}
+            nextHint={
+              activeTab === 2 && selectedFrequencyIds.length === 0 ? 'Select at least one frequency to continue'
+                : activeTab === 0 && !name.trim() ? 'Enter a net name to continue'
+                : null
+            }
+          >
             {!isInfoMode && (
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'flex-end', ml: 'auto' }}>
+              <>
                 {/* Save for this Net: persists changes to the current net only.
                     The schedule (template) is left alone so per-session edits
                     don't accidentally rewrite the schedule's defaults. */}
@@ -634,9 +606,9 @@ const CreateNet: React.FC = () => {
                     Save to Schedule
                   </Button>
                 )}
-              </Box>
+              </>
             )}
-          </Box>
+          </FormWizardFooter>
         </Paper>
 
         {/* ---- Toast notification ---- */}

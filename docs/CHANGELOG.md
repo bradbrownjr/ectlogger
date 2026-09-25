@@ -20,7 +20,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
-* **Mobile: Form buttons fit on small screens** — The Cancel, Previous, Next, and Save buttons at the bottom of the net and schedule forms now wrap onto a second line on a phone instead of running off the edge, and the page scrolls far enough that the round info button no longer covers them, so every button is always reachable.
+* **Mobile: Tidier form buttons on phones** — The buttons at the bottom of the net and schedule forms now sit in two neat rows on a phone, Cancel, Previous, and Next side by side with Save full width underneath, instead of running off the edge or sliding under the round info button, so every button is always reachable.
 
 ---
 
