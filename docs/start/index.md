@@ -4,7 +4,7 @@ summary: Three short tutorials that each end with something real on the screen, 
 kind: Tutorial
 audience: Anyone new to ECTLogger
 owner: KC1JMH
-revised: 2026-09-18
+revised: 2026-09-25
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/start/
@@ -32,7 +32,7 @@ Do them in that order if you are starting cold. They build on each other in the 
 - **An email address you can read right now.** The normal way in is a magic link: you type your email, we send a link, you click it, you are in. There is no password to invent unless you want one, and [signing in](/docs/operators/signing-in/) covers setting one later, for the night email is not working.
 - **A browser.** Anything current, on anything. A phone is fine. A phone is what most people in the field are actually using.
 
-You do not need to install anything, and you do not need permission from anyone. Anybody with a callsign can create an account at [app.ectlogger.us](https://app.ectlogger.us) and run their own nets.
+You do not need to install anything, and you do not need permission from anyone. Anybody with a callsign can create an account at [app.ectlogger.us](https://app.ectlogger.us) and check into nets straight away, and run their own once the account is a week old and has checked into a net (the defaults; an instance's admins can change them), which keeps spammers off the dashboard.
 
 ## After the tutorials
 
