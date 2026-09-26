@@ -39,7 +39,6 @@ import {
   Fullscreen as FullscreenIcon,
   Close as CloseIcon,
   Mail as MailIcon,
-  Download as DownloadIcon,
   Image as ImageIcon,
 } from '@mui/icons-material';
 import {
@@ -72,8 +71,6 @@ import { computeDualMapData } from '../utils/dualMap';
 import { formatDateTime } from '../utils/dateUtils';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
-import CardActionButton from '../components/CardActionButton';
-import { exportElementToPng } from '../utils/pdfExport';
 import { MAP_TILE_URL, MAP_TILE_ATTRIBUTION, getMapTileClassName } from '../utils/mapTiles';
 import { computeCheckInTimeline } from '../utils/checkInTimeline';
 
@@ -89,66 +86,18 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// FitBounds: auto-fits the map to show all markers, then stays put
-// resizeToken: bump when the map's *container* changes shape (the PNG export
-// reshapes it -- see PNG_EXPORT_* below) to force a re-fit even though the
-// initial fit already happened. Leaflet only watches window resize, never its
-// own container, so without invalidateSize() the capture shows tiles laid out
-// for the old dimensions. Same rule as NetReport.tsx's FitBounds.
-const FitBoundsOnce: React.FC<{ positions: [number, number][]; resizeToken?: number }> = ({ positions, resizeToken }) => {
+// FitBounds: auto-fits the map to show all markers, then stays put.
+const FitBoundsOnce: React.FC<{ positions: [number, number][] }> = ({ positions }) => {
   const map = useMap();
   const hasFitRef = useRef(false);
-  const lastTokenRef = useRef(resizeToken);
   useEffect(() => {
-    if (positions.length === 0) return;
-    const resized = lastTokenRef.current !== resizeToken;
-    lastTokenRef.current = resizeToken;
-    if (hasFitRef.current && !resized) return;
+    if (positions.length === 0 || hasFitRef.current) return;
     hasFitRef.current = true;
-    if (resized) map.invalidateSize({ animate: false });
     const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10, animate: false });
-  }, [map, positions, resizeToken]);
+  }, [map, positions]);
   return null;
 };
-
-// ========== PNG EXPORT LAYOUT (social-media friendly aspect ratios) ==========
-// The map card spans the full content width, which captures as a ~2.65:1
-// letterbox that feed thumbnails crop and a portrait phone renders too small.
-// The charts export as one stacked block at the same width, so every PNG from
-// this page and from NetReport is the same 960px wide (1920 at scale 2).
-// Mirrors NetReport.tsx's constants -- keep the two sets in step.
-const PNG_EXPORT_WIDTH_PX = 960;
-// Charts are short on the page because they sit in narrow grid columns. Stacked
-// full width for the export they would otherwise read as a sparse strip -- a
-// small pie floating in a 960px box. These export-only sizes let the content
-// fill the frame.
-const PNG_EXPORT_PIE_HEIGHT_PX = 340;
-const PNG_EXPORT_PIE_RADIUS_PX = 130;
-const PNG_EXPORT_CHART_HEIGHT_PX = 300;
-// Applies to the whole card (heading + map), done with flex so the ratio holds
-// however the heading wraps.
-const PNG_EXPORT_MAP_ASPECT = '4 / 3';
-// Dual-map cards stack their two panes and are sized by giving each pane a
-// fixed height: the panes are MUI Grid items, whose own MuiGrid-grid-xs-* class
-// sets flex-basis:100%/flex-grow:0 and beats an sx override, so a flex chain
-// cannot reach them. Two 560px panes plus the headings land near 960x1290
-// (1:1.34), inside a 16:10 (1:1.6) cap.
-const PNG_EXPORT_DUAL_PANE_HEIGHT_PX = 560;
-
-// Wraps a card so its export progress spinner sits OUTSIDE the element being
-// captured. Each card's <Paper> carries the id html2canvas captures, so a
-// spinner inside that Paper's heading row lands in the exported PNG -- the same
-// defect NetReport.tsx hit with its map. The wrapper is position:relative and
-// the spinner absolute, so it overlays the card on screen without joining it.
-const CardExportProgress: React.FC<{ active: boolean; children: React.ReactNode }> = ({ active, children }) => (
-  <Box sx={{ position: 'relative', height: '100%' }}>
-    {active && (
-      <CircularProgress size={16} sx={{ position: 'absolute', top: 22, right: 22, zIndex: 2 }} />
-    )}
-    {children}
-  </Box>
-);
 
 interface TimeSeriesDataPoint {
   label: string;
@@ -206,13 +155,6 @@ const NetStatistics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<NetStats | null>(null);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
-  // Which widget is currently being captured to PNG, keyed by its element id --
-  // lets each widget's own download button show its own spinner independently.
-  const [pngExportingId, setPngExportingId] = useState<string | null>(null);
-  // Separate from pngExportingId, which tracks the one card mid-capture: this
-  // stays true across the whole "Export PNG" run so the header button can show
-  // progress and stay disabled between individual captures.
-  const [exportingAllPngs, setExportingAllPngs] = useState(false);
 
   // Location map state. Parsing/geocoding lives in the shared hook and marker
   // colors in the shared palette, so this page's map plots exactly what the
@@ -229,41 +171,18 @@ const NetStatistics: React.FC = () => {
     getStatusLabel
   );
 
-  // PDF export is the net report's: one report layout for a single net,
-  // not a second one built here. ?export=pdf starts it once the report loads.
+  // PDF and PNG exports are the net report's: one layout for a single net,
+  // not a second set built here. ?export=pdf / ?export=png starts the export
+  // once the report loads.
   const handleExportPdf = () => {
     if (stats) navigate(`/nets/${stats.net_id}/report?export=pdf`);
   };
-
-  // Download a single widget (a chart, the map, or the operators table) as
-  // its own PNG, e.g. for a social media post -- reuses the PDF export's
-  // capture logic, minus the page-splitting.
-  const handleExportPng = async (elementId: string, label: string) => {
-    setPngExportingId(elementId);
-    // Let React re-render before html2canvas reads the DOM -- this is what
-    // takes the card's own PNG/Expand buttons out of frame. The map waits
-    // longer: it also changes shape, and invalidateSize() has to fetch tiles
-    // for the edges the new shape exposes.
-    // The charts restack and resize, so they need a reflow too -- Recharts'
-    // ResponsiveContainer re-measures asynchronously.
-    await new Promise(resolve => setTimeout(
-      resolve,
-      elementId === 'net-stats-map' ? 900 : elementId === 'net-stats-charts' ? 350 : 250,
-    ));
-    try {
-      const netLabel = stats?.net_name ? stats.net_name.replace(/[^a-zA-Z0-9]/g, '_') : 'Net';
-      await exportElementToPng(elementId, {
-        filename: `${netLabel}_${label}`,
-        scale: 2,
-      });
-    } catch (err) {
-      console.error(`Failed to export ${label} PNG:`, err);
-    } finally {
-      setPngExportingId(null);
-    }
+  const handleExportPngs = () => {
+    if (stats) navigate(`/nets/${stats.net_id}/report?export=png`);
   };
 
   // Fetch stats and check-in list in parallel
+
   useEffect(() => {
     const fetchData = async () => {
       if (!netId) return;
@@ -377,44 +296,11 @@ const NetStatistics: React.FC = () => {
   const chartCount = [statusData.length > 0, timelineData.length >= 2, showFrequency].filter(Boolean).length;
   const chartMd = (chartCount === 3 ? 4 : chartCount === 2 ? 6 : 12) as 4 | 6 | 12;
 
-  // True only while that block is being captured, which is when the
-  // social-media export layout applies (see PNG_EXPORT_* above).
-  const isMapPngExport = pngExportingId === 'net-stats-map';
-  const isChartPngExport = pngExportingId === 'net-stats-charts';
-
   // Tile layer -- see utils/mapTiles.ts for why dark mode is a CSS filter on
-  // OSM tiles rather than a separate tile server. Always plain (unfiltered)
-  // tiles while capturing the map for PNG export, same reasoning as
-  // CheckInMap.tsx's PDF export.
+  // OSM tiles rather than a separate tile server.
   const tileUrl = MAP_TILE_URL;
   const tileAttribution = MAP_TILE_ATTRIBUTION;
-  const tileClassName = getMapTileClassName(isDarkMode, isMapPngExport);
-
-  // The cards the header's "Export PNG" button downloads, in page order. Each
-  // is conditional on the same test that decides whether the card renders at
-  // all, so the run never tries to capture a card that isn't on the page.
-  // Mirrors NetReport.tsx's pngSections.
-  const pngSections: { id: string; label: string }[] = [
-    ...(chartCount > 0 ? [{ id: 'net-stats-charts', label: 'Graphs' }] : []),
-    ...(mappedCheckIns.length > 0 && !mapLoading ? [{ id: 'net-stats-map', label: 'Check-in_Locations' }] : []),
-    { id: 'net-stats-operators', label: 'Operators' },
-  ];
-
-  // Downloads every card on the page as its own PNG. Sequential, not parallel:
-  // each capture re-renders the live DOM to take the card's own buttons out of
-  // frame, so two at once would fight over it. The gap matters too -- browsers
-  // drop rapid programmatic downloads without one.
-  const handleExportAllPngs = async () => {
-    setExportingAllPngs(true);
-    try {
-      for (const section of pngSections) {
-        await handleExportPng(section.id, section.label);
-        await new Promise(resolve => setTimeout(resolve, 400));
-      }
-    } finally {
-      setExportingAllPngs(false);
-    }
-  };
+  const tileClassName = getMapTileClassName(isDarkMode, false);
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -448,22 +334,19 @@ const NetStatistics: React.FC = () => {
           <Button
             variant="contained"
             onClick={handleExportPdf}
-            disabled={exportingAllPngs}
             startIcon={<PictureAsPdf />}
           >
             Export PDF
           </Button>
         </Tooltip>
-        {/* Downloads each card as its own PNG, for social media posts. The
-            same captures the per-card PNG buttons produce. */}
-        <Tooltip title={`Download all ${pngSections.length} cards as PNG images`}>
+        {/* Opens the net report and downloads its social-media images there. */}
+        <Tooltip title="Download the net report's images for social media">
           <Button
             variant="contained"
-            onClick={handleExportAllPngs}
-            disabled={exportingAllPngs}
-            startIcon={exportingAllPngs ? <CircularProgress size={16} /> : <ImageIcon />}
+            onClick={handleExportPngs}
+            startIcon={<ImageIcon />}
           >
-            {exportingAllPngs ? 'Exporting...' : 'Export PNG'}
+            Export PNG
           </Button>
         </Tooltip>
         <Button
@@ -560,52 +443,16 @@ const NetStatistics: React.FC = () => {
 
       <Grid container spacing={3}>
         {/* ========== GRAPHS ========== */}
-        {/* The charts export as ONE stacked image rather than a file per chart,
-            mirroring NetReport's "Statistics Summary" block. The heading row
-            sits outside #net-stats-charts so its button and progress spinner
-            stay out of the captured image. */}
         {chartCount > 0 && (
         <Grid item xs={12}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <TrendingUp /> Graphs
             </Typography>
-            {!pngExportingId && (
-              <Box sx={{ ml: 'auto' }}>
-                <CardActionButton
-                  icon={<DownloadIcon fontSize="small" />}
-                  label="PNG"
-                  tooltip="Download graphs as a PNG image"
-                  onClick={() => handleExportPng('net-stats-charts', 'Graphs')}
-                />
-              </Box>
-            )}
-            {isChartPngExport && <CircularProgress size={18} sx={{ ml: 'auto' }} />}
           </Box>
-          {/* MUI's Grid container applies a negative margin on every side to
-              offset its items' own gutter padding -- invisible in normal
-              layout, since it's designed to cancel against an adjacent Grid's
-              matching negative margin. There is no adjacent Grid above this
-              one (just the heading Box), so the negative top margin pulls the
-              container's own rendered box up over the heading's paint area.
-              On screen that's harmless -- the heading paints on top and
-              nothing looks wrong -- but html2canvas captures this element's
-              actual box, which starts inside the heading, so the export
-              included a sliver of the "Graphs" heading text (2026-09-03: gap
-              between this Grid and its previous sibling measured -16px). A
-              plain Box absorbs the negative margin instead of exposing it. */}
-          {/* During export a stats sidebar joins the charts inside the same
-              captured box, so the id and the pt:2 bleed-fix (see above) move
-              to this wrapping Box; the Grid becomes its flex-1 left column. */}
-          <Box
-            id="net-stats-charts"
-            sx={{
-              pt: 2,
-              display: 'flex',
-              gap: isChartPngExport ? 3 : 0,
-              ...(isChartPngExport && { width: PNG_EXPORT_WIDTH_PX }),
-            }}
-          >
+          {/* A plain Box absorbs the Grid container's negative top margin,
+              which would otherwise pull it up over the heading. */}
+          <Box sx={{ pt: 2, display: 'flex' }}>
           <Grid
             container
             spacing={3}
@@ -613,25 +460,23 @@ const NetStatistics: React.FC = () => {
           >
         {/* Status Breakdown */}
         {statusData.length > 0 && (
-          <Grid item xs={12} md={isChartPngExport ? 12 : chartMd}>
+          <Grid item xs={12} md={chartMd}>
             <Paper id="net-stats-chart-status" sx={{ p: 3, height: '100%' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <Typography variant="h6">Check-in Status</Typography>
-                {!pngExportingId && (
-                  <Tooltip title="Expand">
+                                  <Tooltip title="Expand">
                     <IconButton size="small" onClick={() => setExpandedCard('status')} sx={{ ml: 'auto' }}>
                       <FullscreenIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                )}
               </Box>
-              <ResponsiveContainer width="100%" height={isChartPngExport ? PNG_EXPORT_PIE_HEIGHT_PX : 260}>
+              <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
                   <Pie
                     data={statusData}
                     cx="50%"
                     cy="45%"
-                    outerRadius={isChartPngExport ? PNG_EXPORT_PIE_RADIUS_PX : 72}
+                    outerRadius={72}
                     fill="#8884d8"
                     dataKey="value"
                     label={({ percent }) => percent > 0.04 ? `${(percent * 100).toFixed(0)}%` : ''}
@@ -655,22 +500,20 @@ const NetStatistics: React.FC = () => {
         {/* ========== CHECK-IN ACTIVITY CHART ========== */}
         {/* Binned area chart showing check-in flow over time */}
         {timelineData.length >= 2 && (
-          <Grid item xs={12} md={isChartPngExport ? 12 : chartMd}>
+          <Grid item xs={12} md={chartMd}>
             <Paper id="net-stats-chart-activity" sx={{ p: 3, height: '100%' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                 <Typography variant="h6">Check-in Activity</Typography>
-                {!pngExportingId && (
-                  <Tooltip title="Expand">
+                                  <Tooltip title="Expand">
                     <IconButton size="small" onClick={() => setExpandedCard('activity')} sx={{ ml: 'auto' }}>
                       <FullscreenIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                )}
               </Box>
               <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
                 Check-ins per {binSize}-min window
               </Typography>
-              <ResponsiveContainer width="100%" height={isChartPngExport ? PNG_EXPORT_CHART_HEIGHT_PX : 262}>
+              <ResponsiveContainer width="100%" height={262}>
                 <AreaChart data={timelineData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                   <defs>
                     <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
@@ -713,19 +556,17 @@ const NetStatistics: React.FC = () => {
 
         {/* Check-ins by Frequency — only shown when net has multiple frequencies */}
         {showFrequency && (
-          <Grid item xs={12} md={isChartPngExport ? 12 : chartMd}>
+          <Grid item xs={12} md={chartMd}>
             <Paper id="net-stats-chart-frequency" sx={{ p: 3, height: '100%' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <Typography variant="h6">Check-ins by Frequency</Typography>
-                {!pngExportingId && (
-                  <Tooltip title="Expand">
+                                  <Tooltip title="Expand">
                     <IconButton size="small" onClick={() => setExpandedCard('frequency')} sx={{ ml: 'auto' }}>
                       <FullscreenIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                )}
               </Box>
-              <ResponsiveContainer width="100%" height={isChartPngExport ? PNG_EXPORT_CHART_HEIGHT_PX : 250}>
+              <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={frequencyData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                   <XAxis type="number" />
@@ -743,29 +584,6 @@ const NetStatistics: React.FC = () => {
           </Grid>
         )}
           </Grid>
-          {/* Stats sidebar: only rendered during export -- on screen these
-              numbers already appear in the Summary Cards above, so
-              duplicating them here would just repeat the page. The graphs
-              export is a standalone image with no cards around it, so it
-              needs its own copy to be self-contained. */}
-          {isChartPngExport && (
-            <Box sx={{ flex: '0 0 216px', display: 'flex', flexDirection: 'column', gap: 2, justifyContent: 'space-between' }}>
-              {[
-                { icon: <TrendingUp color="primary" sx={{ fontSize: 28 }} />, value: stats.total_check_ins, label: 'Total Check-ins' },
-                { icon: <People color="info" sx={{ fontSize: 28 }} />, value: stats.unique_callsigns, label: 'Unique Operators' },
-                { icon: <Refresh color="warning" sx={{ fontSize: 28 }} />, value: stats.rechecks, label: 'Re-checks' },
-                { icon: <Timer color="secondary" sx={{ fontSize: 28 }} />, value: stats.duration_minutes ? formatDuration(stats.duration_minutes) : '—', label: 'Duration' },
-              ].map((s) => (
-                <Card key={s.label}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    {s.icon}
-                    <Typography variant="h4" fontWeight="bold">{s.value}</Typography>
-                    <Typography variant="body2" color="text.secondary">{s.label}</Typography>
-                  </CardContent>
-                </Card>
-              ))}
-            </Box>
-          )}
           </Box>
         </Grid>
         )}
@@ -773,26 +591,9 @@ const NetStatistics: React.FC = () => {
         {/* ========== CHECK-IN LOCATION MAP ========== */}
         {(mappedCheckIns.length > 0 || mapLoading) && (
           <Grid item xs={12}>
-            <CardExportProgress active={pngExportingId === 'net-stats-map'}>
             <Paper
               id="net-stats-map"
-              sx={{
-                p: 2,
-                height: '100%',
-                // Reshaped only while being captured. Single map: flex column +
-                // a pinned ratio lets the map absorb whatever the heading does
-                // not use, so the card is exactly 4:3. Dual sizes its panes
-                // directly instead (see PNG_EXPORT_DUAL_PANE_HEIGHT_PX).
-                ...(isMapPngExport && {
-                  width: PNG_EXPORT_WIDTH_PX,
-                  height: 'auto',
-                  ...(dualMapData ? {} : {
-                    aspectRatio: PNG_EXPORT_MAP_ASPECT,
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }),
-                }),
-              }}
+              sx={{ p: 2, height: '100%' }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <MapIcon color="action" fontSize="small" />
@@ -802,29 +603,17 @@ const NetStatistics: React.FC = () => {
                 {mappedCheckIns.length > 0 && (
                   <Typography variant="caption" color="text.secondary">
                     ({mappedCheckIns.length} plotted)
-                    {/* The panes stack for the PNG export, so "left/right"
-                        would be wrong in the exported image. */}
-                    {dualMapData && (isMapPngExport
-                      ? ' — split view: cluster detail (top) and full overview (bottom)'
-                      : ' — split view: cluster detail (left) and full overview (right)')}
+                    {dualMapData && ' — split view: cluster detail (left) and full overview (right)'}
                   </Typography>
                 )}
                 <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   {mapLoading && <CircularProgress size={14} />}
-                  {mappedCheckIns.length > 0 && !mapLoading && !pngExportingId && (
-                    <>
-                    <CardActionButton
-                      icon={<DownloadIcon fontSize="small" />}
-                      label="PNG"
-                      tooltip="Download the map as a PNG image"
-                      onClick={() => handleExportPng('net-stats-map', 'Check-in_Locations')}
-                    />
+                  {mappedCheckIns.length > 0 && !mapLoading && (
                     <Tooltip title="Expand">
                       <IconButton size="small" onClick={() => setExpandedCard('map')}>
                         <FullscreenIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    </>
                   )}
                 </Box>
               </Box>
@@ -833,21 +622,21 @@ const NetStatistics: React.FC = () => {
                   // ---- DUAL MAP: cluster detail + full overview side-by-side ----
                   <Grid container spacing={2}>
                     {/* Left: cluster zoom (stacked on top during a PNG export) */}
-                    <Grid item xs={12} md={isMapPngExport ? 12 : 6}>
+                    <Grid item xs={12} md={6}>
                       <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
                         <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider' }}>
                           <Typography variant="caption" fontWeight="medium">
                             📍 Cluster Detail ({dualMapData.clusterPositions.length} stations)
                           </Typography>
                         </Box>
-                        <Box sx={{ height: isMapPngExport ? PNG_EXPORT_DUAL_PANE_HEIGHT_PX : 320, width: '100%' }}>
+                        <Box sx={{ height: 320, width: '100%' }}>
                           <MapContainer center={[39.8283, -98.5795]} zoom={4} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
                             <TileLayer
                               attribution={tileAttribution}
                               url={tileUrl}
                               className={tileClassName}
                             />
-                            <FitBoundsOnce positions={dualMapData.clusterPositions} resizeToken={isMapPngExport ? 1 : 0} />
+                            <FitBoundsOnce positions={dualMapData.clusterPositions} />
                             {mappedCheckIns.map((mapped) => (
                               <Marker
                                 key={`cluster-${mapped.checkIn.id}`}
@@ -866,21 +655,21 @@ const NetStatistics: React.FC = () => {
                       </Paper>
                     </Grid>
                     {/* Right: full overview (stacked underneath during a PNG export) */}
-                    <Grid item xs={12} md={isMapPngExport ? 12 : 6}>
+                    <Grid item xs={12} md={6}>
                       <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
                         <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider' }}>
                           <Typography variant="caption" fontWeight="medium">
                             🌐 Full Overview ({dualMapData.allPositions.length} stations)
                           </Typography>
                         </Box>
-                        <Box sx={{ height: isMapPngExport ? PNG_EXPORT_DUAL_PANE_HEIGHT_PX : 320, width: '100%' }}>
+                        <Box sx={{ height: 320, width: '100%' }}>
                           <MapContainer center={[39.8283, -98.5795]} zoom={4} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
                             <TileLayer
                               attribution={tileAttribution}
                               url={tileUrl}
                               className={tileClassName}
                             />
-                            <FitBoundsOnce positions={dualMapData.allPositions} resizeToken={isMapPngExport ? 1 : 0} />
+                            <FitBoundsOnce positions={dualMapData.allPositions} />
                             {mappedCheckIns.map((mapped) => (
                               <Marker
                                 key={`overview-${mapped.checkIn.id}`}
@@ -901,7 +690,7 @@ const NetStatistics: React.FC = () => {
                   </Grid>
                 ) : (
                   // ---- SINGLE MAP: all stations fit in one view ----
-                  <Box sx={{ width: '100%', borderRadius: 1, overflow: 'hidden', ...(isMapPngExport ? { flex: 1, minHeight: 0 } : { height: 350 }) }}>
+                  <Box sx={{ width: '100%', borderRadius: 1, overflow: 'hidden', height: 350 }}>
                     <MapContainer center={[39.8283, -98.5795]} zoom={4} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
                       <TileLayer
                         attribution={tileAttribution}
@@ -910,7 +699,7 @@ const NetStatistics: React.FC = () => {
                       />
                       <FitBoundsOnce
                         positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])}
-                        resizeToken={isMapPngExport ? 1 : 0}
+                       
                       />
                       {mappedCheckIns.map((mapped) => (
                         <Marker
@@ -943,29 +732,17 @@ const NetStatistics: React.FC = () => {
                 </Box>
               )}
             </Paper>
-            </CardExportProgress>
           </Grid>
         )}
 
         {/* ========== OPERATORS TABLE ========== */}
         {/* Lists all operators; name/location pulled from the already-fetched checkIns list */}
         <Grid item xs={12}>
-          <CardExportProgress active={pngExportingId === 'net-stats-operators'}>
           <Paper id="net-stats-operators" sx={{ p: 3, height: '100%' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
               <Typography variant="h6">
                 Operators ({stats.top_operators.length})
               </Typography>
-              {!pngExportingId && (
-                <Box sx={{ ml: 'auto' }}>
-                  <CardActionButton
-                    icon={<DownloadIcon fontSize="small" />}
-                    label="PNG"
-                    tooltip="Download the operators table as a PNG image"
-                    onClick={() => handleExportPng('net-stats-operators', 'Operators')}
-                  />
-                </Box>
-              )}
             </Box>
             <TableContainer>
               <Table size="small">
@@ -999,7 +776,6 @@ const NetStatistics: React.FC = () => {
               </Table>
             </TableContainer>
           </Paper>
-          </CardExportProgress>
         </Grid>
       </Grid>
       </Box>

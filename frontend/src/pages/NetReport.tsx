@@ -7,8 +7,6 @@ import {
   Typography,
   Paper,
   Grid,
-  Card,
-  CardContent,
   Table,
   TableBody,
   TableCell,
@@ -90,27 +88,19 @@ const FitBounds: React.FC<{ positions: [number, number][]; resizeToken?: number 
 };
 
 // ========== PNG EXPORT LAYOUT (social-media friendly aspect ratios) ==========
-// On screen the report is wide: charts sit side by side and the map spans the
-// full content width. Captured as-is that exports a roughly 2.5:1 letterbox,
-// which feed thumbnails crop and a portrait phone renders too small to read.
-// For the PNG capture only, the charts stack and the map block is pinned to a
-// fixed width and aspect ratio. None of this affects the on-screen layout or
-// the PDF export.
-const PNG_EXPORT_WIDTH_PX = 960;
+// The graphs and check-in list post as SocialSummaryImages
+// (components/report/), a layout of its own rendered off-screen. The map is
+// captured from the report itself: on screen it spans the full content width,
+// which captured as-is is a roughly 2.5:1 letterbox that feed thumbnails crop,
+// so for the PNG only the map block is pinned to a fixed width and aspect
+// ratio. None of this affects the on-screen layout or the PDF export.
+const PNG_EXPORT_WIDTH_PX = SOCIAL_PAGE_WIDTH_PX;
 // Applies to the whole map block (heading + map + legend), not just the map
 // pane -- the block is what gets posted, so it's the block that has to be 4:3.
 // Achieved with flex rather than pixel maths: the heading and legend take their
 // natural height and the map pane absorbs whatever is left, so the ratio holds
 // regardless of how tall the text wraps.
 const PNG_EXPORT_MAP_ASPECT = '4 / 3';
-// Charts are short on the page because they sit in narrow grid columns. Stacked
-// full width for the export they would otherwise read as a sparse strip -- a
-// 60px-radius pie floating in a 960px box, which is what the first version
-// shipped. These export-only sizes let the content fill the frame and bring two
-// stacked charts to roughly 4:3, matching the single-map export.
-const PNG_EXPORT_PIE_HEIGHT_PX = 340;
-const PNG_EXPORT_PIE_RADIUS_PX = 130;
-const PNG_EXPORT_CHART_HEIGHT_PX = 300;
 // Dual-map nets stack their two panes, and are sized by giving each pane a
 // fixed height rather than by pinning the block's aspect ratio. The flex
 // approach above cannot reach through the panes: they are MUI Grid items, whose
@@ -146,7 +136,7 @@ import { chatApi, ChatMessage, formatChatMessageText } from '../api/chat';
 import { formatDateTime, formatTimeWithDate, formatReportSpan, formatReportShortDate } from '../utils/dateUtils';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
-import { exportElementToPdf, exportElementToPng } from '../utils/pdfExport';
+import { exportElementToPdf, exportElementToPng, exportToPng } from '../utils/pdfExport';
 import { computeCheckInTimeline } from '../utils/checkInTimeline';
 import CardActionButton from '../components/CardActionButton';
 import ReportPaper from '../components/report/ReportPaper';
@@ -155,6 +145,7 @@ import ReportMasthead from '../components/report/ReportMasthead';
 import ReportFigures from '../components/report/ReportFigures';
 import ReportSectionTitle from '../components/report/ReportSectionTitle';
 import ReportFooter from '../components/report/ReportFooter';
+import SocialSummaryImages, { SocialRosterRow, SOCIAL_PAGE_WIDTH_PX } from '../components/report/SocialSummaryImages';
 import CoverageReport, { CanHearReportEntry } from '../components/netview/CoverageReport';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
 
@@ -273,6 +264,8 @@ const NetReport: React.FC = () => {
   // this stays true across the whole "Export PNG" run so the header button can
   // show progress and stay disabled between individual captures.
   const [exportingAllPngs, setExportingAllPngs] = useState(false);
+  // Mounts SocialSummaryImages off-screen for the length of an Export PNG run.
+  const [socialExporting, setSocialExporting] = useState(false);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   // Opt-in, view-time only (not persisted) - per-station coverage maps make
   // an already-long report substantially longer, so they're off by default.
@@ -440,7 +433,7 @@ const NetReport: React.FC = () => {
     }
   };
 
-  // ========== PNG EXPORT (per report section, for social media posts) ==========
+  // ========== PNG EXPORT (the map, for social media posts) ==========
 
   const handleExportPng = async (elementId: string, label: string) => {
     setPngExportingId(elementId);
@@ -458,6 +451,7 @@ const NetReport: React.FC = () => {
       await exportElementToPng(elementId, {
         filename: `${netLabel}_${label}`,
         scale: 2,
+        trim: true,
       });
     } catch (err) {
       console.error(`Failed to export ${label} PNG:`, err);
@@ -527,13 +521,63 @@ const NetReport: React.FC = () => {
     [stats]
   );
 
-  // ========== AUTO EXPORT (?export=pdf) ==========
-  // The per-net statistics page's Export PDF opens this report with
-  // ?export=pdf rather than keeping a second PDF layout of its own. Waits for
+  // ========== SOCIAL-MEDIA IMAGES (Export PNG) ==========
+  // One row per station, first check-in first: the summary image lists who
+  // took part, not every recheck event.
+  const socialRows: SocialRosterRow[] = [];
+  const seenCallsigns = new Set<string>();
+  [...checkIns]
+    .sort((a, b) => a.checked_in_at.localeCompare(b.checked_in_at))
+    .forEach((c) => {
+      const key = c.callsign.toUpperCase();
+      if (seenCallsigns.has(key)) return;
+      seenCallsigns.add(key);
+      socialRows.push({ callsign: c.callsign, name: c.name, location: c.location });
+    });
+
+  // Export PNG downloads the summary image(s) -- header, figures, graphs and
+  // check-in list, split so no image is taller than 4:5 -- and then the map,
+  // if the net has one. Sequential with a gap between files: browsers
+  // throttle rapid programmatic downloads and silently drop the later ones.
+  const handleExportAllPngs = async () => {
+    setExportingAllPngs(true);
+    const netLabel = net?.name ? net.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Net';
+    try {
+      setSocialExporting(true);
+      // SocialSummaryImages measures, paginates and renders its pages.
+      let pages: HTMLElement[] = [];
+      for (let tries = 0; tries < 30 && pages.length === 0; tries++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        pages = Array.from(document.querySelectorAll<HTMLElement>('[data-social-page]'));
+      }
+      for (const [k, page] of pages.entries()) {
+        await exportToPng(page, {
+          filename: pages.length > 1 ? `${netLabel}_Summary_${k + 1}_of_${pages.length}` : `${netLabel}_Summary`,
+          scale: 2,
+          trim: true,
+        });
+        await new Promise(resolve => setTimeout(resolve, 400));
+      }
+      setSocialExporting(false);
+      if (mappedCheckIns.length > 0) {
+        await handleExportPng('net-report-map', 'Map');
+      }
+    } catch (err) {
+      console.error('Failed to export PNG images:', err);
+    } finally {
+      setSocialExporting(false);
+      setExportingAllPngs(false);
+    }
+  };
+
+  // ========== AUTO EXPORT (?export=pdf, ?export=png) ==========
+  // The per-net statistics page's Export PDF and Export PNG open this report
+  // with ?export=pdf / ?export=png rather than keeping layouts of their own. Waits for
   // the data, then for the map tiles (or 10 s, so a blocked tile server can't
   // strand it), plus a beat for the charts' entry animation to finish.
   const [searchParams, setSearchParams] = useSearchParams();
-  const autoExportRequested = searchParams.get('export') === 'pdf';
+  const autoExportFormat = searchParams.get('export');
+  const autoExportRequested = autoExportFormat === 'pdf' || autoExportFormat === 'png';
   const autoExportStarted = useRef(false);
   const autoExportReady = mappedCheckIns.length === 0 || mapTilesReady;
   useEffect(() => {
@@ -544,7 +588,8 @@ const NetReport: React.FC = () => {
         params.delete('export');
         return params;
       }, { replace: true });
-      handleExportPdf();
+      if (autoExportFormat === 'png') handleExportAllPngs();
+      else handleExportPdf();
     }, autoExportReady ? 1500 : 10000);
     return () => clearTimeout(timer);
     // handleExportPdf is recreated every render; the inputs it reads are listed.
@@ -612,36 +657,10 @@ const NetReport: React.FC = () => {
   const chartCount = [statusData.length > 0, timelineData.length >= 2, showFrequency].filter(Boolean).length;
   const chartMd = (chartCount === 3 ? 4 : chartCount === 2 ? 6 : 12) as 4 | 6 | 12;
 
-  // True only while that specific section is being captured as a PNG, which is
-  // when the social-media export layout applies (see PNG_EXPORT_* above).
-  const isChartPngExport = pngExportingId === 'net-report-charts';
+  // True only while the map is being captured as a PNG, which is when its
+  // social-media layout applies (see PNG_EXPORT_* above).
   const isMapPngExport = pngExportingId === 'net-report-map';
 
-  // The sections the header's "Export PNG" button downloads, in report order.
-  // Charts and the map are conditional -- a net with no location data has no
-  // map section to capture, and a single-frequency net may have no charts.
-  const pngSections: { id: string; label: string }[] = [
-    ...(chartCount > 0 ? [{ id: 'net-report-charts', label: 'Graphs' }] : []),
-    ...(mappedCheckIns.length > 0 ? [{ id: 'net-report-map', label: 'Map' }] : []),
-    { id: 'net-report-checkin-log', label: 'CheckIn_List' },
-  ];
-
-  // Downloads every present section as its own PNG. Sequential, not parallel:
-  // each capture reshapes the live DOM (see PNG_EXPORT_* above), so two at once
-  // would fight over the same layout. The gap between them matters too --
-  // browsers throttle rapid programmatic downloads, and without it the later
-  // files can be silently dropped.
-  const handleExportAllPngs = async () => {
-    setExportingAllPngs(true);
-    try {
-      for (const section of pngSections) {
-        await handleExportPng(section.id, section.label);
-        await new Promise(resolve => setTimeout(resolve, 400));
-      }
-    } finally {
-      setExportingAllPngs(false);
-    }
-  };
 
   // Get NCS operators from net roles
   // NetRole.role is always stored uppercase ("NCS") -- every other role
@@ -655,6 +674,13 @@ const NetReport: React.FC = () => {
   // Single-series graphs (activity, frequencies) take the logo's accent
   // color; the status pie keeps its per-status colors.
   const reportAccent = getReportAccent(net.logo_accent_colors).accent;
+  // Shared by the report's figures row and the social summary image.
+  const reportFigures = [
+    { value: stats.total_check_ins, label: 'Total Check-ins' },
+    { value: stats.unique_callsigns, label: 'Unique Operators' },
+    { value: stats.rechecks, label: 'Re-checks' },
+    { value: stats.duration_minutes ? formatDuration(stats.duration_minutes) : '—', label: 'Duration' },
+  ];
   const reportSpan = stats.started_at
     ? formatReportSpan(stats.started_at, stats.closed_at, user?.prefer_utc || false)
     : null;
@@ -688,9 +714,9 @@ const NetReport: React.FC = () => {
             {exporting ? 'Exporting...' : 'Export PDF'}
           </Button>
         </Tooltip>
-        {/* Downloads each report section as its own PNG, for social media
-            posts. The same captures the per-section PNG buttons produce. */}
-        <Tooltip title={`Download all ${pngSections.length} report sections as PNG images`}>
+        {/* Downloads the social-media images: the summary (continued on
+            more images for a long list) and the map. */}
+        <Tooltip title={mappedCheckIns.length > 0 ? "Download images for social media: a summary and the map" : "Download a summary image for social media"}>
           <Button
             variant="contained"
             onClick={handleExportAllPngs}
@@ -782,55 +808,17 @@ const NetReport: React.FC = () => {
 
         {/* ========== SECTION 2: STATISTICS SUMMARY ========== */}
         <ReportFigures
-          figures={[
-            { value: stats.total_check_ins, label: 'Total Check-ins' },
-            { value: stats.unique_callsigns, label: 'Unique Operators' },
-            { value: stats.rechecks, label: 'Re-checks' },
-            { value: stats.duration_minutes ? formatDuration(stats.duration_minutes) : '—', label: 'Duration' },
-          ]}
+          figures={reportFigures}
         />
 
-        {/* Labelled, not icon-only: an unlabelled icon relies on a hover
-            tooltip that never appears on a phone, which made these
-            effectively invisible. See DESIGN.md "Touch targets". */}
-        <ReportSectionTitle
-          action={
-            <>
-              {!exporting && !pngExportingId && chartCount > 0 && (
-                <CardActionButton
-                  icon={<DownloadIcon fontSize="small" />}
-                  label="PNG"
-                  tooltip="Download graphs as a PNG image"
-                  onClick={() => handleExportPng('net-report-charts', 'Graphs')}
-                />
-              )}
-              {pngExportingId === 'net-report-charts' && <CircularProgress size={18} />}
-            </>
-          }
-        >
-          Graphs
-        </ReportSectionTitle>
+        <ReportSectionTitle>Graphs</ReportSectionTitle>
 
         {/* Charts Row — all three charts fit one row */}
-        {/* Pinned to the same export width as the map: stacked full-bleed at
-            the report's own width leaves the pie stranded in a very wide box,
-            and both sections should post at a consistent size. During export
-            a stats sidebar joins the charts inside the same captured box, so
-            the id moves from the Grid to this wrapping Box; the Grid itself
-            just becomes the flex-1 left column. */}
-        <Box
-          id="net-report-charts"
-          sx={{
-            mb: 3,
-            display: 'flex',
-            gap: isChartPngExport ? 3 : 0,
-            ...(isChartPngExport && { width: PNG_EXPORT_WIDTH_PX, mb: 0 }),
-          }}
-        >
+        <Box sx={{ mb: 3, display: 'flex' }}>
         <Grid container spacing={3} sx={{ flex: 1, minWidth: 0 }}>
           {/* Status Breakdown Pie Chart */}
           {statusData.length > 0 && (
-            <Grid item xs={12} md={isChartPngExport ? 12 : chartMd}>
+            <Grid item xs={12} md={chartMd}>
               <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <Typography variant="subtitle1" fontWeight="medium">Check-in Status</Typography>
@@ -842,13 +830,13 @@ const NetReport: React.FC = () => {
                     </Tooltip>
                   )}
                 </Box>
-                <ResponsiveContainer width="100%" height={isChartPngExport ? PNG_EXPORT_PIE_HEIGHT_PX : 200}>
+                <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
                     <Pie
                       data={statusData}
                       cx="50%"
                       cy="45%"
-                      outerRadius={isChartPngExport ? PNG_EXPORT_PIE_RADIUS_PX : 60}
+                      outerRadius={60}
                       fill="#8884d8"
                       dataKey="value"
                       label={({ percent }) => percent > 0.04 ? `${(percent * 100).toFixed(0)}%` : ''}
@@ -871,7 +859,7 @@ const NetReport: React.FC = () => {
           {/* ========== CHECK-IN ACTIVITY CHART ========== */}
           {/* Binned area chart showing check-in flow over time */}
           {timelineData.length >= 2 && (
-            <Grid item xs={12} md={isChartPngExport ? 12 : chartMd}>
+            <Grid item xs={12} md={chartMd}>
               <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                   <Typography variant="subtitle1" fontWeight="medium">Check-in Activity</Typography>
@@ -886,7 +874,7 @@ const NetReport: React.FC = () => {
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
                   Check-ins per {binSize}-min window
                 </Typography>
-                <ResponsiveContainer width="100%" height={isChartPngExport ? PNG_EXPORT_CHART_HEIGHT_PX : 170}>
+                <ResponsiveContainer width="100%" height={170}>
                   <AreaChart data={timelineData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                     <defs>
                       <linearGradient id="reportActivityGradient" x1="0" y1="0" x2="0" y2="1">
@@ -925,7 +913,7 @@ const NetReport: React.FC = () => {
 
           {/* Frequency Bar Chart — only shown when net has multiple frequencies */}
           {showFrequency && (
-            <Grid item xs={12} md={isChartPngExport ? 12 : chartMd}>
+            <Grid item xs={12} md={chartMd}>
               <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <Typography variant="subtitle1" fontWeight="medium">Check-ins by Frequency</Typography>
@@ -937,7 +925,7 @@ const NetReport: React.FC = () => {
                     </Tooltip>
                   )}
                 </Box>
-                <ResponsiveContainer width="100%" height={isChartPngExport ? PNG_EXPORT_CHART_HEIGHT_PX : 200}>
+                <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={frequencyData} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                     <XAxis type="number" />
@@ -950,32 +938,6 @@ const NetReport: React.FC = () => {
             </Grid>
           )}
         </Grid>
-        {/* Stats sidebar: only rendered during export -- on screen these
-            numbers already appear in the Statistics Summary cards above, so
-            duplicating them here would just repeat the page. The graphs
-            export is a standalone image with no cards around it, so it needs
-            its own copy to be self-contained. */}
-        {isChartPngExport && (
-          <Box sx={{ flex: '0 0 216px', display: 'flex', flexDirection: 'column', gap: 2, justifyContent: 'space-between' }}>
-            {[
-              { value: stats.total_check_ins, label: 'Total Check-ins', color: 'primary.main' },
-              { value: stats.unique_callsigns, label: 'Unique Operators', color: 'info.main' },
-              { value: stats.rechecks, label: 'Re-checks', color: 'warning.main' },
-              { value: stats.duration_minutes ? formatDuration(stats.duration_minutes) : '—', label: 'Duration', color: 'secondary.main' },
-            ].map((s) => (
-              <Card key={s.label} variant="outlined">
-                <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                  <Typography variant="h4" fontWeight="bold" sx={{ color: s.color }}>
-                    {s.value}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {s.label}
-                  </Typography>
-                </CardContent>
-              </Card>
-            ))}
-          </Box>
-        )}
         </Box>
 
         {/* ========== SECTION 3: CHECK-IN MAP (if locations available) ========== */}
@@ -1008,6 +970,19 @@ const NetReport: React.FC = () => {
               }),
             } : undefined}
           >
+            {/* The posted map image says whose net it is, like the summary image. */}
+            {isMapPngExport && (
+              <Box sx={{ flexShrink: 0 }}>
+                <ReportMasthead
+                  compact
+                  logoUrl={net.logo_url}
+                  eyebrow="Check-in Map"
+                  title={net.name}
+                  when={reportSpan?.when}
+                  whenDetail={reportSpan?.detail}
+                />
+              </Box>
+            )}
             <ReportSectionTitle
               sx={{ mb: 2, ...(isMapPngExport && { mt: 0, flexShrink: 0 }) }}
               action={<>
@@ -1235,20 +1210,9 @@ const NetReport: React.FC = () => {
         )}
 
         {/* ========== SECTION 4: CHECK-IN LOG ========== */}
-        <Box id="net-report-checkin-log">
+        <Box>
         <ReportSectionTitle
           sx={{ mb: 2 }}
-          action={<>
-            {!exporting && !pngExportingId && (
-              <CardActionButton
-                icon={<DownloadIcon fontSize="small" />}
-                label="PNG"
-                tooltip="Download the check-in list as a PNG image"
-                onClick={() => handleExportPng('net-report-checkin-log', 'CheckIn_List')}
-              />
-            )}
-            {pngExportingId === 'net-report-checkin-log' && <CircularProgress size={18} />}
-          </>}
         >
           Check-in Log ({checkIns.length} event{checkIns.length !== 1 ? 's' : ''} &mdash; {stats.unique_callsigns} unique station{stats.unique_callsigns !== 1 ? 's' : ''}{stats.rechecks > 0 ? `, ${stats.rechecks} re-check${stats.rechecks !== 1 ? 's' : ''}` : ''})
         </ReportSectionTitle>
@@ -1614,6 +1578,24 @@ const NetReport: React.FC = () => {
         {/* ========== FOOTER ========== */}
         <ReportFooter generatedAt={formatDateTime(new Date().toISOString(), user?.prefer_utc || false)} />
       </ReportPaper>
+
+      {/* ========== SOCIAL-MEDIA SUMMARY IMAGES (off-screen) ========== */}
+      {/* Mounted only for the length of an Export PNG run; see handleExportAllPngs. */}
+      {socialExporting && (
+        <SocialSummaryImages
+          accentColors={net.logo_accent_colors}
+          logoUrl={net.logo_url}
+          title={net.name}
+          when={reportSpan?.when}
+          whenDetail={reportSpan?.detail}
+          figures={reportFigures}
+          timeline={timelineData}
+          binSize={binSize}
+          statusCounts={stats.status_counts}
+          frequencyCounts={stats.check_ins_by_frequency}
+          rows={socialRows}
+        />
+      )}
 
       {/* ========== FULLSCREEN EXPAND DIALOG ========== */}
       <Dialog fullScreen open={expandedCard !== null} onClose={() => setExpandedCard(null)}>

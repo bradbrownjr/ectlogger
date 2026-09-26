@@ -227,8 +227,8 @@ shots:
       in red, Export PNG, and View Net.
     caption: >
       The report page needs no sign-in, so the link is safe to hand to
-      anyone who needs the record. Export PNG saves each section as its own
-      image for a newsletter or social post.
+      anyone who needs the record. Export PNG saves a summary image and the
+      map, ready to post.
 
   # ========== Importing check-ins ==========
   - id: csv-import-dialog

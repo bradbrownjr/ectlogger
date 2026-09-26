@@ -14,8 +14,25 @@ export interface ReportFigure {
 
 const RULE = '#dde0e6';
 
-const ReportFigures: React.FC<{ figures: ReportFigure[] }> = ({ figures }) => {
+// `compact` (the social-media images) puts number and label side by side on
+// one slim line, leaving the height to the check-in list.
+const ReportFigures: React.FC<{ figures: ReportFigure[]; compact?: boolean }> = ({ figures, compact }) => {
   const { accent } = useReportAccent();
+  if (compact) {
+    return (
+      <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${figures.length}, 1fr)`, borderTop: `1px solid ${RULE}`, borderBottom: `1px solid ${RULE}`, mb: 2.25 }}>
+        {figures.map((f, i) => (
+          <Box
+            key={f.label}
+            sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 1, py: 0.875, px: 1, borderLeft: i ? `1px solid ${RULE}` : 'none' }}
+          >
+            <Box sx={{ fontSize: 28, fontWeight: 700, lineHeight: 1.1, color: accent, fontVariantNumeric: 'tabular-nums' }}>{f.value}</Box>
+            <Box sx={{ fontSize: 15, color: '#4a505c' }}>{f.label}</Box>
+          </Box>
+        ))}
+      </Box>
+    );
+  }
   return (
     <Box
       sx={{

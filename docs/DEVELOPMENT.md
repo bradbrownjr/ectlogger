@@ -250,9 +250,16 @@ behind it:
   "Page X of Y" on every page after the pages are cut. It reserves a band at
   the bottom of each page, so the slicing accounts for it. jsPDF draws it, so
   it is in Helvetica, not the page font.
-- **One net report**: the per-net statistics page has no PDF layout of its
-  own. Its Export PDF opens `/nets/{id}/report?export=pdf`, and `NetReport`
-  exports once the data and map tiles are ready (10 s cap on the tiles), then
+- **Social-media images**: `SocialSummaryImages` renders off-screen for the
+  length of an Export PNG run. It measures page one (masthead, figures,
+  graphs) and a continuation page with the real DOM, then gives the list as
+  many 32 px rows per column as fit under a 1140 px page cap, so the final
+  image (margins trimmed by `exportToPng`'s `trim`, plus the 32 px credit
+  footer) stays within 4:5. Each page carries `data-social-page`, and
+  `NetReport` captures them in order, then the map.
+- **One net report**: the per-net statistics page has no PDF or PNG layout
+  of its own. Its Export PDF and Export PNG open `/nets/{id}/report?export=pdf`
+  or `?export=png`, and `NetReport` exports once the data and map tiles are ready (10 s cap on the tiles), then
   drops the parameter from the address.
 
 ---

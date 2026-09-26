@@ -11,13 +11,15 @@ interface ReportSectionTitleProps {
   children: React.ReactNode;
   action?: React.ReactNode;
   sx?: object;
+  /** 15 in the social-media images, where the page is scaled down in a feed. */
+  fontSize?: number;
 }
 
-const ReportSectionTitle: React.FC<ReportSectionTitleProps> = ({ children, action, sx }) => (
+const ReportSectionTitle: React.FC<ReportSectionTitleProps> = ({ children, action, sx, fontSize = 13 }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, mt: 3, mb: 1.5, ...sx }}>
     <Box
       component="h2"
-      sx={{ flex: '0 1 auto', fontSize: 13, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1a1c21', m: 0 }}
+      sx={{ flex: '0 1 auto', fontSize, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1a1c21', m: 0 }}
     >
       {children}
     </Box>

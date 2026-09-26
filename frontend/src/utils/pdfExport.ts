@@ -254,6 +254,11 @@ const captureElementAsCanvas = async (
     clone.style.top = '0';
     clone.style.width = `${element.offsetWidth}px`;
     clone.style.backgroundColor = '#ffffff';
+    // Map zoom buttons are screen controls, not content; leave them out of
+    // every PDF and image. The attribution control stays (OSM requires it).
+    clone.querySelectorAll('.leaflet-control-zoom').forEach((el) => {
+      (el as HTMLElement).style.display = 'none';
+    });
     document.body.appendChild(clone);
 
     // Apply light mode styles to the clone
@@ -403,7 +408,48 @@ export interface PngExportOptions {
   scale?: number;
   /** DOM capture strategy: clone (default, forces light mode) or live element */
   captureMode?: 'clone' | 'live';
+  /** Cut away empty white margins and leave an even border (social images). */
+  trim?: boolean;
 }
+
+// Anything lighter than this in every channel counts as page background.
+const TRIM_WHITE_THRESHOLD = 245;
+
+/**
+ * Crop a canvas to its non-white content plus an even `pad` on every side.
+ * Returns the source untouched if it can't be read (a canvas tainted by a
+ * cross-origin image) or is entirely white.
+ */
+const trimWhitespace = (source: HTMLCanvasElement, pad: number): HTMLCanvasElement => {
+  let data: Uint8ClampedArray;
+  try {
+    data = source.getContext('2d')!.getImageData(0, 0, source.width, source.height).data;
+  } catch {
+    return source;
+  }
+  const { width, height } = source;
+  let top = height, bottom = -1, left = width, right = -1;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      if (data[i] < TRIM_WHITE_THRESHOLD || data[i + 1] < TRIM_WHITE_THRESHOLD || data[i + 2] < TRIM_WHITE_THRESHOLD) {
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+        if (x < left) left = x;
+        if (x > right) right = x;
+      }
+    }
+  }
+  if (bottom < 0) return source;
+  const out = document.createElement('canvas');
+  out.width = right - left + 1 + pad * 2;
+  out.height = bottom - top + 1 + pad * 2;
+  const ctx = out.getContext('2d')!;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(source, left, top, right - left + 1, bottom - top + 1, pad, pad, right - left + 1, bottom - top + 1);
+  return out;
+};
 
 /**
  * Return a copy of the canvas with a small attribution footer appended:
@@ -457,13 +503,12 @@ export const exportToPng = async (
     addTimestamp = true,
     scale = 2,
     captureMode = 'clone',
+    trim = false,
   } = options;
 
   try {
-    const canvas = withAttributionFooter(
-      await captureElementAsCanvas(element, scale, captureMode),
-      scale
-    );
+    const captured = await captureElementAsCanvas(element, scale, captureMode);
+    const canvas = withAttributionFooter(trim ? trimWhitespace(captured, 28 * scale) : captured, scale);
 
     let finalFilename = filename;
     if (addTimestamp) {

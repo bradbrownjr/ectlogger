@@ -36,14 +36,23 @@ The ICS-309 log is the copy that leaves your group and reaches a served agency, 
 <figure>
   <img src="/docs/img/net-managers/net-report-header.png"
        alt="The Net Report page's header with three buttons: Export PDF outlined in red, Export PNG, and View Net.">
-  <figcaption>The report page needs no sign-in, so the link is safe to hand to anyone who needs the record. Export PNG saves each section as its own image for a newsletter or social post.</figcaption>
+  <figcaption>The report page needs no sign-in, so the link is safe to hand to anyone who needs the record. Export PNG saves a summary image and the map, ready to post.</figcaption>
 </figure>
 
 This page pulls together everything about the net into one document: check-in statistics, a map, station-to-station coverage (if the net used it), the full chat and activity log, and the ICS-309 log, all in one place. **Export PDF** saves the whole thing as one file. The **Export PDF** button on a net's statistics page produces this same report.
 
 The report is about your net, so your net leads it. The top of the first page shows the net's logo, the net's name as the title, and the date and time it ran. ECTLogger is credited in a single line at the end. Every page of the PDF also carries the net's name, the date, and "Page 2 of 3" along the bottom, so a page separated from the rest of a printed copy still says what it belongs to.
 
-The report's headings, numbers, and graphs take their color from the logo. The color is matched to the nearest of a short list of standard colors (navy, blue, teal, green, red, maroon, purple, and a few others) that are all easy to read on a white page, so an unusual logo color never produces an unreadable report. A logo that is mostly grey, black and white, brown, or yellow, and a net with no logo at all, gets a standard blue. There is nothing to set: upload a logo on the net or its schedule (see [Creating a net](/docs/net-managers/creating-a-net/)) and the report follows it. **Export PNG** instead saves each section as its own image, sized for pasting into a newsletter or a social media post, rather than one long page. Each image carries a small footer crediting ECTLogger with the site's address, so anyone who sees the post knows where it came from.
+The report's headings, numbers, and graphs take their color from the logo. The color is matched to the nearest of a short list of standard colors (navy, blue, teal, green, red, maroon, purple, and a few others) that are all easy to read on a white page, so an unusual logo color never produces an unreadable report. A logo that is mostly grey, black and white, brown, or yellow, and a net with no logo at all, gets a standard blue. There is nothing to set: upload a logo on the net or its schedule (see [Creating a net](/docs/net-managers/creating-a-net/)) and the report follows it.
+
+### Images for social media
+
+**Export PNG** saves the net as images sized for a Facebook, Instagram, or X post, or a newsletter, rather than one long page:
+
+- **A summary image**: the net's logo, name, and date across the top, then the check-in count, operators, re-checks, and duration, the graphs, and a two-column list of every station with its name and town.
+- **The map**, with the same header, if any stations gave a location.
+
+No image is taller than a 4:5 portrait, the tallest shape Facebook and Instagram show without cropping in a feed. When a net has more stations than fit, the list carries on to a second image (and a third, if needed), marked "2 of 2" and repeating the header so each image makes sense on its own. A graph with only one category, such as a pie in which every station is "Checked In", is left out of the images because it says nothing in a post; the full report and PDF still show it. Each image carries a small footer crediting ECTLogger with the site's address, so anyone who sees the post knows where it came from. The **Export PNG** button on a net's statistics page produces these same images.
 
 This page needs no sign-in to view — callsign and licensee information are already public via the FCC's own license database, and free-text fields are redacted for a signed-out viewer the same way the check-in list and chat already are. That makes the link safe to hand to an emergency coordinator, a club newsletter editor, or anyone else who needs the record but doesn't have (or need) an ECTLogger account.
 

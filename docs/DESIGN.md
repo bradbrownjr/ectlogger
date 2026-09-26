@@ -1310,3 +1310,20 @@ accent.
 These parts use plain `Box` elements, not `Typography`, because `ReportPaper`
 forces every `.MuiTypography-root` to black for print, which would erase the
 accent.
+
+### Social-media images (`SocialSummaryImages`)
+
+Export PNG posts a net as a **summary image** (compact masthead, one slim
+figures line, the graphs, and a two-column check-in list) plus the **map**
+with the same compact masthead. Rules:
+
+- **No image taller than 4:5.** That is the tallest shape Facebook and
+  Instagram show uncropped in a feed. A list that does not fit continues on
+  "2 of 2" images, each repeating the masthead so it stands alone.
+- **The list is the point of the summary**, so everything above it is kept
+  short: the masthead's `compact` sizes and the figures row's `compact` one-line
+  form exist for this.
+- **Leave out a graph with one category** (every station one status, every
+  check-in one frequency). It says nothing in a post; the report still shows it.
+- **Callsign, name and town only** in the list. Times, statuses and notes
+  belong in the report and PDF.

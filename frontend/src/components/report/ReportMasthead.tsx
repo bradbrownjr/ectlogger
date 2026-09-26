@@ -20,20 +20,24 @@ interface ReportMastheadProps {
   when?: string;
   /** Rest of that line, e.g. the time span. */
   whenDetail?: string;
+  /** Smaller fixed sizes for the social-media images (SocialSummaryImages),
+   *  which are always 960 px wide and need the room for the check-in list. */
+  compact?: boolean;
 }
 
-const ReportMasthead: React.FC<ReportMastheadProps> = ({ logoUrl, eyebrow, title, when, whenDetail }) => {
+const ReportMasthead: React.FC<ReportMastheadProps> = ({ logoUrl, eyebrow, title, when, whenDetail, compact }) => {
   const { accent, flag } = useReportAccent();
+  const logoSize = compact ? 84 : { xs: 84, sm: 148 };
   return (
-    <Box sx={{ mb: 3 }}>
+    <Box sx={{ mb: compact ? 2.5 : 3 }}>
       <Box
         sx={{
           display: 'grid',
           // With no logo the title takes the full width; no placeholder image.
-          gridTemplateColumns: logoUrl ? { xs: '84px 1fr', sm: '148px 1fr' } : '1fr',
-          gap: { xs: 2, sm: 3.5 },
+          gridTemplateColumns: logoUrl ? (compact ? '84px 1fr' : { xs: '84px 1fr', sm: '148px 1fr' }) : '1fr',
+          gap: compact ? 2.75 : { xs: 2, sm: 3.5 },
           alignItems: 'center',
-          pb: 2.5,
+          pb: compact ? 2.25 : 2.5,
         }}
       >
         {logoUrl && (
@@ -41,24 +45,24 @@ const ReportMasthead: React.FC<ReportMastheadProps> = ({ logoUrl, eyebrow, title
             component="img"
             src={logoUrl}
             alt=""
-            sx={{ width: { xs: 84, sm: 148 }, height: { xs: 84, sm: 148 }, objectFit: 'contain' }}
+            sx={{ width: logoSize, height: logoSize, objectFit: 'contain' }}
           />
         )}
         <Box sx={{ minWidth: 0 }}>
-          <Box sx={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: accent }}>
+          <Box sx={{ fontSize: compact ? 14 : 12, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: accent }}>
             {eyebrow}
           </Box>
           <Box
             component="h1"
             sx={{
-              fontSize: { xs: 25, sm: 38 },
+              fontSize: compact ? 32 : { xs: 25, sm: 38 },
               lineHeight: 1.1,
               fontWeight: 900,
               letterSpacing: '-0.01em',
               color: '#1a1c21',
               m: 0,
-              mt: 0.75,
-              mb: 1.25,
+              mt: compact ? 0.5 : 0.75,
+              mb: compact ? 0.75 : 1.25,
               textWrap: 'balance',
               overflowWrap: 'anywhere',
             }}
@@ -66,7 +70,7 @@ const ReportMasthead: React.FC<ReportMastheadProps> = ({ logoUrl, eyebrow, title
             {title}
           </Box>
           {(when || whenDetail) && (
-            <Box sx={{ fontSize: { xs: 14, sm: 17 }, color: '#4a505c' }}>
+            <Box sx={{ fontSize: compact ? 18 : { xs: 14, sm: 17 }, color: '#4a505c' }}>
               {when && <Box component="span" sx={{ fontWeight: 500, color: '#1a1c21' }}>{when}</Box>}
               {when && whenDetail && ' · '}
               {whenDetail}
