@@ -118,7 +118,8 @@ const SocialGraphs: React.FC<Pick<SocialSummaryImagesProps, 'timeline' | 'binSiz
       {timeline.length >= 2 && (
         <Box>
           <ReportSectionTitle sx={{ mt: 0 }} fontSize={15}>Check-in activity · per {binSize} min</ReportSectionTitle>
-          <AreaChart width={888} height={180} data={timeline} margin={{ top: 6, right: 12, bottom: 0, left: -12 }}>
+          {/* Right margin leaves room for the last time label, which is centered on the edge. */}
+          <AreaChart width={888} height={180} data={timeline} margin={{ top: 6, right: 28, bottom: 0, left: -12 }}>
             <CartesianGrid vertical={false} stroke="#e6e8ec" />
             <XAxis dataKey="label" tick={{ fontSize: 14, fill: '#4a505c' }} interval={Math.max(0, Math.floor(timeline.length / 7) - 1)} tickLine={false} />
             <YAxis allowDecimals={false} tick={{ fontSize: 14, fill: '#7b8190' }} axisLine={false} tickLine={false} />

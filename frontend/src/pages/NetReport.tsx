@@ -105,10 +105,11 @@ const PNG_EXPORT_MAP_ASPECT = '4 / 3';
 // fixed height rather than by pinning the block's aspect ratio. The flex
 // approach above cannot reach through the panes: they are MUI Grid items, whose
 // own `MuiGrid-grid-xs-*` class sets `flex-basis: 100%; flex-grow: 0` and wins
-// over an `sx` override, which collapsed both panes to 16px. Two 600px panes
-// plus the headings and legend land near 960x1380 (1:1.44), inside the 16:10
-// (1:1.6) cap with ~150px of slack for a net name long enough to wrap.
-const PNG_EXPORT_DUAL_PANE_HEIGHT_PX = 600;
+// over an `sx` override, which collapsed both panes to 16px. The panes are
+// sized so the whole image stays within 4:5 like the summary images: with the
+// compact masthead, headings and legend, 600px panes came out at 1:1.56
+// (net 15, 2026-09-26); 420px panes land near 1:1.2.
+const PNG_EXPORT_DUAL_PANE_HEIGHT_PX = 420;
 
 // Coverage line colors - matches the live overlay in CheckInMap.tsx (kept as
 // a local copy rather than a cross-import; this file already duplicates the
