@@ -4,7 +4,7 @@ summary: Participation over time, the four leaderboards, the net history, and th
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-09-26
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/schedule-statistics/
@@ -42,7 +42,7 @@ If a net was started on its own, as a one-time net, and only later turned out to
 
 ## The schedule report
 
-**Export PDF** produces a **Schedule Performance Report** covering the selected time window: the summary cards, the chart, and all four leaderboards stacked in full (not just whichever tab happens to be open on screen), suitable for handing to a club or an emergency coordinator as a season or year-end summary.
+**Export PDF** produces a **Schedule Report** covering the selected time window, laid out like a net's own report: the schedule's logo and name at the top with its meeting pattern and date range, the summary figures, the chart, all four leaderboards stacked in full (not just whichever tab happens to be open on screen), and every net in the window's history. It's suitable for handing to a club or an emergency coordinator as a season or year-end summary. Its colors come from the schedule's logo, the same way a net report's do (see [Reports, ICS-309, and exports](/docs/net-managers/reports-and-exports/#the-net-report-page)), and every page is numbered.
 
 ## Related
 

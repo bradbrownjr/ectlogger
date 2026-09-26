@@ -132,7 +132,7 @@ const NetLogoSection: React.FC<NetLogoSectionProps> = ({ entityType, entityId, l
         </Avatar>
         <Typography variant="subtitle2" sx={{ mt: 2 }}>{label}</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
-          {logoUrl ? 'Shown on cards and the check-in page' : 'Optional club or net logo'}
+          {logoUrl ? 'Shown on cards, the check-in page, and reports' : 'Optional club or net logo'}
         </Typography>
         {error && <Alert severity="error" sx={{ mb: 1, py: 0, width: '100%' }}>{error}</Alert>}
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', justifyContent: 'center', gap: 1 }}>

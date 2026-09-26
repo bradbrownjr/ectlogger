@@ -232,6 +232,31 @@ Whichever kind of split you're doing, after moving code out of a file:
 
 ---
 
+## Net and schedule reports
+
+The report layout itself is in `docs/DESIGN.md` "Reports". Three mechanics
+behind it:
+
+- **Logo accent colors** are computed by `backend/app/logo_accent.py` from
+  the file a `logo_url` points at, cached per path and modification time, and
+  returned as `logo_accent_colors` on `NetResponse`, `NetTemplateResponse` and
+  `GET /statistics/templates/{id}`. They are not stored: a net copies its
+  schedule's `logo_url` string at creation, so a stored color would need
+  copying at every creation path, and would go stale if a logo file were ever
+  replaced by hand. Deriving from the file covers every logo ever uploaded
+  with no backfill. A new response that shows a logo on a report should call
+  `logo_accent_colors(logo_url)` the same way.
+- **Page footers**: `exportToPdf` takes `pageFooter`, a label drawn with
+  "Page X of Y" on every page after the pages are cut. It reserves a band at
+  the bottom of each page, so the slicing accounts for it. jsPDF draws it, so
+  it is in Helvetica, not the page font.
+- **One net report**: the per-net statistics page has no PDF layout of its
+  own. Its Export PDF opens `/nets/{id}/report?export=pdf`, and `NetReport`
+  exports once the data and map tiles are ready (10 s cap on the tiles), then
+  drops the parameter from the address.
+
+---
+
 ## Check-in maps
 
 Every check-in map in the app plots from one pipeline:

@@ -4,7 +4,7 @@ summary: The net form field by field: frequencies, check-in fields, self check-i
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-09-26
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/creating-a-net/
@@ -40,7 +40,7 @@ Below that are three groups of toggles, all off by default unless a schedule alr
 - **Community net features**: **Topic of the Week** asks participants a free-text question at check-in; **Participant Poll** asks a short question with autocompleted answers so the results stay countable. Turning either on adds a locked, always-enabled row for it on the Check-In Fields tab, so you can't accidentally leave a poll's answers uncollected.
 - **ARES & EmComm features**: the ICS-309 Communications Log format for the closing email, station-to-station coverage logging ("can hear" reports), and **Authenticated Net**, which lets Net Control or the Logger compare a checked-in station's live authenticator code against the one ECTLogger computes for their account. A station with no two-factor authentication set up simply shows as unverified rather than blocking the check-in. Assisted Traffic Handling, which sets the form types this net accepts, lives here too; see the traffic pages in [Net control](/docs/net-control/) for what staff do with it.
 
-Once the net exists, a **Net Logo** uploader appears here too. It's shown on net cards and beside the net name on the check-in page, and accepts PNG, JPEG, or WebP. Whichever format you upload is what gets stored, so a transparent PNG logo stays transparent.
+Once the net exists, a **Net Logo** uploader appears here too. It's shown on net cards, beside the net name on the check-in page, and at the top of the net's report, and accepts PNG, JPEG, or WebP. Whichever format you upload is what gets stored, so a transparent PNG logo stays transparent.
 
 ### Net staff
 

@@ -601,8 +601,10 @@ const ScheduleStatistics: React.FC = () => {
             {/* ----- STACKED VIEW (PDF export only) ----- */}
             {/* Renders every leaderboard sequentially so the static PDF
                 contains all four — the user can't click tabs in a PDF. */}
+            {/* The on-screen tables scroll at 420 px; unbounded here, or the
+                PDF would capture only their first rows. */}
             {exporting && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, '& .MuiTableContainer-root': { maxHeight: 'none' } }}>
                 <Box>
                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                     Check-in Leaderboard

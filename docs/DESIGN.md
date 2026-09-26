@@ -19,7 +19,7 @@ The official ECTLogger logo is a radar-ring circle with a Yagi antenna mast, gre
 |---|---|---|
 | Navigation bar (blue AppBar) | `<AppLogo size={28} variant="nav" />` | White rings/antenna, bright green dots and checkmark |
 | Login page heading | `<AppLogo size={40} variant="default" />` | Standard light-bg palette |
-| Net Report print header | `<AppLogo size={48} variant="default" />` | Standard light-bg palette |
+| Net and schedule report footer credit | `<AppLogo size={16} />` (in `ReportFooter`) | Deliberately small: the net's own logo leads the report, see "Reports" |
 | Dark-mode cards / panels | `<AppLogo size={32} variant="dark" />` | Dark fill, adjusted ring/antenna colors |
 | Email HTML bodies | Inline SVG at 28 px | Copy from `docs/assets/logo.svg`; email subjects keep the 📻 emoji |
 | Printed Net Script | Inline SVG at 32 px | Embedded directly in the generated HTML string |
@@ -1277,3 +1277,36 @@ A PDF/PNG export always passes `suppressDark: true` to `getMapTileClassName`
 regardless of theme (see `CheckInMap.tsx`/`NetStatistics.tsx`), since
 html2canvas bakes in whatever's on screen at capture time and the export
 renders on a forced-white background.
+
+## Reports (`components/report/`)
+
+The net report (`NetReport.tsx`) and the schedule report
+(`ScheduleStatistics.tsx`) share one set of parts, so the two PDFs read as the
+same kind of document:
+
+- **`ReportPaper`** is the white page, on screen and in the PDF, whatever the
+  app theme. It forces MUI surfaces and text to print colors and provides the
+  accent colors to everything inside it.
+- **`ReportMasthead`** leads with the net's (or schedule's) logo at 148 px,
+  the name as the title, the report type as a small uppercase label above it,
+  and the date line below. With no logo the title takes the full width; there
+  is no placeholder image.
+- **`ReportFigures`** is the headline-numbers row: hairline dividers, one
+  accent color, two by two on a phone. Not four colored cards.
+- **`ReportSectionTitle`** is every section heading: uppercase label, a
+  hairline to the right edge, and any buttons (PNG, Expand) after it.
+- **`ReportFooter`** is the only place ECTLogger appears: a 16 px mark and one
+  line of 11 px text. The net is the subject of the report; the app is a
+  footnote.
+
+**Accent colors come only from the API** (`logo_accent_colors`, picked by
+`backend/app/logo_accent.py` from a vetted palette that is readable on white).
+Never color report text from `theme.palette.primary`: a dark theme's primary
+is a light blue that disappears on the white page. The fallback is the fixed
+`DEFAULT_REPORT_ACCENT`. Semantic colors (status badges, the status pie) stay
+semantic; only single-series graphs and the report's own chrome take the
+accent.
+
+These parts use plain `Box` elements, not `Typography`, because `ReportPaper`
+forces every `.MuiTypography-root` to black for print, which would erase the
+accent.
