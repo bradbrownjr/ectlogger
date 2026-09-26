@@ -150,6 +150,7 @@ import { exportElementToPdf, exportElementToPng } from '../utils/pdfExport';
 import { computeCheckInTimeline } from '../utils/checkInTimeline';
 import CardActionButton from '../components/CardActionButton';
 import ReportPaper from '../components/report/ReportPaper';
+import { getReportAccent } from '../components/report/ReportAccent';
 import ReportMasthead from '../components/report/ReportMasthead';
 import ReportFigures from '../components/report/ReportFigures';
 import ReportSectionTitle from '../components/report/ReportSectionTitle';
@@ -651,6 +652,9 @@ const NetReport: React.FC = () => {
   const ncsOperators = netRoles.filter(r => r.role === 'NCS');
 
   // Masthead date line, e.g. "Monday, September 21, 2026 · 5:52 – 6:23 PM EDT".
+  // Single-series graphs (activity, frequencies) take the logo's accent
+  // color; the status pie keeps its per-status colors.
+  const reportAccent = getReportAccent(net.logo_accent_colors).accent;
   const reportSpan = stats.started_at
     ? formatReportSpan(stats.started_at, stats.closed_at, user?.prefer_utc || false)
     : null;
@@ -886,8 +890,8 @@ const NetReport: React.FC = () => {
                   <AreaChart data={timelineData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                     <defs>
                       <linearGradient id="reportActivityGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={theme.palette.success.main} stopOpacity={0.4} />
-                        <stop offset="95%" stopColor={theme.palette.success.main} stopOpacity={0.02} />
+                        <stop offset="5%" stopColor={reportAccent} stopOpacity={0.4} />
+                        <stop offset="95%" stopColor={reportAccent} stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -907,7 +911,7 @@ const NetReport: React.FC = () => {
                     <Area
                       type="basis"
                       dataKey="count"
-                      stroke={theme.palette.success.main}
+                      stroke={reportAccent}
                       strokeWidth={2}
                       fill="url(#reportActivityGradient)"
                       dot={false}
@@ -939,7 +943,7 @@ const NetReport: React.FC = () => {
                     <XAxis type="number" />
                     <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 11 }} />
                     <RechartsTooltip />
-                    <Bar dataKey="count" fill={theme.palette.primary.main} radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="count" fill={reportAccent} radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </Paper>
@@ -1653,8 +1657,8 @@ const NetReport: React.FC = () => {
               <AreaChart data={timelineData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
                 <defs>
                   <linearGradient id="reportExpandedGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={theme.palette.success.main} stopOpacity={0.4} />
-                    <stop offset="95%" stopColor={theme.palette.success.main} stopOpacity={0.02} />
+                    <stop offset="5%" stopColor={reportAccent} stopOpacity={0.4} />
+                    <stop offset="95%" stopColor={reportAccent} stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -1663,7 +1667,7 @@ const NetReport: React.FC = () => {
                 <YAxis allowDecimals={false} tick={{ fontSize: 13 }}
                   label={{ value: 'Check-ins', angle: -90, position: 'insideLeft', offset: 12, style: { fontSize: 13 } }} />
                 <RechartsTooltip formatter={(value: number) => [value, `check-ins in ${binSize}m`]} />
-                <Area type="basis" dataKey="count" stroke={theme.palette.success.main} strokeWidth={2.5}
+                <Area type="basis" dataKey="count" stroke={reportAccent} strokeWidth={2.5}
                   fill="url(#reportExpandedGradient)" dot={false} activeDot={{ r: 6 }} />
               </AreaChart>
             </ResponsiveContainer>
@@ -1677,7 +1681,7 @@ const NetReport: React.FC = () => {
                 <XAxis type="number" tick={{ fontSize: 13 }} />
                 <YAxis dataKey="name" type="category" width={160} tick={{ fontSize: 13 }} />
                 <RechartsTooltip />
-                <Bar dataKey="count" fill={theme.palette.primary.main} radius={[0, 4, 4, 0]} />
+                <Bar dataKey="count" fill={reportAccent} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
