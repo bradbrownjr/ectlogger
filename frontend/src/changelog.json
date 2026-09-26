@@ -1,6 +1,36 @@
 {
-  "version": "2026.09.25",
+  "version": "2026.09.26",
   "entries": [
+    {
+      "version": "2026.09.26",
+      "date": "2026-09-26",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Reports: Your net leads the report — Net and schedule reports now open with your net's logo, its name as the title, and when it ran, in colors matched to the logo, with ECTLogger reduced to a one-line credit at the end, so the PDF reads as your group's record. Export PDF on a net's statistics page now gives you this same full report.",
+              "userImpact": true
+            },
+            {
+              "text": "Reports: Numbered pages — Every page of a report PDF now shows the net's name, the date, and \"Page 2 of 3\" at the bottom, so a page separated from a printed copy still says which report it belongs to.",
+              "userImpact": false
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Schedule Statistics: Long lists print in full — The schedule report PDF used to cut the check-in leaderboard and the net history off after the first rows; every row now makes it into the PDF.",
+              "userImpact": false
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.25",
       "date": "2026-09-25",

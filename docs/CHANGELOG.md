@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-09-26
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,20 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# September 26, 2026
+
+## Improvements
+
+* **Reports: Your net leads the report** — Net and schedule reports now open with your net's logo, its name as the title, and when it ran, in colors matched to the logo, with ECTLogger reduced to a one-line credit at the end, so the PDF reads as your group's record. Export PDF on a net's statistics page now gives you this same full report.
+
+* **Reports: Numbered pages** — Every page of a report PDF now shows the net's name, the date, and "Page 2 of 3" at the bottom, so a page separated from a printed copy still says which report it belongs to.
+
+## Bug Fixes
+
+* **Schedule Statistics: Long lists print in full** — The schedule report PDF used to cut the check-in leaderboard and the net history off after the first rows; every row now makes it into the PDF.
 
 ---
 
