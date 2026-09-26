@@ -313,6 +313,42 @@ The changelog is a summary of what changed **for the user**, not a record of wha
 
 Before writing an entry, read it back as a user: if a reader would skim it, consolidate. An entry of 20+ items for one piece of work always means rules 1-3 were skipped. For reference, the 2026-07-28 UI/UX overhaul was written up as 24 items across two entries and consolidated down to 9 in one.
 
+### Write to the theme, not the pieces
+
+Rule 2 above says one user goal is one item. In practice the goal gets lost
+because each piece of work is drafted as it finishes. Draft from the top down
+instead:
+
+1. **Name the theme first.** Before writing any item, say in one phrase what
+   the day's changes add up to for a user ("reports put the net first"). Every
+   change that serves that theme is one item, even when it spans formats (PDF
+   and PNG), pages (a net's report and its statistics page), or several
+   deploys in one day. Layout, page numbers, and images are slices of the
+   theme, not items of their own.
+2. **Say whether it's new or better.** Before choosing a verb, check whether
+   users already had the thing. Something they already had is worded as an
+   improvement ("now carry the net's logo", "waste less space", "fit a feed
+   without cropping"). It is never announced as if it just arrived. A new
+   capability is the only thing that "now lets you".
+3. **Lead with the outcome, then the visible changes.** The label names the
+   outcome ("Your net comes first"). The sentence names what a user will see,
+   in their words. Leave out the mechanics that produced it, like aspect
+   ratios, palettes, or which page renders what.
+4. **Fold same-day follow-ups into what already shipped.** When more work on
+   the theme lands after the entry went out, rewrite the shipped item to cover
+   it and bump the version suffix. Don't append a second item beside it.
+   Shipped wording is not frozen.
+
+The 2026-09-26 report work is the reference case. It was first drafted as
+three items: "Your net leads the report" (the PDF layout), "Numbered pages",
+and "Images ready for social media". The last one also read as a new feature,
+though Export PNG already existed. Brad pointed out the first two were the
+same thing, and that all three were one theme: improving the reports and
+putting the net first. It shipped as one item, "Reports: Your net comes
+first", covering the PDF, its page numbers, the social images, and the
+statistics page's exports. The real bug fixed alongside it stayed its own
+item under Bug Fixes.
+
 **In `CHANGELOG.md`**, the bold portion wraps the `Category: Label`, and a ` — ` separates it from the explanatory sentence:
 
 ```

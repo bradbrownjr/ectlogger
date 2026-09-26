@@ -20,9 +20,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Reports: Your net leads the report** — Net and schedule reports now open with your net's logo, its name as the title, and when it ran, in colors matched to the logo, with ECTLogger reduced to a one-line credit at the end, so the PDF reads as your group's record. Export PDF on a net's statistics page now gives you this same full report.
-
-* **Reports: Numbered pages** — Every page of a report PDF now shows the net's name, the date, and "Page 2 of 3" at the bottom, so a page separated from a printed copy still says which report it belongs to.
+* **Reports: Your net comes first** — Reports now lead with your net instead of ECTLogger. PDFs open with the net's logo, name, and date in colors matched to the logo, and every page is numbered and labeled, so a separated page still says which report it belongs to. Export PNG images carry the same header, waste less space, and fit a Facebook, Instagram, or X feed without cropping, with the graphs and every station that checked in on one summary image. Export PDF and Export PNG on a net's statistics page now give you the same report and images.
 
 ## Bug Fixes
 
