@@ -493,7 +493,10 @@ const ScheduleStatistics: React.FC = () => {
           logoUrl={stats.logo_url}
           eyebrow={`Schedule Report · ${WINDOW_REPORT_LABELS[windowDays]}`}
           title={stats.template_name}
-          when={stats.schedule_type ? formatSchedule({ schedule_type: stats.schedule_type, schedule_config: stats.schedule_config }) : undefined}
+          // A one-time schedule has no meeting pattern to show; its date range says it all.
+          when={stats.schedule_type && stats.schedule_type !== 'ad_hoc'
+            ? formatSchedule({ schedule_type: stats.schedule_type, schedule_config: stats.schedule_config })
+            : undefined}
           whenDetail={reportRange}
         />
 
