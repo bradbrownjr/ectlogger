@@ -6,8 +6,6 @@ import {
   Typography,
   Paper,
   Grid,
-  Card,
-  CardContent,
   Skeleton,
   Alert,
   IconButton,
@@ -35,14 +33,11 @@ import {
 } from '@mui/material';
 import {
   ArrowBack,
-  TrendingUp,
-  People,
   Event,
   BarChart as BarChartIconMui,
   Link as LinkIcon,
   OpenInNew as OpenInNewIcon,
   PictureAsPdf as PictureAsPdfIcon,
-  EmojiEvents as EmojiEventsIcon,
 } from '@mui/icons-material';
 import {
   XAxis,
@@ -54,10 +49,16 @@ import {
   Line,
 } from 'recharts';
 import { statisticsApi, templateApi, netApi } from '../services/api';
-import { formatDateTime } from '../utils/dateUtils';
+import { formatDateTime, formatReportShortDate } from '../utils/dateUtils';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import { exportElementToPdf } from '../utils/pdfExport';
+import { formatSchedule } from '../components/scheduler/ScheduleCard';
+import ReportPaper from '../components/report/ReportPaper';
+import ReportMasthead from '../components/report/ReportMasthead';
+import ReportFigures from '../components/report/ReportFigures';
+import ReportSectionTitle from '../components/report/ReportSectionTitle';
+import { getReportAccent } from '../components/report/ReportAccent';
 
 interface RegularOperator {
   callsign: string;
@@ -103,6 +104,12 @@ interface TemplateStats {
   logger_leaderboard?: RoleLeaderEntry[];
   relay_leaderboard?: RelayLeaderEntry[];
   instances: NetInstance[];
+  // Report masthead: the schedule's logo, its accent colors (see
+  // components/report/ReportAccent.tsx) and its repeat pattern.
+  logo_url?: string | null;
+  logo_accent_colors?: string[];
+  schedule_type?: string;
+  schedule_config?: any;
 }
 
 // Time-window filter values that map directly to the backend ?days= param.
@@ -114,6 +121,14 @@ const WINDOW_OPTIONS: { value: WindowDays; label: string }[] = [
   { value: 365, label: '1y' },
   { value: 0, label: 'All' },
 ];
+
+// The same windows spelled out for the report masthead.
+const WINDOW_REPORT_LABELS: Record<WindowDays, string> = {
+  30: 'Last 30 days',
+  90: 'Last 90 days',
+  365: 'Last year',
+  0: 'All time',
+};
 
 // ========== LEADERBOARD TABLE ==========
 // Small reusable table for the four leaderboards. Adds a medal icon to the
@@ -347,6 +362,7 @@ const ScheduleStatistics: React.FC = () => {
       await exportElementToPdf('schedule-stats-content', {
         filename,
         orientation: 'portrait',
+        pageFooter: `${stats.template_name} · Schedule Report · ${WINDOW_REPORT_LABELS[windowDays]}`,
       });
     } catch (err) {
       console.error('Failed to export PDF:', err);
@@ -389,6 +405,14 @@ const ScheduleStatistics: React.FC = () => {
   if (!stats) {
     return null;
   }
+
+  // Masthead date range: oldest to newest net in the window. Instances
+  // arrive newest first.
+  const datedInstances = stats.instances.filter(i => i.date);
+  const reportRange = datedInstances.length
+    ? `${formatReportShortDate(datedInstances[datedInstances.length - 1].date!, user?.prefer_utc || false)} – ${formatReportShortDate(datedInstances[0].date!, user?.prefer_utc || false)}`
+    : 'No nets in this window';
+  const accent = getReportAccent(stats.logo_accent_colors).accent;
 
   // Prepare instances data for trend chart (reverse to show oldest first)
   const instancesChartData = [...stats.instances]
@@ -463,82 +487,32 @@ const ScheduleStatistics: React.FC = () => {
       {/* ========== EXPORTABLE STATS CONTENT ========== */}
       {/* Everything inside #schedule-stats-content is captured by the PDF
           export. The header/toolbar above intentionally sits outside it. */}
-      <Box id="schedule-stats-content">
-        {/* PDF-only header so the exported document has a title block */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="h5" fontWeight="bold">
-            {stats.template_name}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Schedule Performance Report — {WINDOW_OPTIONS.find(o => o.value === windowDays)?.label || ''}
-            {windowDays === 0 ? ' (all-time)' : ''}
-          </Typography>
-        </Box>
+      <ReportPaper id="schedule-stats-content" accentColors={stats.logo_accent_colors}>
+        {/* ========== REPORT MASTHEAD ========== */}
+        <ReportMasthead
+          logoUrl={stats.logo_url}
+          eyebrow={`Schedule Report · ${WINDOW_REPORT_LABELS[windowDays]}`}
+          title={stats.template_name}
+          when={stats.schedule_type ? formatSchedule({ schedule_type: stats.schedule_type, schedule_config: stats.schedule_config }) : undefined}
+          whenDetail={reportRange}
+        />
 
-      {/* Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={6} sm={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Event color="primary" sx={{ fontSize: 32 }} />
-              <Typography variant="h4" fontWeight="bold">
-                {stats.total_instances}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Net Instances
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} sm={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <TrendingUp color="success" sx={{ fontSize: 32 }} />
-              <Typography variant="h4" fontWeight="bold">
-                {stats.total_check_ins}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Check-ins
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} sm={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <BarChartIconMui color="info" sx={{ fontSize: 32 }} />
-              <Typography variant="h4" fontWeight="bold">
-                {stats.avg_check_ins_per_instance}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Avg per Net
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} sm={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <People color="secondary" sx={{ fontSize: 32 }} />
-              <Typography variant="h4" fontWeight="bold">
-                {stats.unique_operators}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Unique Operators
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+        {/* ========== SUMMARY FIGURES ========== */}
+        <ReportFigures
+          figures={[
+            { value: stats.total_instances, label: 'Nets Held' },
+            { value: stats.total_check_ins, label: 'Total Check-ins' },
+            { value: stats.avg_check_ins_per_instance, label: 'Avg per Net' },
+            { value: stats.unique_operators, label: 'Unique Operators' },
+          ]}
+        />
 
       <Grid container spacing={3}>
         {/* Check-ins Over Time */}
         {instancesChartData.length > 1 && (
           <Grid item xs={12}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Check-ins Over Time
-              </Typography>
+            <Paper variant="outlined" sx={{ p: 3 }}>
+              <ReportSectionTitle sx={{ mt: 0 }}>Check-ins Over Time</ReportSectionTitle>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={instancesChartData}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -558,17 +532,18 @@ const ScheduleStatistics: React.FC = () => {
                     type="monotone" 
                     dataKey="checkIns" 
                     name="Check-ins"
-                    stroke={theme.palette.primary.main} 
+                    stroke={accent}
                     strokeWidth={2}
-                    dot={{ fill: theme.palette.primary.main }}
+                    dot={{ fill: accent }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="operators" 
                     name="Unique Operators"
-                    stroke={theme.palette.secondary.main} 
+                    stroke="#7b8190"
                     strokeWidth={2}
-                    dot={{ fill: theme.palette.secondary.main }}
+                    strokeDasharray="5 4"
+                    dot={{ fill: '#7b8190' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -581,11 +556,8 @@ const ScheduleStatistics: React.FC = () => {
             screen, and a stacked view (all four leaderboards visible) used
             during PDF export so every leaderboard ends up in the report. */}
         <Grid item xs={12} md={exporting ? 12 : 6}>
-          <Paper sx={{ p: 3, height: '100%' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <EmojiEventsIcon color="warning" />
-              <Typography variant="h6">Leaderboards</Typography>
-            </Box>
+          <Paper variant="outlined" sx={{ p: 3, height: '100%' }}>
+            <ReportSectionTitle sx={{ mt: 0 }}>Leaderboards</ReportSectionTitle>
 
             {/* ----- TABBED VIEW (on-screen only) ----- */}
             {!exporting && (
@@ -670,19 +642,20 @@ const ScheduleStatistics: React.FC = () => {
 
         {/* ========== HISTORY LOG (Recent Net Instances) ========== */}
         <Grid item xs={12} md={exporting ? 12 : 6}>
-          <Paper sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" gutterBottom>
-              Net History
-            </Typography>
-            <TableContainer sx={{ maxHeight: 480 }}>
-              <Table size="small" stickyHeader>
+          <Paper variant="outlined" sx={{ p: 3, height: '100%' }}>
+            <ReportSectionTitle sx={{ mt: 0 }}>Net History</ReportSectionTitle>
+            {/* Scrolls on screen; unbounded while exporting, or the PDF would
+                capture only the first 480 px of a long history. */}
+            <TableContainer sx={{ maxHeight: exporting ? 'none' : 480 }}>
+              <Table size="small" stickyHeader={!exporting}>
                 <TableHead>
                   <TableRow>
                     <TableCell>Date</TableCell>
                     <TableCell>NCS</TableCell>
                     <TableCell align="right">Check-ins</TableCell>
                     <TableCell align="right">Operators</TableCell>
-                    <TableCell align="right">Actions</TableCell>
+                    {/* Links do nothing in a PDF, so the column is left out of it. */}
+                    {!exporting && <TableCell align="right">Actions</TableCell>}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -701,29 +674,31 @@ const ScheduleStatistics: React.FC = () => {
                       </TableCell>
                       <TableCell align="right">{instance.check_in_count}</TableCell>
                       <TableCell align="right">{instance.unique_operators}</TableCell>
-                      <TableCell align="right">
-                        <Tooltip title="View net">
-                          <IconButton
-                            size="small"
-                            onClick={() => navigate(`/nets/${instance.net_id}`)}
-                          >
-                            <OpenInNewIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="View net statistics">
-                          <IconButton
-                            size="small"
-                            onClick={() => navigate(`/statistics/nets/${instance.net_id}`)}
-                          >
-                            <BarChartIconMui fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
+                      {!exporting && (
+                        <TableCell align="right">
+                          <Tooltip title="View net">
+                            <IconButton
+                              size="small"
+                              onClick={() => navigate(`/nets/${instance.net_id}`)}
+                            >
+                              <OpenInNewIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="View net statistics">
+                            <IconButton
+                              size="small"
+                              onClick={() => navigate(`/statistics/nets/${instance.net_id}`)}
+                            >
+                              <BarChartIconMui fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                   {stats.instances.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} align="center">
+                      <TableCell colSpan={exporting ? 4 : 5} align="center">
                         <Typography color="text.secondary" sx={{ py: 2 }}>
                           No nets in the selected time window.
                         </Typography>
@@ -736,7 +711,7 @@ const ScheduleStatistics: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
-      </Box>{/* end #schedule-stats-content */}
+      </ReportPaper>{/* end #schedule-stats-content */}
 
       {/* ========== LINK EXISTING NET DIALOG ========== */}
       {/* Owner/admin selects one of their nets that is not already attached to this

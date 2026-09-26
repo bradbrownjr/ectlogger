@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import AppLogo from '../components/AppLogo';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { displayCallsign } from '../utils/userDisplay';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -32,16 +31,9 @@ import {
 import {
   ArrowBack,
   PictureAsPdf,
-  TrendingUp,
   Radio,
-  Chat as ChatIcon,
-  Assignment,
-  Map as MapIcon,
-  QuestionAnswer as TopicIcon,
-  Dns as SystemLogIcon,
   Fullscreen as FullscreenIcon,
   Close as CloseIcon,
-  Hearing as HearingIcon,
   Download as DownloadIcon,
   Image as ImageIcon,
 } from '@mui/icons-material';
@@ -151,12 +143,17 @@ import {
 } from 'recharts';
 import { netApi, statisticsApi, checkInApi, netRoleApi, canHearApi } from '../services/api';
 import { chatApi, ChatMessage, formatChatMessageText } from '../api/chat';
-import { formatDateTime, formatTimeWithDate } from '../utils/dateUtils';
+import { formatDateTime, formatTimeWithDate, formatReportSpan, formatReportShortDate } from '../utils/dateUtils';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import { exportElementToPdf, exportElementToPng } from '../utils/pdfExport';
 import { computeCheckInTimeline } from '../utils/checkInTimeline';
 import CardActionButton from '../components/CardActionButton';
+import ReportPaper from '../components/report/ReportPaper';
+import ReportMasthead from '../components/report/ReportMasthead';
+import ReportFigures from '../components/report/ReportFigures';
+import ReportSectionTitle from '../components/report/ReportSectionTitle';
+import ReportFooter from '../components/report/ReportFooter';
 import CoverageReport, { CanHearReportEntry } from '../components/netview/CoverageReport';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
 
@@ -174,6 +171,8 @@ interface Net {
   topic_of_week_prompt?: string;
   poll_enabled?: boolean;
   poll_question?: string;
+  logo_url?: string | null;
+  logo_accent_colors?: string[];
   frequencies: Frequency[];
   started_at?: string;
   closed_at?: string;
@@ -429,6 +428,9 @@ const NetReport: React.FC = () => {
         orientation: 'portrait',
         scale: 1.2, // JPEG compression handles quality; lower scale = smaller file
         margin: 10,
+        pageFooter: net && stats?.started_at
+          ? `${net.name} · ${formatReportShortDate(stats.started_at, user?.prefer_utc || false)}`
+          : net?.name,
       });
     } catch (err) {
       console.error('Failed to export PDF:', err);
@@ -523,6 +525,30 @@ const NetReport: React.FC = () => {
     () => computeCheckInTimeline(stats?.check_ins_timeline),
     [stats]
   );
+
+  // ========== AUTO EXPORT (?export=pdf) ==========
+  // The per-net statistics page's Export PDF opens this report with
+  // ?export=pdf rather than keeping a second PDF layout of its own. Waits for
+  // the data, then for the map tiles (or 10 s, so a blocked tile server can't
+  // strand it), plus a beat for the charts' entry animation to finish.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const autoExportRequested = searchParams.get('export') === 'pdf';
+  const autoExportStarted = useRef(false);
+  const autoExportReady = mappedCheckIns.length === 0 || mapTilesReady;
+  useEffect(() => {
+    if (!autoExportRequested || autoExportStarted.current || loading || !net || !stats || mapLoading) return;
+    const timer = setTimeout(() => {
+      autoExportStarted.current = true;
+      setSearchParams((params) => {
+        params.delete('export');
+        return params;
+      }, { replace: true });
+      handleExportPdf();
+    }, autoExportReady ? 1500 : 10000);
+    return () => clearTimeout(timer);
+    // handleExportPdf is recreated every render; the inputs it reads are listed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoExportRequested, loading, net, stats, mapLoading, autoExportReady]);
 
   // ========== LOADING & ERROR STATES ==========
 
@@ -624,6 +650,11 @@ const NetReport: React.FC = () => {
   // rendered nothing on every net report, for every net, until this fix.
   const ncsOperators = netRoles.filter(r => r.role === 'NCS');
 
+  // Masthead date line, e.g. "Monday, September 21, 2026 · 5:52 – 6:23 PM EDT".
+  const reportSpan = stats.started_at
+    ? formatReportSpan(stats.started_at, stats.closed_at, user?.prefer_utc || false)
+    : null;
+
   // Split chat into user messages and system log entries
   const userChatMessages = chatMessages.filter(m => !m.is_system);
   const systemLogMessages = chatMessages.filter(m => m.is_system);
@@ -693,185 +724,88 @@ const NetReport: React.FC = () => {
       )}
 
       {/* ========== PDF CONTENT WRAPPER ========== */}
-      {/* Force light mode styling for print-friendly PDF export */}
-      <Box 
-        id="net-report-content" 
-        sx={{ 
-          backgroundColor: '#ffffff !important',
-          color: '#000000 !important', 
-          p: 2, 
-          borderRadius: 1,
-          // Force all text to be dark for printing
-          '& *': {
-            colorAdjust: 'exact',
-            WebkitPrintColorAdjust: 'exact',
-            printColorAdjust: 'exact',
-          },
-          '& .MuiTypography-root': {
-            color: '#000000 !important',
-          },
-          '& .MuiTypography-colorTextSecondary': {
-            color: '#666666 !important',
-          },
-          '& .MuiPaper-root': {
-            backgroundColor: '#ffffff !important',
-          },
-          '& .MuiTableCell-root': {
-            color: '#000000 !important',
-            borderColor: '#e0e0e0 !important',
-          },
-          '& .MuiCard-root': {
-            backgroundColor: '#ffffff !important',
-          },
-          '& .MuiCardContent-root': {
-            backgroundColor: '#ffffff !important',
-          },
-          '& .MuiChip-label': {
-            color: '#000000 !important',
-          },
-          '& .MuiChip-root': {
-            borderColor: '#666666 !important',
-          },
-        }}
-      >
+      {/* Always a white page, on screen and in the PDF, tinted to the net's
+          logo colors (components/report/ReportPaper.tsx). */}
+      <ReportPaper id="net-report-content" accentColors={net.logo_accent_colors}>
         
-        {/* ========== REPORT TITLE HEADER ========== */}
-        <Box sx={{ textAlign: 'center', mb: 3, pb: 2, borderBottom: 2, borderColor: 'primary.main' }}>
-          <Typography variant="h3" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
-            <AppLogo size={48} variant="default" /> ECTLogger
-          </Typography>
-          <Typography variant="h5" fontWeight="medium" gutterBottom>
-            Net Report
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {window.location.origin}
-          </Typography>
-        </Box>
+        {/* ========== REPORT MASTHEAD ========== */}
+        {/* The net is the subject: its logo and name lead, tinted to the
+            logo's colors. ECTLogger is credited in ReportFooter below. */}
+        <ReportMasthead
+          logoUrl={net.logo_url}
+          eyebrow="Net Report"
+          title={net.name}
+          when={reportSpan?.when}
+          whenDetail={reportSpan?.detail}
+        />
 
-        {/* ========== SECTION 1: NET INFO HEADER ========== */}
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            {net.name}
+        {/* ========== SECTION 1: NET DETAILS ========== */}
+        {/* No status/ICS-309 badge row here. Reports are read after the net
+            has closed or been archived, so the status adds nothing, and the
+            ICS-309 log gets its own section below plus a download button for
+            net managers. Start/close times are in the masthead. */}
+        {net.description && (
+          <Typography variant="body1" color="text.secondary" paragraph sx={{ whiteSpace: 'pre-line' }}>
+            {net.description}
           </Typography>
-          {net.description && (
-            <Typography variant="body1" color="text.secondary" paragraph>
-              {net.description}
+        )}
+
+        {/* NCS Operators */}
+        {ncsOperators.length > 0 && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Net Control Station(s):
             </Typography>
-          )}
-          {/* No status/ICS-309 badge row here. Reports are read after the net
-              has closed or been archived, so the status adds nothing, and the
-              ICS-309 log gets its own section below plus a download button for
-              net managers. */}
-          <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', mb: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Started: {stats.started_at ? formatDateTime(stats.started_at, user?.prefer_utc || false) : '—'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Closed: {stats.closed_at ? formatDateTime(stats.closed_at, user?.prefer_utc || false) : '—'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Duration: {stats.duration_minutes ? formatDuration(stats.duration_minutes) : '—'}
+            <Typography variant="body2">
+              {ncsOperators.map(r => displayCallsign(r) || r.email).join(', ')}
             </Typography>
           </Box>
+        )}
 
-          {/* Frequencies */}
-          {net.frequencies.length > 0 && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Frequencies:
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {net.frequencies.map((freq) => (
-                  <Chip key={freq.id} label={getFrequencyLabel(freq)} size="small" variant="outlined" />
-                ))}
-              </Box>
+        {/* Frequencies */}
+        {net.frequencies.length > 0 && (
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Frequencies:
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {net.frequencies.map((freq) => (
+                <Chip key={freq.id} label={getFrequencyLabel(freq)} size="small" variant="outlined" />
+              ))}
             </Box>
-          )}
-
-          {/* NCS Operators */}
-          {ncsOperators.length > 0 && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Net Control Station(s):
-              </Typography>
-              <Typography variant="body2">
-                {ncsOperators.map(r => displayCallsign(r) || r.email).join(', ')}
-              </Typography>
-            </Box>
-          )}
-        </Paper>
+          </Box>
+        )}
 
         {/* ========== SECTION 2: STATISTICS SUMMARY ========== */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, mb: 2 }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TrendingUp /> Statistics Summary
-          </Typography>
-          {/* Labelled, not icon-only: an unlabelled icon relies on a hover
-              tooltip that never appears on a phone, which made these
-              effectively invisible. See DESIGN.md "Touch targets". */}
-          {!exporting && !pngExportingId && chartCount > 0 && (
-            <Box sx={{ ml: 'auto' }}>
-              <CardActionButton
-                icon={<DownloadIcon fontSize="small" />}
-                label="PNG"
-                tooltip="Download graphs as a PNG image"
-                onClick={() => handleExportPng('net-report-charts', 'Graphs')}
-              />
-            </Box>
-          )}
-          {pngExportingId === 'net-report-charts' && <CircularProgress size={18} sx={{ ml: 'auto' }} />}
-        </Box>
+        <ReportFigures
+          figures={[
+            { value: stats.total_check_ins, label: 'Total Check-ins' },
+            { value: stats.unique_callsigns, label: 'Unique Operators' },
+            { value: stats.rechecks, label: 'Re-checks' },
+            { value: stats.duration_minutes ? formatDuration(stats.duration_minutes) : '—', label: 'Duration' },
+          ]}
+        />
 
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={6} sm={3}>
-            <Card variant="outlined">
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <Typography variant="h4" fontWeight="bold" color="primary">
-                  {stats.total_check_ins}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Check-ins
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Card variant="outlined">
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <Typography variant="h4" fontWeight="bold" color="info.main">
-                  {stats.unique_callsigns}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Unique Operators
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Card variant="outlined">
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <Typography variant="h4" fontWeight="bold" color="warning.main">
-                  {stats.rechecks}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Re-checks
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Card variant="outlined">
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <Typography variant="h4" fontWeight="bold" color="secondary">
-                  {stats.duration_minutes ? formatDuration(stats.duration_minutes) : '—'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Duration
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        {/* Labelled, not icon-only: an unlabelled icon relies on a hover
+            tooltip that never appears on a phone, which made these
+            effectively invisible. See DESIGN.md "Touch targets". */}
+        <ReportSectionTitle
+          action={
+            <>
+              {!exporting && !pngExportingId && chartCount > 0 && (
+                <CardActionButton
+                  icon={<DownloadIcon fontSize="small" />}
+                  label="PNG"
+                  tooltip="Download graphs as a PNG image"
+                  onClick={() => handleExportPng('net-report-charts', 'Graphs')}
+                />
+              )}
+              {pngExportingId === 'net-report-charts' && <CircularProgress size={18} />}
+            </>
+          }
+        >
+          Graphs
+        </ReportSectionTitle>
 
         {/* Charts Row — all three charts fit one row */}
         {/* Pinned to the same export width as the map: stacked full-bleed at
@@ -1070,10 +1004,9 @@ const NetReport: React.FC = () => {
               }),
             } : undefined}
           >
-            <Box sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1, ...(isMapPngExport && { mt: 0, flexShrink: 0 }) }}>
-              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <MapIcon /> Check-in Map ({mappedCheckIns.length} locations)
-              </Typography>
+            <ReportSectionTitle
+              sx={{ mb: 2, ...(isMapPngExport && { mt: 0, flexShrink: 0 }) }}
+              action={<>
               {dualMapData && (
                 <Typography variant="caption" color="text.secondary">
                   {/* The panes stack for the PNG export, so "left/right" would
@@ -1100,7 +1033,10 @@ const NetReport: React.FC = () => {
                   </IconButton>
                 </Tooltip>
               )}
-            </Box>
+              </>}
+            >
+              Check-in Map ({mappedCheckIns.length} locations)
+            </ReportSectionTitle>
 
             {/* ---- Helper: shared marker list for a given MapContainer ---- */}
             {/* Rendered inline inside each MapContainer below */}
@@ -1296,22 +1232,22 @@ const NetReport: React.FC = () => {
 
         {/* ========== SECTION 4: CHECK-IN LOG ========== */}
         <Box id="net-report-checkin-log">
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, mb: 2 }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Assignment /> Check-in Log ({checkIns.length} event{checkIns.length !== 1 ? 's' : ''} &mdash; {stats.unique_callsigns} unique station{stats.unique_callsigns !== 1 ? 's' : ''}{stats.rechecks > 0 ? `, ${stats.rechecks} re-check${stats.rechecks !== 1 ? 's' : ''}` : ''})
-          </Typography>
-          {!exporting && !pngExportingId && (
-            <Box sx={{ ml: 'auto' }}>
+        <ReportSectionTitle
+          sx={{ mb: 2 }}
+          action={<>
+            {!exporting && !pngExportingId && (
               <CardActionButton
                 icon={<DownloadIcon fontSize="small" />}
                 label="PNG"
                 tooltip="Download the check-in list as a PNG image"
                 onClick={() => handleExportPng('net-report-checkin-log', 'CheckIn_List')}
               />
-            </Box>
-          )}
-          {pngExportingId === 'net-report-checkin-log' && <CircularProgress size={18} sx={{ ml: 'auto' }} />}
-        </Box>
+            )}
+            {pngExportingId === 'net-report-checkin-log' && <CircularProgress size={18} />}
+          </>}
+        >
+          Check-in Log ({checkIns.length} event{checkIns.length !== 1 ? 's' : ''} &mdash; {stats.unique_callsigns} unique station{stats.unique_callsigns !== 1 ? 's' : ''}{stats.rechecks > 0 ? `, ${stats.rechecks} re-check${stats.rechecks !== 1 ? 's' : ''}` : ''})
+        </ReportSectionTitle>
 
         <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
           <Table size="small">
@@ -1382,9 +1318,9 @@ const NetReport: React.FC = () => {
         {/* ========== SECTION 5: TOPIC OF THE WEEK (if enabled and responses exist) ========== */}
         {topicPrompt && (
           <>
-            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <TopicIcon /> Topic of the Week ({topicResponses.length} response{topicResponses.length !== 1 ? 's' : ''})
-            </Typography>
+            <ReportSectionTitle sx={{ mb: 2 }}>
+              Topic of the Week ({topicResponses.length} response{topicResponses.length !== 1 ? 's' : ''})
+            </ReportSectionTitle>
 
             <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
               <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
@@ -1421,9 +1357,9 @@ const NetReport: React.FC = () => {
         {/* ========== SECTION 6: POLL RESULTS (if poll enabled and responses exist) ========== */}
         {pollQuestion && pollResults.length > 0 && (
           <>
-            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <TopicIcon sx={{ transform: 'scaleX(-1)' }} /> Poll Results ({pollResults.reduce((s, r) => s + r.count, 0)} response{pollResults.reduce((s, r) => s + r.count, 0) !== 1 ? 's' : ''})
-            </Typography>
+            <ReportSectionTitle sx={{ mb: 2 }}>
+              Poll Results ({pollResults.reduce((s, r) => s + r.count, 0)} response{pollResults.reduce((s, r) => s + r.count, 0) !== 1 ? 's' : ''})
+            </ReportSectionTitle>
 
             <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
               <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
@@ -1472,9 +1408,9 @@ const NetReport: React.FC = () => {
         {/* ========== SECTION 7: CHAT MESSAGES (operator messages only) ========== */}
         {userChatMessages.length > 0 && (
           <>
-            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ChatIcon /> Chat Messages ({userChatMessages.length} message{userChatMessages.length !== 1 ? 's' : ''})
-            </Typography>
+            <ReportSectionTitle sx={{ mb: 2 }}>
+              Chat Messages ({userChatMessages.length} message{userChatMessages.length !== 1 ? 's' : ''})
+            </ReportSectionTitle>
             
             <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
               <Table size="small">
@@ -1508,9 +1444,9 @@ const NetReport: React.FC = () => {
         {/* ========== SECTION 8: SYSTEM LOG (automated event entries only) ========== */}
         {systemLogMessages.length > 0 && (
           <>
-            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <SystemLogIcon /> System Log ({systemLogMessages.length} event{systemLogMessages.length !== 1 ? 's' : ''})
-            </Typography>
+            <ReportSectionTitle sx={{ mb: 2 }}>
+              System Log ({systemLogMessages.length} event{systemLogMessages.length !== 1 ? 's' : ''})
+            </ReportSectionTitle>
             
             <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
               <Table size="small">
@@ -1545,9 +1481,9 @@ const NetReport: React.FC = () => {
             section 4.5. */}
         {net.ics309_enabled && ics309LogData && (
           <>
-            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Assignment /> ICS-309 Communications Log
-            </Typography>
+            <ReportSectionTitle sx={{ mb: 2 }}>
+              ICS-309 Communications Log
+            </ReportSectionTitle>
 
             <Paper variant="outlined" sx={{ p: 2, mb: 3, overflowX: 'auto' }}>
               <ICS309PrintView id="net-report-ics309-view" data={ics309LogData} />
@@ -1561,13 +1497,11 @@ const NetReport: React.FC = () => {
             in a communications log format (see docs/ROADMAP.md Phase 3). */}
         {net.propagation_logging_enabled && (
           <>
-            <Box sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <HearingIcon /> Station Coverage ({canHearReports.length} report{canHearReports.length !== 1 ? 's' : ''})
-              </Typography>
-              {canHearReports.length > 0 && !exporting && (
+            <ReportSectionTitle
+              sx={{ mb: 2 }}
+              action={canHearReports.length > 0 && !exporting && (
                 <FormControlLabel
-                  sx={{ ml: 'auto', mr: 0 }}
+                  sx={{ mr: 0 }}
                   control={
                     <Switch
                       size="small"
@@ -1578,7 +1512,9 @@ const NetReport: React.FC = () => {
                   label={<Typography variant="body2">Include per-station maps</Typography>}
                 />
               )}
-            </Box>
+            >
+              Station Coverage ({canHearReports.length} report{canHearReports.length !== 1 ? 's' : ''})
+            </ReportSectionTitle>
 
             <Box sx={{ mb: 3 }}>
               <CoverageReport
@@ -1672,12 +1608,8 @@ const NetReport: React.FC = () => {
         )}
 
         {/* ========== FOOTER ========== */}
-        <Box sx={{ textAlign: 'center', pt: 2, borderTop: 1, borderColor: 'divider' }}>
-          <Typography variant="caption" color="text.secondary">
-            Generated by ECTLogger on {formatDateTime(new Date().toISOString(), user?.prefer_utc || false)}
-          </Typography>
-        </Box>
-      </Box>
+        <ReportFooter generatedAt={formatDateTime(new Date().toISOString(), user?.prefer_utc || false)} />
+      </ReportPaper>
 
       {/* ========== FULLSCREEN EXPAND DIALOG ========== */}
       <Dialog fullScreen open={expandedCard !== null} onClose={() => setExpandedCard(null)}>

@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -8,6 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user_optional
+from app.logo_accent import logo_accent_colors
 from app.models import CheckIn, Net, NetRole, NetTemplate, TrafficLogEntry, User
 from app.schemas import (
     NetStatsResponse,
@@ -367,6 +369,12 @@ async def get_template_statistics(
         "template_id": template_id,
         "template_name": template.name,
         "template_owner_id": template.owner_id,
+        # Report masthead: the schedule's logo, its accent colors, and its
+        # repeat pattern (the frontend formats it with formatSchedule).
+        "logo_url": template.logo_url,
+        "logo_accent_colors": logo_accent_colors(template.logo_url),
+        "schedule_type": template.schedule_type,
+        "schedule_config": json.loads(template.schedule_config) if template.schedule_config else {},
         "filter_days": days,
         "total_instances": total_instances,
         "total_check_ins": total_check_ins,

@@ -102,3 +102,43 @@ export const formatTimeWithDate = (
   return `${date.toLocaleTimeString()} ${shortTimeZone}`;
 };
 
+
+// ========== REPORT MASTHEAD DATES ==========
+
+const toDate = (dateString: string): Date =>
+  new Date(dateString.endsWith('Z') ? dateString : dateString + 'Z');
+
+/**
+ * The date line under a report's title: `when` is the long date the net ran
+ * ("Monday, September 21, 2026"), `detail` the time span ("5:52 – 6:23 PM EDT").
+ * A net that closed on a later day names the end date in the span.
+ */
+export const formatReportSpan = (
+  start: string,
+  end: string | null | undefined,
+  preferUtc: boolean = false
+): { when: string; detail: string } => {
+  const tz = preferUtc ? { timeZone: 'UTC' } : {};
+  const s = toDate(start);
+  const when = s.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', ...tz });
+  const time = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', ...tz });
+  const zone = preferUtc
+    ? 'UTC'
+    : new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).formatToParts(s).find(p => p.type === 'timeZoneName')?.value || '';
+  if (!end) {
+    return { when, detail: `Started ${time(s)} ${zone}` };
+  }
+  const e = toDate(end);
+  const dayKey = (d: Date) => d.toLocaleDateString('en-US', tz);
+  if (dayKey(s) !== dayKey(e)) {
+    const endDay = e.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', ...tz });
+    return { when, detail: `${time(s)} – ${endDay}, ${time(e)} ${zone}` };
+  }
+  return { when, detail: `${time(s)} – ${time(e)} ${zone}` };
+};
+
+/** Short date for a PDF page footer: "Sep 21, 2026". */
+export const formatReportShortDate = (dateString: string, preferUtc: boolean = false): string =>
+  toDate(dateString).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric', ...(preferUtc ? { timeZone: 'UTC' } : {}),
+  });

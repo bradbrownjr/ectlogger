@@ -4,6 +4,7 @@ from datetime import datetime
 from app.models import UserRole, NetStatus, StationStatus, FormDisposition, TrafficAction, RelayMethod, TrafficTestCategory
 from app.auth import validate_password_strength
 from app.utils import normalize_email
+from app.logo_accent import logo_accent_colors
 import json
 import re
 
@@ -587,6 +588,9 @@ class NetResponse(NetBase):
     # Uploaded via POST /nets/{id}/logo, not settable through NetCreate/NetUpdate
     # (mirrors User.avatar_url) -- see routers/nets_core.py.
     logo_url: Optional[str] = None
+    # Report accent colors picked from the logo file (app/logo_accent.py):
+    # 0-2 standard palette hex values, [] = use the app's own primary color.
+    logo_accent_colors: List[str] = []
     template_id: Optional[int] = None  # ID of the template this net was created from
     active_frequency_id: Optional[int] = None
     field_config: Optional[dict] = None
@@ -654,6 +658,7 @@ class NetResponse(NetBase):
             'ncs_callsign': ncs_callsign,
             'ncs_name': ncs_name,
             'logo_url': net.logo_url,
+            'logo_accent_colors': logo_accent_colors(net.logo_url),
             'template_id': net.template_id,
             'active_frequency_id': net.active_frequency_id,
             'field_config': json.loads(net.field_config) if net.field_config else None,
@@ -790,6 +795,7 @@ class NetTemplateResponse(NetTemplateBase):
     # Uploaded via POST /templates/{id}/logo, not settable through
     # NetTemplateCreate/Update (mirrors User.avatar_url and NetResponse.logo_url).
     logo_url: Optional[str] = None
+    logo_accent_colors: List[str] = []  # see NetResponse.logo_accent_colors
     is_active: bool
     created_at: datetime
     frequencies: List[FrequencyResponse] = []
@@ -821,6 +827,7 @@ class NetTemplateResponse(NetTemplateBase):
             'fifth_week_user_callsign': template.fifth_week_user.callsign if template.fifth_week_user else None,
             'fifth_week_user_name': template.fifth_week_user.name if template.fifth_week_user else None,
             'logo_url': template.logo_url,
+            'logo_accent_colors': logo_accent_colors(template.logo_url),
             'field_config': json.loads(template.field_config) if template.field_config else None,
             'schedule_type': template.schedule_type,
             'schedule_config': json.loads(template.schedule_config) if template.schedule_config else {},

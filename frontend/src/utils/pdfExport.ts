@@ -24,7 +24,49 @@ export interface PdfExportOptions {
   usePageBreaks?: boolean;
   /** DOM capture strategy: clone (default) or live element */
   captureMode?: 'clone' | 'live';
+  /**
+   * Running footer drawn on every page: this label on the left (e.g. the
+   * net name and date) and "Page X of Y" on the right, so a page separated
+   * from the rest of a printed report still says what it belongs to.
+   * Reserves a band at the bottom of each page so content never runs under it.
+   */
+  pageFooter?: string;
 }
+
+// Height reserved above the bottom margin for the running footer, in mm.
+const PAGE_FOOTER_BAND_MM = 7;
+
+/**
+ * Draw the running footer on every page of a finished PDF. Text is drawn by
+ * jsPDF, not captured from the page, so it uses jsPDF's built-in Helvetica.
+ */
+const drawPageFooters = (
+  pdf: jsPDF,
+  label: string,
+  pageWidth: number,
+  pageHeight: number,
+  margin: number
+): void => {
+  const total = pdf.getNumberOfPages();
+  const ruleY = pageHeight - margin - PAGE_FOOTER_BAND_MM + 2;
+  const textY = ruleY + 4;
+  for (let page = 1; page <= total; page++) {
+    pdf.setPage(page);
+    pdf.setDrawColor(221, 224, 230);
+    pdf.setLineWidth(0.2);
+    pdf.line(margin, ruleY, pageWidth - margin, ruleY);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(123, 129, 144);
+    const pageText = `Page ${page} of ${total}`;
+    const labelWidth = pageWidth - margin * 2 - pdf.getTextWidth(pageText) - 6;
+    // A very long net name is cut to one line rather than colliding with the page number.
+    const fitted = (pdf.splitTextToSize(label, labelWidth) as string[])[0] ?? '';
+    const shown = fitted.length < label.length ? `${fitted}...` : fitted;
+    pdf.text(shown, margin, textY);
+    pdf.text(pageText, pageWidth - margin, textY, { align: 'right' });
+  }
+};
 
 /**
  * Parse a computed CSS color ("rgb(r, g, b)" / "rgba(r, g, b, a)") into its
@@ -259,6 +301,7 @@ export const exportToPdf = async (
     scale = 2,
     margin = 10,
     captureMode = 'clone',
+    pageFooter,
   } = options;
 
   try {
@@ -282,7 +325,7 @@ export const exportToPdf = async (
     const pageWidth = orientation === 'portrait' ? 210 : 297;
     const pageHeight = orientation === 'portrait' ? 297 : 210;
     const contentWidth = pageWidth - (margin * 2);
-    const contentHeight = pageHeight - (margin * 2);
+    const contentHeight = pageHeight - (margin * 2) - (pageFooter ? PAGE_FOOTER_BAND_MM : 0);
 
     const canvas = await captureElementAsCanvas(element, scale, captureMode);
 
@@ -330,6 +373,10 @@ export const exportToPdf = async (
 
       // Add the slice to the PDF at the top margin
       pdf.addImage(pageImgData, 'JPEG', margin, margin, contentWidth, sliceHeightMm);
+    }
+
+    if (pageFooter) {
+      drawPageFooters(pdf, pageFooter, pageWidth, pageHeight, margin);
     }
 
     // Generate filename

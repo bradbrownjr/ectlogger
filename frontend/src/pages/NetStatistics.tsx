@@ -73,7 +73,7 @@ import { formatDateTime } from '../utils/dateUtils';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import CardActionButton from '../components/CardActionButton';
-import { exportElementToPdf, exportElementToPng } from '../utils/pdfExport';
+import { exportElementToPng } from '../utils/pdfExport';
 import { MAP_TILE_URL, MAP_TILE_ATTRIBUTION, getMapTileClassName } from '../utils/mapTiles';
 import { computeCheckInTimeline } from '../utils/checkInTimeline';
 
@@ -205,7 +205,6 @@ const NetStatistics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<NetStats | null>(null);
-  const [exporting, setExporting] = useState(false);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   // Which widget is currently being captured to PNG, keyed by its element id --
   // lets each widget's own download button show its own spinner independently.
@@ -230,22 +229,10 @@ const NetStatistics: React.FC = () => {
     getStatusLabel
   );
 
-  // Handle PDF export
-  const handleExportPdf = async () => {
-    setExporting(true);
-    try {
-      const filename = stats?.net_name 
-        ? `${stats.net_name.replace(/[^a-zA-Z0-9]/g, '_')}_Statistics`
-        : 'Net_Statistics';
-      await exportElementToPdf('net-stats-content', {
-        filename,
-        orientation: 'portrait',
-      });
-    } catch (err) {
-      console.error('Failed to export PDF:', err);
-    } finally {
-      setExporting(false);
-    }
+  // PDF export is the net report's: one report layout for a single net,
+  // not a second one built here. ?export=pdf starts it once the report loads.
+  const handleExportPdf = () => {
+    if (stats) navigate(`/nets/${stats.net_id}/report?export=pdf`);
   };
 
   // Download a single widget (a chart, the map, or the operators table) as
@@ -454,16 +441,17 @@ const NetStatistics: React.FC = () => {
             )}
           </Box>
         </Box>
-        {/* Export controls match NetReport.tsx exactly -- same labels, variant
-            and progress treatment, per the DESIGN.md symmetry rule. */}
-        <Tooltip title="Export to PDF">
+        {/* Export controls match NetReport.tsx exactly -- same labels and
+            variant, per the DESIGN.md symmetry rule. Export PDF opens the net
+            report and exports it from there. */}
+        <Tooltip title="Export the net report to PDF">
           <Button
             variant="contained"
             onClick={handleExportPdf}
-            disabled={exporting || exportingAllPngs}
-            startIcon={exporting ? <CircularProgress size={16} /> : <PictureAsPdf />}
+            disabled={exportingAllPngs}
+            startIcon={<PictureAsPdf />}
           >
-            {exporting ? 'Exporting...' : 'Export PDF'}
+            Export PDF
           </Button>
         </Tooltip>
         {/* Downloads each card as its own PNG, for social media posts. The
@@ -472,7 +460,7 @@ const NetStatistics: React.FC = () => {
           <Button
             variant="contained"
             onClick={handleExportAllPngs}
-            disabled={exporting || exportingAllPngs}
+            disabled={exportingAllPngs}
             startIcon={exportingAllPngs ? <CircularProgress size={16} /> : <ImageIcon />}
           >
             {exportingAllPngs ? 'Exporting...' : 'Export PNG'}
@@ -497,7 +485,6 @@ const NetStatistics: React.FC = () => {
         )}
       </Box>
 
-      {/* Content wrapper for PDF export */}
       <Box id="net-stats-content">
         {/* Summary Cards */}
         <Grid container spacing={2} sx={{ mb: 4 }}>
@@ -583,7 +570,7 @@ const NetStatistics: React.FC = () => {
             <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <TrendingUp /> Graphs
             </Typography>
-            {!exporting && !pngExportingId && (
+            {!pngExportingId && (
               <Box sx={{ ml: 'auto' }}>
                 <CardActionButton
                   icon={<DownloadIcon fontSize="small" />}
@@ -630,9 +617,7 @@ const NetStatistics: React.FC = () => {
             <Paper id="net-stats-chart-status" sx={{ p: 3, height: '100%' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <Typography variant="h6">Check-in Status</Typography>
-                {/* Hidden for a PDF export too: the PDF captures
-                    net-stats-content, which contains every card. */}
-                {!exporting && !pngExportingId && (
+                {!pngExportingId && (
                   <Tooltip title="Expand">
                     <IconButton size="small" onClick={() => setExpandedCard('status')} sx={{ ml: 'auto' }}>
                       <FullscreenIcon fontSize="small" />
@@ -674,7 +659,7 @@ const NetStatistics: React.FC = () => {
             <Paper id="net-stats-chart-activity" sx={{ p: 3, height: '100%' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                 <Typography variant="h6">Check-in Activity</Typography>
-                {!exporting && !pngExportingId && (
+                {!pngExportingId && (
                   <Tooltip title="Expand">
                     <IconButton size="small" onClick={() => setExpandedCard('activity')} sx={{ ml: 'auto' }}>
                       <FullscreenIcon fontSize="small" />
@@ -732,7 +717,7 @@ const NetStatistics: React.FC = () => {
             <Paper id="net-stats-chart-frequency" sx={{ p: 3, height: '100%' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <Typography variant="h6">Check-ins by Frequency</Typography>
-                {!exporting && !pngExportingId && (
+                {!pngExportingId && (
                   <Tooltip title="Expand">
                     <IconButton size="small" onClick={() => setExpandedCard('frequency')} sx={{ ml: 'auto' }}>
                       <FullscreenIcon fontSize="small" />
@@ -826,7 +811,7 @@ const NetStatistics: React.FC = () => {
                 )}
                 <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   {mapLoading && <CircularProgress size={14} />}
-                  {mappedCheckIns.length > 0 && !mapLoading && !exporting && !pngExportingId && (
+                  {mappedCheckIns.length > 0 && !mapLoading && !pngExportingId && (
                     <>
                     <CardActionButton
                       icon={<DownloadIcon fontSize="small" />}
@@ -971,7 +956,7 @@ const NetStatistics: React.FC = () => {
               <Typography variant="h6">
                 Operators ({stats.top_operators.length})
               </Typography>
-              {!exporting && !pngExportingId && (
+              {!pngExportingId && (
                 <Box sx={{ ml: 'auto' }}>
                   <CardActionButton
                     icon={<DownloadIcon fontSize="small" />}

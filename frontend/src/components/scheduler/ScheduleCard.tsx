@@ -114,7 +114,8 @@ export const computeNextOccurrence = (schedule: Schedule): number => {
   return Infinity;
 };
 
-export const formatSchedule = (schedule: Schedule): string => {
+// Only reads the recurrence fields, so the schedule report can pass just those.
+export const formatSchedule = (schedule: Pick<Schedule, 'schedule_type' | 'schedule_config'>): string => {
   if (!schedule.schedule_type || schedule.schedule_type === 'ad_hoc') {
     return 'Ad-hoc (no recurring schedule)';
   }
