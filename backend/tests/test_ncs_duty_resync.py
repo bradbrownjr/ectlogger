@@ -29,10 +29,20 @@ from app.routers.ncs_schedule import stamp_rotation_anchor
 
 
 def _next_sunday_1400() -> datetime:
-    """A real future occurrence, well past resync's `scheduled_start_time > now` filter."""
+    """The template's very next occurrence, strictly after now.
+
+    Must be the *next* one, not merely a future one: re-anchoring hands the first
+    occurrence after the edit to the new position 1, so skipping today's 14:00 on a
+    Sunday morning (as this helper once did) tested the occurrence after that one,
+    which the rotation correctly gives back to position 2.
+    """
     now = datetime.utcnow()
-    days_ahead = (6 - now.weekday()) % 7 or 7  # Monday=0..Sunday=6; always strictly future
-    return (now + timedelta(days=days_ahead)).replace(hour=14, minute=0, second=0, microsecond=0)
+    candidate = (now + timedelta(days=(6 - now.weekday()) % 7)).replace(
+        hour=14, minute=0, second=0, microsecond=0
+    )  # Monday=0..Sunday=6
+    if candidate <= now:
+        candidate += timedelta(days=7)
+    return candidate
 
 
 async def _template_with_two_members(db, user_a_id: int, user_b_id: int) -> NetTemplate:

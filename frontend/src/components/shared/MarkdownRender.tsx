@@ -66,7 +66,7 @@ const MarkdownRender: React.FC<MarkdownRenderProps> = ({ content, emptyText, var
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks, remarkFlexibleMarkers]}
         components={{
-          a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+          a: ({ node: _node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
         }}
       >
         {normalizeMarkdownDelimiters(content)}
