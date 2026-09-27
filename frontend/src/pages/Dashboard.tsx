@@ -60,14 +60,20 @@ import ClearIcon from '@mui/icons-material/Clear';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import EmailIcon from '@mui/icons-material/Email';
+import CampaignIcon from '@mui/icons-material/Campaign';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import CircularProgress from '@mui/material/CircularProgress';
-import { netApi } from '../services/api';
+import { netApi, templateApi } from '../services/api';
 import NCSStaffModal from '../components/NCSStaffModal';
 import api from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
 import NetCard, { Net, getStatusColor } from '../components/dashboard/NetCard';
+import type { Schedule } from '../components/scheduler/ScheduleCard';
+import ScheduleAnnouncementsDialog from '../components/scheduler/ScheduleAnnouncementsDialog';
+import { setScheduleSubscription } from '../utils/scheduleSubscription';
 import { useFavorites } from '../hooks/useFavorites';
 import useAccountSortOrder from '../hooks/useAccountSortOrder';
 import { getNetActions } from '../utils/netActions';
@@ -96,6 +102,12 @@ const Dashboard: React.FC = () => {
   const [viewMode, setViewMode] = useLocalStorage<'card' | 'list'>(STORAGE_KEYS.DASHBOARD_VIEW_MODE, 'card');
   const [showFilter, setShowFilter] = useState(false);
   const [netFilter, setNetFilter] = useState('');
+  // Each net's schedule, by schedule id: the net list carries neither the
+  // viewer's subscription nor the schedule's announcements, and the public
+  // schedule list already has both.
+  const [schedulesById, setSchedulesById] = useState<Map<number, Schedule>>(new Map());
+  // List view's announcements dialog (card view keeps its own per card).
+  const [announcementsSchedule, setAnnouncementsSchedule] = useState<Schedule | null>(null);
   // Email subscribers dialog state
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [emailNet, setEmailNet] = useState<Net | null>(null);
@@ -124,7 +136,25 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchNets();
+    fetchSchedules();
   }, [location.key]);
+
+  const fetchSchedules = async () => {
+    try {
+      // include_inactive: a net can outlive its schedule being switched off.
+      const response = await templateApi.list({ include_inactive: true });
+      setSchedulesById(new Map(response.data.map((s: Schedule) => [s.id, s])));
+    } catch (error) {
+      console.error('Failed to fetch schedules:', error);
+    }
+  };
+
+  const scheduleFor = (net: Net): Schedule | undefined =>
+    net.template_id != null ? schedulesById.get(net.template_id) : undefined;
+
+  const handleSetSubscription = async (scheduleId: number, subscribe: boolean) => {
+    if (await setScheduleSubscription(scheduleId, subscribe)) fetchSchedules();
+  };
 
   const fetchNets = async () => {
     try {
@@ -460,6 +490,9 @@ const Dashboard: React.FC = () => {
             onEmailClick={() => handleEmailClick(net)}
             onExportCSV={() => handleExportCSV(net)}
             onArchiveNet={() => handleArchiveNet(net.id)}
+            schedule={scheduleFor(net)}
+            isAuthenticated={isAuthenticated}
+            onSetSubscription={handleSetSubscription}
           />
         </Box>
       ))}
@@ -541,6 +574,30 @@ const Dashboard: React.FC = () => {
                     <GroupsIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
+                {/* Schedule announcements - only when the net's schedule has some */}
+                {!!scheduleFor(net)?.announcements?.trim() && (
+                  <Tooltip title="Announcements">
+                    <IconButton size="small" onClick={() => setAnnouncementsSchedule(scheduleFor(net)!)}>
+                      <CampaignIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {/* Subscribe to the net's schedule - signed-in users, scheduled nets only */}
+                {isAuthenticated && scheduleFor(net) && (
+                  scheduleFor(net)!.is_subscribed ? (
+                    <Tooltip title="Unsubscribe">
+                      <IconButton size="small" color="primary" onClick={() => handleSetSubscription(net.template_id!, false)}>
+                        <NotificationsActiveIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip title="Subscribe">
+                      <IconButton size="small" onClick={() => handleSetSubscription(net.template_id!, true)}>
+                        <NotificationsOffIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )
+                )}
                 {/* Active net actions */}
                 {(net.status === 'active' || net.status === 'lobby') && (
                   <Tooltip title="Statistics">
@@ -766,6 +823,19 @@ const Dashboard: React.FC = () => {
         renderCardView()
       ) : (
         renderListView()
+      )}
+
+      {/* ========== ANNOUNCEMENTS DIALOG (list view) ========== */}
+      {/* Card view mounts its own inside each NetCard. */}
+      {announcementsSchedule && (
+        <ScheduleAnnouncementsDialog
+          open
+          onClose={() => setAnnouncementsSchedule(null)}
+          scheduleName={announcementsSchedule.name}
+          announcements={announcementsSchedule.announcements || ''}
+          logoUrl={announcementsSchedule.logo_url}
+          logoAccentColors={announcementsSchedule.logo_accent_colors}
+        />
       )}
 
       {/* ========== FLOATING ACTION BUTTONS ========== */}

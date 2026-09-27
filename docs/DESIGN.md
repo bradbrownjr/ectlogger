@@ -859,6 +859,17 @@ broke unpredictably at card widths.
 | **Management** (first in DOM) | Mutating actions — Create, Edit, Cancel, Delete, Start, Email, Archive, Export, Report | Only users passing the card's `canManage` / `isOwnerOrAdmin` / `can_create_net` gate |
 | **Standard** (second in DOM) | View-only actions — View, Staff, Stats, Info, Subscribe/Unsubscribe | Everyone, including guests |
 
+Subscribe/Unsubscribe on a net card manages the net's *schedule* subscription,
+the same one as the schedule card, via the shared `ScheduleSubscribeButton`.
+
+**Announcements is an info-list line, not a button.** Both cards show a
+labelled `ScheduleAnnouncementsLink` (megaphone icon + "Announcements" link)
+at the end of the info list, only when the schedule's announcements are not
+blank. It lives there because the standard row is already full on a typical
+364 px card: a fifth labelled button wrapped it to a second line. It opens
+`ScheduleAnnouncementsDialog`, drawn on the report parts (`ReportPaper`,
+`ReportMasthead`, `ReportFooter`) with an Export PDF button.
+
 Managers get their controls first — leading the row on a wide card, on the top
 line on a narrow one — instead of hunting past the view-only buttons everyone
 else sees. A standard user sees only the second group, which is why it must stay

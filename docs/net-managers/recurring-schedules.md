@@ -4,7 +4,7 @@ summary: Turning a net into a schedule, the recurrence options, what each net it
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-09-27
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/recurring-schedules/
@@ -44,7 +44,7 @@ Net staff, the rotation, and subscribers are never copied onto the net as a one-
 
 ## Subscriptions
 
-Anyone can subscribe to a schedule from its **Subscribe** button in the Scheduler, which is the same bell used for "notify me" elsewhere in ECTLogger. A subscriber can opt into the net starting, the net closing (with the log attached), and a reminder before it begins, each controlled from their own [profile](/docs/operators/account-and-profile/) notification settings, independent of whether they're staff. Net staff get their own operational reminder regardless of whether they've subscribed, since running the net is a duty, not a preference. Schedule owners and co-managers can see the subscriber list from the schedule's **Net Staff** dialog or the Staff tab.
+Anyone can subscribe to a schedule from its **Subscribe** button in the Scheduler, or from the same button on the dashboard card of any net the schedule created, which is the same bell used for "notify me" elsewhere in ECTLogger. A subscriber can opt into the net starting, the net closing (with the log attached), and a reminder before it begins, each controlled from their own [profile](/docs/operators/account-and-profile/) notification settings, independent of whether they're staff. Net staff get their own operational reminder regardless of whether they've subscribed, since running the net is a duty, not a preference. Schedule owners and co-managers can see the subscriber list from the schedule's **Net Staff** dialog or the Staff tab.
 
 A schedule can also be followed as a calendar or RSS feed without subscribing at all; see [Feeds](/docs/reference/feeds/).
 

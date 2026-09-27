@@ -13,7 +13,6 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PersonIcon from '@mui/icons-material/Person';
 import GroupsIcon from '@mui/icons-material/Groups';
@@ -27,6 +26,8 @@ import Avatar from '@mui/material/Avatar';
 import ExpandableDescription from '../ExpandableDescription';
 import CardActionButton from '../CardActionButton';
 import ImageLightbox from '../ImageLightbox';
+import ScheduleAnnouncementsLink from './ScheduleAnnouncementsLink';
+import ScheduleSubscribeButton from './ScheduleSubscribeButton';
 
 // ---- Types ----
 
@@ -43,6 +44,8 @@ export interface Schedule {
   description: string;
   info_url?: string;
   logo_url?: string | null;
+  logo_accent_colors?: string[];
+  announcements?: string | null;
   owner_id: number;
   owner_callsign?: string | null;
   owner_name?: string | null;
@@ -293,6 +296,14 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
               {schedule.subscriber_count} subscriber{schedule.subscriber_count !== 1 ? 's' : ''}
             </Typography>
           </Box>
+
+          {/* ---- Announcements (only when the schedule has some) ---- */}
+          <ScheduleAnnouncementsLink
+            scheduleName={schedule.name}
+            announcements={schedule.announcements}
+            logoUrl={schedule.logo_url}
+            logoAccentColors={schedule.logo_accent_colors}
+          />
         </Box>
       </CardContent>
 
@@ -377,22 +388,11 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
             onClick={onOpenRotationModal}
           />
           {isAuthenticated && (
-            schedule.is_subscribed ? (
-              <CardActionButton
-                icon={<NotificationsActiveIcon />}
-                label="Unsubscribe"
-                color="primary"
-                tooltip="Unsubscribe from notifications"
-                onClick={onUnsubscribe}
-              />
-            ) : (
-              <CardActionButton
-                icon={<NotificationsOffIcon />}
-                label="Subscribe"
-                tooltip="Subscribe to notifications"
-                onClick={onSubscribe}
-              />
-            )
+            <ScheduleSubscribeButton
+              isSubscribed={schedule.is_subscribed}
+              onSubscribe={onSubscribe}
+              onUnsubscribe={onUnsubscribe}
+            />
           )}
         </Box>
       </CardActions>

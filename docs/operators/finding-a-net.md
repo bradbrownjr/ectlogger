@@ -4,7 +4,7 @@ summary: The dashboard, what each net status means, and how to find one that has
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-09-27
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/finding-a-net/
@@ -57,6 +57,14 @@ Opening a closed net still shows its full check-in list and report; you don't ne
 ## Starring a net you check into often
 
 Click the star icon on a net card to favorite it. Favorited nets always sort to the top of the dashboard, ahead of even an Active net, so the one you show up to every Tuesday doesn't get lost in a long list. This is remembered on the device and browser you set it in, not synced to your account, so it won't follow you if you sign in from a different phone or computer. The star belongs to the net's schedule, so starring tonight's net keeps next week's net from the same schedule at the top too.
+
+## Catching up on a schedule's news
+
+When a net's schedule has standing announcements (club news, upcoming exam sessions, network changes), its card shows an **Announcements** line under the other details, on both the dashboard and the Schedule page. Click it to read them without joining the net. **Export PDF** at the bottom saves them as a printable page. You don't need to sign in for either.
+
+## Getting emails about a net
+
+Once you're signed in, a net card from a schedule has a **Subscribe** button. It subscribes you to the schedule, not just tonight's net, so you hear about every net it runs. The button turns into **Unsubscribe** once you're subscribed, and it's the same subscription as the one on the Schedule page, so you can change it from either place. Which emails you actually get (the net starting, the net closing with its log, a reminder beforehand) is up to your [profile's notification settings](/docs/operators/account-and-profile/).
 
 ## Finding a net that runs on a schedule
 

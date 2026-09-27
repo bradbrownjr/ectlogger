@@ -30,6 +30,9 @@ import EmailIcon from '@mui/icons-material/Email';
 import Avatar from '@mui/material/Avatar';
 import ExpandableDescription from '../ExpandableDescription';
 import CardActionButton from '../CardActionButton';
+import type { Schedule } from '../scheduler/ScheduleCard';
+import ScheduleAnnouncementsLink from '../scheduler/ScheduleAnnouncementsLink';
+import ScheduleSubscribeButton from '../scheduler/ScheduleSubscribeButton';
 import ImageLightbox from '../ImageLightbox';
 import { formatDateTime } from '../../utils/dateUtils';
 import { NetActions } from '../../utils/netActions';
@@ -100,6 +103,10 @@ interface NetCardProps {
   onEmailClick: () => void;
   onExportCSV: () => void;
   onArchiveNet: () => void;
+  /** The net's schedule, when it has one: drives Announcements and Subscribe. */
+  schedule?: Schedule;
+  isAuthenticated: boolean;
+  onSetSubscription: (scheduleId: number, subscribe: boolean) => void;
 }
 
 // ========== NET CARD COMPONENT ==========
@@ -118,6 +125,9 @@ const NetCard: React.FC<NetCardProps> = ({
   onEmailClick,
   onExportCSV,
   onArchiveNet,
+  schedule,
+  isAuthenticated,
+  onSetSubscription,
 }) => {
   const navigate = useNavigate();
   const isFavorite = net.template_id != null && favorites.has(net.template_id);
@@ -238,6 +248,16 @@ const NetCard: React.FC<NetCardProps> = ({
                 {net.ncs_name && ` (${net.ncs_name})`}
               </Typography>
             </Box>
+          )}
+
+          {/* ---- Schedule announcements (only when the schedule has some) ---- */}
+          {schedule && (
+            <ScheduleAnnouncementsLink
+              scheduleName={schedule.name}
+              announcements={schedule.announcements}
+              logoUrl={schedule.logo_url}
+              logoAccentColors={schedule.logo_accent_colors}
+            />
           )}
         </Box>
       </CardContent>
@@ -393,6 +413,15 @@ const NetCard: React.FC<NetCardProps> = ({
               label="Info"
               tooltip="Net/Club info"
               onClick={() => window.open(net.info_url, '_blank')}
+            />
+          )}
+          {/* Subscribes to the net's schedule, so the same subscription can
+              be managed wherever that schedule's nets are listed. */}
+          {isAuthenticated && schedule && (
+            <ScheduleSubscribeButton
+              isSubscribed={schedule.is_subscribed}
+              onSubscribe={() => onSetSubscription(schedule.id, true)}
+              onUnsubscribe={() => onSetSubscription(schedule.id, false)}
             />
           )}
         </Box>

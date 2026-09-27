@@ -1,6 +1,22 @@
 {
-  "version": "2026.09.26b",
+  "version": "2026.09.27",
   "entries": [
+    {
+      "version": "2026.09.27",
+      "date": "2026-09-27",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Schedules: Follow a net from its card — Net cards on the dashboard now have their own Subscribe button, so you can sign up for a net's emails wherever you see it listed. When a net's schedule has standing announcements, its card on the dashboard and on the Schedule page shows an Announcements link, so you can catch up on club news without joining the net, and save a copy as a PDF.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.26b",
       "date": "2026-09-26",

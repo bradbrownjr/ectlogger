@@ -61,11 +61,14 @@ import ClearIcon from '@mui/icons-material/Clear';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import RssFeedIcon from '@mui/icons-material/RssFeed';
+import CampaignIcon from '@mui/icons-material/Campaign';
 import { templateApi, netApi as _netApi, ncsRotationApi, BACKEND_ORIGIN } from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
+import { setScheduleSubscription } from '../utils/scheduleSubscription';
 import { useAuth } from '../contexts/AuthContext';
 import NCSStaffModal from '../components/NCSStaffModal';
 import ScheduleCard, { Schedule, computeNextOccurrence, formatSchedule } from '../components/scheduler/ScheduleCard';
+import ScheduleAnnouncementsDialog from '../components/scheduler/ScheduleAnnouncementsDialog';
 import { useFavorites } from '../hooks/useFavorites';
 import useAccountSortOrder from '../hooks/useAccountSortOrder';
 
@@ -83,6 +86,8 @@ const Scheduler: React.FC = () => {
   const [mergeMode, setMergeMode] = useState(false);
   const [mergeSelected, setMergeSelected] = useState<Set<number>>(new Set());
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  // List view's announcements dialog (card view keeps its own per card).
+  const [announcementsSchedule, setAnnouncementsSchedule] = useState<Schedule | null>(null);
   const [mergeTargetId, setMergeTargetId] = useState<number | null>(null);
   const [mergePreview, setMergePreview] = useState<any>(null);
   const [mergeLoading, setMergeLoading] = useState(false);
@@ -144,23 +149,12 @@ const Scheduler: React.FC = () => {
   };
 
   const handleSubscribe = async (scheduleId: number) => {
-    try {
-      await templateApi.subscribe(scheduleId);
-      fetchSchedules(); // Refresh to update subscription status and subscriber count
-    } catch (error: any) {
-      console.error('Failed to subscribe:', error);
-      alert(getErrorMessage(error, 'Failed to subscribe'));
-    }
+    // Refresh to update subscription status and subscriber count
+    if (await setScheduleSubscription(scheduleId, true)) fetchSchedules();
   };
 
   const handleUnsubscribe = async (scheduleId: number) => {
-    try {
-      await templateApi.unsubscribe(scheduleId);
-      fetchSchedules(); // Refresh to update subscription status and subscriber count
-    } catch (error: any) {
-      console.error('Failed to unsubscribe:', error);
-      alert(getErrorMessage(error, 'Failed to unsubscribe'));
-    }
+    if (await setScheduleSubscription(scheduleId, false)) fetchSchedules();
   };
 
   const handleCreateNetFromSchedule = async (scheduleId: number) => {
@@ -494,6 +488,14 @@ const Scheduler: React.FC = () => {
                     <GroupsIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
+                {/* Only when the schedule has announcements, same as the card view */}
+                {!!schedule.announcements?.trim() && (
+                  <Tooltip title="Announcements">
+                    <IconButton size="small" onClick={() => setAnnouncementsSchedule(schedule)}>
+                      <CampaignIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
                 {isAuthenticated && (
                   schedule.is_subscribed ? (
                     <Tooltip title="Unsubscribe">
@@ -914,6 +916,19 @@ const Scheduler: React.FC = () => {
           {mergeSuccess}
         </Alert>
       </Snackbar>
+
+      {/* ========== ANNOUNCEMENTS DIALOG (list view) ========== */}
+      {/* Card view mounts its own inside each ScheduleCard. */}
+      {announcementsSchedule && (
+        <ScheduleAnnouncementsDialog
+          open
+          onClose={() => setAnnouncementsSchedule(null)}
+          scheduleName={announcementsSchedule.name}
+          announcements={announcementsSchedule.announcements || ''}
+          logoUrl={announcementsSchedule.logo_url}
+          logoAccentColors={announcementsSchedule.logo_accent_colors}
+        />
+      )}
 
       {/* ========== SCHEDULE DELETE CONFIRMATION DIALOG ========== */}
       {/* Deletion removes the schedule, NCS rotation, staff list, and       */}

@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-26
+revised: 2026-09-27
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,14 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# September 27, 2026
+
+## New Features
+
+* **Schedules: Follow a net from its card** — Net cards on the dashboard now have their own Subscribe button, so you can sign up for a net's emails wherever you see it listed. When a net's schedule has standing announcements, its card on the dashboard and on the Schedule page shows an Announcements link, so you can catch up on club news without joining the net, and save a copy as a PDF.
 
 ---
 

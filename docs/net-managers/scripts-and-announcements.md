@@ -4,7 +4,7 @@ summary: The script Net Control reads from, standing weekly announcements, one-n
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-09-27
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/scripts-and-announcements/
@@ -46,13 +46,15 @@ During a live or lobby net, the **Script** button in the toolbar opens it for Ne
 
 The schedule's own **Announcements** tab holds text that should show up every week without you re-typing it: club news, DMR network updates, upcoming exam sessions, reminders. During a net, the **Announcements** toolbar button shows this text to everyone watching. It appears once the first station has checked in.
 
+Between nets, anyone can read them from the **Announcements** line on the schedule's card on the Schedule page, or on the card of any net it created on the dashboard, without signing in. The line only appears when the announcements aren't empty. The window it opens has an **Export PDF** button for a printed copy.
+
 ## Notes for tonight
 
 A net's own **Announcements** tab (opened live as **Notes**) is for something specific to this one occurrence (a detour, a special guest, a one-off reminder) without editing the schedule's standing text. It's visible to everyone watching the net, the same as the schedule's announcements are, just scoped to tonight.
 
 ## The printable version
 
-The toolbar's **Paperwork** button downloads a single PDF combining the **net script** and **this net's own notes**, which suits a Net Control operator who wants a paper copy in hand instead of a second screen. It's built fresh from whatever's currently saved, so it always matches the net regardless of which panels happen to be open on screen. It does **not** include the schedule's standing announcements. Those are a separate, schedule-level thing, and printing them is a matter of opening the Announcements panel and copying the text out.
+The toolbar's **Paperwork** button downloads a single PDF combining the **net script** and **this net's own notes**, which suits a Net Control operator who wants a paper copy in hand instead of a second screen. It's built fresh from whatever's currently saved, so it always matches the net regardless of which panels happen to be open on screen. It does **not** include the schedule's standing announcements. Those are a separate, schedule-level thing, and they have their own **Export PDF** from the schedule card's Announcements line (see [Standing announcements](#standing-announcements)).
 
 ## Related
 
