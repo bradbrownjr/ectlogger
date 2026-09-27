@@ -66,6 +66,25 @@ header a {
   text-decoration: none;
 }
 
+/* Header logo (_includes/site-brand.html, generated from the app's
+   brand/logo.ts). Both versions are in the page; the mode picks one, the
+   same way the app's nav bar does: light mark + white wordmark on the blue
+   light-mode header, dark mark + green/off-white wordmark on the dark one. */
+header .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  vertical-align: middle;
+}
+header .brand svg { display: block; flex-shrink: 0; }
+header .brand-dark { display: none; }
+:root.dark-mode header .brand-light { display: none; }
+:root.dark-mode header .brand-dark { display: inline-flex; }
+@media (prefers-color-scheme: dark) {
+  :root:not(.light-mode) header .brand-light { display: none; }
+  :root:not(.light-mode) header .brand-dark { display: inline-flex; }
+}
+
 .header-links {
   display: flex;
   gap: 16px;

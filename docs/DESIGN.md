@@ -11,7 +11,7 @@ The ECTLogger logo is a radar scope: a green ring around a round face with radar
 
 **Single source:** `frontend/src/components/brand/logo.ts` holds the mark's geometry, its two palettes (`LOGO_LIGHT`, `LOGO_DARK`), and the wordmark's letter outlines and colors. Nothing else carries its own copy of the art.
 **React components:** `AppLogo` (the mark) and `AppWordmark` (the name). Always use them together as a heading or in the nav bar.
-**Generated copies:** `frontend/scripts/build-logo-assets.mjs` writes the favicon (`frontend/public/logo.svg`), the email header copy (`backend/app/email/logo_svg.py`), and reference files in `docs/assets/` (`logo.svg`, `logo-dark.svg`, `lockup-light.svg`, `lockup-dark.svg`). Change the art in `logo.ts`, then run `node scripts/build-logo-assets.mjs` from `frontend/`. The printed net script builds its copy at run time with `logoMarkSvg`.
+**Generated copies:** `frontend/scripts/build-logo-assets.mjs` writes the favicon (`frontend/public/logo.svg`), the email header copy (`backend/app/email/logo_svg.py`), the docs-site header logo (`_includes/site-brand.html`, both versions, with `assets/css/site.css` showing the one for the page's mode), and reference files in `docs/assets/` (`logo.svg`, `logo-dark.svg`, `lockup-light.svg`, `lockup-dark.svg`). Change the art in `logo.ts`, then run `node scripts/build-logo-assets.mjs` from `frontend/`. The printed net script builds its copy at run time with `logoMarkSvg`.
 
 ### Usage
 
@@ -23,6 +23,7 @@ The ECTLogger logo is a radar scope: a green ring around a round face with radar
 | Email HTML bodies | `LOGO_SVG` from `app/email/logo_svg.py`, 28 px | Light mark. Some mail clients drop inline SVG, so headings never depend on it; email subjects keep the 📻 emoji |
 | Printed Net Script | `logoMarkSvg(LOGO_LIGHT, 32, ...)` | Light mark, embedded in the generated HTML |
 | Favicon | `frontend/public/logo.svg` | Light mark (generated) |
+| Docs site (ectlogger.us) header | `{% include site-brand.html %}` in `_layouts/shell.html` | Same rule as the app's nav bar: light mark + white wordmark on the blue light-mode header, dark lockup colors on the dark header. The site's favicon is `docs/assets/logo.svg` |
 
 ### Palettes
 
