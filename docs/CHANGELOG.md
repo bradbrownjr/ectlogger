@@ -28,6 +28,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Sign In: One click for a new link** — Opening a sign-in link that's more than 30 days old now tells you it has expired and offers a Send me a new link button that emails a fresh link to the same address, so you don't have to go back and type your email again.
 
+* **Check-ins: Open a profile from the avatar** — Net Control and Loggers can now click a station's avatar in the check-in list to see their profile. Clicking the callsign still opens the row for editing.
+
 ## Bug Fixes
 
 * **Schedules: Nets follow their schedule** — Nets ECTLogger creates on its own now keep every schedule setting, including "Keep chat open after net", which they used to lose. On Edit Net, the Announcements tab now shows the schedule's announcements for you to update, with this net's own notes in a separate box below, and Save to Schedule no longer erases the schedule's announcements and now carries the chat and check-in settings too.

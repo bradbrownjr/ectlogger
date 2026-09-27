@@ -1,8 +1,8 @@
 {
-  "version": "2026.09.27b",
+  "version": "2026.09.27c",
   "entries": [
     {
-      "version": "2026.09.27b",
+      "version": "2026.09.27c",
       "date": "2026-09-27",
       "sections": [
         {
@@ -25,6 +25,10 @@
             },
             {
               "text": "Sign In: One click for a new link — Opening a sign-in link that's more than 30 days old now tells you it has expired and offers a Send me a new link button that emails a fresh link to the same address, so you don't have to go back and type your email again.",
+              "userImpact": true
+            },
+            {
+              "text": "Check-ins: Open a profile from the avatar — Net Control and Loggers can now click a station's avatar in the check-in list to see their profile. Clicking the callsign still opens the row for editing.",
               "userImpact": true
             }
           ]

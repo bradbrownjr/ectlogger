@@ -314,13 +314,15 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                 </TableCell>
                 <TableCell sx={{ whiteSpace: 'nowrap' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {/* Avatar opens the profile for everyone, staff included,
+                        same as the desktop table. */}
                     <Box
-                      onClick={() => {
-                        if (canManageCheckIns) return;
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (checkIn.user_id) onShowProfile(checkIn.user_id);
                         else onShowGuestProfile?.(checkIn.callsign);
                       }}
-                      sx={{ cursor: !canManageCheckIns ? 'pointer' : 'default', display: 'inline-flex' }}
+                      sx={{ cursor: 'pointer', display: 'inline-flex' }}
                     >
                       <UserAvatar
                         avatarUrl={checkIn.avatar_url}

@@ -529,15 +529,17 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           />
                         ) : (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            {/* Avatar: opens the station's profile for everyone,
+                                staff included. stopPropagation keeps the row's
+                                onClick from starting inline edit; staff click the
+                                callsign beside it to correct it. */}
                             <Box
-                              onClick={() => {
-                                // Staff click here to correct the callsign (row onClick
-                                // above starts inline edit) -- don't also open a popup.
-                                if (canManageCheckIns) return;
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 if (checkIn.user_id) setProfileUserId(checkIn.user_id);
                                 else onShowGuestProfile?.(checkIn.callsign);
                               }}
-                              sx={{ cursor: !canManageCheckIns ? 'pointer' : 'default', display: 'inline-flex' }}
+                              sx={{ cursor: 'pointer', display: 'inline-flex' }}
                             >
                               <UserAvatar
                                 avatarUrl={checkIn.avatar_url}
@@ -550,6 +552,8 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                             </Box>
                             <Box
                               onClick={() => {
+                                // Staff click the callsign to correct it (row onClick
+                                // above starts inline edit) -- don't also open a popup.
                                 if (canManageCheckIns) return;
                                 if (checkIn.user_id) setProfileUserId(checkIn.user_id);
                                 else onShowGuestProfile?.(checkIn.callsign);

@@ -127,7 +127,7 @@
   },
   "net-control/identity-verify-dialog": {
     "path": "/docs/img/net-control/identity-verify-dialog.png",
-    "alt": "The Verify K1CAMP's Identity dialog, showing the station's current six-digit code and the previous one, with buttons to reject or confirm the match.\n",
+    "alt": "The Verify K1CAMP's Identity dialog, showing the station's current six-digit code and the one before it, with Cancel, Reject, and Confirm Match buttons.\n",
     "caption": "Ask the operator to read the code from their authenticator app and compare it with this one.\n",
     "page": "/docs/net-control/authenticated-nets/"
   },
@@ -181,7 +181,7 @@
   },
   "net-control/ultrawide-desk": {
     "path": "/docs/img/net-control/ultrawide-desk.png",
-    "alt": "The whole net view on an ultrawide monitor, in three columns: the net's Notes and the schedule's Announcements docked on the left, the check-in list in the middle, and Chat with the Activity Log on the right.\n",
+    "alt": "The whole net view on an ultrawide monitor, in three columns: the schedule's Announcements and the net's Notes docked on the left, the check-in list in the middle, and Chat with the Activity Log on the right.\n",
     "caption": "At ultrawide widths, Script, Notes, and Announcements get a column of their own instead of floating over the list.\n",
     "page": "/docs/net-control/multiple-monitors/"
   },
@@ -230,7 +230,7 @@
   "net-managers/net-report-header": {
     "path": "/docs/img/net-managers/net-report-header.png",
     "alt": "The Net Report page's header with three buttons: Export PDF outlined in red, Export PNG, and View Net.\n",
-    "caption": "The report page needs no sign-in, so the link is safe to hand to anyone who needs the record. Export PNG saves each section as its own image for a newsletter or social post.\n",
+    "caption": "The report page needs no sign-in, so the link is safe to hand to anyone who needs the record. Export PNG saves a summary image and the map, ready to post.\n",
     "page": "/docs/net-managers/reports-and-exports/"
   },
   "net-managers/net-script-editor": {
@@ -238,6 +238,12 @@
     "alt": "The Net Script tab: a markdown formatting toolbar (headings, bold, italic, highlight, lists, horizontal rule) above an empty script editor showing example placeholder text for an opening, check-ins, and a closing.\n",
     "caption": "Net Control reads this during the net -- use the toolbar or paste in Markdown directly.",
     "page": "/docs/net-managers/scripts-and-announcements/"
+  },
+  "net-managers/open-lobby-and-start": {
+    "path": "/docs/img/net-managers/open-lobby-and-start.png",
+    "alt": "The toolbar of a net that has not started, with two buttons outlined in red at its left: Open lobby, with an open-door icon, and Start net, with a play icon.\n",
+    "caption": "Before the scheduled start, a net offers both Open lobby and Start net.",
+    "page": "/docs/net-managers/lobby-and-auto-close/"
   },
   "net-managers/schedule-recurrence-options": {
     "path": "/docs/img/net-managers/schedule-recurrence-options.png",
@@ -415,8 +421,8 @@
   },
   "start/start-net-button": {
     "path": "/docs/img/start/start-net-button.png",
-    "alt": "The net toolbar on a net that has not started, with the Start net button outlined in red, alongside Net info, Import, Edit net, and Roles.\n",
-    "caption": "Start net is the first control on the toolbar until the net is running.",
+    "alt": "The net toolbar on a net that has not started, with the Start net button outlined in red, next to Open lobby and alongside Net info, Import, Edit net, and Roles.\n",
+    "caption": "Start net starts the net. A net scheduled for later also shows Open lobby beside it.\n",
     "page": "/docs/start/run-your-first-net/"
   }
 }

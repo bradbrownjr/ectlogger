@@ -24,6 +24,12 @@ Both of these exist to take a chore off a human's plate at exactly the moment th
 
 A net that hasn't started shows two buttons on its toolbar and on its card:
 
+<figure class="control-figure">
+  <img src="/docs/img/net-managers/open-lobby-and-start.png"
+       alt="The toolbar of a net that has not started, with two buttons outlined in red at its left: Open lobby, with an open-door icon, and Start net, with a play icon.">
+  <figcaption>Before the scheduled start, a net offers both Open lobby and Start net.</figcaption>
+</figure>
+
 - **Open lobby** puts the net in **Lobby**. Stations can check in and chat, and the net page counts down to the scheduled start. Net Control clicks **Go Live** when ready. If Net Control still has the net open at the scheduled time, it goes live on its own. The button shows until the scheduled start time. On a net with no start time, it shows only when the net's lobby setting (below) is on.
 - **Start net** starts the net now. Clicked before the scheduled time, it asks first and offers **Open lobby** instead, so you never start a net early by accident. You don't need to move a net's start time earlier to get a lobby.
 

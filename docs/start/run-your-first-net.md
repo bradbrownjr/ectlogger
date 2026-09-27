@@ -46,8 +46,8 @@ Click **Start net** on the toolbar.
 
 <figure class="control-figure">
   <img src="/docs/img/start/start-net-button.png"
-       alt="The net toolbar on a net that has not started, with the Start net button outlined in red, alongside Net info, Import, Edit net, and Roles.">
-  <figcaption>Start net takes the net straight to active.</figcaption>
+       alt="The net toolbar on a net that has not started, with the Start net button outlined in red, next to Open lobby and alongside Net info, Import, Edit net, and Roles.">
+  <figcaption>Start net starts the net. A net scheduled for later also shows Open lobby beside it.</figcaption>
 </figure>
 
 **Start net** takes the net straight to **active**, which is what you want here. (A net scheduled for later also shows an **Open lobby** button beside it, so stations can gather before the official start. That is covered in [lobby and auto-close settings](/docs/net-managers/lobby-and-auto-close/).)

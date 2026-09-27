@@ -140,17 +140,21 @@ shots:
     route: /nets/{{net:scheduled}}
     as: W1PORT
     # The label on the button is "Start net"; its tooltip, and so its
-    # aria-label, is "Start the net".
-    wait_for: 'span[aria-label="Start the net"]'
-    element: 'div:has(> span[aria-label="Start the net"])'
+    # aria-label, is "Start the net now". This net is scheduled for later, so
+    # Open lobby shows to its left.
+    wait_for: 'span[aria-label="Start the net now"]'
+    element: 'div:has(> span[aria-label="Start the net now"])'
     pad: 0
     annotate:
-      - selector: 'span[aria-label="Start the net"]'
+      - selector: 'span[aria-label="Start the net now"]'
         style: box
     alt: >
       The net toolbar on a net that has not started, with the Start net button
-      outlined in red, alongside Net info, Import, Edit net, and Roles.
-    caption: Start net is the first control on the toolbar until the net is running.
+      outlined in red, next to Open lobby and alongside Net info, Import,
+      Edit net, and Roles.
+    caption: >
+      Start net starts the net. A net scheduled for later also shows Open lobby
+      beside it.
 
   - id: bulk-add-window
     section: start

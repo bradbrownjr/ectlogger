@@ -139,7 +139,7 @@ shots:
     element: 'tr:has-text("146.940")'
     pad: 8
     annotate:
-      - selector: 'tr:has-text("146.940") span[aria-label="Cannot delete: frequency is in use"]'
+      - selector: 'tr:has-text("146.940") span[aria-label="Cannot delete: used by a net, schedule, or check-in"]'
         style: box
     alt: >
       A frequency row in the shared frequency list reading 146.940, FM,

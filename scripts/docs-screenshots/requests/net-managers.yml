@@ -167,6 +167,27 @@ shots:
       inactivity," each with an explanatory line beneath it.
     caption: Both settings are off by default on every net and every schedule.
 
+  - id: open-lobby-and-start
+    section: net-managers
+    page: /docs/net-managers/lobby-and-auto-close/
+    route: /nets/{{net:scheduled}}
+    as: W1PORT
+    # Tooltips (and so aria-labels) of the two pre-start buttons. The net is
+    # scheduled for later, which is when Open lobby is offered.
+    wait_for: 'span[aria-label="Open the lobby so stations can check in and chat before the net starts"]'
+    element: 'div:has(> span[aria-label="Start the net now"])'
+    pad: 0
+    annotate:
+      - selector: 'span[aria-label="Open the lobby so stations can check in and chat before the net starts"]'
+        style: box
+      - selector: 'span[aria-label="Start the net now"]'
+        style: box
+    alt: >
+      The toolbar of a net that has not started, with two buttons outlined in
+      red at its left: Open lobby, with an open-door icon, and Start net, with
+      a play icon.
+    caption: Before the scheduled start, a net offers both Open lobby and Start net.
+
   # ========== Cancelling, archiving, and restoring ==========
   - id: cancel-net-dialog
     section: net-managers
