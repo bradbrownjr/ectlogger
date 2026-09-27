@@ -350,8 +350,8 @@ class NCSReminderService:
         start time and offset - starts life as DRAFT. A net with no
         scheduled_start_time at all (an ad-hoc net, or a one-time net set to open
         "now") never matches this query regardless of status: it has nothing for
-        lobby_open_due() to count down from, and is handled instead by the
-        manual-start branch in routers/nets_core.py::start_net().
+        lobby_open_due() to count down from; its lobby is opened by hand
+        (Open lobby, routers/nets_core.py::open_lobby()).
 
         Split out from _check_and_auto_open_lobbies so the status filter can be
         tested directly against a test session, the same as _find_stale_nets.

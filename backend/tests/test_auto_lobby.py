@@ -269,17 +269,35 @@ async def test_sweep_leaves_recent_nets_alone(db, owner):
 
 
 # ==========================================================================
-# Ad-hoc / one-time "now": forced lobby on manual Start
+# Open lobby and Start net are separate buttons
 #
-# These nets have no scheduled_start_time at all, so there is nothing for the
-# background scheduler to count down from - lobby_open_due() always returns
-# False for them (covered above). Instead, "enable lobby" is honored directly
-# by start_net() the moment a human clicks Start: it stages through LOBBY
-# rather than skipping straight to ACTIVE.
+# Until 2026-09-27 one Start button chose for the user: LOBBY if the scheduled
+# start was still ahead (or the lobby setting was on with no start time),
+# ACTIVE otherwise. Now Open lobby always opens the lobby and Start always
+# starts the net, whatever the clock says.
 # ==========================================================================
 
 @pytest.mark.asyncio
-async def test_manual_start_forces_lobby_when_no_scheduled_time(client, owner):
+async def test_start_before_scheduled_time_goes_live(client, owner):
+    create = await client.post(
+        "/api/nets/",
+        json={
+            "name": "Early Start Net",
+            "scheduled_start_time": (datetime.utcnow() + timedelta(hours=1)).isoformat(),
+        },
+        headers=auth_headers(owner),
+    )
+    net_id = create.json()["id"]
+
+    resp = await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "active"
+    assert resp.json()["started_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_start_goes_live_even_with_lobby_enabled(client, owner):
     create = await client.post(
         "/api/nets/",
         json={"name": "Ad-Hoc Net", "auto_lobby_minutes": 0},
@@ -290,24 +308,31 @@ async def test_manual_start_forces_lobby_when_no_scheduled_time(client, owner):
     resp = await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
 
     assert resp.status_code == 200
-    assert resp.json()["status"] == "lobby"
+    assert resp.json()["status"] == "active"
 
 
 @pytest.mark.asyncio
-async def test_manual_start_goes_active_when_lobby_not_enabled(client, owner):
-    """Unchanged default: a plain ad-hoc net with no auto_lobby_minutes still
-    skips straight to ACTIVE, exactly as before this feature existed."""
+async def test_open_lobby_opens_the_lobby(client, owner):
     create = await client.post(
         "/api/nets/",
-        json={"name": "Plain Ad-Hoc Net"},
+        json={
+            "name": "Lobby Net",
+            "scheduled_start_time": (datetime.utcnow() + timedelta(hours=1)).isoformat(),
+        },
         headers=auth_headers(owner),
     )
     net_id = create.json()["id"]
 
-    resp = await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
+    resp = await client.post(f"/api/nets/{net_id}/open-lobby", headers=auth_headers(owner))
 
     assert resp.status_code == 200
-    assert resp.json()["status"] == "active"
+    assert resp.json()["status"] == "lobby"
+    assert resp.json()["started_at"] is None
+
+    # Go Live still takes it the rest of the way.
+    live = await client.post(f"/api/nets/{net_id}/go-live", headers=auth_headers(owner))
+    assert live.status_code == 200
+    assert live.json()["status"] == "active"
 
 
 # ==========================================================================

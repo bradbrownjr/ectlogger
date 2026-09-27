@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from jose import JWTError, jwt
 from app.config import settings
 from app.logger import logger
-from itsdangerous import URLSafeTimedSerializer
+from itsdangerous import BadSignature, URLSafeTimedSerializer
 from app.session_config import DEFAULT_SESSION_LIFETIME_DAYS
 
 serializer = URLSafeTimedSerializer(settings.secret_key)
@@ -185,4 +185,15 @@ def verify_magic_link_token(token: str, max_age: int = None) -> Optional[str]:
         email = serializer.loads(token, salt='magic-link', max_age=max_age)
         return email
     except:
+        return None
+
+
+def magic_link_email_ignoring_age(token: str) -> Optional[str]:
+    """The address a magic link was issued for, however old, if this server
+    signed it; None for a forged or mangled token. Only for offering a fresh
+    link in place of an expired one (it goes to this same address), never
+    for signing anyone in."""
+    try:
+        return serializer.loads(token, salt='magic-link')
+    except BadSignature:
         return None

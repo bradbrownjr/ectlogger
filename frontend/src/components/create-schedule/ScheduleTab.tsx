@@ -247,14 +247,14 @@ const ScheduleTab: React.FC = () => {
         <Box sx={{ mt: 3 }}>
           <FormControlLabel
             control={<Switch checked={autoLobbyEnabled} onChange={(e) => setAutoLobbyEnabled(e.target.checked)} />}
-            label={scheduleType === 'ad_hoc' ? 'Enable lobby at start of net' : 'Enable lobby'}
+            label="Enable lobby"
           />
           <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
             {scheduleType === 'ad_hoc'
               ? "Ad-hoc nets have no scheduled time, so there's nothing to count down from."
               : "This net has no start time set above, so there's nothing to count down from."}
-            {' '}When this is on, clicking Start opens the lobby first instead of going straight
-            live — Net Control clicks "Go Live" when ready to officially begin.
+            {' '}When this is on, the net shows an Open lobby button next to Start net, so stations
+            can check in and chat before Net Control clicks Go Live.
           </Typography>
         </Box>
       )}

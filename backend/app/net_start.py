@@ -4,8 +4,8 @@ Net start: opening the lobby and announcing the net.
 Two related concerns live here because they are the same business rule seen
 from two sides:
 
-1. `auto_open_lobby()` - the scheduler-driven counterpart to the LOBBY branch of
-   `routers/nets_core.py::start_net()`. It performs the same transition without
+1. `auto_open_lobby()` - the scheduler-driven counterpart to
+   `routers/nets_core.py::open_lobby()`. It performs the same transition without
    the side effects that only make sense for a human caller (claiming the NCS
    role, auto-checking the caller in).
 
@@ -36,7 +36,7 @@ async def send_net_start_notifications(db: AsyncSession, net: Net) -> None:
 
     Idempotent: the first successful send stamps `start_notification_sent_at`,
     and every later call for the same net returns immediately. This is what lets
-    `start_net()`, `go_live()`, and the NCS-arrival path in `check_ins.py` all
+    `open_lobby()`, `start_net()`, `go_live()`, and the NCS-arrival path in `check_ins.py` all
     call it without any of them needing to know which transition came first.
     """
     if net.start_notification_sent_at is not None:
@@ -120,7 +120,7 @@ def lobby_open_due(net: Net, now: datetime = None) -> bool:
 async def auto_open_lobby(db: AsyncSession, net: Net) -> None:
     """Move `net` into LOBBY on the scheduler's behalf.
 
-    Mirrors the LOBBY branch of `routers/nets_core.py::start_net()` minus the
+    Mirrors `routers/nets_core.py::open_lobby()` minus the
     human-caller side effects, and sends no email (see module docstring). Keep
     the two in sync when the lobby transition changes.
 

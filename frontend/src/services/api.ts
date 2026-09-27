@@ -99,6 +99,9 @@ export const authApi = {
     api.post('/auth/magic-link/request', { email: email.trim().toLowerCase() }),
   verifyMagicLink: (token: string, totp_code?: string) =>
     api.post('/auth/magic-link/verify', { token, totp_code }),
+  // Emails a fresh link to the address an expired one was issued for.
+  resendMagicLink: (token: string) =>
+    api.post('/auth/magic-link/resend', { token }),
   passwordLogin: (identifier: string, password: string, totp_code?: string) =>
     api.post('/auth/login', { identifier, password, totp_code }),
   setPassword: (new_password: string, current_password?: string) =>
@@ -155,6 +158,7 @@ export const netApi = {
   get: (id: number) => api.get(`/nets/${id}`),
   update: (id: number, data: any) => api.put(`/nets/${id}`, data),
   start: (id: number) => api.post(`/nets/${id}/start`),
+  openLobby: (id: number) => api.post(`/nets/${id}/open-lobby`),
   close: (id: number) => api.post(`/nets/${id}/close`),
   archive: (id: number) => api.post(`/nets/${id}/archive`),
   unarchive: (id: number) => api.post(`/nets/${id}/unarchive`),

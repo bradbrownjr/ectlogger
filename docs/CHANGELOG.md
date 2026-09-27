@@ -22,6 +22,12 @@ All notable changes to ECTLogger are documented here.
 
 * **Schedules: Follow a net from its card** — Net cards on the dashboard now have their own Subscribe button, so you can sign up for a net's emails wherever you see it listed. When a net's schedule has standing announcements, its card on the dashboard and on the Schedule page shows an Announcements link, so you can catch up on club news without joining the net, and save a copy as a PDF.
 
+## Improvements
+
+* **Nets: Open the lobby or start the net** — Nets that haven't started now have an Open lobby button next to Start net (Lobby on dashboard cards), so you can open the lobby early for stations to gather. Start net always starts the net, even ahead of its scheduled time. Before, one button did either, depending on the clock.
+
+* **Sign In: One click for a new link** — Opening a sign-in link that's more than 30 days old now tells you it has expired and offers a Send me a new link button that emails a fresh link to the same address, so you don't have to go back and type your email again.
+
 ## Bug Fixes
 
 * **Schedules: Nets follow their schedule** — Nets ECTLogger creates on its own now keep every schedule setting, including "Keep chat open after net", which they used to lose. On Edit Net, the Announcements tab now shows the schedule's announcements for you to update, with this net's own notes in a separate box below, and Save to Schedule no longer erases the schedule's announcements and now carries the chat and check-in settings too.

@@ -660,9 +660,12 @@ highest); `computeLayout()` is a pure function that, given the real widths
 and the real available width: keeps everything labelled if it fits;
 otherwise drops labels lowest-priority-first (one at a time, re-checking
 after each) until it fits; otherwise moves items into the `More` menu,
-again lowest-priority-first, until it fits. Priority 4 (Start net, Check in,
-Go live, Close net — the single primary status CTA for whatever the net is
-doing right now) never loses its label and never overflows.
+again lowest-priority-first, until it fits. Priority 4 (Open lobby, Start net,
+Check in, Go live, Close net — the primary status CTA for whatever the net is
+doing right now) never loses its label and never overflows. Open lobby and
+Start net are a pair: each does only what its label says (the server no
+longer turns an early Start into a lobby), and Open lobby shows only until
+the scheduled start (`utils/netStart.ts`).
 
 On touch/mobile (`< 600px`) buttons use the "comfortable" 30px height instead
 of the 26px desktop-dense height (still narrower than the general 44px

@@ -1,8 +1,8 @@
 {
-  "version": "2026.09.27",
+  "version": "2026.09.27b",
   "entries": [
     {
-      "version": "2026.09.27",
+      "version": "2026.09.27b",
       "date": "2026-09-27",
       "sections": [
         {
@@ -11,6 +11,20 @@
           "items": [
             {
               "text": "Schedules: Follow a net from its card — Net cards on the dashboard now have their own Subscribe button, so you can sign up for a net's emails wherever you see it listed. When a net's schedule has standing announcements, its card on the dashboard and on the Schedule page shows an Announcements link, so you can catch up on club news without joining the net, and save a copy as a PDF.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Nets: Open the lobby or start the net — Nets that haven't started now have an Open lobby button next to Start net (Lobby on dashboard cards), so you can open the lobby early for stations to gather. Start net always starts the net, even ahead of its scheduled time. Before, one button did either, depending on the clock.",
+              "userImpact": true
+            },
+            {
+              "text": "Sign In: One click for a new link — Opening a sign-in link that's more than 30 days old now tells you it has expired and offers a Send me a new link button that emails a fresh link to the same address, so you don't have to go back and type your email again.",
               "userImpact": true
             }
           ]

@@ -42,6 +42,7 @@ import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -77,6 +78,8 @@ import { setScheduleSubscription } from '../utils/scheduleSubscription';
 import { useFavorites } from '../hooks/useFavorites';
 import useAccountSortOrder from '../hooks/useAccountSortOrder';
 import { getNetActions } from '../utils/netActions';
+import { canOpenLobby, isBeforeScheduledStart } from '../utils/netStart';
+import EarlyStartDialog from '../components/EarlyStartDialog';
 import DeleteNetWarning from '../components/DeleteNetWarning';
 
 const Dashboard: React.FC = () => {
@@ -86,6 +89,8 @@ const Dashboard: React.FC = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [netToDelete, setNetToDelete] = useState<Net | null>(null);
+  // Net whose Start was clicked before its scheduled time (EarlyStartDialog)
+  const [earlyStartNet, setEarlyStartNet] = useState<Net | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [selectedNet, setSelectedNet] = useState<Net | null>(null);
@@ -217,18 +222,29 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleStartNet = async (net: Net) => {
+  // Start net before the scheduled time asks first (utils/netStart.ts).
+  const handleStartNetClick = (net: Net) => {
+    if (isBeforeScheduledStart(net)) {
+      setEarlyStartNet(net);
+    } else {
+      handleStartNet(net, 'live');
+    }
+  };
+
+  // Open lobby ('lobby') and Start net ('live').
+  const handleStartNet = async (net: Net, to: 'lobby' | 'live') => {
     // A net with an unset topic/poll needs that dialog before starting, and
     // this list view has nowhere to show it -- hand off to NetView, which
     // already prompts for it via the same badge/dialog flow used there.
+    // ?open_lobby=1 carries an Open lobby click through that dialog.
     const needsTopicOrPoll = (net.topic_of_week_enabled && !net.topic_of_week_prompt)
       || (net.poll_enabled && !net.poll_question);
     if (needsTopicOrPoll) {
-      navigate(`/nets/${net.id}`);
+      navigate(to === 'lobby' ? `/nets/${net.id}?open_lobby=1` : `/nets/${net.id}`);
       return;
     }
     try {
-      await netApi.start(net.id);
+      await (to === 'lobby' ? netApi.openLobby(net.id) : netApi.start(net.id));
       // Navigate to the net view so owner is automatically "joined"
       navigate(`/nets/${net.id}`);
     } catch (error) {
@@ -486,7 +502,8 @@ const Dashboard: React.FC = () => {
             preferUtc={user?.prefer_utc ?? false}
             onStaffClick={() => { setSelectedNet(net); setStaffModalOpen(true); }}
             onDeleteClick={() => handleDeleteClick(net)}
-            onStartNet={() => handleStartNet(net)}
+            onStartNet={() => handleStartNetClick(net)}
+            onOpenLobby={() => handleStartNet(net, 'lobby')}
             onEmailClick={() => handleEmailClick(net)}
             onExportCSV={() => handleExportCSV(net)}
             onArchiveNet={() => handleArchiveNet(net.id)}
@@ -634,9 +651,16 @@ const Dashboard: React.FC = () => {
                         </IconButton>
                       </Tooltip>
                     )}
+                    {actionsFor(net).start && canOpenLobby(net) && (
+                      <Tooltip title="Open lobby">
+                        <IconButton size="small" color="warning" onClick={() => handleStartNet(net, 'lobby')}>
+                          <MeetingRoomIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                     {actionsFor(net).start && (
                       <Tooltip title="Start">
-                        <IconButton size="small" color="success" onClick={() => handleStartNet(net)}>
+                        <IconButton size="small" color="success" onClick={() => handleStartNetClick(net)}>
                           <PlayArrowIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -824,6 +848,16 @@ const Dashboard: React.FC = () => {
       ) : (
         renderListView()
       )}
+
+      {/* ========== START NET EARLY (card and list view) ========== */}
+      <EarlyStartDialog
+        open={!!earlyStartNet}
+        scheduledStartTime={earlyStartNet?.scheduled_start_time}
+        preferUtc={user?.prefer_utc ?? false}
+        onClose={() => setEarlyStartNet(null)}
+        onOpenLobby={() => { const n = earlyStartNet; setEarlyStartNet(null); if (n) handleStartNet(n, 'lobby'); }}
+        onStartNow={() => { const n = earlyStartNet; setEarlyStartNet(null); if (n) handleStartNet(n, 'live'); }}
+      />
 
       {/* ========== ANNOUNCEMENTS DIALOG (list view) ========== */}
       {/* Card view mounts its own inside each NetCard. */}

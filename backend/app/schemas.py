@@ -1298,6 +1298,10 @@ class MagicLinkRequest(BaseModel):
         return normalize_email(v)
 
 
+class MagicLinkResend(BaseModel):
+    token: str = Field(max_length=500)
+
+
 class MagicLinkVerify(BaseModel):
     token: str
     # Only consulted when the account is an admin without MFA satisfied yet

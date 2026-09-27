@@ -12,6 +12,10 @@ const VerifyMagicLink: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [verifying, setVerifying] = useState(true);
   const [mfaRequired, setMfaRequired] = useState(false);
+  // A genuine link that is only too old (410): offer a replacement in one click.
+  const [expired, setExpired] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resentTo, setResentTo] = useState<string | null>(null);
   const [totpCode, setTotpCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -51,7 +55,8 @@ const VerifyMagicLink: React.FC = () => {
       navigate(login_status === 'mfa_setup_required' ? '/profile?tab=security&mfaRequired=1' : (redirect || '/dashboard'));
     } catch (err: any) {
       console.error('[VERIFY] Magic link verification failed:', err.response?.data);
-      setError(getErrorMessage(err, mfaRequired ? 'Incorrect verification code.' : 'Invalid or expired magic link'));
+      if (!mfaRequired && err.response?.status === 410) setExpired(true);
+      setError(getErrorMessage(err, mfaRequired ? 'Incorrect verification code.' : "This sign-in link isn't valid."));
       setVerifying(false);
       if (!mfaRequired) setMfaRequired(false);
     } finally {
@@ -63,6 +68,20 @@ const VerifyMagicLink: React.FC = () => {
     attemptVerify();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount, regardless of dependency changes
+
+  const handleResend = async () => {
+    if (!token) return;
+    setResending(true);
+    try {
+      const response = await authApi.resendMagicLink(token);
+      setResentTo(response.data.email_hint);
+    } catch (err: any) {
+      setError(getErrorMessage(err, "We couldn't send a new link. Request one from the sign-in page."));
+      setExpired(false);
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleSubmitCode = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,16 +139,39 @@ const VerifyMagicLink: React.FC = () => {
               Go to Dashboard
             </Button>
           </>
+        ) : resentTo ? (
+          // ========== NEW LINK SENT ==========
+          <>
+            <Typography variant="h5" gutterBottom align="center">
+              Check your email
+            </Typography>
+            <Typography variant="body1" color="text.secondary" align="center">
+              We sent a new sign-in link to {resentTo}. Open it on this device to sign in.
+            </Typography>
+          </>
+        ) : expired ? (
+          // ========== EXPIRED LINK: one-click replacement ==========
+          <>
+            <Typography variant="h5" gutterBottom align="center">
+              This sign-in link has expired
+            </Typography>
+            <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 3 }}>
+              We can email a new one to the same address.
+            </Typography>
+            <Button variant="contained" size="large" onClick={handleResend} disabled={resending}>
+              {resending ? <CircularProgress size={24} /> : 'Send me a new link'}
+            </Button>
+          </>
         ) : (
           <>
             <Typography variant="h5" color="error" gutterBottom>
-              Verification Failed
+              This sign-in link didn't work
             </Typography>
             <Typography variant="body1" color="text.secondary">
               {error}
             </Typography>
             <Typography variant="body2" sx={{ mt: 2, mb: 3 }}>
-              Magic links expire after a period of time. Request a new one to sign in.
+              Request a new one to sign in.
             </Typography>
             <Button variant="contained" onClick={() => navigate('/login')}>
               Return to Sign In

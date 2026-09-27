@@ -8,7 +8,8 @@ import CsvImportDialog from '../components/netview/CsvImportDialog';
 import ArchiveDialogs from '../components/netview/ArchiveDialogs';
 import RoleAssignmentDialog from '../components/netview/RoleAssignmentDialog';
 import CheckInFormDialog, { CheckInFormState } from '../components/netview/CheckInFormDialog';
-import NetControlDialogs from '../components/netview/NetControlDialogs';
+import NetControlDialogs, { type TopicPollAction } from '../components/netview/NetControlDialogs';
+import EarlyStartDialog from '../components/EarlyStartDialog';
 import NetViewHeader from '../components/netview/NetViewHeader';
 import AutoCloseWarningBanner from '../components/netview/AutoCloseWarningBanner';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
@@ -84,6 +85,7 @@ import EditTopicResponseDialog from '../components/netview/EditTopicResponseDial
 import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import { watchZoomAwarePopovers } from '../utils/zoomAwarePopovers';
 import { getNetActions } from '../utils/netActions';
+import { canOpenLobby, isBeforeScheduledStart } from '../utils/netStart';
 
 interface Frequency {
   id: number;
@@ -259,7 +261,8 @@ const NetView: React.FC = () => {
   const [tempPollQuestion, setTempPollQuestion] = useState('');
   // Which action to run once the dialog is saved -- it's opened from both the
   // draft/scheduled "Start" flow and the lobby "Go live" flow.
-  const [topicPollAction, setTopicPollAction] = useState<'start' | 'go-live'>('start');
+  const [topicPollAction, setTopicPollAction] = useState<TopicPollAction>('start');
+  const earlyStartDialog = useDialog();
   // Check-in prompt for authenticated users viewing active/lobby nets
   const checkInPrompt = useDialog();
   const checkInPromptShownRef = useRef(false);
@@ -466,7 +469,9 @@ const NetView: React.FC = () => {
     if (isOwner || isAdmin || canManageNet) {
       const timer = setTimeout(() => {
         // Build reminder message with topic/poll hints
-        let message = 'Ready to start? Click the green play button to begin the net!';
+        let message = canOpenLobby(net)
+          ? 'Ready? Click Open lobby to let stations gather, or Start net to begin the net.'
+          : 'Ready to start? Click Start net to begin the net!';
         const needsConfig: string[] = [];
         if (net.topic_of_week_enabled && !net.topic_of_week_prompt) {
           needsConfig.push('topic');
@@ -503,12 +508,16 @@ const NetView: React.FC = () => {
 
     // Remove the param so a refresh doesn't re-trigger
     setSearchParams(prev => { prev.delete('open_lobby'); return prev; }, { replace: true });
-    // A topic/poll not yet configured gets the same dialog the in-page Start
-    // button would show, instead of silently starting without one.
+    // The email button says Open Lobby. Once the scheduled time has passed
+    // there is nothing to gather for, so it starts the net, as it always has.
+    const action: TopicPollAction =
+      !net.scheduled_start_time || isBeforeScheduledStart(net) ? 'open-lobby' : 'start';
+    // A topic/poll not yet configured gets the same dialog the in-page
+    // buttons would show, instead of silently starting without one.
     if (needsTopicPollConfig()) {
-      handleOpenTopicPollConfig('start');
+      handleOpenTopicPollConfig(action);
     } else {
-      handleStartNet();
+      handleStartNet(action === 'open-lobby' ? 'lobby' : 'live');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [net?.id, net?.is_owner_or_ncs, user?.id]); // Re-check when server permissions arrive
@@ -923,11 +932,29 @@ const NetView: React.FC = () => {
     return needsTopic || needsPoll;
   };
 
+  // Start net before the scheduled time asks first: it used to open the
+  // lobby then, and now begins the net (see utils/netStart.ts).
   const handleStartNetClick = () => {
+    if (net && isBeforeScheduledStart(net)) {
+      earlyStartDialog.onOpen();
+    } else {
+      proceedStartNet();
+    }
+  };
+
+  const proceedStartNet = () => {
     if (needsTopicPollConfig()) {
       handleOpenTopicPollConfig('start');
     } else {
-      handleStartNet();
+      handleStartNet('live');
+    }
+  };
+
+  const handleOpenLobbyClick = () => {
+    if (needsTopicPollConfig()) {
+      handleOpenTopicPollConfig('open-lobby');
+    } else {
+      handleStartNet('lobby');
     }
   };
 
@@ -959,7 +986,7 @@ const NetView: React.FC = () => {
       if (topicPollAction === 'go-live') {
         handleGoLive();
       } else {
-        handleStartNet();
+        handleStartNet(topicPollAction === 'open-lobby' ? 'lobby' : 'live');
       }
     } catch (error) {
       console.error('Failed to save topic/poll config:', error);
@@ -967,10 +994,12 @@ const NetView: React.FC = () => {
     }
   };
 
-  const handleStartNet = async () => {
+  // Open lobby ('lobby') and Start net ('live') are separate endpoints that
+  // share everything else: NCS role, auto check-in, and the form reset below.
+  const handleStartNet = async (to: 'lobby' | 'live') => {
     setStartingNet(true);
     try {
-      await netApi.start(Number(netId));
+      await (to === 'lobby' ? netApi.openLobby(Number(netId)) : netApi.start(Number(netId)));
       fetchNet();
       fetchCheckIns();
       fetchNetRoles();  // Fetch roles since NCS is assigned when starting
@@ -1517,7 +1546,7 @@ const NetView: React.FC = () => {
 
   // Open the Topic/Poll configuration dialog, seeded with current values.
   // `action` is which button triggered this, so saving can resume the right one.
-  const handleOpenTopicPollConfig = (action: 'start' | 'go-live' = 'start') => {
+  const handleOpenTopicPollConfig = (action: TopicPollAction = 'start') => {
     setTempTopicPrompt(net?.topic_of_week_prompt || '');
     setTempPollQuestion(net?.poll_question || '');
     setTopicPollAction(action);
@@ -1651,6 +1680,7 @@ const NetView: React.FC = () => {
         onOpenRoleDialog={handleOpenRoleDialog}
         onOpenCheckIn={handleOpenCheckIn}
         onStartNetClick={handleStartNetClick}
+        onOpenLobbyClick={handleOpenLobbyClick}
         onClaimNCS={handleClaimNCS}
         onToggleHand={handleToggleHand}
         onStatusChange={handleStatusChange}
@@ -2802,6 +2832,16 @@ const NetView: React.FC = () => {
         availableFrequencyIds={checkInForm.available_frequency_ids}
         onAvailableFrequencyIdsChange={(ids) => setCheckInForm({ ...checkInForm, available_frequency_ids: ids })}
         formatFrequency={formatFrequencyDisplay}
+      />
+
+      {/* Start net clicked before the scheduled start time */}
+      <EarlyStartDialog
+        open={earlyStartDialog.open}
+        scheduledStartTime={net?.scheduled_start_time}
+        preferUtc={user?.prefer_utc ?? false}
+        onClose={earlyStartDialog.onClose}
+        onOpenLobby={() => { earlyStartDialog.onClose(); handleOpenLobbyClick(); }}
+        onStartNow={() => { earlyStartDialog.onClose(); proceedStartNet(); }}
       />
 
       {/* File Traffic Dialog - net-scoped traffic composer */}

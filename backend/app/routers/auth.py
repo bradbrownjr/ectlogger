@@ -14,13 +14,14 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import User, UserRole, Contact
 from app.schemas import (
-    Token, UserResponse, MagicLinkRequest, MagicLinkVerify,
+    Token, UserResponse, MagicLinkRequest, MagicLinkVerify, MagicLinkResend,
     PasswordLoginRequest, LoginResult, PasswordSetRequest,
     MfaSetupStartResult, MfaSetupConfirmRequest, MfaSetupConfirmResult,
     MfaReplaceStartRequest, MfaDisableRequest,
 )
 from app.auth import (
     create_access_token, create_magic_link_token, verify_magic_link_token,
+    magic_link_email_ignoring_age,
     hash_password, verify_password, encrypt_mfa_secret, decrypt_mfa_secret,
     generate_totp_secret, totp_provisioning_uri, verify_totp_code,
     generate_backup_codes, hash_backup_code,
@@ -226,34 +227,32 @@ def _mfa_qr_data_uri(otpauth_url: str) -> str:
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
-@router.post("/magic-link/request")
-@_limiter.limit("5/hour")
-async def request_magic_link(
-    request: Request,
-    payload: MagicLinkRequest,
-    db: AsyncSession = Depends(get_db)
-):
-    """Request a magic link to sign in via email"""
-    client_ip = get_client_ip(request)
-    logger.info("API", f"Magic link request received for {payload.email}", ip=client_ip)
+def mask_email(email: str) -> str:
+    """b••••••@gmail.com: enough to recognise your own inbox, not to learn someone else's."""
+    local, _, domain = email.partition('@')
+    return f"{local[:1]}{'•' * max(len(local) - 1, 3)}@{domain}"
 
+
+async def _send_magic_link(db: AsyncSession, email: str, client_ip: str) -> dict:
+    """Email a fresh magic link, shared by a new request and a resend for an
+    expired link. Refuses a deactivated account."""
     # Check if user exists and is banned. Case-insensitive: see get_or_create_user.
-    result = await db.execute(select(User).where(func.lower(User.email) == payload.email))
+    result = await db.execute(select(User).where(func.lower(User.email) == email))
     existing_user = result.scalar_one_or_none()
     if existing_user and not existing_user.is_active:
-        logger.banned_access(payload.email, client_ip)
+        logger.banned_access(email, client_ip)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account has been deactivated. Please contact an administrator."
         )
 
     try:
-        token = create_magic_link_token(payload.email)
+        token = create_magic_link_token(email)
         logger.debug("API", "Token generated successfully")
 
-        await EmailService.send_magic_link(payload.email, token, settings.magic_link_expire_days)
+        await EmailService.send_magic_link(email, token, settings.magic_link_expire_days)
 
-        logger.info("API", f"Magic link sent successfully to {payload.email}")
+        logger.info("API", f"Magic link sent successfully to {email}")
         return {
             "message": "Magic link sent to your email",
             "expires_in_days": settings.magic_link_expire_days
@@ -267,6 +266,48 @@ async def request_magic_link(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send email: {str(e)}"
         )
+
+
+@router.post("/magic-link/request")
+@_limiter.limit("5/hour")
+async def request_magic_link(
+    request: Request,
+    payload: MagicLinkRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Request a magic link to sign in via email"""
+    client_ip = get_client_ip(request)
+    logger.info("API", f"Magic link request received for {payload.email}", ip=client_ip)
+    return await _send_magic_link(db, payload.email, client_ip)
+
+
+@router.post("/magic-link/resend")
+@_limiter.limit("5/hour")
+async def resend_magic_link(
+    request: Request,
+    payload: MagicLinkResend,
+    db: AsyncSession = Depends(get_db)
+):
+    """Email a fresh link in place of an expired one, to the same address the
+    old link was issued for, so nobody has to type their email again.
+
+    Request: { token } -- the expired link's token.
+    Response: { message, expires_in_days, email_hint } -- email_hint is masked.
+    400 when this server didn't sign the token. The new link goes only to
+    the original inbox, so an old link can't be used to sign in or to learn
+    the full address.
+    """
+    client_ip = get_client_ip(request)
+    email = magic_link_email_ignoring_age(payload.token)
+    if not email:
+        logger.auth_failure("Magic link resend refused: token not signed by this server", client_ip)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This sign-in link isn't valid. Enter your email on the sign-in page to get a new one."
+        )
+    logger.info("API", f"Magic link resend for expired link to {email}", ip=client_ip)
+    result = await _send_magic_link(db, email, client_ip)
+    return {**result, "email_hint": mask_email(email)}
 
 
 @router.post("/magic-link/verify", response_model=LoginResult)
@@ -286,10 +327,18 @@ async def verify_magic_link(
     email = verify_magic_link_token(payload.token)
 
     if not email:
-        logger.auth_failure("Invalid or expired magic link token", client_ip)
+        # 410 for a genuine link that is only too old, so the page can offer a
+        # one-click replacement instead of a dead end (see /magic-link/resend).
+        if magic_link_email_ignoring_age(payload.token):
+            logger.auth_failure("Expired magic link token", client_ip)
+            raise HTTPException(
+                status_code=status.HTTP_410_GONE,
+                detail=f"This sign-in link has expired. Sign-in links work for {settings.magic_link_expire_days} days."
+            )
+        logger.auth_failure("Invalid magic link token", client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired magic link"
+            detail="This sign-in link isn't valid. It may have been cut off when it was copied."
         )
 
     logger.debug("API", f"Token valid for email: {email}", ip=client_ip)

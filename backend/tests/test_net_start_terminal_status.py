@@ -78,14 +78,16 @@ async def _net_in_status(client, db, owner, status: NetStatus) -> Net:
     return net
 
 
+@pytest.mark.parametrize("action", ["start", "open-lobby"])
 @pytest.mark.parametrize("status", [NetStatus.CLOSED, NetStatus.ARCHIVED, NetStatus.CANCELLED])
 @pytest.mark.asyncio
-async def test_terminal_nets_refuse_to_start(client, db, owner, status):
+async def test_terminal_nets_refuse_to_start(client, db, owner, status, action):
     """The owner is the most privileged caller short of an admin, so if anyone
-    could reopen a finished net it would be them."""
+    could reopen a finished net it would be them. Open lobby shares Start's
+    checks and must refuse the same statuses."""
     net = await _net_in_status(client, db, owner, status)
 
-    response = await client.post(f"/api/nets/{net.id}/start", headers=auth_headers(owner))
+    response = await client.post(f"/api/nets/{net.id}/{action}", headers=auth_headers(owner))
 
     assert response.status_code == 400
 

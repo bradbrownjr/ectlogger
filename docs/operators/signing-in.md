@@ -4,7 +4,7 @@ summary: The magic link, the password fallback for when email is down, and two-f
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-27
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/operators/signing-in/
@@ -25,6 +25,8 @@ You don't choose one and give up the others. All three can be live on the same a
 That is the whole thing. If nobody has ever signed in with that address, clicking the link creates the account right then, so there is no registration form to fill in first.
 
 The link stays valid for 30 days, which is deliberate: during a multi-day activation, nobody wants to be signed out at three in the morning. Bookmark the email rather than retyping your address each time and it will sign you back in instantly, even if your browser clears its cookies or you move to another device.
+
+After 30 days the link stops working. Opening it then shows **This sign-in link has expired** with a **Send me a new link** button: one click emails a fresh link to the same address, so you never have to type it again. Keep the new email in place of the old one. A link that was cut off when it was copied or forwarded shows **This sign-in link didn't work** instead, and needs a new one from the sign-in page.
 
 If the message has not arrived in a minute or two, check your spam folder. If your club runs its own instance and no message ever arrives, that is the server's mail configuration and not something you can fix from here; tell whoever runs it.
 

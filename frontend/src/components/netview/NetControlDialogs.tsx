@@ -20,6 +20,9 @@ import type { UseDialogResult } from '../../hooks/useDialog';
 // Each is purely presentational; the parent owns all state and actions.
 // Grouped to keep NetView's JSX lean without a file per tiny dialog.
 
+// Which button opened the Topic/Poll dialog, so saving resumes it.
+export type TopicPollAction = 'open-lobby' | 'start' | 'go-live';
+
 interface NetControlDialogsProps {
   // Close Net
   closeNetDialog: UseDialogResult;
@@ -41,9 +44,9 @@ interface NetControlDialogsProps {
   tempPollQuestion: string;
   setTempPollQuestion: (v: string) => void;
   onSaveAndStart: () => void;
-  // Which action the save button resumes -- opened from either the
-  // draft/scheduled Start flow or the lobby Go Live flow.
-  topicPollAction: 'start' | 'go-live';
+  // Which action the save button resumes: Open lobby or Start net on a
+  // draft/scheduled net, or Go Live from the lobby.
+  topicPollAction: TopicPollAction;
 
   // Available frequencies
   frequencyDialog: UseDialogResult;
@@ -186,7 +189,7 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
         <DialogActions>
           <Button onClick={topicPollDialog.onClose}>Cancel</Button>
           <Button onClick={onSaveAndStart} variant="contained" color="success">
-            {topicPollAction === 'go-live' ? 'Save & Go Live' : 'Save & Start Net'}
+            {{ 'open-lobby': 'Save & Open Lobby', start: 'Save & Start Net', 'go-live': 'Save & Go Live' }[topicPollAction]}
           </Button>
         </DialogActions>
       </Dialog>

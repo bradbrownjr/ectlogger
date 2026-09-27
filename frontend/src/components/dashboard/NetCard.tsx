@@ -16,6 +16,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import DownloadIcon from '@mui/icons-material/Download';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -36,6 +37,7 @@ import ScheduleSubscribeButton from '../scheduler/ScheduleSubscribeButton';
 import ImageLightbox from '../ImageLightbox';
 import { formatDateTime } from '../../utils/dateUtils';
 import { NetActions } from '../../utils/netActions';
+import { canOpenLobby } from '../../utils/netStart';
 
 // ---- Types ----
 
@@ -59,6 +61,7 @@ export interface Net {
   cancel_reason?: string | null;
   created_at: string;
   scheduled_start_time?: string;
+  auto_lobby_minutes?: number | null;
   topic_of_week_enabled?: boolean;
   topic_of_week_prompt?: string | null;
   poll_enabled?: boolean;
@@ -100,6 +103,7 @@ interface NetCardProps {
   onStaffClick: () => void;
   onDeleteClick: () => void;
   onStartNet: () => void;
+  onOpenLobby: () => void;
   onEmailClick: () => void;
   onExportCSV: () => void;
   onArchiveNet: () => void;
@@ -122,6 +126,7 @@ const NetCard: React.FC<NetCardProps> = ({
   onStaffClick,
   onDeleteClick,
   onStartNet,
+  onOpenLobby,
   onEmailClick,
   onExportCSV,
   onArchiveNet,
@@ -287,10 +292,11 @@ const NetCard: React.FC<NetCardProps> = ({
             everyone else sees. Mirrors the Schedule card's group split. */}
         {(canManage || Object.values(actions).some(Boolean)) && (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 0.5 }}>
-            {/* Draft/Scheduled: email, edit, cancel, start — ordered by
-                severity (neutral, then destructive, then the primary action
-                last) so Start sits away from Cancel and is easy to hit
-                without risking an accidental cancel. */}
+            {/* Draft/Scheduled: email, edit, cancel, open lobby, start —
+                ordered by severity (neutral, then destructive, then the
+                primary actions last) so Start sits away from Cancel and is
+                easy to hit without risking an accidental cancel. Open lobby
+                only until the scheduled start (utils/netStart.ts). */}
             {(net.status === 'draft' || net.status === 'scheduled') && (
               <>
                 {net.template_id && actions.email_subscribers && (
@@ -316,6 +322,15 @@ const NetCard: React.FC<NetCardProps> = ({
                     color="error"
                     tooltip="Cancel this net"
                     onClick={onDeleteClick}
+                  />
+                )}
+                {actions.start && canOpenLobby(net) && (
+                  <CardActionButton
+                    icon={<MeetingRoomIcon />}
+                    label="Lobby"
+                    color="warning"
+                    tooltip="Open the lobby so stations can gather before the net starts"
+                    onClick={onOpenLobby}
                   />
                 )}
                 {actions.start && (

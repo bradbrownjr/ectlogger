@@ -195,7 +195,7 @@ async def test_close_active_net(client, owner):
 async def test_full_lifecycle_draft_to_lobby_to_active_to_closed(client, owner):
     from datetime import datetime, timedelta, timezone
 
-    # Create with a future scheduled time so /start goes to LOBBY
+    # Create with a future scheduled time (the lobby counts down to it)
     future = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
     create = await client.post(
         "/api/nets/",
@@ -205,8 +205,8 @@ async def test_full_lifecycle_draft_to_lobby_to_active_to_closed(client, owner):
     net_id = create.json()["id"]
     assert create.json()["status"] == "draft"
 
-    # /start → LOBBY
-    start = await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
+    # /open-lobby → LOBBY
+    start = await client.post(f"/api/nets/{net_id}/open-lobby", headers=auth_headers(owner))
     assert start.status_code == 200
     assert start.json()["status"] == "lobby"
 
@@ -241,8 +241,8 @@ async def test_lobby_open_sends_notification_go_live_does_not(client, owner):
         "app.email_service.EmailService.send_net_notification",
         new_callable=AsyncMock,
     ) as mock_notify:
-        # /start → LOBBY: this is the one and only send.
-        start = await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
+        # /open-lobby → LOBBY: this is the one and only send.
+        start = await client.post(f"/api/nets/{net_id}/open-lobby", headers=auth_headers(owner))
         assert start.status_code == 200
         assert start.json()["status"] == "lobby"
         mock_notify.assert_called_once()

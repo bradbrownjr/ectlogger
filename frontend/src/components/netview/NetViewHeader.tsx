@@ -25,6 +25,7 @@ import {
 } from '@mui/material';
 import { keyframes } from '@mui/system';
 import EditIcon from '@mui/icons-material/Edit';
+import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
@@ -63,6 +64,8 @@ import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import type { UseDialogResult } from '../../hooks/useDialog';
 import ImageLightbox from '../ImageLightbox';
 import { NetActions } from '../../utils/netActions';
+import { canOpenLobby } from '../../utils/netStart';
+import type { TopicPollAction } from './NetControlDialogs';
 
 // ========== NET VIEW HEADER ==========
 // Title row (name, description, status/stat/frequency chips) plus a full-width
@@ -226,10 +229,11 @@ interface NetViewHeaderProps {
   closeNetDialog: UseDialogResult;
 
   // Actions requiring parent-owned pre-processing or API calls
-  onOpenTopicPollConfig: (action?: 'start' | 'go-live') => void;
+  onOpenTopicPollConfig: (action?: TopicPollAction) => void;
   onOpenRoleDialog: () => void;
   onOpenCheckIn: () => void;
   onStartNetClick: () => void;
+  onOpenLobbyClick: () => void;
   onClaimNCS: () => void;
   onToggleHand: (checkInId: number) => void;
   onStatusChange: (checkInId: number, newStatus: string) => void;
@@ -346,6 +350,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   onOpenRoleDialog,
   onOpenCheckIn,
   onStartNetClick,
+  onOpenLobbyClick,
   onClaimNCS,
   onToggleHand,
   onStatusChange,
@@ -381,6 +386,10 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   const isClosedOrArchived = net.status === 'closed' || net.status === 'archived';
 
   const startingUpNet = canStartNet && isDraftOrScheduled;
+  // Open lobby sits beside Start net until the scheduled start time passes
+  // (utils/netStart.ts). Re-evaluated on every render, and NetView re-renders
+  // each second for its countdown, so it drops off on time.
+  const offerOpenLobby = startingUpNet && canOpenLobby(net);
 
   // Neutral (non-brand-colored) toolbar icon color — the dark-mode value
   // must be light enough to read against the dark command bar background.
@@ -389,6 +398,16 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   // ===== INFO GROUP (read / view actions) =====
   const infoItems: ToolbarItemDef[] = [
     {
+      // Left of Start net: the two ways to begin a net, gather first or
+      // start now. Same priority so neither collapses before the other.
+      key: 'open-lobby', group: 'info', priority: 4,
+      visible: offerOpenLobby,
+      Icon: MeetingRoomIcon, color: theme.palette.warning.main, label: 'Open lobby',
+      tooltip: 'Open the lobby so stations can check in and chat before the net starts',
+      onClick: onOpenLobbyClick,
+      disabled: startingNet,
+    },
+    {
       // Placed first (ahead of Net info and every other info-group item,
       // not just management ones) so NCS sees it immediately on a
       // draft/scheduled net rather than having to scan past read-only
@@ -396,7 +415,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       key: 'start-net', group: 'info', priority: 4,
       visible: startingUpNet,
       Icon: PlayArrowIcon, color: '#2e7d32', label: 'Start net',
-      tooltip: 'Start the net', onClick: onStartNetClick,
+      tooltip: 'Start the net now', onClick: onStartNetClick,
       disabled: startingNet,
       iconOverride: startingNet ? <CircularProgress size={16} sx={{ color: '#2e7d32' }} /> : undefined,
       extraSx: highlightStartNet ? { animation: `${pulseAnimationGreen} 1s infinite` } : undefined,

@@ -606,17 +606,39 @@ async def link_net_to_template(
     return NetResponse.from_orm(net)
 
 
+@router.post("/{net_id}/open-lobby", response_model=NetResponse)
+async def open_lobby(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Open a net's lobby: check-ins and chat, with a countdown to the official start.
+
+    Use /go-live to move from LOBBY to ACTIVE.
+    """
+    return await _begin_net(net_id, current_user, db, to_lobby=True)
+
+
 @router.post("/{net_id}/start", response_model=NetResponse)
 async def start_net(
     net_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Start a net - enters LOBBY mode if before scheduled time, otherwise goes straight to ACTIVE.
-    
-    LOBBY mode allows check-ins and chat while showing a countdown to the official start time.
-    Use the /go-live endpoint to transition from LOBBY to ACTIVE.
+    """Start a net: straight to ACTIVE, even ahead of its scheduled time.
+
+    Until 2026-09-27 this went to LOBBY instead whenever the scheduled start
+    was still in the future (or the net's lobby setting was on with no start
+    time), so the button labelled "Start net" usually opened a lobby. Net
+    managers who wanted a lobby couldn't tell they'd get one, and one moved a
+    net's start time half an hour early to be sure it would open. Opening the
+    lobby is now its own endpoint and button (/open-lobby above).
     """
+    return await _begin_net(net_id, current_user, db, to_lobby=False)
+
+
+async def _begin_net(net_id: int, current_user: User, db: AsyncSession, *, to_lobby: bool) -> NetResponse:
+    """The shared body of Open lobby and Start: DRAFT/SCHEDULED -> LOBBY or ACTIVE."""
     result = await db.execute(
         select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
     )
@@ -635,7 +657,8 @@ async def start_net(
     # start the week that was theirs, unless somebody had also added them to
     # the staff list. Every other staff decision (self-granting NCS or Logger
     # on check-in, managing roles) already goes through the helper.
-    # Now permissions.may_start_net, which the Start button also reads.
+    # Now permissions.may_start_net, which the Start and Open lobby buttons
+    # also read.
     if not may_start_net(await net_access(db, net, current_user)):
         raise HTTPException(status_code=403, detail="Not authorized to start this net")
 
@@ -676,26 +699,7 @@ async def start_net(
             detail="A net that has already been closed cannot be started again.",
         )
 
-    # Determine if we should go to LOBBY or ACTIVE
-    # Go to LOBBY if there's a scheduled_start_time in the future
-    now = datetime.utcnow()
-    go_to_lobby = False
-    if net.scheduled_start_time:
-        # Handle timezone-aware vs naive datetimes
-        scheduled = net.scheduled_start_time
-        if scheduled.tzinfo is not None:
-            from datetime import timezone
-            now = datetime.now(timezone.utc)
-        if scheduled > now:
-            go_to_lobby = True
-    elif net.auto_lobby_minutes is not None:
-        # Ad-hoc nets (and a one-time net with "open lobby now") have no
-        # scheduled_start_time to count down from, so there's no offset to wait
-        # for. "Enable lobby" here just means: don't skip straight to Active,
-        # stage through Lobby first so Net Control clicks "Go Live" when ready.
-        go_to_lobby = True
-
-    if go_to_lobby:
+    if to_lobby:
         net.status = NetStatus.LOBBY
         # Don't set started_at yet - that's for when it goes ACTIVE
     else:
@@ -739,14 +743,14 @@ async def start_net(
     
     # Post system message
     from app.main import post_system_message, manager
-    if go_to_lobby:
+    if to_lobby:
         await post_system_message(net_id, f"Net lobby opened by {display_callsign(current_user)}. Official start at scheduled time.", db)
     else:
         await post_system_message(net_id, f"Net has been started by {display_callsign(current_user)}", db)
     
     # Broadcast event so all connected clients refresh
     await manager.broadcast({
-        "type": "net_started" if not go_to_lobby else "net_lobby_opened",
+        "type": "net_lobby_opened" if to_lobby else "net_started",
         "data": {
             "net_id": net_id,
             "started_by": current_user.callsign or current_user.email,
@@ -756,12 +760,12 @@ async def start_net(
         }
     }, net_id)
     
-    # Send the single "net starting" notification here, regardless of which branch
-    # was taken above: a human opening the lobby is the first moment subscribers
+    # Send the single "net starting" notification here, whichever status the
+    # net went to: a human opening the lobby is the first moment subscribers
     # should hear about the net (giving them lead time before the official start),
-    # and straight-to-ACTIVE nets (ad hoc, or already past their scheduled time)
-    # have no earlier moment to notify at. The send is idempotent, so the later
-    # transitions that also call it are harmless - see app/net_start.py.
+    # and a net started straight to ACTIVE has no earlier moment to notify at.
+    # The send is idempotent, so the later transitions that also call it are
+    # harmless - see app/net_start.py.
     await send_net_start_notifications(db, net)
 
     return NetResponse.from_orm(net)
