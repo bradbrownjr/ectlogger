@@ -4,7 +4,7 @@ summary: The net form field by field: frequencies, check-in fields, self check-i
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-26
+revised: 2026-09-27
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/creating-a-net/
@@ -58,7 +58,12 @@ Every net needs at least one frequency or digital talkgroup. Check the boxes in 
 
 ### Net script and announcements
 
-The **Net Script** tab is the formatted text Net Control reads from during the net, and **Announcements** here is this one night's own notes, not the schedule's standing weekly announcements, which are a separate, similarly-named thing. Both are covered in full in [Scripts, notes, and announcements](/docs/net-managers/scripts-and-announcements/), including that naming collision.
+The **Net Script** tab is the formatted text Net Control reads from during the net. The **Announcements** tab holds two separate texts, each labelled:
+
+- **Announcements (every net from** *your schedule***)**: the schedule's standing announcements. Changes here are saved to the schedule when you save the net, so every net from it and the Schedule page show the same text. If you don't manage the schedule, you see them but can't change them.
+- **Notes for this net only**: anything specific to tonight. Everyone watching the net sees them under **Notes**.
+
+Both are covered in full in [Scripts, notes, and announcements](/docs/net-managers/scripts-and-announcements/).
 
 ### Check-in fields
 
@@ -66,7 +71,7 @@ Callsign is the only field every net always requires. Everything else (Name, Loc
 
 ## Saving
 
-**Create Net** (or **Save for this Net** when editing) saves changes to this occurrence only. If the net was created from a schedule, editing it also offers **Save to Schedule**, which pushes everything on this tab set (name, description, script, announcements, frequencies, check-in fields, and the ICS-309/topic/poll toggles) back to the schedule so every future net inherits it. Net staff and the rotation are managed separately and are never touched by Save to Schedule.
+**Create Net** (or **Save for this Net** when editing) saves changes to this occurrence only. If the net was created from a schedule, editing it also offers **Save to Schedule**, which pushes everything on this tab set (name, description, script, the schedule's announcements, frequencies, check-in fields, the check-in, chat, traffic, lobby and auto-close settings, and the ICS-309/topic/poll toggles) back to the schedule so every future net inherits it. This net's own notes stay on this net. Net staff and the rotation are managed separately and are never touched by Save to Schedule.
 
 Editing a closed or archived net still works, so a typo or a wrong setting can still be fixed, but nothing about it re-sends the closing email or re-triggers a notification. It updates the record only.
 

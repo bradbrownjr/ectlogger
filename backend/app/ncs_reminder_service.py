@@ -163,43 +163,13 @@ class NCSReminderService:
             from app.services.topic_history import seed_topic_from_history
             topic_prompt = await seed_topic_from_history(db, template, scheduled_dt.date())
 
-            net = Net(
-                name=template.name,
-                description=template.description,
-                info_url=template.info_url,
-                stream_url=template.stream_url,
-                logo_url=template.logo_url,
-                script=template.script,
-                # Deliberately NOT copying template.announcements: Net.announcements
-                # is Net Notes now (per-net, meant to start blank), separate from
-                # the schedule's Announcements which ScheduleAnnouncements.tsx reads
-                # live from the template - see schemas.py NetResponse.from_orm.
+            from app.services.net_from_template import build_net_from_template
+            net = build_net_from_template(
+                template,
                 owner_id=template.owner_id,
-                template_id=template.id,
-                field_config=template.field_config,
                 status=NetStatus.SCHEDULED,
-                ics309_enabled=template.ics309_enabled or False,
-                propagation_logging_enabled=template.propagation_logging_enabled or False,
-                self_can_hear_enabled=template.self_can_hear_enabled if template.self_can_hear_enabled is not None else True,
-                # The traffic settings were previously left off this copy list, so
-                # an auto-created scheduled net silently fell back to the column
-                # default instead of honoring its schedule -- matching what
-                # create_net_from_template already does for the manual path.
-                traffic_enabled=template.traffic_enabled or False,
-                traffic_form_types=template.traffic_form_types,
-                traffic_strip_form_type=template.traffic_strip_form_type,
-                traffic_strip_template=template.traffic_strip_template,
-                self_checkin_enabled=template.self_checkin_enabled if template.self_checkin_enabled is not None else True,
-                # Copied forward so the NCS can turn auto-lobby off for this one
-                # occurrence without editing the schedule.
-                auto_lobby_minutes=template.auto_lobby_minutes,
-                auto_close_after_minutes=template.auto_close_after_minutes,
-                topic_of_week_enabled=template.topic_of_week_enabled or False,
-                topic_of_week_prompt=topic_prompt,
-                poll_enabled=template.poll_enabled or False,
-                poll_question=template.poll_question,
-                authenticated=template.authenticated or False,
                 scheduled_start_time=scheduled_dt,
+                topic_of_week_prompt=topic_prompt,
             )
             db.add(net)
             await db.flush()

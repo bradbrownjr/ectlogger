@@ -274,43 +274,13 @@ async def create_net_from_template(
         db, template, scheduled_start_time.date() if scheduled_start_time else date.today()
     )
 
-    net = Net(
-        name=template.name,
-        description=template.description,
-        info_url=template.info_url,
-        stream_url=template.stream_url,
-        logo_url=template.logo_url,
-        script=template.script,
-        # Deliberately NOT copying template.announcements: Net.announcements
-        # is Net Notes now (per-net, meant to start blank), separate from
-        # the schedule's Announcements which ScheduleAnnouncements.tsx reads
-        # live from the template - see schemas.py NetResponse.from_orm.
+    from app.services.net_from_template import build_net_from_template
+    net = build_net_from_template(
+        template,
         owner_id=current_user.id,
-        template_id=template_id,
-        field_config=template.field_config,
         status=NetStatus.DRAFT,
-        ics309_enabled=template.ics309_enabled or False,
-        ics309_hide_muted_stations=template.ics309_hide_muted_stations if template.ics309_hide_muted_stations is not None else True,
-        propagation_logging_enabled=template.propagation_logging_enabled or False,
-        self_can_hear_enabled=template.self_can_hear_enabled if template.self_can_hear_enabled is not None else True,
-        traffic_enabled=template.traffic_enabled or False,
-        # Copied verbatim -- traffic_form_types is already JSON text on both
-        # sides, so no re-encode. Per-net values are authoritative once copied,
-        # matching how auto_lobby_minutes/field_config behave.
-        traffic_form_types=template.traffic_form_types,
-        traffic_strip_form_type=template.traffic_strip_form_type,
-        traffic_strip_template=template.traffic_strip_template,
-        mobile_priority_sort=template.mobile_priority_sort if template.mobile_priority_sort is not None else True,
-        chat_grace_period_minutes=template.chat_grace_period_minutes,
-        self_checkin_enabled=template.self_checkin_enabled if template.self_checkin_enabled is not None else True,
-        auto_lobby_minutes=template.auto_lobby_minutes,
-        auto_close_after_minutes=template.auto_close_after_minutes,
-        topic_of_week_enabled=template.topic_of_week_enabled or False,
+        scheduled_start_time=scheduled_start_time,
         topic_of_week_prompt=topic_prompt,
-        poll_enabled=template.poll_enabled or False,
-        poll_question=template.poll_question,
-        authenticated=template.authenticated or False,
-        scheduled_start_time=scheduled_start_time
     )
     db.add(net)
     await db.flush()

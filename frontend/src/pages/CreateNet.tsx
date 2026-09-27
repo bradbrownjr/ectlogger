@@ -29,6 +29,7 @@ import NCSStaffTab from '../components/create-net/NCSStaffTab';
 import CommunicationPlanPanel from '../components/forms/CommunicationPlanPanel';
 import NetScriptPanel from '../components/forms/NetScriptPanel';
 import AnnouncementsPanel from '../components/forms/AnnouncementsPanel';
+import MarkdownRender from '../components/shared/MarkdownRender';
 import CheckInFieldsPanel from '../components/forms/CheckInFieldsPanel';
 import FormWizardFooter from '../components/forms/FormWizardFooter';
 
@@ -124,6 +125,13 @@ const CreateNet: React.FC = () => {
 
   // ---- Template reference ----
   const [templateId, setTemplateId] = useState<number | null>(null);
+  // The schedule's own standing announcements (NetTemplate.announcements),
+  // edited on the Announcements tab alongside this net's Notes. null until
+  // loaded, so a failed load never saves a blank over the schedule's text.
+  const [scheduleName, setScheduleName] = useState('');
+  const [scheduleAnnouncements, setScheduleAnnouncements] = useState<string | null>(null);
+  const [savedScheduleAnnouncements, setSavedScheduleAnnouncements] = useState<string | null>(null);
+  const [canEditSchedule, setCanEditSchedule] = useState(false);
 
   // ---- Frequencies ----
   const [frequencies, setFrequencies] = useState<FrequencyItem[]>([]);
@@ -235,6 +243,7 @@ const CreateNet: React.FC = () => {
       if (net.template_id) {
         setTemplateId(net.template_id);
         loadTopicHistory(net.template_id);
+        loadScheduleAnnouncements(net.template_id);
       }
       setPollEnabled(net.poll_enabled || false);
       setPollQuestion(net.poll_question || '');
@@ -277,6 +286,18 @@ const CreateNet: React.FC = () => {
     }
   };
 
+  const loadScheduleAnnouncements = async (templateIdToLoad: number) => {
+    try {
+      const response = await templateApi.get(templateIdToLoad);
+      setScheduleName(response.data.name || '');
+      setScheduleAnnouncements(response.data.announcements || '');
+      setSavedScheduleAnnouncements(response.data.announcements || '');
+      setCanEditSchedule(!!response.data.can_manage);
+    } catch (error) {
+      console.error('Failed to load schedule announcements:', error);
+    }
+  };
+
   const loadTopicHistory = async (templateIdToLoad: number) => {
     try {
       const response = await api.get(`/templates/${templateIdToLoad}/topic-history`);
@@ -300,40 +321,56 @@ const CreateNet: React.FC = () => {
   };
 
   // ---- Submit handlers ----
+  // Every setting a net shares with its schedule, in one place so "Save for
+  // this Net" and "Save to Schedule" can't drift apart. Until 2026-09-27 each
+  // built its own list: Save to Schedule sent this net's one-night Notes as
+  // the schedule's announcements (wiping them, since Notes start blank) and
+  // left out the chat, mobile-sort and self check-in settings.
+  const buildSharedSettings = () => ({
+    name,
+    description,
+    info_url: infoUrl || null,
+    stream_url: streamUrl || null,
+    script,
+    frequency_ids: selectedFrequencyIds,
+    field_config: fieldConfig,
+    ics309_enabled: ics309Enabled,
+    ics309_hide_muted_stations: ics309HideMutedStations,
+    propagation_logging_enabled: propagationLoggingEnabled,
+    self_can_hear_enabled: selfCanHearEnabled,
+    authenticated,
+    traffic_enabled: trafficEnabled,
+    traffic_form_types: trafficFormTypes,
+    traffic_strip_form_type: trafficStripFormType || null,
+    traffic_strip_template: trafficStripTemplate || null,
+    mobile_priority_sort: mobilePrioritySort,
+    chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
+    self_checkin_enabled: selfCheckinEnabled,
+    auto_lobby_minutes: autoLobbyEnabled ? autoLobbyMinutes : null,
+    auto_close_after_minutes: autoCloseEnabled ? autoCloseAfterMinutes : null,
+    topic_of_week_enabled: topicOfWeekEnabled,
+    topic_of_week_prompt: topicOfWeekPrompt || null,
+    poll_enabled: pollEnabled,
+    poll_question: pollQuestion || null,
+  });
+
   const handleCreateNet = async () => {
     try {
       const scheduledStartTimeISO = scheduledStartTime ? new Date(scheduledStartTime).toISOString() : null;
       const payload = {
-        name,
-        description,
-        info_url: infoUrl || null,
-        stream_url: streamUrl || null,
-        script,
+        ...buildSharedSettings(),
+        // The net's own one-night Notes; the schedule's announcements are saved below.
         announcements,
-        frequency_ids: selectedFrequencyIds,
-        field_config: fieldConfig,
-        ics309_enabled: ics309Enabled,
-        ics309_hide_muted_stations: ics309HideMutedStations,
-        propagation_logging_enabled: propagationLoggingEnabled,
-        self_can_hear_enabled: selfCanHearEnabled,
-        authenticated,
-        traffic_enabled: trafficEnabled,
-        traffic_form_types: trafficFormTypes,
-        traffic_strip_form_type: trafficStripFormType || null,
-        traffic_strip_template: trafficStripTemplate || null,
-        mobile_priority_sort: mobilePrioritySort,
-        chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
-        self_checkin_enabled: selfCheckinEnabled,
-        auto_lobby_minutes: autoLobbyEnabled ? autoLobbyMinutes : null,
-        auto_close_after_minutes: autoCloseEnabled ? autoCloseAfterMinutes : null,
-        topic_of_week_enabled: topicOfWeekEnabled,
-        topic_of_week_prompt: topicOfWeekPrompt || null,
-        poll_enabled: pollEnabled,
-        poll_question: pollQuestion || null,
         scheduled_start_time: scheduledStartTimeISO,
       };
 
       if (isEditMode) {
+        // Save the schedule's announcements first if they were changed here.
+        if (templateId && canEditSchedule && scheduleAnnouncements !== null
+            && scheduleAnnouncements !== savedScheduleAnnouncements) {
+          await templateApi.update(templateId, { announcements: scheduleAnnouncements });
+          setSavedScheduleAnnouncements(scheduleAnnouncements);
+        }
         const response = await netApi.update(parseInt(netId!), payload);
         navigate(`/nets/${response.data.id}`);
       } else {
@@ -359,30 +396,11 @@ const CreateNet: React.FC = () => {
     setSavingToSchedule(true);
     try {
       await templateApi.update(templateId, {
-        name,
-        description,
-        info_url: infoUrl || null,
-        stream_url: streamUrl || null,
-        script,
-        announcements,
-        frequency_ids: selectedFrequencyIds,
-        field_config: fieldConfig,
-        ics309_enabled: ics309Enabled,
-        ics309_hide_muted_stations: ics309HideMutedStations,
-        propagation_logging_enabled: propagationLoggingEnabled,
-        self_can_hear_enabled: selfCanHearEnabled,
-        authenticated,
-        traffic_enabled: trafficEnabled,
-        traffic_form_types: trafficFormTypes,
-        traffic_strip_form_type: trafficStripFormType || null,
-        traffic_strip_template: trafficStripTemplate || null,
-        auto_lobby_minutes: autoLobbyEnabled ? autoLobbyMinutes : null,
-        auto_close_after_minutes: autoCloseEnabled ? autoCloseAfterMinutes : null,
-        topic_of_week_enabled: topicOfWeekEnabled,
-        topic_of_week_prompt: topicOfWeekPrompt || null,
-        poll_enabled: pollEnabled,
-        poll_question: pollQuestion || null,
+        ...buildSharedSettings(),
+        // The schedule's own announcements, never this net's Notes.
+        ...(scheduleAnnouncements !== null ? { announcements: scheduleAnnouncements } : {}),
       });
+      if (scheduleAnnouncements !== null) setSavedScheduleAnnouncements(scheduleAnnouncements);
       setSaveToScheduleConfirmOpen(false);
       showToast('Schedule updated. Future nets opened from this schedule will use these values.', 'success');
     } catch (error: any) {
@@ -528,24 +546,49 @@ const CreateNet: React.FC = () => {
           </TabPanel>
 
           {/* ========== TAB 4: ANNOUNCEMENTS ========== */}
+          {/* Two different texts, labelled apart: the schedule's standing
+              announcements (shown on every net from it, and on the Schedule
+              page) and this net's own one-night Notes. */}
           <TabPanel value={activeTab} index={4}>
-            <Typography variant="h6" gutterBottom>Announcements / General Traffic</Typography>
+            {/* Shows for a net from a schedule, once the schedule has loaded */}
+            {templateId && scheduleAnnouncements !== null && (
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h6" gutterBottom>
+                  Announcements{scheduleName ? ` (every net from ${scheduleName})` : ''}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  {canEditSchedule && !isInfoMode
+                    ? 'Saved to the schedule, so every net from it and the Schedule page show the same text.'
+                    : 'Set on the schedule. Only its managers and staff can change it.'}
+                </Typography>
+                {canEditSchedule && !isInfoMode ? (
+                  <AnnouncementsPanel
+                    announcements={scheduleAnnouncements}
+                    setAnnouncements={setScheduleAnnouncements}
+                    rows={12}
+                    footerCaption={`${scheduleAnnouncements.length} characters • Supports Markdown formatting`}
+                  />
+                ) : (
+                  <MarkdownRender
+                    content={scheduleAnnouncements}
+                    emptyText="No schedule announcements have been defined."
+                    variant="colored"
+                  />
+                )}
+              </Box>
+            )}
+
+            <Typography variant="h6" gutterBottom>
+              {templateId ? 'Notes for this net only' : 'Notes'}
+            </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              List announcements and general traffic items for NCS to reference during the net.
-              This is visible to all users viewing the net. Use the formatting toolbar for markdown styling.
+              Anything specific to this one net. Everyone viewing the net sees them under Notes.
             </Typography>
             <AnnouncementsPanel
               announcements={announcements}
               setAnnouncements={setAnnouncements}
-              rows={15}
+              rows={8}
               footerCaption={`${announcements.length} characters • Supports Markdown formatting`}
-              headerContent={templateId ? (
-                <Alert severity="info" sx={{ mb: 2 }}>
-                  Recurring weekly announcements (club news, events, reminders) are managed in the
-                  Schedule editor under the Announcements tab. Those appear via the toolbar button during
-                  a live net and are separate from these per-net notes.
-                </Alert>
-              ) : undefined}
             />
           </TabPanel>
 
@@ -640,9 +683,10 @@ const CreateNet: React.FC = () => {
               currently on this net, including:
               <ul style={{ marginTop: 8, marginBottom: 8 }}>
                 <li>Name, description, info URL, stream URL</li>
-                <li>Net script and announcements</li>
+                <li>Net script and the schedule's announcements (not this net's notes)</li>
                 <li>Selected frequencies</li>
                 <li>Check-in field configuration</li>
+                <li>Check-in, chat, traffic, lobby, and auto-close settings</li>
                 <li>ICS-309, Topic of the Week, and Poll settings</li>
               </ul>
               Future nets opened from this schedule will inherit these values.

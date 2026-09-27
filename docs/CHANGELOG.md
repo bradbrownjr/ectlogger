@@ -22,6 +22,10 @@ All notable changes to ECTLogger are documented here.
 
 * **Schedules: Follow a net from its card** — Net cards on the dashboard now have their own Subscribe button, so you can sign up for a net's emails wherever you see it listed. When a net's schedule has standing announcements, its card on the dashboard and on the Schedule page shows an Announcements link, so you can catch up on club news without joining the net, and save a copy as a PDF.
 
+## Bug Fixes
+
+* **Schedules: Nets follow their schedule** — Nets ECTLogger creates on its own now keep every schedule setting, including "Keep chat open after net", which they used to lose. On Edit Net, the Announcements tab now shows the schedule's announcements for you to update, with this net's own notes in a separate box below, and Save to Schedule no longer erases the schedule's announcements and now carries the chat and check-in settings too.
+
 ---
 
 # September 26, 2026

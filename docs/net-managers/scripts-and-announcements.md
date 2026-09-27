@@ -17,10 +17,10 @@ Three pieces of text live around a net, and two of them share a name that means 
 | What it is | Where you edit it | What the toolbar button is called |
 |---|---|---|
 | The net script | Edit Net's **Net Script** tab, or Edit Schedule's **Net Script** tab | **Script** |
-| Standing announcements that apply every week | Edit Schedule's **Announcements** tab | **Announcements** |
-| Notes for this one night only | Edit Net's **Announcements** tab | **Notes** |
+| Standing announcements that apply every week | Edit Schedule's **Announcements** tab, or the top half of Edit Net's **Announcements** tab | **Announcements** |
+| Notes for this one night only | The **Notes for this net only** half of Edit Net's **Announcements** tab | **Notes** |
 
-That third row is the trap: the field is still literally called "announcements" on the net itself, and its edit tab is still labelled Announcements too, but the button that opens it during a live net is labelled **Notes**, and the panel it opens is titled "Net Notes." Whatever you type in a net's own Announcements tab is what "Notes" shows, not the schedule's standing text.
+Edit Net's **Announcements** tab holds both, labelled apart: the schedule's standing announcements at the top (saved to the schedule, so every net from it shows the change) and this net's own notes below. During a live net they open from two different buttons, **Announcements** and **Notes**.
 
 <figure>
   <img src="/docs/img/net-managers/net-notes-and-schedule-announcements.png"
@@ -50,7 +50,7 @@ Between nets, anyone can read them from the **Announcements** line on the schedu
 
 ## Notes for tonight
 
-A net's own **Announcements** tab (opened live as **Notes**) is for something specific to this one occurrence (a detour, a special guest, a one-off reminder) without editing the schedule's standing text. It's visible to everyone watching the net, the same as the schedule's announcements are, just scoped to tonight.
+The **Notes for this net only** box on Edit Net's Announcements tab (opened live as **Notes**) is for something specific to this one occurrence (a detour, a special guest, a one-off reminder) without editing the schedule's standing text. It's visible to everyone watching the net, the same as the schedule's announcements are, just scoped to tonight.
 
 ## The printable version
 
