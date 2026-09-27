@@ -320,7 +320,7 @@ const AdminBrandingTab: React.FC<Props> = ({ showSnackbar }) => {
               navigation bar, the About dialog, and the printed net report.
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <AppLogo size={64} variant="default" />
+              <AppLogo size={64} />
               <input
                 ref={logoInputRef}
                 type="file"

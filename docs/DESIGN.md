@@ -7,34 +7,37 @@ Consult it before adding new UI elements so the app stays visually coherent.
 
 ## Logo
 
-The official ECTLogger logo is a radar-ring circle with a Yagi antenna mast, green station check-in dots, and a bold green checkmark overlay. It represents stations checking into a net through an antenna — the core function of the application.
+The ECTLogger logo is a radar scope: a green ring around a round face with radar rings and a sweep, contacts being tracked, an HF-style Yagi antenna, and a bold green checkmark. Redesigned 2026-09-27 in Claude Design; the source files live outside the repo in Brad's `ECTLogger Logos` folder.
 
-**Canonical SVG source:** `docs/assets/logo.svg`
-**React component:** `frontend/src/components/AppLogo.tsx`
-**Favicon:** `frontend/public/logo.svg`
+**Single source:** `frontend/src/components/brand/logo.ts` holds the mark's geometry, its two palettes (`LOGO_LIGHT`, `LOGO_DARK`), and the wordmark's letter outlines and colors. Nothing else carries its own copy of the art.
+**React components:** `AppLogo` (the mark) and `AppWordmark` (the name). Always use them together as a heading or in the nav bar.
+**Generated copies:** `frontend/scripts/build-logo-assets.mjs` writes the favicon (`frontend/public/logo.svg`), the email header copy (`backend/app/email/logo_svg.py`), and reference files in `docs/assets/` (`logo.svg`, `logo-dark.svg`, `lockup-light.svg`, `lockup-dark.svg`). Change the art in `logo.ts`, then run `node scripts/build-logo-assets.mjs` from `frontend/`. The printed net script builds its copy at run time with `logoMarkSvg`.
 
 ### Usage
 
 | Context | Component call | Notes |
 |---|---|---|
-| Navigation bar (blue AppBar) | `<AppLogo size={28} variant="nav" />` | White rings/antenna, bright green dots and checkmark |
-| Login page heading | `<AppLogo size={40} variant="default" />` | Standard light-bg palette |
-| Net and schedule report footer credit | `<AppLogo size={16} />` (in `ReportFooter`) | Deliberately small: the net's own logo leads the report, see "Reports" |
-| Dark-mode cards / panels | `<AppLogo size={32} variant="dark" />` | Dark fill, adjusted ring/antenna colors |
-| Email HTML bodies | Inline SVG at 28 px | Copy from `docs/assets/logo.svg`; email subjects keep the 📻 emoji |
-| Printed Net Script | Inline SVG at 32 px | Embedded directly in the generated HTML string |
+| Navigation bar | `<AppLogo size={30} variant="nav" />` + `<AppWordmark height={22} variant="nav" />` | Light mode: light mark, white wordmark, because the bar takes each named theme's color and white is the one text color that clashes with none of them. Dark mode: the bar is neutral, so dark mark and green/off-white wordmark |
+| Login page, About dialog, Branding tab | `<AppLogo />` (+ `<AppWordmark />`) | Default `auto`: follows light/dark mode |
+| Net and schedule report footer credit | `<AppLogo size={16} variant="light" />` (in `ReportFooter`) | Always light: the report prints on white paper. Deliberately small; the net's own logo leads the report, see "Reports" |
+| Email HTML bodies | `LOGO_SVG` from `app/email/logo_svg.py`, 28 px | Light mark. Some mail clients drop inline SVG, so headings never depend on it; email subjects keep the 📻 emoji |
+| Printed Net Script | `logoMarkSvg(LOGO_LIGHT, 32, ...)` | Light mark, embedded in the generated HTML |
+| Favicon | `frontend/public/logo.svg` | Light mark (generated) |
 
-### Variants
+### Palettes
 
-- **`default`** — Light background. Dark green border (`#1a6b2e`), light green rings, gray antenna, two-tone green checkmark.
-- **`nav`** — Blue or dark toolbar. White/translucent border and rings, white antenna, bright green (`#69f0ae`) dots and checkmark.
-- **`dark`** — Dark-mode surface. Dark green border, very dark rings, blue-gray antenna, slightly lighter green checkmark.
+- **Light** (`LOGO_LIGHT`): green ring `#2f7a3c`, cream face `#f6f8f4`, pale green radar rings, slate antenna, green `#34913f` sweep and checkmark. A solid badge, so it reads on white and on every theme's colored nav bar.
+- **Dark** (`LOGO_DARK`): the same ring, dark radar face `#0f2616`, bright green `#6fd67f` sweep and checkmark.
+- **Wordmark**: "ECT" bold, "Logger" regular. `WORDMARK_LIGHT` green `#1d5e2a` / slate `#3b4750`, `WORDMARK_DARK` `#6fd67f` / `#e6ebe4`, `WORDMARK_ON_COLOR` all white (nav bar, light mode).
+
+A logo uploaded under Admin → Branding replaces the mark everywhere `AppLogo` draws it; the wordmark stays.
 
 ### Do not
 
 - Recolor the checkmark to anything other than green — it is the brand accent.
 - Stretch the logo non-uniformly (always set equal `width` and `height`).
-- Use `variant="default"` on the blue AppBar — use `variant="nav"` so it reads on a colored background.
+- Color the nav bar wordmark with anything but white in light mode; a green or theme-colored name clashes with some named themes.
+- Paste a copy of the logo SVG into a new file. Import it from `brand/logo.ts`, or generate it with the build script.
 - Replace the logo with the 📻 emoji anywhere in the UI — the emoji is reserved for email subject lines only.
 
 ---

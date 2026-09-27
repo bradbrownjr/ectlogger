@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import AppLogo from './AppLogo';
+import AppWordmark from './AppWordmark';
 import changelogData from '../changelog.json';
 import creditsData from '../credits.json';
 
@@ -32,7 +33,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, py: 1 }}>
           <AppLogo size={72} />
           <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h6" fontWeight="bold">ECTLogger</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 0.5 }}><AppWordmark height={26} /></Box>
             <Typography variant="body2" color="text.secondary">
               Modern Radio Net Logging
             </Typography>

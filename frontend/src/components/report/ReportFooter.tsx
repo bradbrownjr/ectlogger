@@ -26,7 +26,7 @@ const ReportFooter: React.FC<{ generatedAt: string }> = ({ generatedAt }) => (
     }}
   >
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-      <AppLogo size={16} />
+      <AppLogo size={16} variant="light" />
       Logged with ECTLogger · {window.location.host}
     </Box>
     <Box>Generated {generatedAt}</Box>

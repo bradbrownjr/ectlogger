@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLogo from '../components/AppLogo';
+import AppWordmark from '../components/AppWordmark';
 import {
   Container,
   Paper,
@@ -105,7 +106,7 @@ const Login: React.FC = () => {
       <Box sx={{ mt: 8, mb: 4 }}>
         <Paper elevation={3} sx={{ p: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
-            <AppLogo size={40} variant="default" /> ECTLogger
+            <AppLogo size={48} /><AppWordmark height={34} />
           </Typography>
           <Typography variant="body1" gutterBottom align="center" color="text.secondary">
             Emergency Communications Team Net Logger

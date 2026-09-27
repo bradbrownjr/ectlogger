@@ -3,6 +3,7 @@ from app.logger import logger
 from jinja2 import Template
 
 from app.config import settings
+from app.email.logo_svg import LOGO_SVG
 from app.email.base import get_unsubscribe_footer, send_email
 
 async def send_ncs_reminder(
@@ -65,7 +66,7 @@ async def send_ncs_reminder(
     </head>
     <body>
         <div class="container">
-            <h2><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="28" height="28" style="vertical-align:middle;margin-right:6px"><circle cx="100" cy="100" r="92" fill="white" stroke="#1a6b2e" stroke-width="9"/><circle cx="100" cy="100" r="68" fill="none" stroke="#b2dfb2" stroke-width="1.5"/><circle cx="100" cy="100" r="47" fill="none" stroke="#b2dfb2" stroke-width="1.5"/><circle cx="100" cy="100" r="26" fill="none" stroke="#b2dfb2" stroke-width="1.5"/><line x1="100" y1="165" x2="100" y2="38" stroke="#90a4ae" stroke-width="4.5" stroke-linecap="round"/><line x1="88" y1="58" x2="112" y2="58" stroke="#90a4ae" stroke-width="3" stroke-linecap="round"/><line x1="84" y1="74" x2="116" y2="74" stroke="#78909c" stroke-width="2.5" stroke-linecap="round"/><circle cx="100" cy="38" r="5.5" fill="#4caf50"/><circle cx="152" cy="72" r="5.5" fill="#4caf50"/><circle cx="56" cy="62" r="5.5" fill="#4caf50"/><circle cx="48" cy="138" r="5.5" fill="#4caf50"/><path d="M 52 112 L 84 148 L 162 58" fill="none" stroke="#2e7d32" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/><path d="M 52 112 L 84 148 L 162 58" fill="none" stroke="#43a047" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg> NCS Duty Reminder</h2>
+            <h2>""" + LOGO_SVG + """ NCS Duty Reminder</h2>
             
             <div class="alert">
                 <strong>You are scheduled as Net Control Station {{ urgency }}!</strong>
@@ -183,7 +184,7 @@ async def send_subscriber_reminder(
     </head>
     <body>
         <div class="container">
-            <h2><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="28" height="28" style="vertical-align:middle;margin-right:6px"><circle cx="100" cy="100" r="92" fill="white" stroke="#1a6b2e" stroke-width="9"/><circle cx="100" cy="100" r="68" fill="none" stroke="#b2dfb2" stroke-width="1.5"/><circle cx="100" cy="100" r="47" fill="none" stroke="#b2dfb2" stroke-width="1.5"/><circle cx="100" cy="100" r="26" fill="none" stroke="#b2dfb2" stroke-width="1.5"/><line x1="100" y1="165" x2="100" y2="38" stroke="#90a4ae" stroke-width="4.5" stroke-linecap="round"/><line x1="88" y1="58" x2="112" y2="58" stroke="#90a4ae" stroke-width="3" stroke-linecap="round"/><line x1="84" y1="74" x2="116" y2="74" stroke="#78909c" stroke-width="2.5" stroke-linecap="round"/><circle cx="100" cy="38" r="5.5" fill="#4caf50"/><circle cx="152" cy="72" r="5.5" fill="#4caf50"/><circle cx="56" cy="62" r="5.5" fill="#4caf50"/><circle cx="48" cy="138" r="5.5" fill="#4caf50"/><path d="M 52 112 L 84 148 L 162 58" fill="none" stroke="#2e7d32" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/><path d="M 52 112 L 84 148 L 162 58" fill="none" stroke="#43a047" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg> Net Starting Soon!</h2>
+            <h2>""" + LOGO_SVG + """ Net Starting Soon!</h2>
             
             <div class="alert">
                 <strong>A net you're subscribed to starts in about 1 hour.</strong>
