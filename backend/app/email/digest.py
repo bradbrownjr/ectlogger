@@ -163,7 +163,8 @@ async def send_whats_new_email(to_email: str, unsubscribe_token: Optional[str],
 
     # Collect sections from all entries, merging same-type + same-title sections
     # so each category heading appears exactly once in the email.
-    type_priority = {'feature': 0, 'improvement': 1, 'bugfix': 2, 'fix': 2, 'branding': 3}
+    # Branding leads (the most visible change); same order as ChangelogNotification.tsx.
+    type_priority = {'branding': 0, 'feature': 1, 'improvement': 2, 'bugfix': 3, 'fix': 3}
     section_order: list = []
     merged: dict = {}
     for entry in entries:

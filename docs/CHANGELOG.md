@@ -18,6 +18,10 @@ All notable changes to ECTLogger are documented here.
 
 # September 27, 2026
 
+## Branding
+
+* **Branding: A refreshed logo for ECTLogger** — The logo has a fresh radar-sweep design showing the contacts we're tracking, and an antenna that looks more like an HF tower. Light and dark versions follow your light/dark mode setting.
+
 ## New Features
 
 * **Schedules: Follow a net from its card** — Net cards on the dashboard now have their own Subscribe button, so you can sign up for a net's emails wherever you see it listed. When a net's schedule has standing announcements, its card on the dashboard and on the Schedule page shows an Announcements link, so you can catch up on club news without joining the net, and save a copy as a PDF.
@@ -33,10 +37,6 @@ All notable changes to ECTLogger are documented here.
 ## Bug Fixes
 
 * **Schedules: Nets follow their schedule** — Nets ECTLogger creates on its own now keep every schedule setting, including "Keep chat open after net", which they used to lose. On Edit Net, the Announcements tab now shows the schedule's announcements for you to update, with this net's own notes in a separate box below, and Save to Schedule no longer erases the schedule's announcements and now carries the chat and check-in settings too.
-
-## Branding
-
-* **Branding: A refreshed logo for ECTLogger** — The logo has a fresh radar-sweep design showing the contacts we're tracking, and an antenna that looks more like an HF tower. Light and dark versions follow your light/dark mode setting.
 
 ---
 

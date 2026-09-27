@@ -22,6 +22,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import BuildIcon from '@mui/icons-material/Build';
+import PaletteIcon from '@mui/icons-material/Palette';
 import DescriptionIcon from '@mui/icons-material/Description';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
@@ -83,11 +84,13 @@ interface ChangelogEntry {
 const CHANGELOG_VERSION: string = (changelogData as { version: string }).version;
 const CHANGELOG: ChangelogEntry[] = (changelogData as { entries: ChangelogEntry[] }).entries;
 
+// Branding leads: a new logo or look is the first thing every user notices,
+// so it tops the day's list. Same order as email/digest.py's type_priority.
 const SECTION_PRIORITY: Record<'feature' | 'fix' | 'improvement' | 'branding', number> = {
-  feature: 0,
-  improvement: 1,
-  fix: 2,
-  branding: 3,
+  branding: 0,
+  feature: 1,
+  improvement: 2,
+  fix: 3,
 };
 
 const IMPORTANCE_PRIORITY: Record<'critical' | 'high' | 'medium' | 'low', number> = {
@@ -430,12 +433,14 @@ const ChangelogNotification: React.FC = () => {
       improvement: [  2, 136, 209],  // #0288d1 blue
       fix:         [237, 108,   2],  // #ed6c02 orange
       bugfix:      [237, 108,   2],
+      branding:    [123,  31, 162],  // #7b1fa2 purple
     };
     const TYPE_EMOJI: Record<string, string> = {
       feature:     '\u2728',
       improvement: '\uD83D\uDD27',
       fix:         '\uD83D\uDC1B',
       bugfix:      '\uD83D\uDC1B',
+      branding:    '\uD83C\uDFA8',
     };
 
     // ---- Header banner (matches email gradient start color #1976d2) ----
@@ -551,6 +556,8 @@ const ChangelogNotification: React.FC = () => {
       case 'fix':
       case 'bugfix':
         return <BugReportIcon fontSize="small" sx={{ color: 'warning.main' }} />;
+      case 'branding':
+        return <PaletteIcon fontSize="small" sx={{ color: '#7b1fa2' }} />;
       default:
         return null;
     }
