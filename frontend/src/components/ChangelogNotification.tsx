@@ -84,6 +84,10 @@ interface ChangelogEntry {
 const CHANGELOG_VERSION: string = (changelogData as { version: string }).version;
 const CHANGELOG: ChangelogEntry[] = (changelogData as { entries: ChangelogEntry[] }).entries;
 
+// Branding's purple, the same as email/digest.py. Not the theme's secondary
+// color, which changes with each named theme (pink on the default one).
+const BRANDING_COLOR = '#7b1fa2';
+
 // Branding leads: a new logo or look is the first thing every user notices,
 // so it tops the day's list. Same order as email/digest.py's type_priority.
 const SECTION_PRIORITY: Record<'feature' | 'fix' | 'improvement' | 'branding', number> = {
@@ -557,25 +561,26 @@ const ChangelogNotification: React.FC = () => {
       case 'bugfix':
         return <BugReportIcon fontSize="small" sx={{ color: 'warning.main' }} />;
       case 'branding':
-        return <PaletteIcon fontSize="small" sx={{ color: '#7b1fa2' }} />;
+        return <PaletteIcon fontSize="small" sx={{ color: BRANDING_COLOR }} />;
       default:
         return null;
     }
   };
 
+  // Section heading color, matching its icon above.
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'feature':
-        return 'success';
+        return 'success.main';
       case 'improvement':
-        return 'info';
+        return 'info.main';
       case 'fix':
       case 'bugfix':
-        return 'warning';
+        return 'warning.main';
       case 'branding':
-        return 'secondary';
+        return BRANDING_COLOR;
       default:
-        return 'default';
+        return 'text.primary';
     }
   };
 
@@ -667,7 +672,7 @@ const ChangelogNotification: React.FC = () => {
                 <Box key={sectionIndex} sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
                     {getTypeIcon(section.type)}
-                    <Typography variant="subtitle2" color={`${getTypeColor(section.type)}.main`}>
+                    <Typography variant="subtitle2" color={getTypeColor(section.type)}>
                       {section.title}
                     </Typography>
                   </Box>
