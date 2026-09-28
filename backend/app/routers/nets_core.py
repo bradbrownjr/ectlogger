@@ -46,6 +46,7 @@ from app.schemas import (
 )
 from app.services.net_closure import close_net_and_notify, compute_auto_close_at
 from app.utils import NET_LOGO_DIR, display_callsign, format_ncs_attribution, save_resized_logo
+from app.services.ncs_attribution import load_ncs_attribution
 
 # Same limits as the profile avatar upload (routers/users.py) -- square,
 # cropped client-side, re-validated and re-resized here as a safety net.
@@ -215,22 +216,7 @@ async def list_nets(
     # operators to run). We surface both on the cards so users can tell them
     # apart. Same all-of-them / is_active rules as get_net above -- see the
     # comment there for why a single most-recent row was wrong.
-    ncs_by_net: dict = {}
-    if net_ids:
-        ncs_users_result = await db.execute(
-            select(NetRole.net_id, User.callsign, User.name, NetRole.assigned_at)
-            .join(User, User.id == NetRole.user_id)
-            .where(NetRole.net_id.in_(net_ids))
-            .where(NetRole.role == "NCS")
-            .where(NetRole.is_active == True)  # noqa: E712
-            .order_by(NetRole.assigned_at.asc())
-        )
-        accumulated: dict = {}
-        for net_id_row, callsign, name, _assigned_at in ncs_users_result.fetchall():
-            accumulated.setdefault(net_id_row, []).append((callsign, name))
-        ncs_by_net = {
-            nid: format_ncs_attribution(rows) for nid, rows in accumulated.items()
-        }
+    ncs_by_net = await load_ncs_attribution(db, net_ids)
 
     responses = []
     for net in nets:

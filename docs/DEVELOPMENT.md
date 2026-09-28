@@ -604,6 +604,29 @@ There is no "whose turn is next" pointer anywhere in the database. `routers/ncs_
 
 ---
 
+## Schedule calendar
+
+The Schedule page's **Calendar view** (`components/scheduler/ScheduleCalendar.tsx`) reads one endpoint, `GET /api/templates/calendar?start=&end=` (`routers/templates_calendar.py`), which returns every occurrence starting in the window. The merge itself lives in `app/services/schedule_occurrences.py::get_occurrences`, shared with the RSS feed (`/feed/schedule.xml`) so the two can never disagree about which nets are on. The feed filters out cancelled and finished occurrences; the calendar keeps them.
+
+**Two sources, and the seam is now.**
+
+- **Real `Net` rows** cover the past and any upcoming slot the scheduler has already created (about 24 hours ahead). Each is dated by `scheduled_start_time`, else `started_at`, else `created_at`, and carries its status, check-in count, and NCS from `services/ncs_attribution.py::load_ncs_attribution` (the same single rule the net list uses, see `format_ncs_attribution`).
+- **Projections** come from each active daily/weekly/monthly schedule, **only from the current moment forward**. Never project into the past: a projection on a past date asserts a net was held that may have been cancelled, and names an NCS who never served. `calculate_schedule_dates` cannot look backwards anyway; do not "enable" earlier months by backdating its start date. Past months come from real rows alone.
+
+**A real row always beats a projection for the same slot**, matched on the scheduler's own ±5 minute window (`ncs_reminder_service._get_or_create_scheduled_net`). Using the scheduler's rule rather than a looser same-day match means the calendar never hides a slot the scheduler would go on to fill with a second net. Two real rows in one slot are both shown: that is real duplicate data, not a projection collision (production had four such pairs when this shipped, e.g. nets 84/85).
+
+**Cancelled has two sources and both render struck through**, never omitted: a `Net` with `NetStatus.CANCELLED`, and an NCS override with `replacement_user_id=None` on a projected date.
+
+**Cost.** `compute_anchored_ncs_schedule` replays every occurrence from the rotation anchor to the window's end, so it runs once per schedule per request for the whole window, never per occurrence. The endpoint caps the window at 62 days (a month grid is 42) and paging at one year ahead. Against beta's copy of production the slowest month took 70 ms.
+
+**Display timezone: the viewer's browser zone, deliberately.** The endpoint returns tz-aware UTC and `utils/calendarGrid.ts` places each occurrence on the viewer's own local day, because the question the calendar answers is "am I free that evening". This matches the page's existing "Times in <zone>" label. It is the opposite of reports and the planned Assignment Board, which use the net's zone; the divergence is intended, not an inconsistency bug. `resolve_display_tz` was considered and rejected: most accounts have no `timezone` on file, so it would mean UTC for nearly everyone.
+
+**Where an occurrence goes.** Nets of a recurring or one-time schedule go on the grid. Nets with no schedule, or whose schedule is ad-hoc or not loaded (inactive), are listed below the grid as "Ad-hoc nets" for that month, so nothing held that month is left out. The page's filter hides a schedule's nets wherever they would go. The details popover reuses the page's own `renderScheduleCard`, so its buttons carry the same permission rules as the card view.
+
+**Naming.** When calendar export or a subscribable feed is built (roadmap Phases 2-3), call it **iCalendar** or **Calendar Feed** in labels and `ical_feed.py` in code. Never "ICS file": ICS means Incident Command System here (ICS-309 ships today).
+
+---
+
 ## Background polling and `last_active`
 
 Any request the app makes on a timer must be marked as a background request, and any

@@ -51,6 +51,71 @@ shots:
       date fields, and Attended and Ran as NCS checkboxes.
     caption: Everything closed, archived, or cancelled lives here, not just this week's nets.
 
+  # The Schedule page's month calendar. The view toggle is persisted per
+  # browser, and each capture starts in a fresh one, so switch to it first.
+  - id: schedule-calendar
+    section: operators
+    page: /docs/operators/finding-a-net/
+    route: /scheduler
+    as: KC1HILL
+    wait_for: 'button[aria-label="calendar view"]:visible'
+    steps:
+      - click: 'button[aria-label="calendar view"]'
+      - wait_for: 'button[aria-label="next month"]:visible'
+      - wait: 800
+    hide:
+      - '.MuiTooltip-popper'
+    annotate:
+      - selector: 'button[aria-label="calendar view"]'
+        style: box
+    alt: >
+      The Schedule page in calendar view: a month grid with each net on its
+      day, showing its start time, name, and NCS callsign. The Calendar view
+      button at the top right is outlined in red.
+    caption: Past days show what actually happened; today forward shows what's coming up, including who is on NCS.
+
+  # The details popover for one occurrence: this date's NCS and outcome on
+  # top, then the schedule's usual card.
+  - id: schedule-calendar-details
+    section: operators
+    page: /docs/operators/finding-a-net/
+    route: /scheduler
+    as: KC1HILL
+    wait_for: 'button[aria-label="calendar view"]:visible'
+    steps:
+      - click: 'button[aria-label="calendar view"]'
+      - wait_for: '.MuiPaper-outlined button[type="button"]:visible'
+      - click: '.MuiPaper-outlined button[type="button"]'
+      - wait_for: '.MuiPopover-paper:visible'
+    element: '.MuiPopover-paper'
+    pad: 12
+    alt: >
+      The details for one net on the calendar: its date and time, who is on
+      NCS, and below that the schedule's usual card with its frequencies, net
+      manager, and buttons.
+    caption: Click any net on the calendar for that date's details and the schedule's usual card.
+
+  - id: schedule-calendar-phone
+    section: operators
+    page: /docs/operators/finding-a-net/
+    route: /scheduler
+    as: KC1HILL
+    mobile: true
+    viewport:
+      width: 390
+      height: 844
+    wait_for: 'button[aria-label="calendar view"]:visible'
+    steps:
+      - click: 'button[aria-label="calendar view"]'
+      - wait_for: 'button[aria-label="next month"]:visible'
+      - wait: 800
+    alt: >
+      The Schedule page's calendar on a phone, listed as days with each day's
+      nets under it instead of a month grid.
+    hide:
+      - '.MuiTooltip-popper'
+    caption: On a phone, the month is listed day by day.
+
   # ========== Checking in ==========
   # KC1HILL is already checked into the seeded active net, so the check-in
   # dialog and its toolbar entry point aren't on screen until there's no

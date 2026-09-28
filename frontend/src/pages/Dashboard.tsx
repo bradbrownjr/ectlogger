@@ -81,6 +81,7 @@ import { getNetActions } from '../utils/netActions';
 import { canOpenLobby, isBeforeScheduledStart } from '../utils/netStart';
 import EarlyStartDialog from '../components/EarlyStartDialog';
 import DeleteNetWarning from '../components/DeleteNetWarning';
+import { formatFrequencyList } from '../utils/frequencyList';
 
 const Dashboard: React.FC = () => {
   const [nets, setNets] = useState<Net[]>([]);
@@ -571,12 +572,7 @@ const Dashboard: React.FC = () => {
               </TableCell>
               <TableCell>
                 <Typography variant="body2" color="text.secondary">
-                  {net.frequencies.map((f: any) => {
-                    if (f.frequency) return f.frequency;
-                    if (f.network && f.talkgroup) return `${f.network} TG${f.talkgroup}`;
-                    if (f.network) return f.network;
-                    return '';
-                  }).filter((s: string) => s).join(', ')}
+                  {formatFrequencyList(net.frequencies)}
                 </Typography>
               </TableCell>
               <TableCell align="right" sx={{ whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>

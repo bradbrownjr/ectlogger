@@ -1652,6 +1652,34 @@ class NCSScheduleResponse(BaseModel):
     rotation_members: List[NCSRotationMemberResponse]
 
 
+class CalendarOccurrence(BaseModel):
+    """One net on the Schedule page's month calendar.
+
+    ``source`` says where it came from: ``"net"`` is a real Net row (what actually
+    happened, or a net already created for an upcoming slot); ``"projected"`` is a
+    future slot computed from the schedule's recurrence that has no Net row yet.
+    Projections never fall before the current moment. ``start`` is timezone-aware
+    UTC; the page places it on a day in the viewer's own timezone.
+    """
+    source: str
+    start: datetime
+    name: str
+    template_id: Optional[int] = None
+    net_id: Optional[int] = None
+    status: Optional[str] = None  # NetStatus value; None for a projection
+    started_at: Optional[datetime] = None
+    is_cancelled: bool = False
+    cancel_reason: Optional[str] = None
+    is_override: bool = False
+    is_fifth_week: bool = False
+    ncs_callsign: Optional[str] = None
+    check_in_count: Optional[int] = None
+    # Net rows only: what a net with no schedule needs for its own details.
+    description: Optional[str] = None
+    owner_callsign: Optional[str] = None
+    frequencies: List[FrequencyResponse] = []
+
+
 # Template Staff Schemas (separate from rotation)
 class TemplateStaffCreate(BaseModel):
     """Request to add a staff member"""

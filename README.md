@@ -19,6 +19,7 @@ A real-time net logger for amateur radio, built for emergency communications tea
 - Stations with no account and no internet still get logged, mapped, and counted
 - Locations in town-and-state, GPS, Maidenhead, UTM, or MGRS, all on one map
 - Recurring schedules that create their own nets, remind their staff, and rotate Net Control
+- A month calendar of every net: what was held, what's coming, and who is on NCS
 - Formal traffic: ARRL radiograms, ICS-213, and RRI weather strips, with a full chain of custody
 - Complete logs, ICS-309 Communications Logs, and multi-page PDF reports, generated on close
 - Statistics and leaderboards per operator and per schedule

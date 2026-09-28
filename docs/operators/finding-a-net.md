@@ -1,10 +1,10 @@
 ---
 title: Finding a net
-summary: The dashboard, what each net status means, and how to find one that hasn't started yet or already finished.
+summary: The dashboard, what each net status means, the Schedule page's calendar, and how to find one that hasn't started yet or already finished.
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-27
+revised: 2026-09-28
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/finding-a-net/
@@ -69,6 +69,42 @@ Once you're signed in, a net card from a schedule has a **Subscribe** button. It
 ## Finding a net that runs on a schedule
 
 Many nets aren't one-off events. They run weekly, monthly, or on some other recurrence. Recurring nets are set up as a **schedule** (the [net managers](/docs/net-managers/) path covers creating one). You don't need any special access to look at `/scheduler` and see what schedules exist and roughly when they next run; once ECTLogger auto-creates the next occurrence, it shows up on the dashboard the same as any other Scheduled net.
+
+## Seeing the month on a calendar
+
+The card and list views on the Schedule page tell you which schedules exist. To see what is actually on this month, click **Calendar view** (the grid button at the right of the view buttons). Every net appears on its day with its start time, its name, and who is on NCS, so you can check whether the evening you're free has a net and who will be running it. The arrows beside the month step back and forward, and **Today** brings you back to the current month.
+
+<figure>
+  <img src="/docs/img/operators/schedule-calendar.png"
+       alt="The Schedule page in calendar view: a month grid with each net on its day, showing its start time, name, and NCS callsign. The Calendar view button at the top right is outlined in red.">
+  <figcaption>Past days show what actually happened; today forward shows what's coming up, including who is on NCS.</figcaption>
+</figure>
+
+The calendar reads differently on either side of today:
+
+- **Past days** show the nets that were actually held, with their check-in count. A net that was opened but never run reads **Not held**.
+- **Today and forward** show every upcoming date of every schedule, with the NCS from the schedule's rotation. A swap arrow marks a date where the NCS isn't the next person in the rotation, because of a swap or a fifth-week fill-in. You can page up to a year ahead.
+- **Cancelled nets stay on the calendar, struck through**, so a missing entry never leaves you wondering whether the net is on.
+
+Times are shown in your own time zone, the one named at the top of the page. A net held late in the evening where it's run can land on a different day for you, and the calendar puts it on your day, because the question it answers is whether you're free.
+
+Click any net for that date's details: when it starts, who is on NCS, and a button to **Open** the net or read its **Report** once it's over. Below that is the schedule's usual card, with its frequencies, net manager, and the same **Stats**, **Staff**, and **Subscribe** buttons as the card view.
+
+<figure>
+  <img src="/docs/img/operators/schedule-calendar-details.png"
+       alt="The details for one net on the calendar: its date and time, who is on NCS, and below that the schedule's usual card with its frequencies, net manager, and buttons.">
+  <figcaption>Click any net on the calendar for that date's details and the schedule's usual card.</figcaption>
+</figure>
+
+Nets that aren't part of a recurring schedule have no dates to plan around, so they're listed under the calendar as **Ad-hoc nets** for that month instead of being left off. The filter and your starred favorites work here too: filtering narrows the calendar to matching schedules, and favorites sort first within each day.
+
+On a phone, a seven-day grid is too narrow to read, so the calendar lists the month day by day, showing only the days that have a net.
+
+<figure>
+  <img src="/docs/img/operators/schedule-calendar-phone.png"
+       alt="The Schedule page's calendar on a phone, listed as days with each day's nets under it instead of a month grid.">
+  <figcaption>On a phone, the month is listed day by day.</figcaption>
+</figure>
 
 ## Where the numbers are
 

@@ -350,40 +350,15 @@ Top financial supporters and community contributors are acknowledged directly in
 
 ### Schedule Visibility & Calendar
 
-**✨ Month calendar view on the Schedule page, and calendar subscription** *(KC1JMH)*  
-*Re-requested 2026-09-08 as "calendar view of schedule" — that is Phase 1 below and nothing more,
-so this section already covers it. Treat the repeat ask as a priority signal: Phase 1 is the whole
-of what was wanted, and it stands alone without Phases 2-3.*  
-**Model:** Sonnet for the month view and the single-event link (Phases 1-2, established UI patterns against one new read endpoint); **Opus for Phase 3**, the subscribable feed — its URL must be fetchable by Google's unauthenticated servers, which makes it an auth design task rather than a UI one.  
+**✨ Calendar export and subscription** *(KC1JMH)*  
+**Model:** Sonnet for the single-event link (Phase 2, no backend); **Opus for Phase 3**, the subscribable feed — its URL must be fetchable by Google's unauthenticated servers, which makes it an auth design task rather than a UI one.  
 
-Two related capabilities. The first is a **month grid on the Schedule page** with next/previous month arrows, showing which nets fall on which day and, where the schedule has a rotation, who is NCS. The second is **getting a net onto the operator's own calendar** so it shows up next to the rest of their week.
-
-Today the Schedule page (`frontend/src/pages/Scheduler.tsx`) lists *schedules*, not *occurrences* — it answers "what nets exist" but not "what is happening this month." The view-mode `ToggleButtonGroup` at `:582-600` already offers card and list, so calendar is a third button in an affordance that exists. (Note `CalendarMonthIcon` is already imported at `:51` and in use for the date-sort toggle at `:577` — the calendar view needs a different icon, or two adjacent groups show the same glyph.)
-
-**The month grid is a union of two sources, and the seam is today.** Past days come from real `Net` rows — what actually happened, whether it was held, who actually ran it, how many checked in. Today and forward come from materialized `Net` rows where they exist, and from projections where they do not, since `_get_or_create_scheduled_net` only materializes about 24 hours ahead. Projections use the existing `calculate_schedule_dates` plus `compute_anchored_ncs_schedule` (`backend/app/routers/ncs_schedule.py`).
-
-Two rules fall out of that and both are load-bearing:
-
-- **Never project into the past.** `calculate_schedule_dates` filters `d >= start_date` (`ncs_schedule.py:110`) and `get_ncs_schedule` starts at `datetime.now()` (`ncs_rotation.py:234`), so the computed path cannot look backwards at all. That is the correct boundary, not a limitation to fix — a projection onto a past date would assert a net was held that may have been cancelled, and would name an NCS who never served. Do not "enable" previous months by backdating `start_date`.
-- **A real row always beats a projection for the same slot**, or a day cell shows the same net twice. This is the same collision already fixed once for manual creation (commit `4034f1f`).
-
-**One aggregate endpoint, not the current fan-out.** `fetchSchedules` (`Scheduler.tsx:119-143`) already issues one `getNextNCS` request per schedule. That is N requests to answer one question, and a month view asks it for every occurrence of every schedule — repeating the pattern means N requests on every arrow click. This needs a single `GET` returning the whole window across all visible schedules in one response.
-
-**Performance is the non-obvious risk.** `compute_anchored_ncs_schedule` regenerates every occurrence from the template's creation date up to the requested window on each call (`ncs_schedule.py:174-179`), because the rotation index is a count of elapsed occurrences. Paging a three-year-old weekly schedule out to a month next year generates hundreds of dates, per template, per click — and the cost grows with both the template's age and how far the user pages. Compute one window for all templates in a single pass, cap the paging range, and treat the anchor-to-index offset as cacheable.
+**Getting a net onto the operator's own calendar**, so it shows up next to the rest of their week. The month view that preceded this (formerly Phase 1) has shipped; its occurrence model, the past-versus-projected boundary, and the display-timezone decision are in `docs/DEVELOPMENT.md` "Schedule calendar". Build on `app/services/schedule_occurrences.py::get_occurrences` rather than re-deriving occurrences: it already merges real nets with projections and flags both kinds of cancellation.
 
 **Naming: this is the third collision in this codebase, and the worst one.** *ICS* here means **Incident Command System** — ICS-309 has shipped, ICS-204 and ICS-205 are planned above. An "Export ICS" button or an `ics.py` module would be read as an incident form export by precisely the emergency-management audience this product serves. Use **iCalendar** and **Calendar Feed** in labels and `ical_feed.py` in code. Never "ICS file."
 
-**Phase 1 — Month view** *(not started)*
-- [ ] New aggregate read endpoint returning occurrences across all visible schedules for a date window, merging real `Net` rows with projections and suppressing a projection wherever a real row already covers the slot
-- [ ] Calendar as a third view mode on the Schedule page, honoring the existing filter and favorites state, with next/previous month arrows
-- [ ] Month grid in CSS Grid — seven columns, six rows. **No calendar library**, consistent with the Assignment Board decision above
-- [ ] Render all four states `NCSScheduleEntry` already distinguishes: normal rotation, override, fifth-week, and **cancelled**. A cancelled occurrence must appear struck through, never silently omitted, or the reader concludes the net is on
-- [ ] Past days render actual outcome (held, cancelled, check-in count) and link to the net report; future days link to the schedule
-- [ ] Mobile falls back to an agenda list via `useLayoutTier` — a month grid is unreadable at 375 px
-- [ ] Decide and document the display timezone. Recommend the **viewer's** zone via `resolve_display_tz` (`backend/app/utils.py:87`), since the question being asked is "am I free that evening"; the Schedule page already labels times in the browser zone. This is deliberately the opposite of the Assignment Board, which uses the net's zone — record the divergence so it does not later read as an inconsistency bug
-
 **Phase 2 — Add one net to a calendar** *(not started)*
-- [ ] "Add to calendar" on a net and on a schedule occurrence, emitting a Google Calendar template URL and a downloadable `.ics` for everyone else. No backend and no new dependency
+- [ ] "Add to calendar" on a net and on a schedule occurrence (the calendar view's details popover is the natural home for the occurrence one), emitting a Google Calendar template URL and a downloadable `.ics` for everyone else. No backend and no new dependency
 - [ ] Populate title, start and end, location or frequency, and a link back to the net
 
 **Phase 3 — Subscribable calendar feed** *(not started)*
@@ -394,11 +369,9 @@ Two rules fall out of that and both are load-bearing:
 - [ ] Document in the user guide that Google refreshes subscribed feeds on its own schedule, often 12 to 24 hours, so a same-day edit will not appear immediately. Without this line it will be reported as a bug
 
 **Documentation deliverables** *(not started)*
-- [ ] Operators path — the calendar view, adding a net to a personal calendar, and subscribing to a feed including how to revoke the link
-- [ ] `README.md` — feature list entry once Phase 1 ships
-- [ ] `docs/DEVELOPMENT.md` — the past-versus-projected boundary rule and the iCalendar naming rule
+- [ ] Operators path (`docs/operators/finding-a-net.md`, next to the calendar view section) — adding a net to a personal calendar, and subscribing to a feed including how to revoke the link
 
-**Trigger:** Phase 1 stands alone and delivers most of the value. Phase 2 is small and independent. Phase 3 should not start until someone actually asks for a live-updating subscription, since it adds a permanently reachable unauthenticated URL to the attack surface for a convenience the first two phases mostly cover.
+**Trigger:** Phase 2 is small and independent. Phase 3 should not start until someone actually asks for a live-updating subscription, since it adds a permanently reachable unauthenticated URL to the attack surface for a convenience the month view and Phase 2 mostly cover.
 
 ### Net View Usability
 

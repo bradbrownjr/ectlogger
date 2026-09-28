@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-27
+revised: 2026-09-28
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,18 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# September 28, 2026
+
+## New Features
+
+* **Schedule: Calendar view** — The Schedule page can now show a month calendar with every net on its day, who is on NCS, check-in counts for past nets, and cancelled nets struck through. Click any net for that date's details and the schedule's usual card. Nets with no regular schedule are listed below the calendar, and on a phone the month is listed day by day.
+
+## Bug Fixes
+
+* **RSS: Cancelled nets left out of the feed** — A net cancelled through the NCS rotation, rather than from its own card, no longer shows up in the schedule RSS feed as if it were still on.
 
 ---
 

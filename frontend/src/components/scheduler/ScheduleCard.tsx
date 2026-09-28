@@ -28,6 +28,7 @@ import CardActionButton from '../CardActionButton';
 import ImageLightbox from '../ImageLightbox';
 import ScheduleAnnouncementsLink from './ScheduleAnnouncementsLink';
 import ScheduleSubscribeButton from './ScheduleSubscribeButton';
+import { formatFrequencyList } from '../../utils/frequencyList';
 
 // ---- Types ----
 
@@ -253,12 +254,7 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
               <RadioIcon fontSize="small" color="action" sx={{ mt: 0.25 }} />
               <Typography variant="body2" color="text.secondary">
-                {schedule.frequencies.map((f: any) => {
-                  if (f.frequency) return f.frequency;
-                  if (f.network && f.talkgroup) return `${f.network} TG${f.talkgroup}`;
-                  if (f.network) return f.network;
-                  return '';
-                }).filter((s: string) => s).join(', ')}
+                {formatFrequencyList(schedule.frequencies)}
               </Typography>
             </Box>
           )}

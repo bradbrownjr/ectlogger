@@ -223,6 +223,10 @@ export const templateApi = {
   list: (params?: { my_templates?: boolean; include_inactive?: boolean }) => 
     api.get('/templates/', { params }),
   get: (id: number) => api.get(`/templates/${id}`),
+  // Schedule page month calendar: real nets plus projected future slots
+  // starting in [start, end). Window is capped at 62 days server-side.
+  calendar: (start: Date, end: Date) =>
+    api.get('/templates/calendar', { params: { start: start.toISOString(), end: end.toISOString() } }),
   listSubscriptions: (id: number) => api.get(`/templates/${id}/subscriptions`),
   update: (id: number, data: any) => api.put(`/templates/${id}`, data),
   delete: (id: number) => api.delete(`/templates/${id}`),

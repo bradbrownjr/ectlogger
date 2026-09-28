@@ -1,6 +1,31 @@
 {
-  "version": "2026.09.27d",
+  "version": "2026.09.28",
   "entries": [
+    {
+      "version": "2026.09.28",
+      "date": "2026-09-28",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Schedule: Calendar view — The Schedule page can now show a month calendar with every net on its day, who is on NCS, check-in counts for past nets, and cancelled nets struck through. Click any net for that date's details and the schedule's usual card. Nets with no regular schedule are listed below the calendar, and on a phone the month is listed day by day.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "RSS: Cancelled nets left out of the feed — A net cancelled through the NCS rotation, rather than from its own card, no longer shows up in the schedule RSS feed as if it were still on."
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.27d",
       "date": "2026-09-27",

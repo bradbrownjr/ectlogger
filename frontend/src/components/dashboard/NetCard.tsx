@@ -38,6 +38,7 @@ import ImageLightbox from '../ImageLightbox';
 import { formatDateTime } from '../../utils/dateUtils';
 import { NetActions } from '../../utils/netActions';
 import { canOpenLobby } from '../../utils/netStart';
+import { formatFrequencyList } from '../../utils/frequencyList';
 
 // ---- Types ----
 
@@ -216,12 +217,7 @@ const NetCard: React.FC<NetCardProps> = ({
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
               <RadioIcon fontSize="small" color="action" sx={{ mt: 0.25 }} />
               <Typography variant="body2" color="text.secondary">
-                {net.frequencies.map((f: any) => {
-                  if (f.frequency) return f.frequency;
-                  if (f.network && f.talkgroup) return `${f.network} TG${f.talkgroup}`;
-                  if (f.network) return f.network;
-                  return '';
-                }).filter((s: string) => s).join(', ')}
+                {formatFrequencyList(net.frequencies)}
               </Typography>
             </Box>
           )}

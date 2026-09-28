@@ -329,6 +329,24 @@
     "caption": "Other stations' rows are read-only on a phone; your own status is still yours to change.",
     "page": "/docs/operators/in-the-field/"
   },
+  "operators/schedule-calendar": {
+    "path": "/docs/img/operators/schedule-calendar.png",
+    "alt": "The Schedule page in calendar view: a month grid with each net on its day, showing its start time, name, and NCS callsign. The Calendar view button at the top right is outlined in red.\n",
+    "caption": "Past days show what actually happened; today forward shows what's coming up, including who is on NCS.",
+    "page": "/docs/operators/finding-a-net/"
+  },
+  "operators/schedule-calendar-details": {
+    "path": "/docs/img/operators/schedule-calendar-details.png",
+    "alt": "The details for one net on the calendar: its date and time, who is on NCS, and below that the schedule's usual card with its frequencies, net manager, and buttons.\n",
+    "caption": "Click any net on the calendar for that date's details and the schedule's usual card.",
+    "page": "/docs/operators/finding-a-net/"
+  },
+  "operators/schedule-calendar-phone": {
+    "path": "/docs/img/operators/schedule-calendar-phone.png",
+    "alt": "The Schedule page's calendar on a phone, listed as days with each day's nets under it instead of a month grid.\n",
+    "caption": "On a phone, the month is listed day by day.",
+    "page": "/docs/operators/finding-a-net/"
+  },
   "operators/security-password-card": {
     "path": "/docs/img/operators/security-password-card.png",
     "alt": "The Password section of the Profile page's Security tab, with Current Password, New Password, and Confirm Password fields and the Change Password button outlined in red below them.\n",

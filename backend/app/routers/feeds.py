@@ -11,19 +11,19 @@ from xml.sax.saxutils import escape
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import Response
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
-from app.models import Net, NetStatus, NetTemplate
-from app.routers.ncs_schedule import calculate_schedule_dates, template_local_to_utc
+from app.models import NetStatus
+from app.services.schedule_occurrences import get_occurrences
 
 router = APIRouter(prefix="/feed", tags=["feed"])
 
 RFC822 = "%a, %d %b %Y %H:%M:%S +0000"
 CHANGELOG_PATH = Path(__file__).resolve().parents[3] / "frontend" / "src" / "changelog.json"
 CHANGELOG_ENTRY_LIMIT = 20
+FINISHED_STATUSES = {NetStatus.CLOSED.value, NetStatus.ARCHIVED.value, NetStatus.CANCELLED.value}
 
 
 def _rss(title: str, link: str, description: str, items: list[str]) -> Response:
@@ -57,57 +57,15 @@ def _item(title: str, link: str, description: str, pub_date: datetime, guid: str
 async def schedule_feed(db: AsyncSession = Depends(get_db)):
     """Upcoming nets in the next 14 days, dated occurrences only (no unscheduled drafts)."""
     now = datetime.utcnow()
-    window_end = now + timedelta(days=14)
 
-    occurrences: list[tuple[datetime, str, int | None]] = []
-
-    templates_result = await db.execute(
-        select(NetTemplate).where(NetTemplate.is_active == True, NetTemplate.schedule_type != "ad_hoc")  # noqa: E712
-    )
-    for template in templates_result.scalars().all():
-        for local_dt in calculate_schedule_dates(template, now, months_ahead=1):
-            utc_dt = template_local_to_utc(template, local_dt)
-            if utc_dt < now or utc_dt > window_end:
-                continue
-
-            slot_start = utc_dt - timedelta(minutes=5)
-            slot_end = utc_dt + timedelta(minutes=5)
-            existing_result = await db.execute(
-                select(Net).where(
-                    Net.template_id == template.id,
-                    Net.status.notin_([NetStatus.CLOSED, NetStatus.ARCHIVED]),
-                    Net.scheduled_start_time >= slot_start,
-                    Net.scheduled_start_time <= slot_end,
-                )
-            )
-            existing = existing_result.scalars().first()
-            if existing:
-                # A materialized Net row is authoritative -- reflects renames and
-                # lets a CANCELLED occurrence drop out of the feed entirely.
-                if existing.status == NetStatus.CANCELLED:
-                    continue
-                occurrences.append((existing.scheduled_start_time, existing.name, existing.id))
-            else:
-                occurrences.append((utc_dt, template.name, None))
-
-    included_net_ids = {net_id for _, _, net_id in occurrences if net_id is not None}
-
-    # Ad hoc nets (and any template-based net not already picked up above) that
-    # carry their own scheduled_start_time.
-    manual_result = await db.execute(
-        select(Net).where(
-            Net.status.in_([NetStatus.DRAFT, NetStatus.SCHEDULED]),
-            Net.scheduled_start_time.isnot(None),
-            Net.scheduled_start_time >= now,
-            Net.scheduled_start_time <= window_end,
-        )
-    )
-    for net in manual_result.scalars().all():
-        if net.id in included_net_ids:
-            continue
-        occurrences.append((net.scheduled_start_time, net.name, net.id))
-
-    occurrences.sort(key=lambda o: o[0])
+    # Same merge of real nets and projections the Schedule page's calendar uses.
+    # A feed lists what is still on, so cancelled occurrences and nets already
+    # over are left out.
+    occurrences = [
+        (o.start.replace(tzinfo=None), o.name, o.net_id)
+        for o in await get_occurrences(db, now, now + timedelta(days=14), now=now)
+        if not o.is_cancelled and o.status not in FINISHED_STATUSES
+    ]
 
     schedule_link = f"{settings.frontend_url}/scheduler"
     items = [

@@ -52,6 +52,8 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import ViewListIcon from '@mui/icons-material/ViewList';
+// Not CalendarMonthIcon: that one is already the date-sort toggle beside it.
+import CalendarViewMonthIcon from '@mui/icons-material/CalendarViewMonth';
 import CallMergeIcon from '@mui/icons-material/CallMerge';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -69,8 +71,10 @@ import { useAuth } from '../contexts/AuthContext';
 import NCSStaffModal from '../components/NCSStaffModal';
 import ScheduleCard, { Schedule, computeNextOccurrence, formatSchedule } from '../components/scheduler/ScheduleCard';
 import ScheduleAnnouncementsDialog from '../components/scheduler/ScheduleAnnouncementsDialog';
+import ScheduleCalendar from '../components/scheduler/ScheduleCalendar';
 import { useFavorites } from '../hooks/useFavorites';
 import useAccountSortOrder from '../hooks/useAccountSortOrder';
+import { formatFrequencyList } from '../utils/frequencyList';
 
 const Scheduler: React.FC = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -78,7 +82,7 @@ const Scheduler: React.FC = () => {
   const [rotationModalOpen, setRotationModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   // View mode persists across sessions
-  const [viewMode, setViewMode] = useLocalStorage<'card' | 'list'>(STORAGE_KEYS.SCHEDULER_VIEW_MODE, 'card');
+  const [viewMode, setViewMode] = useLocalStorage<'card' | 'list' | 'calendar'>(STORAGE_KEYS.SCHEDULER_VIEW_MODE, 'card');
   const [showFilter, setShowFilter] = useState(false);
   const [scheduleFilter, setScheduleFilter] = useState('');
   const [schedulePage, setSchedulePage] = useState(1);
@@ -331,6 +335,31 @@ const Scheduler: React.FC = () => {
     schedulePage * SCHEDULE_PAGE_SIZE
   );
 
+  // ========== SCHEDULE CARD ==========
+  // One schedule's card with this page's handlers and permissions. Used by the
+  // card view and by the calendar's details popover, so both show the same card.
+  const renderScheduleCard = (schedule: Schedule) => (
+    <ScheduleCard
+      // can_create_net overridden here rather than left raw: this is
+      // the ONE field ScheduleCard reads directly off `schedule`
+      // rather than via an explicit prop (see its own "Create Net"
+      // button gate), so it needs the same masking canManage below
+      // gets, or a simulating admin's "Create net now" button would
+      // stay visible/enabled off the server's real (unmasked) value.
+      schedule={{ ...schedule, can_create_net: canManageSchedule(schedule) }}
+      favorites={favorites}
+      onToggleFavorite={toggleFavorite}
+      isAuthenticated={isAuthenticated}
+      canManage={!!(canManageSchedule(schedule) || isAdmin)}
+      isOwnerOrAdmin={isOwner(schedule) || isAdmin}
+      onCreateNet={() => handleCreateNetFromSchedule(schedule.id)}
+      onOpenRotationModal={() => handleOpenRotationModal(schedule)}
+      onSubscribe={() => handleSubscribe(schedule.id)}
+      onUnsubscribe={() => handleUnsubscribe(schedule.id)}
+      onDelete={() => handleDelete(schedule.id)}
+    />
+  );
+
   // ========== CARD VIEW RENDERER ==========
   const renderCardView = () => (
     <Box
@@ -361,25 +390,7 @@ const Scheduler: React.FC = () => {
               }}
             />
           )}
-          <ScheduleCard
-              // can_create_net overridden here rather than left raw: this is
-              // the ONE field ScheduleCard reads directly off `schedule`
-              // rather than via an explicit prop (see its own "Create Net"
-              // button gate), so it needs the same masking canManage below
-              // gets, or a simulating admin's "Create net now" button would
-              // stay visible/enabled off the server's real (unmasked) value.
-              schedule={{ ...schedule, can_create_net: canManageSchedule(schedule) }}
-              favorites={favorites}
-              onToggleFavorite={toggleFavorite}
-              isAuthenticated={isAuthenticated}
-              canManage={!!(canManageSchedule(schedule) || isAdmin)}
-              isOwnerOrAdmin={isOwner(schedule) || isAdmin}
-              onCreateNet={() => handleCreateNetFromSchedule(schedule.id)}
-              onOpenRotationModal={() => handleOpenRotationModal(schedule)}
-              onSubscribe={() => handleSubscribe(schedule.id)}
-              onUnsubscribe={() => handleUnsubscribe(schedule.id)}
-              onDelete={() => handleDelete(schedule.id)}
-            />
+          {renderScheduleCard(schedule)}
         </Box>
       ))}
     </Box>
@@ -459,12 +470,7 @@ const Scheduler: React.FC = () => {
               </TableCell>
               <TableCell>
                 <Typography variant="body2" color="text.secondary">
-                  {schedule.frequencies.map((f: any) => {
-                    if (f.frequency) return f.frequency;
-                    if (f.network && f.talkgroup) return `${f.network} TG${f.talkgroup}`;
-                    if (f.network) return f.network;
-                    return '';
-                  }).filter((s: string) => s).join(', ')}
+                  {formatFrequencyList(schedule.frequencies)}
                 </Typography>
               </TableCell>
               <TableCell align="center">
@@ -599,7 +605,10 @@ const Scheduler: React.FC = () => {
             value={viewMode}
             exclusive
             onChange={(_, newMode) => {
-              if (newMode) setViewMode(newMode);
+              if (!newMode) return;
+              // Merging selects schedule cards or rows, which the calendar has none of.
+              if (newMode === 'calendar') handleExitMergeMode();
+              setViewMode(newMode);
             }}
             size="small"
           >
@@ -611,6 +620,11 @@ const Scheduler: React.FC = () => {
             <ToggleButton value="list" aria-label="list view">
               <Tooltip title="List view">
                 <ViewListIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="calendar" aria-label="calendar view">
+              <Tooltip title="Calendar view">
+                <CalendarViewMonthIcon fontSize="small" />
               </Tooltip>
             </ToggleButton>
           </ToggleButtonGroup>
@@ -650,6 +664,16 @@ const Scheduler: React.FC = () => {
       {/* ========== SCHEDULES DISPLAY ========== */}
       {loading ? (
         <Typography>Loading Nets...</Typography>
+      ) : viewMode === 'calendar' ? (
+        // Shown even with no schedules or no filter matches: the ad-hoc list
+        // below the grid can still have nets in it.
+        <ScheduleCalendar
+          visibleSchedules={filteredSchedules}
+          allSchedules={schedules}
+          favorites={favorites}
+          filterText={scheduleFilter}
+          renderScheduleCard={renderScheduleCard}
+        />
       ) : schedules.length === 0 ? (
         <Box sx={{ textAlign: 'center', mt: 8 }}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -689,7 +713,7 @@ const Scheduler: React.FC = () => {
       {isAuthenticated && (
         <>
           {/* Merge FAB — visible when user can merge 2+ templates and NOT in merge mode */}
-          {!mergeMode && mergeableCount >= 2 && (
+          {!mergeMode && mergeableCount >= 2 && viewMode !== 'calendar' && (
             <Tooltip title="Merge schedules">
               <Fab
                 color="default"
