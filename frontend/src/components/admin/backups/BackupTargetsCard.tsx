@@ -22,7 +22,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DnsIcon from '@mui/icons-material/Dns';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -176,7 +176,7 @@ const BackupTargetsCard: React.FC<Props> = ({ targets, onChanged, showSnackbar }
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 1 }}>
           <Typography variant="h6">
-            <CloudUploadIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+            <DnsIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
             Off-site copies
           </Typography>
           <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreate}>Add target</Button>

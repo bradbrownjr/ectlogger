@@ -2,13 +2,14 @@
 for too long, and a full backup being downloaded."""
 from typing import Optional
 
-from jinja2 import Template
+from jinja2 import Environment
 
 from app.config import settings
 from app.email.base import send_email
 from app.logger import logger
 
-_TEMPLATE = Template("""
+# autoescape: failure details are server error text and may contain "<".
+_TEMPLATE = Environment(autoescape=True).from_string("""
 <!DOCTYPE html>
 <html>
 <head>
@@ -39,7 +40,7 @@ async def _send_to_admins(recipients: list[str], subject: str, heading: str,
                           paragraphs: list[str], detail: Optional[str], accent: str) -> None:
     html = _TEMPLATE.render(
         heading=heading, paragraphs=paragraphs, detail=detail, accent=accent,
-        app_name=settings.app_name, admin_url=f"{settings.frontend_url}/admin?tab=backups",
+        app_name=settings.app_name, admin_url=f"{settings.frontend_url}/admin/users?tab=backups",
     )
     for address in recipients:
         try:

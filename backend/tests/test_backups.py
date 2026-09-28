@@ -498,3 +498,13 @@ async def test_run_history_lists_runs(client, admin, db, instance, backup_key, s
     runs = response.json()
     assert runs[0]["status"] == "success" and runs[0]["file_available"]
     assert runs[0]["triggered_by_callsign"] == admin.callsign
+
+
+def test_scheduler_note_waits_for_first_check_after_enabling():
+    now = datetime(2026, 9, 28, 12, 0, tzinfo=UTC)
+    row = BackupSettings(enabled=True, enabled_at=now - timedelta(minutes=10), last_scheduler_check_at=None)
+    assert runner.scheduler_note(row, "cron", now) is None
+    row.enabled_at = now - timedelta(hours=3)
+    assert "cron" in runner.scheduler_note(row, "cron", now)
+    row.last_scheduler_check_at = now - timedelta(minutes=14)
+    assert runner.scheduler_note(row, "cron", now) is None

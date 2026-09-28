@@ -315,8 +315,12 @@ def scheduler_note(settings_row: BackupSettings, scheduler_mode: str, now: datet
     if scheduler_mode == "off":
         return ("This server is set with BACKUP_SCHEDULER=off, so nothing runs scheduled "
                 "backups. Only \"Back up now\" makes one.")
-    last_check = as_utc(settings_row.last_scheduler_check_at)
-    if last_check is None or now - last_check > schedule.overdue_threshold("interval", 1):
+    # Measured from the later of the last check-in and when backups were
+    # turned on, so a freshly enabled install is not warned before the
+    # scheduler has had its first chance to run.
+    reference = max((t for t in (as_utc(settings_row.last_scheduler_check_at),
+                                 as_utc(settings_row.enabled_at)) if t), default=None)
+    if reference is None or now - reference > schedule.overdue_threshold("interval", 1):
         if scheduler_mode == "cron":
             return ("The backup scheduler has not checked in recently. Check that the cron entry "
                     "installed by install.sh (or `backup.py install-cron`) is still there.")

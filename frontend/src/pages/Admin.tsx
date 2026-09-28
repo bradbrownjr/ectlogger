@@ -50,7 +50,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 // Tab order. `?tab=<key>` opens a tab directly (the backup alert emails link
-// to ?tab=backups); the index is the position in this list.
+// to /admin/users?tab=backups); the index is the position in this list.
 const TAB_KEYS = ['users', 'contacts', 'fields', 'frequencies', 'security', 'maintenance', 'branding', 'traffic', 'backups'];
 
 const Admin: React.FC = () => {
