@@ -141,12 +141,22 @@ An off-site target that the application server can log into is also one an intru
   inbox=/srv/backups/ectlogger/inbox
   archive=/srv/backups/ectlogger/archive
   mkdir -p "$archive"
-  find "$inbox" -maxdepth 1 -type f -name '*.age' -exec mv {} "$archive"/ \;
+  for f in "$inbox"/*.age; do
+      [ -f "$f" ] || continue
+      dest="$archive/$(basename "$f")"
+      if [ ! -e "$dest" ]; then
+          mv "$f" "$dest"
+      elif cmp -s "$f" "$dest"; then
+          rm -f "$f"    # the same key file, uploaded again
+      else
+          echo "Left in inbox, differs from the archived copy: $f"
+      fi
+  done
   # Keep six months of backups; key files are never deleted.
   find "$archive" -name 'ectlogger-2*.tar.gz.age' -mtime +180 -delete
   ```
 
-  In-progress uploads end in `.partial` and are left alone. Leave **Delete old backups here** off for this target: the app can only see the upload folder, and the archive is what holds the history.
+  In-progress uploads end in `.partial` and are left alone. The script never overwrites a file already in the archive: an intruder on the application server could otherwise upload a file with the same name as an old backup and replace it. Leave **Delete old backups here** off for this target: the app can only see the upload folder, and the archive is what holds the history.
 
 With all three, the most an intruder on the application server can do to the drop point is upload files into an empty folder. They cannot read, change, or delete the backups already made, and every one of those is encrypted anyway.
 
