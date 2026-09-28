@@ -22,6 +22,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Schedule: Calendar view** — The Schedule page can now show a month calendar with every net on its day, who is on NCS, check-in counts for past nets, and cancelled nets struck through. Click any net for that date's details and the schedule's usual card. Nets with no regular schedule are listed below the calendar, and on a phone the month is listed day by day.
 
+* **Admin: Encrypted backups** — Administrators can now schedule encrypted backups of the database and uploaded images from the Admin panel, send copies to another server or cloud storage, and see at a glance whether recent backups succeeded.
+
 ## Bug Fixes
 
 * **RSS: Cancelled nets left out of the feed** — A net cancelled through the NCS rotation, rather than from its own card, no longer shows up in the schedule RSS feed as if it were still on.

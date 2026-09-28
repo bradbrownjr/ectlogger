@@ -208,23 +208,6 @@ Then a `/etc/sudoers.d/ectlogger-teams` granting the same five verbs the existin
 
 *Meaningful new capabilities that don't require architectural changes.*
 
-### Backups and Restore *(in progress on `feature/backups`)*
-
-**✨ Encrypted, scheduled backups with off-site copies, managed from the admin panel** *(KC1JMH, 2026-09-28)*
-
-**Model:** Opus (built end to end in one session).
-**Docs:** admins (`admins/backups.md`), self-hosting (`self-hosting/backups.md`, plus the self-hosting index and production deployment backup sections).
-
-The database, `backend/data/` and both `.env` files, encrypted with age to a key whose private half is wrapped by an admin-set passphrase the server never stores. Scheduled via cron (or in-process with `BACKUP_SCHEDULER=internal`), retention by day/week/month, off-site copies to SFTP (host keys pinned) and S3-compatible storage, email to every admin on failure and when overdue, verify and MFA-gated download from the admin panel, CLI restore and server-migration path, and an `install.sh` step. Design notes: `docs/DEVELOPMENT.md` "Backups".
-
-Remaining before merge:
-- [ ] Beta: migration 078, cron entry, and a week of scheduled runs
-- [ ] Beta database refresh moved to "restore last night's production backup" (so every refresh doubles as a restore test)
-- [ ] Production's off-site drop point (infrastructure, not part of the product)
-- [ ] Changelog entry on the production release day
-
----
-
 ### Public Service Event Support
 
 **✨ Tactical-callsign posts, shift staffing, and event management for public service events** *(KC1JMH, from a Manchester ARES request via Ken)*

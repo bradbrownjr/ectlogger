@@ -1,8 +1,8 @@
 {
-  "version": "2026.09.28",
+  "version": "2026.09.28b",
   "entries": [
     {
-      "version": "2026.09.28",
+      "version": "2026.09.28b",
       "date": "2026-09-28",
       "sections": [
         {
@@ -12,6 +12,9 @@
             {
               "text": "Schedule: Calendar view — The Schedule page can now show a month calendar with every net on its day, who is on NCS, check-in counts for past nets, and cancelled nets struck through. Click any net for that date's details and the schedule's usual card. Nets with no regular schedule are listed below the calendar, and on a phone the month is listed day by day.",
               "userImpact": true
+            },
+            {
+              "text": "Admin: Encrypted backups — Administrators can now schedule encrypted backups of the database and uploaded images from the Admin panel, send copies to another server or cloud storage, and see at a glance whether recent backups succeeded."
             }
           ]
         },
