@@ -535,11 +535,15 @@ sudo certbot renew --dry-run
 ### Backup Database
 
 ```bash
-# SQLite (the default DATABASE_URL is relative to backend/, where the app runs)
-cp ~/ectlogger/backend/ectlogger.db ~/backups/ectlogger-$(date +%Y%m%d).db
+# SQLite (the default DATABASE_URL is relative to backend/, where the app runs).
+# Use SQLite's backup call, not cp, which can copy a half-written file while the service runs.
+python3 -c "import sqlite3; sqlite3.connect('$HOME/ectlogger/backend/ectlogger.db').backup(sqlite3.connect('$HOME/backups/ectlogger-$(date +%Y%m%d).db'))"
 
 # PostgreSQL
 pg_dump -U ectlogger ectlogger > ~/backups/ectlogger-$(date +%Y%m%d).sql
+
+# Uploaded files (avatars, chat images, logos) are on disk, not in the database
+tar czf ~/backups/ectlogger-data-$(date +%Y%m%d).tar.gz -C ~/ectlogger/backend data
 ```
 
 ---

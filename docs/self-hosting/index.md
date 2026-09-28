@@ -66,15 +66,21 @@ Deploy by pulling from the repository, not by copying files onto the server. Cop
 
 ## Backing it up
 
-Two things need backing up, and they are both small.
+Three things need backing up, and they are all small.
 
-**The database.** On the default SQLite setup that is one file:
+**The database.** On the default SQLite setup that is one file. Copy it with SQLite's own backup call rather than `cp`, which can catch the file halfway through a write while the service is running:
 
 ```bash
-cp backend/ectlogger.db ~/backups/ectlogger-$(date +%Y%m%d).db
+python3 -c "import sqlite3; sqlite3.connect('backend/ectlogger.db').backup(sqlite3.connect('$HOME/backups/ectlogger-$(date +%Y%m%d).db'))"
 ```
 
 On PostgreSQL, `pg_dump ectlogger > ~/backups/ectlogger-$(date +%Y%m%d).sql`. [Production deployment](/docs/PRODUCTION-DEPLOYMENT/) has the same commands in context, alongside the rest of the operational checklist.
+
+**Uploaded files**: profile photos, chat images, and net, schedule, and instance logos. They live under `backend/data/`, not in the database, so a database restored without them shows broken images everywhere:
+
+```bash
+tar czf ~/backups/ectlogger-data-$(date +%Y%m%d).tar.gz -C backend data
+```
 
 **The configuration**, which is not in version control and is the part people forget:
 
