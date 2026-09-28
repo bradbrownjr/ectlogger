@@ -75,3 +75,10 @@ docs/ectlogger-email-digest.md
 # Documentation screenshot pipeline
 scripts/docs-screenshots/node_modules/
 PROGRESS.md
+
+# Local backups (backend/scripts/backup.py; BACKUP_DIR overrides the location)
+backend/backups/
+backend/.restore-*/
+backend/.env.from-backup
+backend/*.pre-restore-*
+backend/database-*.sql

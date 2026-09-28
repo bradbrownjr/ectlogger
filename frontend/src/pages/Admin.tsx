@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -16,6 +16,7 @@ import SecurityIcon from '@mui/icons-material/Security';
 import BuildIcon from '@mui/icons-material/Build';
 import BrandingWatermarkIcon from '@mui/icons-material/BrandingWatermark';
 import MailIcon from '@mui/icons-material/Mail';
+import BackupIcon from '@mui/icons-material/Backup';
 import { useAuth } from '../contexts/AuthContext';
 import AdminUsersTab from '../components/admin/AdminUsersTab';
 import AdminContactsTab from '../components/admin/AdminContactsTab';
@@ -25,6 +26,7 @@ import AdminSecurityTab from '../components/admin/AdminSecurityTab';
 import AdminMaintenanceTab from '../components/admin/AdminMaintenanceTab';
 import AdminBrandingTab from '../components/admin/AdminBrandingTab';
 import AdminTrafficTab from '../components/admin/AdminTrafficTab';
+import AdminBackupsTab from '../components/admin/AdminBackupsTab';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -47,8 +49,13 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+// Tab order. `?tab=<key>` opens a tab directly (the backup alert emails link
+// to ?tab=backups); the index is the position in this list.
+const TAB_KEYS = ['users', 'contacts', 'fields', 'frequencies', 'security', 'maintenance', 'branding', 'traffic', 'backups'];
+
 const Admin: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
+  const [searchParams] = useSearchParams();
+  const [tabValue, setTabValue] = useState(() => Math.max(0, TAB_KEYS.indexOf(searchParams.get('tab') ?? '')));
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -99,7 +106,7 @@ const Admin: React.FC = () => {
     // Only trigger if horizontal swipe is dominant (more X than Y) and long enough
     if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
     setTabValue((prev) => {
-      if (deltaX < 0) return Math.min(prev + 1, 7);
+      if (deltaX < 0) return Math.min(prev + 1, TAB_KEYS.length - 1);
       return Math.max(prev - 1, 0);
     });
   };
@@ -134,6 +141,7 @@ const Admin: React.FC = () => {
           <Tab label="Maintenance" id="admin-tab-5" aria-controls="admin-tabpanel-5" icon={<BuildIcon />} iconPosition="start" />
           <Tab label="Branding" id="admin-tab-6" aria-controls="admin-tabpanel-6" icon={<BrandingWatermarkIcon />} iconPosition="start" />
           <Tab label="Traffic" id="admin-tab-7" aria-controls="admin-tabpanel-7" icon={<MailIcon />} iconPosition="start" />
+          <Tab label="Backups" id="admin-tab-8" aria-controls="admin-tabpanel-8" icon={<BackupIcon />} iconPosition="start" />
         </Tabs>
 
         {/* ========== TAB 0: USERS ========== */}
@@ -177,6 +185,11 @@ const Admin: React.FC = () => {
         {/* ========== TAB 7: TRAFFIC (Assisted Traffic Handling & Forms) ========== */}
         <TabPanel value={tabValue} index={7}>
           <AdminTrafficTab showSnackbar={showSnackbar} />
+        </TabPanel>
+
+        {/* ========== TAB 8: BACKUPS ========== */}
+        <TabPanel value={tabValue} index={8}>
+          <AdminBackupsTab showSnackbar={showSnackbar} />
         </TabPanel>
       </Paper>
 

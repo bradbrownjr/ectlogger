@@ -74,11 +74,19 @@ def generate_temporary_password() -> str:
     return secrets.token_urlsafe(12)
 
 
-def _mfa_fernet() -> Fernet:
+def fernet_for_purpose(purpose: bytes) -> Fernet:
+    """A Fernet key derived from SECRET_KEY, distinct per purpose, for secrets
+    the server must be able to read back (MFA secrets, backup target
+    credentials). Rotating SECRET_KEY makes everything encrypted with it
+    unreadable."""
     key_material = HKDF(
-        algorithm=hashes.SHA256(), length=32, salt=None, info=_MFA_SECRET_PURPOSE
+        algorithm=hashes.SHA256(), length=32, salt=None, info=purpose
     ).derive(settings.secret_key.encode())
     return Fernet(base64.urlsafe_b64encode(key_material))
+
+
+def _mfa_fernet() -> Fernet:
+    return fernet_for_purpose(_MFA_SECRET_PURPOSE)
 
 
 def encrypt_mfa_secret(secret: str) -> str:

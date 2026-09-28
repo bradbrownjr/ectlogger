@@ -23,6 +23,7 @@ A real-time net logger for amateur radio, built for emergency communications tea
 - Formal traffic: ARRL radiograms, ICS-213, and RRI weather strips, with a full chain of custody
 - Complete logs, ICS-309 Communications Logs, and multi-page PDF reports, generated on close
 - Statistics and leaderboards per operator and per schedule
+- Scheduled, encrypted backups with off-site copies, and a one-command restore onto a new server
 
 The full feature list, and what each of those actually means in practice, is on the [documentation site](https://ectlogger.us/docs/).
 

@@ -44,6 +44,8 @@ Be honest about the commitment. An instance needs TLS that renews, email that ge
 
 **[Production deployment](/docs/PRODUCTION-DEPLOYMENT/)** — TLS, a reverse proxy, a service unit, and the things that matter once other people depend on it.
 
+**[Backups](/docs/self-hosting/backups/)** — what a backup holds, what runs the schedule, restoring one, and moving an instance to a new server.
+
 ## Configuration
 
 **[Magic link configuration](/docs/MAGIC-LINK-CONFIGURATION/)** — how long a login link stays valid, and why the default is longer than it looks like it should be.
@@ -66,29 +68,17 @@ Deploy by pulling from the repository, not by copying files onto the server. Cop
 
 ## Backing it up
 
-Three things need backing up, and they are all small.
+ECTLogger backs itself up: the database, every uploaded photo and logo, and both `.env` files, encrypted with a passphrase the server never stores, on a schedule, with copies sent to an SFTP server or S3-compatible storage. `install.sh` offers to set it up; admins manage it in the admin panel.
 
-**The database.** On the default SQLite setup that is one file. Copy it with SQLite's own backup call rather than `cp`, which can catch the file halfway through a write while the service is running:
+**[Backups for server operators](/docs/self-hosting/backups/)** covers what is in a backup, what runs the schedule, restoring one, moving an instance to a new server, and setting up an SFTP drop point that an intruder on the application server cannot use against you.
+
+If you already snapshot the whole server or container, set `BACKUP_SCHEDULER=off` and keep doing that; just make sure the snapshot includes `backend/data/` and both `.env` files, not only the database. On SQLite, copy a running database with SQLite's backup call rather than `cp`, which can catch the file halfway through a write:
 
 ```bash
 python3 -c "import sqlite3; sqlite3.connect('backend/ectlogger.db').backup(sqlite3.connect('$HOME/backups/ectlogger-$(date +%Y%m%d).db'))"
 ```
 
-On PostgreSQL, `pg_dump ectlogger > ~/backups/ectlogger-$(date +%Y%m%d).sql`. [Production deployment](/docs/PRODUCTION-DEPLOYMENT/) has the same commands in context, alongside the rest of the operational checklist.
-
-**Uploaded files**: profile photos, chat images, and net, schedule, and instance logos. They live under `backend/data/`, not in the database, so a database restored without them shows broken images everywhere:
-
-```bash
-tar czf ~/backups/ectlogger-data-$(date +%Y%m%d).tar.gz -C backend data
-```
-
-**The configuration**, which is not in version control and is the part people forget:
-
-```bash
-cp backend/.env frontend/.env ~/backups/
-```
-
-A backup you have never restored is a hope, not a backup. Restore one into a scratch directory occasionally and start the application against it.
+A backup you have never restored is a hope, not a backup. Use **Check this backup** in the admin panel, or restore one into a scratch directory now and then.
 
 ## Moving between environments
 

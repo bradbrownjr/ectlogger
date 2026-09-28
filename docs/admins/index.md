@@ -26,6 +26,7 @@ That last part is the reason this is its own path. "Administrator" gets used for
 - Put a banner across the top of the site for everyone
 - Set the security policy: lockouts, session length, and what MFA is required for
 - Decide which traffic form types the instance offers
+- Schedule encrypted backups of the whole instance and send copies off-site
 
 ## Two things to know before you start
 
@@ -51,6 +52,8 @@ That last part is the reason this is its own path. "Administrator" gets used for
 
 **[The contact directory](/docs/admins/contacts/)** — The callsign directory the app builds as stations check in, what it is used for, and what it holds.
 
+**[Backups](/docs/admins/backups/)** — Setting the backup passphrase, the schedule, and off-site copies, and checking or downloading a backup.
+
 ## Not here
 
-Everything about a specific net or schedule belongs to whoever manages it, not to you, and lives in [net managers](/docs/net-managers/). Server installation, backups, and TLS are in [self-hosting](/docs/self-hosting/).
+Everything about a specific net or schedule belongs to whoever manages it, not to you, and lives in [net managers](/docs/net-managers/). Server installation, restoring a backup, and TLS are in [self-hosting](/docs/self-hosting/).

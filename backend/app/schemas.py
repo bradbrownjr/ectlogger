@@ -2453,3 +2453,175 @@ class Ics309LogResponse(BaseModel):
     entries: List[Ics309LogEntryResponse] = Field(default_factory=list)
     prepared_by: str
     prepared_at: Optional[str] = None
+
+
+# ========== BACKUPS ==========
+# Admin > Backups (routers/backups.py). Responses never carry a passphrase,
+# a private key, or an S3 secret -- only whether one is set.
+
+_HHMM_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+class BackupSettingsUpdate(BaseModel):
+    enabled: bool
+    schedule_mode: Literal["daily", "interval"]
+    daily_time: str = "03:00"
+    schedule_timezone: str = "UTC"
+    interval_hours: int = Field(24, ge=1, le=168)
+    keep_daily: int = Field(7, ge=0, le=365)
+    keep_weekly: int = Field(4, ge=0, le=260)
+    keep_monthly: int = Field(6, ge=0, le=120)
+    notify_on_failure: bool = True
+
+    @field_validator("daily_time")
+    @classmethod
+    def _check_time(cls, value: str) -> str:
+        if not _HHMM_RE.match(value):
+            raise ValueError("Use 24-hour HH:MM")
+        return value
+
+    @field_validator("schedule_timezone")
+    @classmethod
+    def _check_timezone(cls, value: str) -> str:
+        from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError("Unknown time zone")
+        return value
+
+
+class BackupKeyRequest(BaseModel):
+    passphrase: str = Field(..., max_length=1024)
+    # Changing the passphrase of an existing key needs the current one.
+    current_passphrase: Optional[str] = Field(None, max_length=1024)
+    # Make a brand-new key instead (the current passphrase is forgotten).
+    replace: bool = False
+
+
+class BackupPassphrase(BaseModel):
+    passphrase: str = Field(..., max_length=1024)
+
+
+class BackupDownloadRequest(BaseModel):
+    mfa_code: str = Field(..., max_length=16)
+
+
+class BackupTargetResult(BaseModel):
+    target_id: Optional[int] = None
+    name: str
+    ok: bool
+    message: str = ""
+
+
+class BackupRunResponse(BaseModel):
+    id: int
+    trigger: str
+    triggered_by_callsign: Optional[str] = None
+    status: str
+    started_at: datetime
+    finished_at: Optional[datetime] = None
+    filename: Optional[str] = None
+    size_bytes: Optional[int] = None
+    key_fingerprint: Optional[str] = None
+    target_results: List[BackupTargetResult] = []
+    error: Optional[str] = None
+    verified_at: Optional[datetime] = None
+    verify_ok: Optional[bool] = None
+    verify_detail: Optional[str] = None
+    file_available: bool = False  # still on this server (not pruned)
+
+
+class BackupTargetBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    enabled: bool = True
+    prune_enabled: bool = False
+    # sftp
+    host: Optional[str] = Field(None, max_length=255)
+    port: Optional[int] = Field(None, ge=1, le=65535)
+    username: Optional[str] = Field(None, max_length=100)
+    path: Optional[str] = Field(None, max_length=500)
+    # s3
+    endpoint_url: Optional[str] = Field(None, max_length=255)
+    region: Optional[str] = Field(None, max_length=64)
+    bucket: Optional[str] = Field(None, max_length=255)
+    prefix: Optional[str] = Field(None, max_length=255)
+    access_key_id: Optional[str] = Field(None, max_length=255)
+
+
+class BackupTargetCreate(BackupTargetBase):
+    kind: Literal["sftp", "s3"]
+    secret_access_key: Optional[str] = Field(None, max_length=255)  # s3 only; sftp keys are generated
+
+    @model_validator(mode="after")
+    def _check_required(self):
+        needed = ("host", "username", "path") if self.kind == "sftp" else \
+            ("bucket", "access_key_id", "secret_access_key")
+        missing = [name for name in needed if not getattr(self, name)]
+        if missing:
+            raise ValueError(f"Required for {self.kind}: {', '.join(missing)}")
+        return self
+
+
+class BackupTargetUpdate(BackupTargetBase):
+    # Blank keeps the stored secret.
+    secret_access_key: Optional[str] = Field(None, max_length=255)
+
+
+class BackupTargetResponse(BaseModel):
+    id: int
+    name: str
+    kind: str
+    enabled: bool
+    prune_enabled: bool
+    host: Optional[str] = None
+    port: Optional[int] = None
+    username: Optional[str] = None
+    path: Optional[str] = None
+    endpoint_url: Optional[str] = None
+    region: Optional[str] = None
+    bucket: Optional[str] = None
+    prefix: Optional[str] = None
+    access_key_id: Optional[str] = None
+    has_secret: bool
+    public_key: Optional[str] = None  # sftp: paste into the server's authorized_keys
+    host_key_fingerprint: Optional[str] = None  # sftp: the trusted one, if any
+    last_result: Optional[BackupTargetResult] = None
+
+
+class BackupTargetTestResult(BaseModel):
+    ok: bool
+    message: str
+    # Set when an SFTP server's host key is not trusted yet (or has changed):
+    # the admin compares the fingerprint, then sends host_key back to trust it.
+    host_key: Optional[str] = None
+    host_key_fingerprint: Optional[str] = None
+    host_key_changed: bool = False
+
+
+class BackupTrustHostKey(BaseModel):
+    host_key: str = Field(..., max_length=2000)
+
+
+class BackupOverview(BaseModel):
+    enabled: bool
+    enabled_at: Optional[datetime] = None
+    schedule_mode: str
+    daily_time: str
+    schedule_timezone: str
+    interval_hours: int
+    keep_daily: int
+    keep_weekly: int
+    keep_monthly: int
+    notify_on_failure: bool
+    key_fingerprint: Optional[str] = None
+    key_created_at: Optional[datetime] = None
+    scheduler_mode: str  # BACKUP_SCHEDULER: cron | internal | off
+    last_scheduler_check_at: Optional[datetime] = None
+    scheduler_note: Optional[str] = None  # set when the scheduler looks absent
+    backup_dir: str
+    local_count: int
+    local_bytes: int
+    last_success_at: Optional[datetime] = None
+    overdue: bool
+    running: bool

@@ -415,3 +415,30 @@ export const contactApi = {
   delete: (id: number) => api.delete(`/contacts/${id}`),
   invite: (id: number) => api.post(`/contacts/${id}/invite`),
 };
+
+// Backups (Admin > Backups). Types live in components/admin/backups/types.ts.
+// `background` marks the tab's own refresh while a backup runs, so an idle
+// admin tab does not count as activity (see BACKGROUND_REQUEST_CONFIG).
+export const backupApi = {
+  overview: (background = false) =>
+    api.get('/backups', background ? BACKGROUND_REQUEST_CONFIG : undefined),
+  runs: (background = false) =>
+    api.get('/backups/runs', background ? BACKGROUND_REQUEST_CONFIG : undefined),
+  updateSettings: (data: any) => api.put('/backups/settings', data),
+  setKey: (data: { passphrase: string; current_passphrase?: string; replace?: boolean }) =>
+    api.post('/backups/key', data),
+  downloadKeyFile: () => api.get('/backups/key/file', { responseType: 'blob' }),
+  runNow: () => api.post('/backups/run'),
+  verify: (runId: number, passphrase: string) =>
+    api.post(`/backups/runs/${runId}/verify`, { passphrase }),
+  download: (runId: number, mfaCode: string) =>
+    api.post(`/backups/runs/${runId}/download`, { mfa_code: mfaCode }, { responseType: 'blob' }),
+  targets: () => api.get('/backups/targets'),
+  createTarget: (data: any) => api.post('/backups/targets', data),
+  updateTarget: (id: number, data: any) => api.put(`/backups/targets/${id}`, data),
+  deleteTarget: (id: number) => api.delete(`/backups/targets/${id}`),
+  testTarget: (id: number) => api.post(`/backups/targets/${id}/test`),
+  trustHostKey: (id: number, hostKey: string) =>
+    api.post(`/backups/targets/${id}/trust-host-key`, { host_key: hostKey }),
+  regenerateTargetKey: (id: number) => api.post(`/backups/targets/${id}/regenerate-key`),
+};

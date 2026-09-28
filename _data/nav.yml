@@ -118,6 +118,8 @@
       url: /docs/admins/traffic-settings/
     - title: The contact directory
       url: /docs/admins/contacts/
+    - title: Backups
+      url: /docs/admins/backups/
 
 - title: Self-hosting
   url: /docs/self-hosting/
@@ -130,6 +132,8 @@
       url: /docs/MANUAL-INSTALLATION/
     - title: Production deployment
       url: /docs/PRODUCTION-DEPLOYMENT/
+    - title: Backups
+      url: /docs/self-hosting/backups/
     - title: Magic link configuration
       url: /docs/MAGIC-LINK-CONFIGURATION/
     - title: Email deliverability

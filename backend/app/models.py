@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Enum, Table, UniqueConstraint, Index
+from sqlalchemy import BigInteger, Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Enum, Table, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -1061,3 +1061,91 @@ class AppSettings(Base):
     gravatar_enabled = Column(Boolean, default=True)
 
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+# ========== BACKUPS ==========
+# See app/backup/ and docs/DEVELOPMENT.md "Backups". Kept out of AppSettings
+# because these rows hold key material and credentials, which must never ride
+# along on the general GET /settings response.
+
+class BackupSettings(Base):
+    """Backup schedule, retention and key - singleton table with one row (id=1)."""
+    __tablename__ = "backup_settings"
+
+    id = Column(Integer, primary_key=True, default=1)
+    enabled = Column(Boolean, nullable=False, default=False)
+    enabled_at = Column(DateTime(timezone=True), nullable=True)  # last switched on; the overdue clock starts here
+    # 'daily' runs once a day at daily_time in schedule_timezone;
+    # 'interval' runs every interval_hours after the last successful backup.
+    schedule_mode = Column(String(16), nullable=False, default="daily")
+    daily_time = Column(String(5), nullable=False, default="03:00")  # HH:MM
+    schedule_timezone = Column(String(64), nullable=False, default="UTC")  # IANA name
+    interval_hours = Column(Integer, nullable=False, default=24)
+    # Local retention (newest per day / ISO week / month -- see backup/retention.py)
+    keep_daily = Column(Integer, nullable=False, default=7)
+    keep_weekly = Column(Integer, nullable=False, default=4)
+    keep_monthly = Column(Integer, nullable=False, default=6)
+    notify_on_failure = Column(Boolean, nullable=False, default=True)
+    # Encryption key (backup/keys.py). The passphrase itself is never stored:
+    # only the age public key, and the private key wrapped by the passphrase.
+    key_recipient = Column(String(100), nullable=True)
+    key_wrapped_identity = Column(Text, nullable=True)  # base64 of the age passphrase file
+    key_fingerprint = Column(String(16), nullable=True)
+    key_created_at = Column(DateTime(timezone=True), nullable=True)
+    # Heartbeat from whatever runs run-if-due, so the admin panel can tell
+    # "no backup is due" apart from "nothing is checking".
+    last_scheduler_check_at = Column(DateTime(timezone=True), nullable=True)
+    # Set when the "no successful backup lately" email goes out, cleared by the
+    # next success, so that alert is sent once rather than on every check.
+    overdue_alert_sent_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class BackupTarget(Base):
+    """An off-site destination every backup is copied to."""
+    __tablename__ = "backup_targets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    kind = Column(String(16), nullable=False)  # 'sftp' | 's3'
+    enabled = Column(Boolean, nullable=False, default=True)
+    # Non-secret connection details as JSON: sftp {host, port, username, path},
+    # s3 {endpoint_url, region, bucket, prefix, access_key_id}.
+    config_json = Column(Text, nullable=False, default="{}")
+    # SFTP private key or S3 secret key, Fernet-encrypted (backup/targets.py).
+    secret_encrypted = Column(Text, nullable=True)
+    # SFTP only: the server host key an admin confirmed, "type base64".
+    trusted_host_key = Column(Text, nullable=True)
+    # Delete old backups on this target by the same retention rule as local.
+    # Off by default: a drop point that sweeps uploads away should be pruned
+    # by its own server, and a server that can delete off-site copies is
+    # exactly what an attacker on this one would want.
+    prune_enabled = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class BackupRun(Base):
+    """One backup attempt, scheduled or manual, and how each target fared."""
+    __tablename__ = "backup_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    trigger = Column(String(16), nullable=False)  # 'scheduled' | 'manual'
+    triggered_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # 'running' | 'success' | 'partial' (built, but a target failed) | 'failed'
+    status = Column(String(16), nullable=False, default="running", index=True)
+    started_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), index=True)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+    filename = Column(String(100), nullable=True)
+    size_bytes = Column(BigInteger, nullable=True)
+    sha256 = Column(String(64), nullable=True)
+    key_fingerprint = Column(String(16), nullable=True)
+    # JSON list: [{target_id, name, ok, message}]
+    target_results = Column(Text, nullable=True)
+    error = Column(Text, nullable=True)
+    # Filled in by "Verify": when it was last decrypted and checked, and the result.
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+    verify_ok = Column(Boolean, nullable=True)
+    verify_detail = Column(Text, nullable=True)
+
+    triggered_by = relationship("User", foreign_keys=[triggered_by_id])

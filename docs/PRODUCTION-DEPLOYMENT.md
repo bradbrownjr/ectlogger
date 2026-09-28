@@ -534,6 +534,10 @@ sudo certbot renew --dry-run
 
 ### Backup Database
 
+ECTLogger backs up its own database, uploaded files, and configuration on a schedule, encrypted, with off-site copies. `install.sh` offers to set it up; see [Backups for server operators](/docs/self-hosting/backups/) for the schedule, restoring, and moving to a new server.
+
+For a one-off copy by hand:
+
 ```bash
 # SQLite (the default DATABASE_URL is relative to backend/, where the app runs).
 # Use SQLite's backup call, not cp, which can copy a half-written file while the service runs.

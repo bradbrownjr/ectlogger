@@ -58,6 +58,17 @@ class Settings(BaseSettings):
     app_name: str = "ECTLogger"
     app_env: str = "development"
     
+    # Backups (Admin > Backups holds the schedule and targets; these two are
+    # deployment facts an admin session must not be able to change).
+    # BACKUP_DIR: local folder for finished backups, default backend/backups.
+    backup_dir: Optional[str] = None
+    # BACKUP_SCHEDULER: what checks whether a scheduled backup is due.
+    #   "cron"     - an external cron entry runs `scripts/backup.py run-if-due`
+    #                (install.sh sets it up; keeps running if the web service is down)
+    #   "internal" - the web service checks every few minutes (containers with no cron)
+    #   "off"      - nothing does; for installs that back up their own volumes
+    backup_scheduler: str = "cron"
+
     # Deployment (used by start.sh, not the app itself)
     skip_vite: bool = False  # Set to true when Caddy serves static files
     

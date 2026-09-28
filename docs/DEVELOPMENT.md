@@ -627,6 +627,55 @@ The Schedule page's **Calendar view** (`components/scheduler/ScheduleCalendar.ts
 
 ---
 
+## Backups
+
+Encrypted backups of the database, `backend/data/` and both `.env` files.
+User-facing docs: `docs/admins/backups.md` (admin panel) and
+`docs/self-hosting/backups.md` (restore, CLI, SFTP drop point).
+
+| Piece | File |
+|---|---|
+| Key handling (age X25519, passphrase-wrapped) | `backend/app/backup/keys.py` |
+| Build / verify / unpack one archive | `backend/app/backup/archive.py` |
+| Retention (newest per day/week/month) | `backend/app/backup/retention.py` |
+| Schedule and overdue rules (pure) | `backend/app/backup/schedule.py` |
+| SFTP and S3 targets | `backend/app/backup/targets.py` |
+| One run end to end, lock, alerts | `backend/app/backup/runner.py` |
+| Web-service loop (overdue alert; `BACKUP_SCHEDULER=internal`) | `backend/app/backup/monitor.py` |
+| Admin API | `backend/app/routers/backups.py` |
+| CLI (cron, restore, setup) | `backend/scripts/backup.py` |
+| Admin tab | `frontend/src/components/admin/AdminBackupsTab.tsx`, `components/admin/backups/` |
+
+Design decisions worth keeping:
+
+- **The web service never builds, uploads or decrypts a backup in its own
+  process.** "Back up now" and "Check" start `scripts/backup.py`
+  (`backup/process.py`), so cron and the admin panel share one code path and
+  one `fcntl` lock (`backups/.backup.lock`). "Is one running?" is answered by
+  the lock, never by a `running` row, which a killed process leaves behind.
+- **Backups are encrypted to a public key; the passphrase is never stored.**
+  `backup_settings.key_wrapped_identity` is the age private key wrapped with
+  the passphrase (age's scrypt mode), and the same file sits beside the
+  backups as `ectlogger-backup-key-<fp>.age`, so the stock `age` CLI can
+  restore without ECTLogger. pyrage's passphrase mode is in-memory only,
+  fine for a key and not for a backup; its recipient mode streams (measured
+  flat at about 10 MB RSS for a 300 MB file). Verify therefore needs the
+  passphrase typed in; it goes to the CLI on stdin, never argv.
+- **The overdue alert runs in the web service, not cron**, because a missing
+  cron entry is one of the failures it exists to catch.
+- **SFTP host keys are pinned** (`backup_targets.trusted_host_key`); an
+  untrusted or changed key refuses the connection and returns the fingerprint
+  for an admin to confirm. Changing a target's host or port clears the pin.
+- **Remote pruning is off by default** per target: a drop point the app can
+  delete from is one an intruder on this server can delete from.
+- The CLI's setup commands call `init_db()` (with `app.models` imported
+  first, or `create_all` sees no tables) because `install.sh` runs them before
+  the service has ever started. Writing that test is what found `init_db()`
+  crashing on an empty SQLite database (fixed 2026-09-28,
+  `tests/test_app_startup.py::test_init_db_builds_a_fresh_database`).
+- Tests: `backend/tests/test_backups.py` (the stock-`age` interop test skips
+  unless `age` is on `PATH`).
+
 ## Background polling and `last_active`
 
 Any request the app makes on a timer must be marked as a background request, and any

@@ -473,6 +473,54 @@ EOF
     fi
 fi
 
+# Step 2.5: Backups (optional). Encrypted backups of the database, uploaded
+# files and configuration; schedule and off-site copies are managed later in
+# Admin > Backups. See docs/self-hosting/backups.md.
+BACKUPS_SETUP=false
+if [ "$CONFIG_DONE" = true ]; then
+    echo ""
+    echo "================================="
+    echo "💾 Backups"
+    echo "================================="
+    echo ""
+    echo "ECTLogger can back itself up: the database, uploaded photos and logos,"
+    echo "and its configuration, encrypted with a passphrase you choose."
+    echo "Off-site copies (SFTP, S3/Backblaze B2) are added later in Admin > Backups."
+    echo ""
+    echo "Skip this if you already back up this whole server or container another way."
+    echo ""
+    read -p "Set up automatic encrypted backups? (Y/n) " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        BACKUP_PY="$(pwd)/backend/venv/bin/python $(pwd)/backend/scripts/backup.py"
+        echo ""
+        echo "Choose a backup passphrase (at least 12 characters)."
+        echo "No one can restore a backup without it, and this server does not keep it."
+        echo "Store it somewhere else, such as a password manager."
+        echo ""
+        if $BACKUP_PY set-passphrase; then
+            SERVER_TZ=$(timedatectl show -p Timezone --value 2>/dev/null || cat /etc/timezone 2>/dev/null || echo UTC)
+            $BACKUP_PY enable --daily 03:00 --timezone "${SERVER_TZ:-UTC}" > /dev/null
+            echo "✓ Daily backups at 03:00 ($SERVER_TZ), kept for 7 days, 4 weeks and 6 months"
+            if command -v crontab &> /dev/null; then
+                $BACKUP_PY install-cron > /dev/null && echo "✓ Scheduler added to $(whoami)'s crontab"
+            else
+                # No cron here (minimal images): let the service check the schedule itself.
+                if ! grep -q "^BACKUP_SCHEDULER=" backend/.env 2>/dev/null; then
+                    echo "BACKUP_SCHEDULER=internal" >> backend/.env
+                fi
+                echo "✓ cron is not installed, so the ECTLogger service will run the schedule itself"
+            fi
+            BACKUPS_SETUP=true
+        else
+            echo "⚠️  Backups were not set up. Run later: backend/venv/bin/python backend/scripts/backup.py set-passphrase"
+        fi
+    else
+        echo "ℹ️  Skipping backups. Set them up any time in Admin > Backups."
+    fi
+    echo ""
+fi
+
 # Step 3: Fail2Ban Setup (optional, only on Linux with apt/dnf)
 FAIL2BAN_SETUP=false
 if [ "$CONFIG_DONE" = true ] && [ -f /etc/os-release ]; then
@@ -913,6 +961,15 @@ else
     echo ""
     echo "📋 To start the application:"
     echo "  ./start.sh"
+fi
+
+# Show backup info if set up
+if [ "$BACKUPS_SETUP" = true ]; then
+    echo ""
+    echo "💾 Backups Active"
+    echo "  Settings:   Admin > Backups (schedule, off-site copies, history)"
+    echo "  Status:     backend/venv/bin/python backend/scripts/backup.py status"
+    echo "  Folder:     backend/backups/"
 fi
 
 # Show Fail2Ban info if set up

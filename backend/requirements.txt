@@ -38,6 +38,11 @@ python-dateutil>=2.8.2
 aiofiles>=23.2.0
 Pillow>=10.0.0
 
+# Backups (app/backup/): age encryption, SFTP and S3-compatible targets
+pyrage>=1.2.0
+paramiko>=3.4.0
+boto3>=1.34.0
+
 # Rate Limiting
 slowapi>=0.1.9
 

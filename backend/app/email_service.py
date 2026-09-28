@@ -14,6 +14,7 @@ Implementation lives in:
                             send_traffic_stale_digest
 """
 from app.email.auth import send_admin_email_change_notice, send_magic_link, send_password_changed
+from app.email.backups import send_backup_downloaded, send_backup_failed, send_backup_overdue
 from app.email.base import (
     get_unsubscribe_footer,
     get_unsubscribe_url,
@@ -68,3 +69,6 @@ class EmailService:
     send_traffic_reminder = staticmethod(send_traffic_reminder)
     send_traffic_hxb_final_notice = staticmethod(send_traffic_hxb_final_notice)
     send_traffic_stale_digest = staticmethod(send_traffic_stale_digest)
+    send_backup_failed = staticmethod(send_backup_failed)
+    send_backup_overdue = staticmethod(send_backup_overdue)
+    send_backup_downloaded = staticmethod(send_backup_downloaded)
