@@ -6,9 +6,10 @@ wrong function. The backend then could not boot at all -- yet all 269 other
 tests passed, because they build the app object and call routes directly and
 none of them touch the startup path. It was only caught on deploy.
 
-Running the real lifespan here isn't possible: it calls init_db(), which
-performs schema setup against a database the test fixtures don't provision.
-So instead these assert the properties that actually broke.
+Running the real lifespan here isn't possible (it starts the background
+services), so these assert the properties that actually broke. init_db() on
+its own is exercised against an empty database below: until 2026-09-28 it
+crashed on one, which meant every new SQLite install failed its first start.
 """
 
 import inspect
@@ -75,3 +76,25 @@ async def test_gravatar_setting_survives_a_database_without_the_column():
         assert utils.gravatar_is_enabled() is True
     finally:
         utils.set_gravatar_enabled(original)
+
+
+@pytest.mark.asyncio
+async def test_init_db_builds_a_fresh_database(tmp_path, monkeypatch):
+    """A brand-new install has no tables. init_db() must create them rather
+    than trip over a compatibility patch aimed at older databases."""
+    import sqlite3
+
+    from sqlalchemy.ext.asyncio import create_async_engine
+    from app import database
+
+    db_file = tmp_path / "fresh.db"
+    fresh = create_async_engine(f"sqlite+aiosqlite:///{db_file}")
+    monkeypatch.setattr(database, "engine", fresh)
+    monkeypatch.setattr(database, "database_url", f"sqlite+aiosqlite:///{db_file}")
+    try:
+        await database.init_db()
+    finally:
+        await fresh.dispose()
+
+    columns = {row[1] for row in sqlite3.connect(db_file).execute("PRAGMA table_info(net_templates)")}
+    assert "fifth_week_user_id" in columns

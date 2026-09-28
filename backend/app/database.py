@@ -55,7 +55,10 @@ async def init_db():
             def ensure_sqlite_columns(sync_conn):
                 col_result = sync_conn.execute(text("PRAGMA table_info(net_templates)"))
                 columns = {row[1] for row in col_result.fetchall()}
-                if "fifth_week_user_id" not in columns:
+                # No columns means no table yet (a fresh install): create_all
+                # below builds it with the column. Patching it here crashed
+                # the very first start of every new SQLite install.
+                if columns and "fifth_week_user_id" not in columns:
                     sync_conn.execute(text("ALTER TABLE net_templates ADD COLUMN fifth_week_user_id INTEGER NULL"))
 
             await conn.run_sync(ensure_sqlite_columns)
