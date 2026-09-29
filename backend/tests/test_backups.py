@@ -11,6 +11,7 @@ import os
 import shutil
 import sqlite3
 import subprocess
+import sys
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -207,6 +208,17 @@ def test_stock_age_tool_can_open_a_backup(instance, backup_key):
     key_file.write_text(str(identity) + "\n")
     out = subprocess.run([age, "-d", "-i", str(key_file), str(built.path)], capture_output=True)
     assert out.returncode == 0 and out.stdout[:2] == b"\x1f\x8b"  # gzip
+
+
+def test_cli_reads_relative_paths_from_where_it_was_run(tmp_path):
+    """The docs say `backup.py restore ectlogger-....tar.gz.age` from the folder
+    holding the file. The script moves into backend/ as it starts, and used to
+    look for the file there instead, so a restore run as documented said
+    "No such file" (found on the first real restore test, 2026-09-29)."""
+    script = Path(__file__).resolve().parents[1] / "scripts" / "backup.py"
+    out = subprocess.run([sys.executable, str(script), "restore", "missing.tar.gz.age"],
+                         cwd=tmp_path, capture_output=True, text=True, timeout=60)
+    assert f"No such file: {tmp_path / 'missing.tar.gz.age'}" in out.stdout, out.stdout + out.stderr
 
 
 def test_unsafe_tar_entries_are_refused():

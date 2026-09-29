@@ -31,6 +31,10 @@ from datetime import datetime
 from pathlib import Path
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
+# Paths typed on the command line are relative to where the command was run,
+# so remember that before moving into backend/ (which the relative sqlite
+# path in .env needs).
+INVOCATION_DIR = Path.cwd()
 os.chdir(BACKEND_DIR)
 sys.path.insert(0, str(BACKEND_DIR))
 
@@ -232,6 +236,11 @@ def _identity_for(path: Path, passphrase: str, settings_row=None, key_file: Path
 
 # ========== RESTORE ==========
 
+def _user_path(value: str) -> Path:
+    """A path argument as the operator meant it: relative to where they ran the command."""
+    return (INVOCATION_DIR / value).resolve()
+
+
 def _service_running() -> bool:
     from dotenv import dotenv_values
 
@@ -245,7 +254,7 @@ def _service_running() -> bool:
 def _cmd_restore(args) -> int:
     from dotenv import dotenv_values
 
-    source = Path(args.file).resolve()
+    source = _user_path(args.file)
     if not source.is_file():
         print(f"No such file: {source}")
         return 2
@@ -258,7 +267,7 @@ def _cmd_restore(args) -> int:
     passphrase = read_passphrase()
     try:
         identity = _identity_for(source, passphrase,
-                                 key_file=Path(args.key).resolve() if args.key else None)
+                                 key_file=_user_path(args.key) if args.key else None)
     except (keys.BadPassphrase, archive.BackupError) as exc:
         print(exc)
         return 2
@@ -453,10 +462,10 @@ def main() -> int:
         passphrase = read_passphrase()
         if args.run_id:
             return asyncio.run(_with_db(_cmd_verify_run, args.run_id, passphrase))
-        path = Path(args.file).resolve()
+        path = _user_path(args.file)
         try:
             identity = _identity_for(path, passphrase,
-                                     key_file=Path(args.key).resolve() if args.key else None)
+                                     key_file=_user_path(args.key) if args.key else None)
         except (keys.BadPassphrase, archive.BackupError) as exc:
             print(exc)
             return 1
