@@ -6,10 +6,9 @@ from typing import Optional
 import bcrypt
 import pyotp
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from jose import JWTError, jwt
 from app.config import settings
+from app.derived_keys import MFA_SECRET_PURPOSE, fernet_from_secret
 from app.logger import logger
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from app.session_config import DEFAULT_SESSION_LIFETIME_DAYS
@@ -50,12 +49,6 @@ MAX_FAILED_PASSWORD_ATTEMPTS = 5
 PASSWORD_LOCKOUT_MINUTES = 15
 BACKUP_CODE_COUNT = 8
 
-# HKDF-derived from secret_key with a purpose label distinct from any other
-# use of secret_key (JWT signing, magic-link tokens), so rotating one
-# doesn't cross-contaminate the other and a leaked derived key can't be
-# used to recover secret_key itself.
-_MFA_SECRET_PURPOSE = b"ectlogger-mfa-secret-v1"
-
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
@@ -79,14 +72,11 @@ def fernet_for_purpose(purpose: bytes) -> Fernet:
     the server must be able to read back (MFA secrets, backup target
     credentials). Rotating SECRET_KEY makes everything encrypted with it
     unreadable."""
-    key_material = HKDF(
-        algorithm=hashes.SHA256(), length=32, salt=None, info=purpose
-    ).derive(settings.secret_key.encode())
-    return Fernet(base64.urlsafe_b64encode(key_material))
+    return fernet_from_secret(settings.secret_key, purpose)
 
 
 def _mfa_fernet() -> Fernet:
-    return fernet_for_purpose(_MFA_SECRET_PURPOSE)
+    return fernet_for_purpose(MFA_SECRET_PURPOSE)
 
 
 def encrypt_mfa_secret(secret: str) -> str:

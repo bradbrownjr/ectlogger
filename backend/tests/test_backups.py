@@ -19,11 +19,17 @@ from sqlalchemy import select
 from app.backup import archive, keys, paths, retention, runner, schedule
 from app.backup import targets as backup_targets
 from app.config import settings
+from app.derived_keys import MFA_SECRET_PURPOSE, fernet_from_secret
 from app.models import BackupRun, BackupSettings, BackupTarget
 from tests.conftest import auth_headers
 
 PASS = "correct horse battery staple"
 UTC = timezone.utc
+INSTANCE_SECRET_KEY = "the-instance-secret-key"
+
+
+def _mfa_token(secret_key: str) -> str:
+    return fernet_from_secret(secret_key, MFA_SECRET_PURPOSE).encrypt(b"JBSWY3DPEHPK3PXP").decode()
 
 
 # ========== FIXTURES ==========
@@ -35,6 +41,14 @@ def instance(tmp_path, monkeypatch):
     conn = sqlite3.connect(db_file)
     conn.execute("CREATE TABLE nets (id INTEGER PRIMARY KEY, name TEXT)")
     conn.execute("INSERT INTO nets (name) VALUES ('Tuesday Net')")
+    conn.execute("CREATE TABLE check_ins (id INTEGER PRIMARY KEY, callsign TEXT)")
+    conn.executemany("INSERT INTO check_ins (callsign) VALUES (?)", [("W1PINE",), ("K1COVE",)])
+    conn.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, callsign TEXT, mfa_enabled BOOLEAN,"
+                 " mfa_secret_encrypted TEXT)")
+    # One admin enrolled in two-factor, encrypted under this instance's SECRET_KEY
+    # (backend.env below), the way the running app would have stored it.
+    conn.execute("INSERT INTO users VALUES (1, 'W1DEMO', 1, ?)", (_mfa_token(INSTANCE_SECRET_KEY),))
+    conn.execute("INSERT INTO users VALUES (2, 'W1PINE', 0, NULL)")
     conn.commit()
     conn.close()
 
@@ -45,7 +59,7 @@ def instance(tmp_path, monkeypatch):
     (data / "chat_images" / "a.jpg").write_bytes(b"jpeg" * 1000)
 
     backend_env = tmp_path / "backend.env"
-    backend_env.write_text("SECRET_KEY=abc\n")
+    backend_env.write_text(f"SECRET_KEY={INSTANCE_SECRET_KEY}\n")
     frontend_env = tmp_path / "frontend.env"
     frontend_env.write_text("VITE_API_URL=https://example.org/api\n")
 
@@ -133,6 +147,11 @@ def test_backup_round_trip(instance, backup_key):
     identity = keys.unwrap_identity(backup_key.wrapped_identity, PASS)
     result = archive.verify(built.path, identity)
     assert result.ok, result.problems
+    assert archive.passed(result)
+    assert result.summary == {"uploaded_files": 2, "users": 2, "nets": 1, "check_ins": 2, "mfa_secrets": 1}
+    report = archive.describe(result)
+    assert "2 users, 1 nets, 2 check-ins and 2 uploaded files" in report
+    assert "opens all 1 two-factor secrets" in report
 
     out = instance / "unpacked"
     archive.unpack(built.path, identity, out)
@@ -140,6 +159,22 @@ def test_backup_round_trip(instance, backup_key):
     assert conn.execute("SELECT name FROM nets").fetchone() == ("Tuesday Net",)
     conn.close()
     assert (out / "data" / "avatars" / "1.png").read_bytes() == b"\x89PNG fake avatar"
+
+
+def test_secret_key_that_cannot_open_two_factor_is_a_warning(instance, backup_key):
+    """The failure a restore would otherwise hit silently: the database comes
+    back, but its SECRET_KEY is not the one the two-factor secrets were
+    encrypted with, so every enrolled admin is locked out. "Check this backup"
+    fails on it; restore still proceeds, since the data is intact."""
+    conn = sqlite3.connect(instance / "ectlogger.db")
+    conn.execute("UPDATE users SET mfa_secret_encrypted = ? WHERE id = 1", (_mfa_token("some-other-key"),))
+    conn.commit()
+    conn.close()
+    built = archive.build_backup(backup_key.recipient, backup_key.fingerprint)
+    result = archive.verify(built.path, keys.unwrap_identity(backup_key.wrapped_identity, PASS))
+    assert result.ok and not archive.passed(result)
+    assert "opens only 0 of 1 two-factor secrets" in result.warnings[0]
+    assert archive.describe(result).startswith("Warning: ")
 
 
 def test_wrong_key_cannot_open_a_backup(instance, backup_key):

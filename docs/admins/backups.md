@@ -96,7 +96,9 @@ A backup that has never been opened is a hope, not a backup. To check one:
   <figcaption>A backup that has been checked shows a check mark. "Off-site copy failed" means the backup was made and kept here, but did not reach a target.</figcaption>
 </figure>
 
-The server decrypts the backup and compares every file against the checksum recorded when it was made, then checks the database for damage. Nothing is changed. A row that passed shows a check-mark icon; hover over it to see when. Doing this once after setting up, and again after changing the passphrase, proves you have the right passphrase before you ever need it.
+The server decrypts the backup and compares every file against the checksum recorded when it was made, then checks the database for damage. It also confirms that the configuration saved in the backup can still unlock everyone's two-factor sign-in. A restore that got that wrong would bring every net back but lock every admin out. Nothing is changed. When it passes, the dialog shows how many users, nets, check-ins, and uploaded files the backup holds, so you can see it is the instance you expect.
+
+A row that passed shows a check-mark icon; hover over it to see when, and the same report. Doing this once after setting up, and again after changing the passphrase, proves you have the right passphrase before you ever need it.
 
 ## Download a backup
 

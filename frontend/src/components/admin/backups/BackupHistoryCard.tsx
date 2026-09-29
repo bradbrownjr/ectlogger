@@ -64,8 +64,10 @@ const BackupHistoryCard: React.FC<Props> = ({ runs, onChanged, showSnackbar }) =
   const [secret, setSecret] = useState('');
   const [busy, setBusy] = useState(false);
   const [dialogError, setDialogError] = useState<string | null>(null);
+  // The report from a check that passed, shown in the dialog until it is closed
+  const [verifyReport, setVerifyReport] = useState<string | null>(null);
 
-  const openVerify = (run: BackupRun) => { setVerifyRun(run); setSecret(''); setDialogError(null); };
+  const openVerify = (run: BackupRun) => { setVerifyRun(run); setSecret(''); setDialogError(null); setVerifyReport(null); };
   const openDownload = (run: BackupRun) => { setDownloadRun(run); setSecret(''); setDialogError(null); };
   const closeDialogs = () => { if (!busy) { setVerifyRun(null); setDownloadRun(null); } };
 
@@ -77,8 +79,9 @@ const BackupHistoryCard: React.FC<Props> = ({ runs, onChanged, showSnackbar }) =
       const response = await backupApi.verify(verifyRun.id, secret);
       const result: BackupRun = response.data;
       if (result.verify_ok) {
-        showSnackbar('Backup checked: every file matches and the database is intact', 'success');
-        setVerifyRun(null);
+        showSnackbar('Backup checked', 'success');
+        setVerifyReport(result.verify_detail || 'Every file matches its checksum and the database is intact.');
+        setSecret('');
       } else {
         setDialogError(result.verify_detail || 'The check failed.');
       }
@@ -158,7 +161,9 @@ const BackupHistoryCard: React.FC<Props> = ({ runs, onChanged, showSnackbar }) =
                           )}
                           {/* Shows once someone has run Verify on this backup */}
                           {run.verified_at && (
-                            <Tooltip title={`${run.verify_ok ? 'Checked' : 'Check failed'} ${formatWhen(run.verified_at)}${run.verify_ok ? '' : `: ${run.verify_detail}`}`}>
+                            <Tooltip title={<span style={{ whiteSpace: 'pre-line' }}>
+                              {`${run.verify_ok ? 'Checked' : 'Check failed'} ${formatWhen(run.verified_at)}${run.verify_detail ? `\n${run.verify_detail}` : ''}`}
+                            </span>}>
                               {run.verify_ok
                                 ? <VerifiedIcon fontSize="small" color="success" />
                                 : <ErrorOutlineIcon fontSize="small" color="error" />}
@@ -211,9 +216,14 @@ const BackupHistoryCard: React.FC<Props> = ({ runs, onChanged, showSnackbar }) =
         <DialogTitle>Check this backup</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Decrypts the backup on the server and checks every file in it against its checksum, and the
-            database for damage. Nothing is changed.
+            Decrypts the backup on the server, checks every file in it against its checksum and the
+            database for damage, and confirms the backup can still unlock two-factor sign-in. Nothing is
+            changed.
           </Typography>
+          {/* Shows after a check passes, in place of the passphrase field */}
+          {verifyReport ? (
+            <Alert severity="success" sx={{ whiteSpace: 'pre-line' }}>{verifyReport}</Alert>
+          ) : (
           <TextField
             label="Backup passphrase"
             type="password"
@@ -224,14 +234,21 @@ const BackupHistoryCard: React.FC<Props> = ({ runs, onChanged, showSnackbar }) =
             autoFocus
             autoComplete="off"
           />
+          )}
           {dialogError && <Alert severity="error" sx={{ mt: 2, whiteSpace: 'pre-line' }}>{dialogError}</Alert>}
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeDialogs} disabled={busy}>Cancel</Button>
-          <Button variant="contained" onClick={handleVerify} disabled={!secret || busy}
-            startIcon={busy ? <CircularProgress size={20} /> : undefined}>
-            Check
-          </Button>
+          {verifyReport ? (
+            <Button variant="contained" onClick={closeDialogs}>Done</Button>
+          ) : (
+            <>
+              <Button onClick={closeDialogs} disabled={busy}>Cancel</Button>
+              <Button variant="contained" onClick={handleVerify} disabled={!secret || busy}
+                startIcon={busy ? <CircularProgress size={20} /> : undefined}>
+                Check
+              </Button>
+            </>
+          )}
         </DialogActions>
       </Dialog>
 

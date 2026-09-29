@@ -52,7 +52,14 @@ class BuiltBackup:
 class VerifyResult:
     ok: bool
     problems: list = field(default_factory=list)
+    # Restorable, but something a restore should say out loud (a SECRET_KEY
+    # that does not open the two-factor secrets). "Check this backup" treats
+    # these as failures; restore prints them and carries on.
+    warnings: list = field(default_factory=list)
     manifest: Optional[dict] = None
+    # What the backup holds, for the report: users, nets, check_ins,
+    # uploaded_files, and mfa_secrets (how many the backup's SECRET_KEY opened).
+    summary: dict = field(default_factory=dict)
 
 
 def backup_filename(when: datetime) -> str:
@@ -181,6 +188,70 @@ def sqlite_integrity_problem(db_file: Path) -> Optional[str]:
     return None if row and row[0] == "ok" else (row[0] if row else "no result")
 
 
+def _check_restored_data(db_file: Path, env_file: Path) -> tuple[dict, Optional[str]]:
+    """Count what the backup holds, and check that the SECRET_KEY it carries
+    opens every two-factor secret in it.
+
+    That second check is the one a restore would otherwise fail silently: the
+    database comes back fine, but if its SECRET_KEY is not the one the secrets
+    were encrypted with, every admin is locked out of two-factor sign-in.
+    """
+    from dotenv import dotenv_values
+    from cryptography.fernet import InvalidToken
+    from app.derived_keys import MFA_SECRET_PURPOSE, fernet_from_secret
+
+    conn = sqlite3.connect(f"file:{db_file}?mode=ro", uri=True)
+    try:
+        counts = {table: conn.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
+                  for table in ("users", "nets", "check_ins")}
+        secrets = [row[0] for row in conn.execute(
+            "SELECT mfa_secret_encrypted FROM users WHERE mfa_enabled = 1 AND mfa_secret_encrypted IS NOT NULL")]
+    finally:
+        conn.close()
+    if not secrets:
+        return counts, None
+    secret_key = dotenv_values(env_file).get("SECRET_KEY") if env_file.is_file() else None
+    if not secret_key:
+        return counts, (f"The backup has no SECRET_KEY, so its {len(secrets)} two-factor "
+                        f"secret(s) could only be opened with this server's own.")
+    fernet = fernet_from_secret(secret_key, MFA_SECRET_PURPOSE)
+    opened = 0
+    for token in secrets:
+        try:
+            fernet.decrypt(token.encode())
+            opened += 1
+        except InvalidToken:
+            pass
+    counts["mfa_secrets"] = opened
+    if opened < len(secrets):
+        return counts, (f"The backup's SECRET_KEY opens only {opened} of {len(secrets)} two-factor "
+                        f"secrets; restored as it is, those accounts could not sign in with two-factor.")
+    return counts, None
+
+
+def describe(result: VerifyResult) -> str:
+    """One report for a checked backup, shared by the command line and the admin panel."""
+    if not result.ok:
+        return "\n".join(result.problems)
+    s = result.summary
+    lines = ["Every file matches its checksum and the database is intact."]
+    if "users" in s:
+        lines.append(f"Holds {s['users']:,} users, {s['nets']:,} nets, {s['check_ins']:,} check-ins "
+                     f"and {s['uploaded_files']:,} uploaded files.")
+    else:
+        lines.append(f"Holds {s.get('uploaded_files', 0):,} uploaded files.")
+    if result.warnings:
+        lines = [f"Warning: {w}" for w in result.warnings] + lines
+    elif s.get("mfa_secrets"):
+        lines.append(f"Its SECRET_KEY opens all {s['mfa_secrets']} two-factor secrets.")
+    return "\n".join(lines)
+
+
+def passed(result: VerifyResult) -> bool:
+    """What "Check this backup" reports: no problems and nothing to warn about."""
+    return result.ok and not result.warnings
+
+
 def _checksums(tree: Path) -> dict:
     return {
         str(path.relative_to(tree)): {"size": path.stat().st_size, "sha256": file_sha256(path)}
@@ -261,17 +332,29 @@ def verify(path: Path, identity: x25519.Identity) -> VerifyResult:
         except (BackupError, tarfile.TarError, OSError) as exc:
             return VerifyResult(ok=False, problems=[str(exc)])
 
-        problems = []
+        problems, warnings = [], []
         for rel, expected in manifest.get("files", {}).items():
             actual = scratch / rel
             if not actual.is_file():
                 problems.append(f"Missing: {rel}")
             elif file_sha256(actual) != expected["sha256"]:
                 problems.append(f"Checksum mismatch: {rel}")
+        summary = {"uploaded_files": sum(1 for rel in manifest.get("files", {}) if rel.startswith("data/"))}
         if manifest.get("database") == "sqlite":
-            problem = sqlite_integrity_problem(scratch / "database" / "ectlogger.db")
+            db_file = scratch / "database" / "ectlogger.db"
+            problem = sqlite_integrity_problem(db_file)
             if problem:
                 problems.append(f"Database integrity check: {problem}")
-        return VerifyResult(ok=not problems, problems=problems, manifest=manifest)
+            else:
+                try:
+                    counts, mfa_problem = _check_restored_data(db_file, scratch / "config" / "backend.env")
+                except sqlite3.Error as exc:
+                    problems.append(f"Could not read the backed-up database: {exc}")
+                else:
+                    summary.update(counts)
+                    if mfa_problem:
+                        warnings.append(mfa_problem)
+        return VerifyResult(ok=not problems, problems=problems, warnings=warnings,
+                            manifest=manifest, summary=summary)
     finally:
         shutil.rmtree(scratch, ignore_errors=True)

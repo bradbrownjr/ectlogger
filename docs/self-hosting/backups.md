@@ -4,7 +4,7 @@ summary: What a backup contains, how the schedule runs, restoring one, moving an
 kind: How-to
 audience: Server operators
 owner: KC1JMH
-revised: 2026-09-28
+revised: 2026-09-29
 review_by: 2027-09-28
 applies_to: ECTLogger, self-hosted
 permalink: /docs/self-hosting/backups/
@@ -64,7 +64,7 @@ backend/venv/bin/python backend/scripts/backup.py <command>
 | `run-if-due` | Makes one only if the schedule says so (what cron runs) |
 | `set-passphrase` | Creates the key, or changes its passphrase; `--replace` makes a new key |
 | `enable`, `disable` | Turns the schedule on or off; `enable --daily 03:00 --timezone America/New_York` or `enable --every-hours 6` |
-| `verify FILE` | Decrypts a backup and checks every file against its checksum |
+| `verify FILE` | Decrypts a backup, checks every file against its checksum and the database for damage, confirms the backup's `SECRET_KEY` opens every two-factor secret in it, and counts what it holds |
 | `restore FILE` | Puts a backup back in place (below) |
 | `install-cron`, `remove-cron` | Adds or removes the scheduler entry in this account's crontab |
 
@@ -86,7 +86,7 @@ This replaces the database, the uploaded files, and (optionally) the configurati
 5. If it says the backup predates a migration, run the listed scripts from `backend/migrations/` in order.
 6. Start the service: `sudo systemctl start ectlogger`.
 
-The restore checks every file against the manifest first and changes nothing if any check fails. It refuses to run while the service's port answers, and refuses a backup made by newer code than the checkout it is running from (check out the commit it names first).
+The restore checks every file against the manifest first and changes nothing if any check fails. If the backup's `SECRET_KEY` cannot open the two-factor secrets in its own database, it says so and carries on: the data is intact, but those accounts will need their two-factor reset. It refuses to run while the service's port answers, and refuses a backup made by newer code than the checkout it is running from (check out the commit it names first).
 
 Existing `.env` files are not overwritten. The backup's copy is written beside yours as `backend/.env.from-backup` to compare. Pass `--with-env` to replace them instead.
 

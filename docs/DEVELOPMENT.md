@@ -636,7 +636,8 @@ User-facing docs: `docs/admins/backups.md` (admin panel) and
 | Piece | File |
 |---|---|
 | Key handling (age X25519, passphrase-wrapped) | `backend/app/backup/keys.py` |
-| Build / verify / unpack one archive | `backend/app/backup/archive.py` |
+| Build / verify / unpack one archive; `describe()` is the one check report the CLI and the admin panel show | `backend/app/backup/archive.py` |
+| SECRET_KEY-derived Fernet keys, importable before any `.env` exists, so verify can test a backup's own `SECRET_KEY` against its two-factor secrets | `backend/app/derived_keys.py` |
 | Retention (newest per day/week/month) | `backend/app/backup/retention.py` |
 | Schedule and overdue rules (pure) | `backend/app/backup/schedule.py` |
 | SFTP and S3 targets | `backend/app/backup/targets.py` |

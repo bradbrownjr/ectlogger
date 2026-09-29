@@ -173,12 +173,11 @@ async def _cmd_verify_run(db, run_id, passphrase):
     path = paths.backup_dir() / run.filename
     result = _verify_file(path, passphrase, settings_row)
     run.verified_at = runner.utcnow()
-    run.verify_ok = result.ok
-    run.verify_detail = "All files match and the database is intact." if result.ok \
-        else "\n".join(result.problems)
+    run.verify_ok = archive.passed(result)
+    run.verify_detail = archive.describe(result)
     await db.commit()
     print(run.verify_detail)
-    return 0 if result.ok else 1
+    return 0 if run.verify_ok else 1
 
 
 def _verify_file(path, passphrase, settings_row=None):
@@ -273,6 +272,8 @@ def _cmd_restore(args) -> int:
             print("This backup did not pass its checks, so nothing was changed:")
             print("\n".join(f"  {p}" for p in result.problems))
             return 1
+        for warning in result.warnings:
+            print(f"Warning: {warning}")
         manifest = archive.unpack(source, identity, staging)
 
         backup_migration = manifest.get("latest_migration")
@@ -460,8 +461,8 @@ def main() -> int:
             print(exc)
             return 1
         result = archive.verify(path, identity)
-        print("All files match and the database is intact." if result.ok else "\n".join(result.problems))
-        return 0 if result.ok else 1
+        print(archive.describe(result))
+        return 0 if archive.passed(result) else 1
     if args.command == "restore":
         return _cmd_restore(args)
     if args.command == "install-cron":
