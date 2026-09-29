@@ -7,9 +7,11 @@ pointed at tmp_path, so nothing here touches the real instance.
 import base64
 import importlib.util
 import json
+import os
 import shutil
 import sqlite3
 import subprocess
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -336,6 +338,40 @@ async def test_interrupted_run_is_marked_failed(db, instance, backup_key, sent_e
     await runner.run_backup(db, "manual")
     stale = (await db.execute(select(BackupRun).order_by(BackupRun.id))).scalars().first()
     assert stale.status == "failed" and "Interrupted" in stale.error
+
+
+def _scratch(folder, name, age_seconds):
+    path = folder / name
+    (path / "database").mkdir(parents=True)
+    (path / "database" / "ectlogger.db").write_bytes(b"decrypted plaintext")
+    when = time.time() - age_seconds
+    os.utime(path, (when, when))
+    return path
+
+
+def test_stale_scratch_folders_are_removed(tmp_path):
+    """A build or check killed outright leaves decrypted data behind; the next
+    run removes it. One still inside the age limit may belong to a check in
+    progress, and ordinary files are never touched."""
+    old_check = _scratch(tmp_path, ".verify-killed", 2 * 3600)
+    old_build = _scratch(tmp_path, ".staging-killed", 2 * 3600)
+    running = _scratch(tmp_path, ".verify-running", 60)
+    other = _scratch(tmp_path, "not-scratch", 2 * 3600)
+    backup = tmp_path / "ectlogger-20260101-030000.tar.gz.age"
+    backup.write_bytes(b"x")
+
+    removed = archive.remove_stale_scratch(tmp_path)
+    assert sorted(removed) == [".staging-killed", ".verify-killed"]
+    assert not old_check.exists() and not old_build.exists()
+    assert running.exists() and other.exists() and backup.exists()
+
+
+@pytest.mark.asyncio
+async def test_scheduler_check_removes_stale_scratch(db, instance):
+    """Every 15-minute check cleans up, even with backups turned off."""
+    leftover = _scratch(paths.ensure_private_dir(paths.backup_dir()), ".verify-killed", 2 * 3600)
+    assert await runner.run_if_due(db) == "Backups are turned off."
+    assert not leftover.exists()
 
 
 @pytest.mark.asyncio

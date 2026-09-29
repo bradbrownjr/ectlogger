@@ -161,7 +161,14 @@ async def run_backup(db: AsyncSession, trigger: str, user_id: Optional[int] = No
         return await _run_locked(db, trigger, user_id)
 
 
+def clean_stale_scratch() -> None:
+    """Remove plaintext a killed build or check left beside the backups."""
+    for name in archive.remove_stale_scratch(paths.backup_dir()):
+        logger.warning("BACKUP", f"Removed {name}, left behind by a backup or check that was killed.")
+
+
 async def _run_locked(db: AsyncSession, trigger: str, user_id: Optional[int]) -> BackupRun:
+    clean_stale_scratch()
     # Holding the lock means any row still marked running belongs to a
     # process that died mid-backup.
     await db.execute(
@@ -273,6 +280,7 @@ def prune_remote(target, settings_row: BackupSettings) -> list[str]:
 async def run_if_due(db: AsyncSession, now: Optional[datetime] = None) -> str:
     """One scheduler tick: record the heartbeat, run a backup if one is due."""
     now = now or utcnow()
+    clean_stale_scratch()
     settings_row = await get_settings(db)
     settings_row.last_scheduler_check_at = now
     await db.commit()

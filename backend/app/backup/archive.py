@@ -21,6 +21,7 @@ import sqlite3
 import subprocess
 import tarfile
 import tempfile
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -33,6 +34,13 @@ from app.backup import paths
 
 FORMAT_VERSION = 1
 BACKUP_NAME_RE = re.compile(r"^ectlogger-(\d{8})-(\d{6})\.tar\.gz\.age$")
+# Scratch folders beside the backups. Both hold plaintext while they exist:
+# a backup being built, or one decrypted to be checked.
+STAGING_PREFIX = ".staging-"
+VERIFY_PREFIX = ".verify-"
+# A folder older than this was left by a process that was killed, since no
+# build or check runs anywhere near this long.
+STALE_SCRATCH_SECONDS = 3600
 MANIFEST_NAME = "manifest.json"
 
 
@@ -82,7 +90,7 @@ def build_backup(recipient: str, key_fingerprint: str, out_dir: Optional[Path] =
     now = now or datetime.now(timezone.utc)
     final_path = out_dir / backup_filename(now)
 
-    staging = Path(tempfile.mkdtemp(prefix=".staging-", dir=out_dir))
+    staging = Path(tempfile.mkdtemp(prefix=STAGING_PREFIX, dir=out_dir))
     try:
         tree = staging / "tree"
         tree.mkdir()
@@ -252,6 +260,26 @@ def passed(result: VerifyResult) -> bool:
     return result.ok and not result.warnings
 
 
+def remove_stale_scratch(directory: Path, now: Optional[float] = None) -> list[str]:
+    """Delete scratch folders a killed process left behind; returns their names.
+
+    Normal runs remove their own on the way out, even after an error. Only a
+    process killed outright (out of memory, a reboot) leaves one, and then it
+    holds a decrypted database until something removes it. The age limit
+    keeps this from pulling a folder out from under a check still running.
+    """
+    if not directory.is_dir():
+        return []
+    now = now if now is not None else time.time()
+    removed = []
+    for entry in directory.iterdir():
+        if (entry.is_dir() and entry.name.startswith((STAGING_PREFIX, VERIFY_PREFIX))
+                and now - entry.stat().st_mtime > STALE_SCRATCH_SECONDS):
+            shutil.rmtree(entry, ignore_errors=True)
+            removed.append(entry.name)
+    return removed
+
+
 def _checksums(tree: Path) -> dict:
     return {
         str(path.relative_to(tree)): {"size": path.stat().st_size, "sha256": file_sha256(path)}
@@ -325,7 +353,7 @@ def _check_member(member: tarfile.TarInfo) -> None:
 
 def verify(path: Path, identity: x25519.Identity) -> VerifyResult:
     """Decrypt a backup into a scratch folder and check every file against its manifest."""
-    scratch = Path(tempfile.mkdtemp(prefix=".verify-", dir=path.parent))
+    scratch = Path(tempfile.mkdtemp(prefix=VERIFY_PREFIX, dir=path.parent))
     try:
         try:
             manifest = unpack(path, identity, scratch)

@@ -164,7 +164,7 @@ With all three, the most an intruder on the application server can do to the dro
 
 - **PostgreSQL** needs `pg_dump` installed on the application server. The restore writes the dump as `backend/database-<time>.sql` and prints the `psql` command to load it; load it into an empty database.
 - **MySQL** is not supported by the built-in backups. Back it up with its own tools and set `BACKUP_SCHEDULER=off`.
-- While a backup is being made, the backup folder briefly holds an uncompressed copy of the database and uploaded files as well as the backup itself, so leave room for both.
+- While a backup is being made or checked, the backup folder briefly holds an unencrypted copy of the database and uploaded files, in a hidden `.staging-` or `.verify-` folder, as well as the backup itself, so leave room for both. The copy is deleted when the backup or check finishes, even if it fails. If the process is killed outright (out of memory, a reboot), the next scheduler check or backup deletes the leftover folder once it is an hour old.
 
 ## Next
 
