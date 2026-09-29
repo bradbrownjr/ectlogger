@@ -4,7 +4,7 @@ summary: Your callsign, your default location, your email preferences, and what 
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-27
+revised: 2026-09-29
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/account-and-profile/
@@ -35,9 +35,13 @@ You can also set a password as a fallback for when email delivery is down, and t
 - **GMRS Call Sign** — if you also operate GMRS, so nets that mix modes can log you correctly.
 - **Additional Callsigns** — any other callsigns you use (tactical, a second license, etc.), added and removed as a list of chips.
 - **Previous callsigns** — read-only. If you change your primary callsign, the old one moves here automatically, and your check-in history under it is kept.
-- **SKYWARN Spotter Number** — auto-fills when you check into a SKYWARN net that asks for it.
-- **Default Location** — your home QTH or grid square. Auto-fills the Location field when you check in.
+- **SKYWARN Spotter Number** — the ID your NWS office gave you, such as YO248 or CU-330. Letters, numbers, hyphens, and spaces only, up to 20 characters. Net control's check-in form fills it in for you on a net that asks for it.
+- **Default Location** — your home QTH or grid square. Auto-fills the Location field when you check in. Can't contain a link or email address.
 - **Website / YouTube Channel** — optional, shown on your profile popup (see below), not in the check-in list.
+
+Your Name can't contain a link or email address either. These fields are copied into net check-ins, which reject links and email addresses, so they're checked when you save your profile rather than on the night of a net.
+
+If a field is greyed out with "Locked by an administrator" beneath it, an admin has fixed it and locked it. Ask an admin of your ECTLogger instance if it needs changing.
 
 **Settings** tab covers appearance and behavior: a color theme (or follow the system default), dark mode, whether times display in your local timezone or UTC, a **Show activity in chat** switch, and [location awareness](/docs/operators/location-and-the-map/) (browser GPS used to keep a live grid square). It also has a **Remember Net View Layout** switch and a **Reset Net View Layout** button. Those control whether the panels in a net (chat, activity log, script, map, and so on) stay where you last left them on this device.
 

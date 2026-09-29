@@ -4,7 +4,7 @@ summary: Every field a check-in can carry, what is always required, and what a n
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-09-29
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/check-in-fields/
@@ -28,7 +28,7 @@ Each of these can be independently enabled or disabled for a given net, and (if 
 |---|---|---|---|
 | Name | Free text | Yes | No |
 | Location | Free text; see [Location formats](/docs/reference/location-formats/) for what the map can parse out of it | Yes | No |
-| Spotter # | Free text (SKYWARN spotter number) | No | No |
+| Spotter # | SKYWARN spotter number: letters, numbers, hyphens, and spaces, up to 20 characters, stored upper-case. No format is imposed beyond that, since each NWS office assigns its own | No | No |
 | Weather Observation | Free text | No | No |
 | Power Src | Free text (e.g. "Generator", "Battery") | No | No |
 | Power | Free text (e.g. "100W", "50W mobile") — a separate field from Power Src, not the same thing | No | No |

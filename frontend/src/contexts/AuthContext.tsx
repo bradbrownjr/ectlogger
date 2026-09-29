@@ -31,11 +31,10 @@ interface User {
   role: string;
   has_password?: boolean;
   mfa_enabled?: boolean;
-  // Admin-set padlocks (Admin Users "Edit User" dialog) -- block self-service
-  // edits to these fields from Profile. See ProfileTab.tsx.
-  name_locked?: boolean;
-  callsign_locked?: boolean;
-  email_locked?: boolean;
+  // Admin-set padlocks (Admin Users "Edit User" dialog): profile fields the
+  // user can't change themselves. See ProfileTab.tsx and
+  // backend/app/models.py::LOCKABLE_USER_FIELDS.
+  locked_fields?: string[];
 }
 
 interface AuthContextType {

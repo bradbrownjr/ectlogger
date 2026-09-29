@@ -19,6 +19,7 @@ import {
 import type { UseDialogResult } from '../../hooks/useDialog';
 import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING, FIELD_SPAM_WARNING } from '../../utils/nameFieldGuard';
 import api from '../../services/api';
+import { isFieldShown } from '../../utils/checkInFields';
 
 // ========== CHECK-IN FORM DIALOG ==========
 // The "Check In to {net}" modal. Renders the dynamic check-in form (fields shown
@@ -123,6 +124,8 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
   const isSpammy = (fieldName: string, value: string) =>
     spamGuardedFields.has(fieldName) && looksLikeEmailOrUrl(value);
 
+  // Only fields this net shows count: a hidden one is never submitted (see
+  // utils/checkInFields.ts), and the NCS couldn't clear it anyway.
   const hasSpammyField = [
     ['name', checkInForm.name],
     ['location', checkInForm.location],
@@ -132,7 +135,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
     ['power', checkInForm.power],
     ['feedback', checkInForm.feedback],
     ['notes', checkInForm.notes],
-  ].some(([fieldName, value]) => isSpammy(fieldName, value));
+  ].some(([fieldName, value]) => isFieldShown(fieldConfig, fieldName) && isSpammy(fieldName, value));
 
   const submit = () => {
     onCheckIn();

@@ -4,6 +4,7 @@ from sqlalchemy.sql import func
 from app.database import Base
 from app.band_utils import band_from_frequency_string
 import enum
+import json
 
 
 # Association tables for many-to-many relationships
@@ -106,16 +107,37 @@ class TrafficTestCategory(str, enum.Enum):
     DEMO = "demo"
 
 
+# Profile fields an admin can padlock so the user can't change them from
+# their own Profile page (User.locked_fields, enforced in
+# routers/users.py::update_my_profile). Every one of these is also editable
+# in the Admin Users "Edit User" dialog. 'email' is lockable but currently
+# inert: there is no self-service email field to block yet.
+LOCKABLE_USER_FIELDS = (
+    'name', 'callsign', 'email', 'gmrs_callsign', 'callsigns',
+    'location', 'skywarn_number', 'website_url',
+)
+
+
 class User(Base):
     __tablename__ = "users"
+
+    def get_locked_fields(self) -> list:
+        """locked_fields decoded; a malformed value locks nothing.
+        UserResponse.from_orm replaces the column with the decoded list in
+        place (same as callsigns), so a list is accepted as-is."""
+        if isinstance(self.locked_fields, list):
+            return self.locked_fields
+        try:
+            value = json.loads(self.locked_fields or '[]')
+        except (json.JSONDecodeError, TypeError):
+            return []
+        return value if isinstance(value, list) else []
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(255))
     callsign = Column(String(50), unique=True, index=True)  # Primary callsign (Amateur Radio)
-    name_locked = Column(Boolean, default=False, nullable=False)  # Admin-set: blocks the user's own PUT /users/me from changing name
-    callsign_locked = Column(Boolean, default=False, nullable=False)  # Admin-set: blocks the user's own PUT /users/me from changing callsign
-    email_locked = Column(Boolean, default=False, nullable=False)  # Admin-set; currently inert -- UserUpdate has no email field, so self-service email editing doesn't exist yet to block. Stored for when it does.
+    locked_fields = Column(Text, default='[]', nullable=False)  # JSON array of LOCKABLE_USER_FIELDS an admin has padlocked: the user's own PUT /users/me can't change them. Replaced name_locked/callsign_locked/email_locked (migration 079)
     gmrs_callsign = Column(String(50), unique=True, index=True, nullable=True)  # GMRS callsign (e.g., WROP123)
     callsigns = Column(Text, default='[]')  # JSON array of additional callsigns
     previous_callsigns = Column(Text, default='[]')  # JSON array of former primary callsigns (auto-populated on callsign change)
@@ -998,7 +1020,7 @@ class Contact(Base):
 
 class AdminAuditLog(Base):
     """One row per field an admin changed on another user's account via the
-    Admin Users identity-edit dialog (name/callsign/email/role). No admin
+    Admin Users "Edit User" dialog (profile fields, role, and field locks). No admin
     action anywhere else in the app is audited -- this exists specifically
     because editing another account's login email is account-recovery/
     takeover-adjacent, unlike e.g. a role change or a ban."""
@@ -1007,7 +1029,7 @@ class AdminAuditLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     admin_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     target_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    field = Column(String(50), nullable=False)  # 'name' | 'callsign' | 'email' | 'role'
+    field = Column(String(50), nullable=False)  # a LOCKABLE_USER_FIELDS entry, 'role', or 'locked_fields'
     old_value = Column(Text, nullable=True)
     new_value = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

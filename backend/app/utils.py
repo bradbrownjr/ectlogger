@@ -114,6 +114,44 @@ def looks_like_email_or_url(value: Optional[str]) -> bool:
     return looks_like_email(value) or looks_like_url(value)
 
 
+# ========== SKYWARN SPOTTER NUMBER ==========
+# There is no national spotter-number format: each NWS forecast office
+# assigns its own. NWS Gray (GYX) uses county letters plus a number, written
+# many ways in real data (YO248, CU-330, WST150, FR86, 21-028), and other
+# offices use plain numbers or their own prefixes. So this checks the
+# character set and length, never a per-state pattern, which would reject
+# spotters from offices nobody here has seen yet. What it does rule out is
+# anything that isn't an ID: NB9D put "YOUTUBE.COM/@NB9D" in his profile's
+# spotter field, the NCS's check-in form auto-filled it into a field the net
+# didn't show, the spam guard rejected it, and the NCS couldn't check in
+# anyone until they turned the field on to clear it (2026-09-29).
+# Mirrored by frontend/src/utils/spotterNumber.ts -- keep both in sync.
+SPOTTER_NUMBER_MAX_LENGTH = 20
+SPOTTER_NUMBER_RULE = (
+    f"Spotter # can only contain letters, numbers, hyphens and spaces "
+    f"(up to {SPOTTER_NUMBER_MAX_LENGTH} characters)"
+)
+_SPOTTER_NUMBER_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9 -]*$")
+
+
+def normalize_spotter_number(value: Optional[str]) -> Optional[str]:
+    """Upper-case and collapse whitespace; blank becomes None. Raises
+    ValueError (with SPOTTER_NUMBER_RULE) for anything that isn't a plain ID,
+    so it can be used directly as a pydantic field validator.
+
+    Only apply this to values being written (Create/Update schemas), never
+    to a Response schema: stored rows predating this rule can still hold a
+    bad value, and a validator there would 500 every read of them."""
+    if value is None:
+        return None
+    normalized = " ".join(value.split()).upper()
+    if not normalized:
+        return None
+    if len(normalized) > SPOTTER_NUMBER_MAX_LENGTH or not _SPOTTER_NUMBER_PATTERN.match(normalized):
+        raise ValueError(SPOTTER_NUMBER_RULE)
+    return normalized
+
+
 def _custom_avatar_file_ok(custom_url: str) -> bool:
     """Check that an uploaded avatar's file still exists on disk and isn't empty.
 

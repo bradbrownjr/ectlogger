@@ -4,7 +4,7 @@ summary: Inviting people, editing an account's identity and role, and banning, r
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-09-29
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/users-and-roles/
@@ -27,15 +27,15 @@ Because NCS and Guest don't currently gate anything, the role you'll actually us
 
 <figure class="control-figure">
   <img src="/docs/img/admins/change-role-dialog.png"
-       alt="The Edit User dialog, open for W1PINE, with the Name, Callsign, and Email fields (each with its own padlock icon) above an open Role picker outlined in red, offering Guest, User, NCS, and Admin.">
-  <figcaption>Name, callsign, email, and role all live in one dialog. Changing the email is how you recover an account that lost access to the address it signed up with -- both the old and new address get notified. The padlock on each field stops the person from changing it themselves afterward.</figcaption>
+       alt="The Edit User dialog, open for W1PINE, showing the Name, Callsign, and Email fields (each with its own padlock icon) followed by the rest of the profile fields and the Role picker.">
+  <figcaption>Every profile field, and the role, live in one dialog. Changing the email is how you recover an account that lost access to the address it signed up with -- both the old and new address get notified. The padlock on each field stops the person from changing it themselves afterward.</figcaption>
 </figure>
 
-To edit someone's name, callsign, email, or role: click the pencil icon in their row, make your changes, and save. Role changes take effect immediately, with no need for the person to sign out and back in.
+To edit someone's profile or role: click the pencil icon in their row, make your changes, and save. The dialog shows every field the person can set on their own Profile page: name, callsign, email, GMRS callsign, additional callsigns (one line, separated by commas), default location, SKYWARN spotter number, and website. Role changes take effect immediately, with no need for the person to sign out and back in.
 
-This is also the recovery path for an account that lost access to the email it signed up with, since that's the address magic-link sign-in goes to: put in the new address here and the person can sign in there instead. Both the old and new address get a notification email, so if you edit the wrong account by mistake, its owner finds out. Editing a callsign here works the same as the person changing it themselves from Profile — see the note on that below. Every name, callsign, email, or role change made from this dialog is recorded (who made it, when, old value, new value), even though nothing else in this panel keeps that kind of record.
+This is also the recovery path for an account that lost access to the email it signed up with, since that's the address magic-link sign-in goes to: put in the new address here and the person can sign in there instead. Both the old and new address get a notification email, so if you edit the wrong account by mistake, its owner finds out. Editing a callsign here works the same as the person changing it themselves from Profile — see the note on that below. Every field, role, or lock change made from this dialog is recorded (who made it, when, old value, new value), even though nothing else in this panel keeps that kind of record.
 
-Each of the Name and Callsign fields has its own padlock. Locking one stops the person from changing that field themselves from their own Profile page — useful after you've fixed something (a name that wasn't a name, a mistyped callsign) and don't want it typed right back in. It doesn't stop you from editing that field as an admin, and locks are independent: lock just the callsign and leave the name editable, or vice versa. There's a padlock on Email too, reserved for a future release — users can't change their own email yet regardless, so it doesn't currently do anything.
+Every field has its own padlock. Locking one stops the person from changing that field themselves from their own Profile page, where it shows greyed out as "Locked by an administrator". It's useful after you've fixed something (a name that wasn't a name, a link where a spotter number belongs) and don't want it typed right back in. It doesn't stop you from editing that field as an admin, and locks are independent: lock just the spotter number and leave everything else editable. The padlock on Email is reserved for a future release — users can't change their own email yet regardless, so it doesn't currently do anything.
 
 <figure>
   <img src="/docs/img/admins/user-row-actions.png"

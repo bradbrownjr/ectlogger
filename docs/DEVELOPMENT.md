@@ -303,6 +303,33 @@ the hook; it does not filter `checkIns` on its way in.
 
 ---
 
+## Check-in fields and profile values
+
+A net turns its check-in fields on and off (`net.field_config`). Every
+frontend path that builds a check-in payload passes it through
+`utils/checkInFields.ts::withOnlyShownFields`, and callsign lookup fills
+only shown fields. A value in a hidden field is one the NCS can't see or
+clear, so it must never be sent: on 2026-09-29 a spotter number holding a
+link was auto-filled into a hidden field, the spam guard rejected it, and
+the form (which keeps its values after a failed save) refused every later
+check-in too.
+
+Profile values that get copied into check-ins are checked when the profile
+is saved (`schemas.py::UserUpdate`): Name and Location reject a link or
+email, and a spotter number must pass `utils.py::normalize_spotter_number`
+(letters, digits, hyphens, spaces, up to 20; no per-state format, because
+each NWS office assigns its own). The spotter rule sits on the Create/Update
+schemas only, never on `CheckInBase`/`ContactBase`, because their Response
+subclasses would then fail to read stored rows that predate the rule.
+
+Admin field locks are one JSON list, `User.locked_fields`, drawn from
+`models.py::LOCKABLE_USER_FIELDS` (migration 079 replaced the three
+`*_locked` booleans). `update_my_profile` refuses a *change* to a locked
+field, comparing through `_profile_value` so the Profile form's
+whole-object resubmission of an unchanged value never trips it. A new
+self-editable profile field should be added to `LOCKABLE_USER_FIELDS`, the
+Edit User dialog, and `_LOCKED_FIELD_LABELS` together.
+
 ## UI Design Reference
 
 Before adding any new UI element, read **[docs/DESIGN.md](DESIGN.md)**. It covers:

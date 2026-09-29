@@ -1,6 +1,7 @@
 import { checkInApi, netApi, netRoleApi, userApi } from '../../services/api';
 import api from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
+import { isFieldShown, withOnlyShownFields } from '../../utils/checkInFields';
 
 // ========== CHECK-IN ACTIONS ==========
 // The check-in row action handlers: create/edit/delete a check-in, change
@@ -83,13 +84,18 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       const response = await userApi.lookupByCallsign(callsign);
       const userData = response.data;
 
-      // Only auto-fill fields that are currently empty
+      // Only auto-fill fields that are currently empty, and only fields this
+      // net shows: a value in a hidden field is one the NCS can't see or
+      // clear (see utils/checkInFields.ts).
+      const fieldConfig = net?.field_config;
+      const fill = (field: 'name' | 'location' | 'skywarn_number', prev: any) =>
+        prev[field] || (isFieldShown(fieldConfig, field) ? userData[field] : '') || '';
       if (userData.name || userData.location || userData.skywarn_number) {
         setCheckInForm((prev: any) => ({
           ...prev,
-          name: prev.name || userData.name || '',
-          location: prev.location || userData.location || '',
-          skywarn_number: prev.skywarn_number || userData.skywarn_number || '',
+          name: fill('name', prev),
+          location: fill('location', prev),
+          skywarn_number: fill('skywarn_number', prev),
         }));
       }
     } catch (error) {
@@ -106,11 +112,13 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     }
 
     try {
-      // Prepare check-in data with custom fields
-      const checkInData = {
+      // Send only the fields this net shows. The form keeps its values after
+      // a failed save, so a rejected value in a hidden field would otherwise
+      // block this station and every one after it.
+      const checkInData = withOnlyShownFields({
         ...checkInForm,
         custom_fields: checkInForm.custom_fields,
-      };
+      }, net?.field_config);
       const response = await checkInApi.create(Number(netId), checkInData);
 
       // Clear form for next check-in
@@ -294,7 +302,9 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     if (!checkIn) return;
 
     try {
-      const response = await checkInApi.update(inlineEditingId, {
+      // Hidden fields are left out, so a stored value the server would now
+      // reject (a pre-rule spotter number) can't block editing the rest.
+      const response = await checkInApi.update(inlineEditingId, withOnlyShownFields({
         callsign: inlineEditValues.callsign || checkIn.callsign,
         name: inlineEditValues.name,
         location: inlineEditValues.location,
@@ -309,7 +319,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         custom_fields: inlineEditValues.custom_fields,
         // Keep existing frequency settings
         available_frequency_ids: checkIn.available_frequencies || [],
-      });
+      }, net?.field_config));
       setInlineEditingId(null);
       setInlineEditValues({});
       setInlineEditFocusField(null);
@@ -323,7 +333,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       }
     } catch (error) {
       console.error('Failed to update check-in:', error);
-      setToastMessage('Failed to update check-in');
+      setToastMessage(getErrorMessage(error, 'Failed to update check-in'));
     }
   };
 

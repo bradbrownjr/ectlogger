@@ -4,7 +4,7 @@ summary: Adding a station, editing a row in place, fixing a misheard callsign, a
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-27
+revised: 2026-09-29
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/logging-check-ins/
@@ -21,6 +21,8 @@ The fastest way to log one more caller while you're already busy running the net
 There's a second, narrower way in, worth knowing about because it's easy to miss: the toolbar's **Check in** button (see [The net control desk](/docs/net-control/the-net-control-desk/)) opens the same form [Checking in](/docs/operators/checking-in/) describes for participants, but it only appears on the toolbar while *your own account* has no active check-in on this net, and it pre-fills the callsign field with your own callsign, not a blank one. You can clear that field and type someone else's instead, which works fine, but once you've checked yourself in the button disappears from the toolbar entirely. In practice this means it's most useful right at the start of a net, before you've logged yourself in as NCS or Logger; after that, Bulk add is the tool for adding one more station.
 
 On a phone or a narrow window, NCS and Logger also get an always-available collapsible **New Check-in** panel above the check-in list, which stays reachable regardless of your own check-in status.
+
+When you type a callsign into the check-in form and move on to the next field, ECTLogger fills in that station's Name, Location, and Spotter # from their profile, or from their past check-ins if they have no account. It only fills a field that's empty, and only a field this net shows. A field the net has turned off is never filled in or sent, so something in a station's profile you can't see can never stop you from saving the check-in.
 
 ## Editing a row in place
 

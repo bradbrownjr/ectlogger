@@ -22,6 +22,40 @@ AVATAR_ALLOWED_MIME = {"image/png", "image/jpeg", "image/webp"}
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+# ========== ADMIN FIELD LOCKS ==========
+# How each lockable field reads in the 403 a locked user sees.
+_LOCKED_FIELD_LABELS = {
+    'name': 'name',
+    'callsign': 'callsign',
+    'email': 'email',
+    'gmrs_callsign': 'GMRS callsign',
+    'callsigns': 'additional callsigns',
+    'location': 'default location',
+    'skywarn_number': 'spotter number',
+    'website_url': 'website',
+}
+
+
+def _profile_value(field: str, value):
+    """Comparable form of a profile field, so a locked field that is
+    re-submitted unchanged never trips the lock: the Profile form always
+    submits the whole object, so a lock must block a *change*, not the
+    field's presence. Callsigns compare case-insensitively, blank equals
+    unset, and the callsigns list ignores order."""
+    import json
+
+    if field == 'callsigns':
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except (json.JSONDecodeError, TypeError):
+                value = []
+        return sorted(cs.upper() for cs in (value or []) if cs)
+    if field in ('callsign', 'gmrs_callsign'):
+        return (value or '').upper()
+    return value or None
+
+
 @router.get("/me", response_model=UserResponse)
 async def get_my_profile(current_user: User = Depends(get_current_user)):
     """Get current user's profile"""
@@ -43,13 +77,10 @@ async def update_my_profile(
     # the field, not merely its presence in the payload -- the frontend form
     # always submits the whole object, so a locked-but-unchanged field must
     # not trip this or every other field would become unsaveable too.
-    if 'name' in update_data and current_user.name_locked and update_data['name'] != current_user.name:
-        raise HTTPException(status_code=403, detail="Your name has been locked by an administrator and can't be changed here.")
-    if 'callsign' in update_data and current_user.callsign_locked:
-        new_callsign = update_data['callsign']
-        old_callsign = current_user.callsign
-        if (new_callsign or '').upper() != (old_callsign or '').upper():
-            raise HTTPException(status_code=403, detail="Your callsign has been locked by an administrator and can't be changed here.")
+    for field in current_user.get_locked_fields():
+        if field in update_data and _profile_value(field, update_data[field]) != _profile_value(field, getattr(current_user, field, None)):
+            label = _LOCKED_FIELD_LABELS.get(field, field)
+            raise HTTPException(status_code=403, detail=f"Your {label} has been locked by an administrator and can't be changed here.")
 
     # When the primary callsign changes, record the old one in previous_callsigns
     # so check-in history and statistics follow the user across callsign changes.
@@ -582,12 +613,14 @@ async def admin_update_user(
     see AdminAuditLog's docstring for why this one is treated differently).
     An email change notifies both the old and new address.
 
-    Also accepts name_locked/callsign_locked/email_locked: when set, blocks
-    the user's own PUT /users/me from changing that field going forward (so
-    fixing a spammy name doesn't just get typed right back in). Enforced in
-    update_my_profile; this endpoint itself is never subject to a lock --
-    an admin can always edit a locked field, and can flip the lock in the
-    same request as the edit.
+    Also edits the rest of the profile fields (GMRS callsign, additional
+    callsigns, location, spotter number, website) and accepts
+    locked_fields: the list of LOCKABLE_USER_FIELDS the user's own
+    PUT /users/me may no longer change (so fixing a spammy value doesn't
+    just get typed right back in). Enforced in update_my_profile; this
+    endpoint itself is never subject to a lock -- an admin can always edit
+    a locked field, and can change the locks in the same request as the
+    edit.
     """
     import json
 
@@ -617,6 +650,19 @@ async def admin_update_user(
         if existing.scalar_one_or_none():
             raise HTTPException(status_code=409, detail="That callsign is already in use by another account.")
 
+    if update_data.get('gmrs_callsign') and update_data['gmrs_callsign'] != user.gmrs_callsign:
+        existing = await db.execute(
+            select(User.id).where(User.gmrs_callsign == update_data['gmrs_callsign'], User.id != user_id)
+        )
+        if existing.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail="That GMRS callsign is already in use by another account.")
+
+    # The two JSON-list columns are stored as text, so the audit log and the
+    # change check below compare their encoded form.
+    for field in ('callsigns', 'locked_fields'):
+        if field in update_data:
+            update_data[field] = json.dumps(update_data[field] or [])
+
     if 'callsign' in update_data:
         new_callsign = update_data['callsign']
         old_callsign = user.callsign
@@ -631,10 +677,15 @@ async def admin_update_user(
 
     old_email = user.email
     changed_fields: List[str] = []
-    for field in ('name', 'callsign', 'email', 'role', 'name_locked', 'callsign_locked', 'email_locked'):
+    for field in (
+        'name', 'callsign', 'email', 'role', 'gmrs_callsign', 'callsigns',
+        'location', 'skywarn_number', 'website_url', 'locked_fields',
+    ):
         if field not in update_data:
             continue
         old_value = getattr(user, field)
+        if isinstance(old_value, list):
+            old_value = json.dumps(old_value)
         new_value = update_data[field]
         old_str = old_value.value if hasattr(old_value, 'value') else old_value
         new_str = new_value.value if hasattr(new_value, 'value') else new_value

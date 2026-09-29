@@ -17,6 +17,7 @@ from typing import Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError  # noqa: F401 – re-exported for router
 
 from app.models import StationStatus
+from app.utils import normalize_spotter_number
 
 
 # ---------------------------------------------------------------------------
@@ -243,13 +244,23 @@ def process_csv_rows(reader: csv.DictReader, config: CsvImportConfig) -> CsvImpo
                 result.errors.append(f"Row {row_number}: {ts_error}")
                 continue
 
+        # -- spotter number -------------------------------------------------
+        try:
+            skywarn_number = normalize_spotter_number(
+                _get_value(row, header_lookup, "Spotter #", "Skywarn #", "Skywarn Number")
+            )
+        except ValueError as exc:
+            result.skipped += 1
+            result.errors.append(f"Row {row_number}: {exc}")
+            continue
+
         # -- build payload --------------------------------------------------
         payload: dict = {
             "net_id": config.net_id,
             "callsign": callsign,
             "name": _get_value(row, header_lookup, "Name", "Operator", "Operator Name"),
             "location": _get_value(row, header_lookup, "Location", "QTH", "Grid", "Grid Square"),
-            "skywarn_number": _get_value(row, header_lookup, "Spotter #", "Skywarn #", "Skywarn Number"),
+            "skywarn_number": skywarn_number,
             "weather_observation": _get_value(row, header_lookup, "Weather Observation", "Weather"),
             "power_source": _get_value(row, header_lookup, "Power Src", "Power Source"),
             "power": _get_value(row, header_lookup, "Power"),

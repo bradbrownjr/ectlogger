@@ -6,7 +6,11 @@ export function getErrorMessage(err: any, fallback: string): string {
     return detail;
   }
   if (Array.isArray(detail) && detail.length > 0) {
-    return detail.map((e: any) => e.msg || String(e)).join(', ');
+    // Pydantic prefixes a validator's own message with "Value error, ",
+    // which reads as noise to an operator.
+    return detail
+      .map((e: any) => (e.msg ? String(e.msg).replace(/^Value error, /, '') : String(e)))
+      .join(', ');
   }
   return fallback;
 }

@@ -16,6 +16,7 @@ import CropSquareIcon from '@mui/icons-material/CropSquare';
 import { Rnd } from 'react-rnd';
 import { checkInApi } from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
+import { CHECKIN_TOGGLEABLE_FIELDS } from '../utils/checkInFields';
 
 interface FieldConfig {
   [key: string]: {
@@ -93,7 +94,7 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
   }, [open, ws]);
 
   // Known standard field keys — anything else in fieldConfig is a custom field
-  const STANDARD_FIELD_KEYS = ['name', 'location', 'skywarn_number', 'weather_observation', 'power_source', 'power', 'notes', 'feedback'];
+  const STANDARD_FIELD_KEYS: readonly string[] = CHECKIN_TOGGLEABLE_FIELDS;
 
   // Build dynamic field list based on enabled fields
   const enabledFields = [
@@ -126,7 +127,7 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
     if (fieldConfig?.power_source?.enabled) ex1Parts.push('Generator');
     if (fieldConfig?.feedback?.enabled) ex1Parts.push('Good signal');
     Object.keys(fieldConfig || {})
-      .filter(k => !['name','location','skywarn_number','weather_observation','power_source','power','notes','feedback'].includes(k) && fieldConfig![k]?.enabled)
+      .filter(k => !STANDARD_FIELD_KEYS.includes(k) && fieldConfig![k]?.enabled)
       .forEach(() => ex1Parts.push('value'));
     examples.push(ex1Parts.join(', '));
 

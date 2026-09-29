@@ -16,7 +16,8 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useAuth } from '../../contexts/AuthContext';
 import ProfileAvatarSection from './ProfileAvatarSection';
 import type { ProfileFormData } from './profileFormTypes';
-import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
+import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING, FIELD_SPAM_WARNING } from '../../utils/nameFieldGuard';
+import { isValidSpotterNumber, SPOTTER_NUMBER_RULE } from '../../utils/spotterNumber';
 
 // ========== PROFILE TAB ==========
 // Identity form: avatar section, name/callsign/gmrs/skywarn/location fields,
@@ -49,6 +50,17 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Fields an admin has padlocked (Admin > Users > Edit User). The server
+  // refuses a change to them regardless; disabling them here just says so.
+  const isLocked = (field: string) => !!user?.locked_fields?.includes(field);
+  const LOCKED_HELP = 'Locked by an administrator';
+
+  // Mirrors the server's profile checks (schemas.py::UserUpdate), so the
+  // problem shows on the field instead of as an error after Save.
+  const nameInvalid = looksLikeEmailOrUrl(formData.name);
+  const locationInvalid = looksLikeEmailOrUrl(formData.location);
+  const spotterInvalid = !isValidSpotterNumber(formData.skywarn_number);
+
   return (
     <>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -64,9 +76,9 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           margin="normal"
           required
-          disabled={!!user?.name_locked}
-          error={looksLikeEmailOrUrl(formData.name)}
-          helperText={looksLikeEmailOrUrl(formData.name) ? NAME_FIELD_EMAIL_WARNING : "Your full name or preferred display name"}
+          disabled={isLocked('name')}
+          error={nameInvalid}
+          helperText={nameInvalid ? NAME_FIELD_EMAIL_WARNING : isLocked('name') ? LOCKED_HELP : "Your full name or preferred display name"}
         />
 
         <TextField
@@ -75,9 +87,9 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           value={formData.callsign}
           onChange={(e) => setFormData({ ...formData, callsign: e.target.value.toUpperCase() })}
           margin="normal"
-          disabled={!!user?.callsign_locked}
+          disabled={isLocked('callsign')}
           helperText={
-            formData.callsign ? (
+            isLocked('callsign') ? LOCKED_HELP : formData.callsign ? (
               <>
                 Your FCC amateur radio callsign (e.g., KC1JMH) —{' '}
                 <Link
@@ -114,7 +126,8 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           value={formData.gmrs_callsign}
           onChange={(e) => setFormData({ ...formData, gmrs_callsign: e.target.value.toUpperCase() })}
           margin="normal"
-          helperText="Your FCC GMRS callsign (e.g., WROP123) - used for GMRS frequency nets"
+          disabled={isLocked('gmrs_callsign')}
+          helperText={isLocked('gmrs_callsign') ? LOCKED_HELP : "Your FCC GMRS callsign (e.g., WROP123) - used for GMRS frequency nets"}
           inputProps={{ style: { textTransform: 'uppercase' } }}
         />
 
@@ -124,7 +137,9 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           value={formData.skywarn_number}
           onChange={(e) => setFormData({ ...formData, skywarn_number: e.target.value.toUpperCase() })}
           margin="normal"
-          helperText="Your NWS SKYWARN spotter ID (e.g., DFW-1234) - auto-fills when checking into SKYWARN nets"
+          disabled={isLocked('skywarn_number')}
+          error={spotterInvalid}
+          helperText={spotterInvalid ? SPOTTER_NUMBER_RULE : isLocked('skywarn_number') ? LOCKED_HELP : "Your NWS SKYWARN spotter ID (e.g., YO248) - auto-fills when net control checks you into a net that asks for it"}
           inputProps={{ style: { textTransform: 'uppercase' } }}
         />
 
@@ -134,7 +149,9 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           value={formData.location}
           onChange={(e) => setFormData({ ...formData, location: e.target.value.toUpperCase() })}
           margin="normal"
-          helperText="Your default location or Maidenhead grid square (e.g., FN43pp) - auto-fills when NCS checks you in"
+          disabled={isLocked('location')}
+          error={locationInvalid}
+          helperText={locationInvalid ? FIELD_SPAM_WARNING : isLocked('location') ? LOCKED_HELP : "Your default location or Maidenhead grid square (e.g., FN43pp) - auto-fills when NCS checks you in"}
           inputProps={{ style: { textTransform: 'uppercase' } }}
         />
 
@@ -144,7 +161,8 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           value={formData.website_url}
           onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
           margin="normal"
-          helperText="Optional link to your personal site, YouTube channel, etc. — shown on your profile popup, not the check-in list"
+          disabled={isLocked('website_url')}
+          helperText={isLocked('website_url') ? LOCKED_HELP : "Optional link to your personal site, YouTube channel, etc. — shown on your profile popup, not the check-in list"}
         />
 
         <Box sx={{ mt: 3, mb: 2 }}>
@@ -152,9 +170,13 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
             Additional Callsigns
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Add other callsigns you use (Amateur Radio, GMRS, tactical, etc.)
+            {isLocked('callsigns')
+              ? `${LOCKED_HELP}.`
+              : 'Add other callsigns you use (Amateur Radio, GMRS, tactical, etc.)'}
           </Typography>
 
+          {/* Add row hidden while an admin has locked this list */}
+          {!isLocked('callsigns') && (
           <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
             <TextField
               size="small"
@@ -186,6 +208,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
               Add
             </Button>
           </Box>
+          )}
 
           {formData.callsigns.length > 0 && (
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -193,7 +216,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
                 <Chip
                   key={cs}
                   label={cs}
-                  onDelete={() => {
+                  onDelete={isLocked('callsigns') ? undefined : () => {
                     setFormData({
                       ...formData,
                       callsigns: formData.callsigns.filter((c) => c !== cs)
@@ -210,7 +233,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           <Button
             type="submit"
             variant="contained"
-            disabled={saving || !formData.name || looksLikeEmailOrUrl(formData.name)}
+            disabled={saving || !formData.name || nameInvalid || locationInvalid || spotterInvalid}
             fullWidth
           >
             {saving ? 'Saving...' : 'Save Changes'}

@@ -49,8 +49,8 @@
   },
   "admins/change-role-dialog": {
     "path": "/docs/img/admins/change-role-dialog.png",
-    "alt": "The Edit User dialog, open for W1PINE, with the Name, Callsign, and Email fields (each with its own padlock icon) above an open Role picker outlined in red, offering Guest, User, NCS, and Admin.\n",
-    "caption": "Name, callsign, email, and role all live in one dialog. Changing the email is how you recover an account that lost access to the address it signed up with -- both the old and new address get notified. The padlock on each field stops the person from changing it themselves afterward.\n",
+    "alt": "The Edit User dialog, open for W1PINE, showing the Name, Callsign, and Email fields (each with its own padlock icon) followed by the rest of the profile fields and the Role picker.\n",
+    "caption": "Every profile field, and the role, live in one dialog. Changing the email is how you recover an account that lost access to the address it signed up with -- both the old and new address get notified. The padlock on each field stops the person from changing it themselves afterward.\n",
     "page": "/docs/admins/users-and-roles/"
   },
   "admins/fields-table": {

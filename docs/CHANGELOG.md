@@ -24,9 +24,15 @@ All notable changes to ECTLogger are documented here.
 
 * **Admin: Encrypted backups** — Administrators can now schedule encrypted backups of the database and uploaded images from the Admin panel, send copies to another server or cloud storage, and see at a glance whether recent backups succeeded.
 
+## Improvements
+
+* **Admin: See and lock every profile field** — The Edit User dialog now shows a station's location, spotter number, other callsigns and website, and any of them can be locked so a corrected value stays corrected.
+
 ## Bug Fixes
 
 * **RSS: Cancelled nets left out of the feed** — A net cancelled through the NCS rotation, rather than from its own card, no longer shows up in the schedule RSS feed as if it were still on.
+
+* **Check-in: A bad profile value no longer blocks the net** — If a station's profile held something the check-in form rejects in a field the net doesn't show, the form refused to save that station and every one after it until the field was turned on and cleared. The form now only uses the fields your net shows, and profiles are checked for this when they're saved, so a bad value can't get in to begin with.
 
 ---
 

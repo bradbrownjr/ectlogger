@@ -51,6 +51,7 @@ import useVisibilityAwareInterval from '../../hooks/useVisibilityAwareInterval';
 import { formatDateTime, formatDate } from '../../utils/dateUtils';
 import { displayCallsign } from '../../utils/userDisplay';
 import { getErrorMessage } from '../../utils/apiErrors';
+import { isValidSpotterNumber, SPOTTER_NUMBER_RULE } from '../../utils/spotterNumber';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface AdminUser {
@@ -68,10 +69,37 @@ interface AdminUser {
   notify_whats_new: boolean;
   has_password: boolean;
   mfa_enabled: boolean;
-  name_locked: boolean;
-  callsign_locked: boolean;
-  email_locked: boolean;
+  gmrs_callsign?: string;
+  callsigns?: string[];
+  location?: string;
+  skywarn_number?: string;
+  website_url?: string;
+  // Profile fields the user can't change themselves (see LockToggle below).
+  locked_fields?: string[];
 }
+
+// ========== EDIT USER: FIELD LOCK TOGGLE ==========
+// The padlock on each Edit User field. A locked field can't be changed from
+// the user's own Profile page (the server refuses it), so a corrected value
+// stays corrected. The admin can always edit it here either way.
+const LockToggle: React.FC<{ field: string; label: string; locked: string[]; onToggle: (field: string) => void; note?: string }> = ({ field, label, locked, onToggle, note }) => {
+  const isLocked = locked.includes(field);
+  return (
+    <InputAdornment position="end">
+      <Tooltip title={`${isLocked ? 'Locked — the user can\'t change this themselves. Click to unlock.' : 'Lock so the user can\'t change this themselves'}${note ? ` ${note}` : ''}`}>
+        <IconButton size="small" onClick={() => onToggle(field)} aria-label={`${isLocked ? 'Unlock' : 'Lock'} ${label}`}>
+          {isLocked ? <LockIcon fontSize="small" color="warning" /> : <LockOpenIcon fontSize="small" />}
+        </IconButton>
+      </Tooltip>
+    </InputAdornment>
+  );
+};
+
+const EMPTY_EDIT_USER_FORM = {
+  name: '', callsign: '', email: '', role: '',
+  gmrs_callsign: '', callsigns: '', location: '', skywarn_number: '', website_url: '',
+  locked_fields: [] as string[],
+};
 
 type UserSortField = 'online' | 'email' | 'name' | 'callsign' | 'role' | 'status' | 'last_active' | 'created_at' | 'is_ncs' | 'notify_whats_new';
 type OnlineStatus = 'online' | 'away' | 'offline';
@@ -89,10 +117,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
-  const [editUserForm, setEditUserForm] = useState({
-    name: '', callsign: '', email: '', role: '',
-    name_locked: false, callsign_locked: false, email_locked: false,
-  });
+  const [editUserForm, setEditUserForm] = useState(EMPTY_EDIT_USER_FORM);
   const [editUserSaving, setEditUserSaving] = useState(false);
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [addUserForm, setAddUserForm] = useState({ email: '', name: '', callsign: '', role: 'user' });
@@ -365,11 +390,24 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
       callsign: user.callsign || '',
       email: user.email,
       role: user.role,
-      name_locked: user.name_locked,
-      callsign_locked: user.callsign_locked,
-      email_locked: user.email_locked,
+      gmrs_callsign: user.gmrs_callsign || '',
+      // Edited as one comma-separated line; split back into a list on save.
+      callsigns: (user.callsigns || []).join(', '),
+      location: user.location || '',
+      skywarn_number: user.skywarn_number || '',
+      website_url: user.website_url || '',
+      locked_fields: user.locked_fields || [],
     });
     setEditUserDialogOpen(true);
+  };
+
+  const toggleEditUserLock = (field: string) => {
+    setEditUserForm((prev) => ({
+      ...prev,
+      locked_fields: prev.locked_fields.includes(field)
+        ? prev.locked_fields.filter((f) => f !== field)
+        : [...prev.locked_fields, field],
+    }));
   };
 
   // Combined identity + role edit (recovery path for a user who lost access
@@ -383,9 +421,12 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
         callsign: editUserForm.callsign || null,
         email: editUserForm.email,
         role: editUserForm.role,
-        name_locked: editUserForm.name_locked,
-        callsign_locked: editUserForm.callsign_locked,
-        email_locked: editUserForm.email_locked,
+        gmrs_callsign: editUserForm.gmrs_callsign || null,
+        callsigns: editUserForm.callsigns.split(',').map((cs) => cs.trim()).filter(Boolean),
+        location: editUserForm.location || null,
+        skywarn_number: editUserForm.skywarn_number || null,
+        website_url: editUserForm.website_url || null,
+        locked_fields: editUserForm.locked_fields,
       });
       setEditUserDialogOpen(false);
       showSnackbar('User updated.', 'success');
@@ -824,7 +865,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
         </Fab>
       </Tooltip>
 
-      {/* Edit User Dialog — name, callsign, email, and role in one place.
+      {/* Edit User Dialog — every profile field, role, and per-field locks in one place.
           Editing email is the recovery path for a user who lost access to
           the address they signed up with; both the old and new address get
           a notification email once saved. */}
@@ -840,21 +881,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
               value={editUserForm.name}
               onChange={(e) => setEditUserForm({ ...editUserForm, name: e.target.value })}
               fullWidth
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Tooltip title={editUserForm.name_locked ? 'Locked — the user can\'t change this themselves. Click to unlock.' : 'Lock so the user can\'t change this themselves'}>
-                      <IconButton
-                        size="small"
-                        onClick={() => setEditUserForm({ ...editUserForm, name_locked: !editUserForm.name_locked })}
-                        aria-label={editUserForm.name_locked ? 'Unlock name' : 'Lock name'}
-                      >
-                        {editUserForm.name_locked ? <LockIcon fontSize="small" color="warning" /> : <LockOpenIcon fontSize="small" />}
-                      </IconButton>
-                    </Tooltip>
-                  </InputAdornment>
-                ),
-              }}
+              InputProps={{ endAdornment: <LockToggle field="name" label="name" locked={editUserForm.locked_fields} onToggle={toggleEditUserLock} /> }}
             />
             <TextField
               label="Callsign"
@@ -862,21 +889,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
               onChange={(e) => setEditUserForm({ ...editUserForm, callsign: e.target.value.toUpperCase() })}
               fullWidth
               inputProps={{ style: { textTransform: 'uppercase' } }}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Tooltip title={editUserForm.callsign_locked ? 'Locked — the user can\'t change this themselves. Click to unlock.' : 'Lock so the user can\'t change this themselves'}>
-                      <IconButton
-                        size="small"
-                        onClick={() => setEditUserForm({ ...editUserForm, callsign_locked: !editUserForm.callsign_locked })}
-                        aria-label={editUserForm.callsign_locked ? 'Unlock callsign' : 'Lock callsign'}
-                      >
-                        {editUserForm.callsign_locked ? <LockIcon fontSize="small" color="warning" /> : <LockOpenIcon fontSize="small" />}
-                      </IconButton>
-                    </Tooltip>
-                  </InputAdornment>
-                ),
-              }}
+              InputProps={{ endAdornment: <LockToggle field="callsign" label="callsign" locked={editUserForm.locked_fields} onToggle={toggleEditUserLock} /> }}
             />
             <TextField
               label="Email"
@@ -886,21 +899,48 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
               required
               fullWidth
               helperText="Changing this changes where the user's magic-link sign-in goes. Both the old and new address are notified."
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Tooltip title={editUserForm.email_locked ? 'Locked (reserved for when users can self-edit email). Click to unlock.' : 'Lock (reserved for when users can self-edit email)'}>
-                      <IconButton
-                        size="small"
-                        onClick={() => setEditUserForm({ ...editUserForm, email_locked: !editUserForm.email_locked })}
-                        aria-label={editUserForm.email_locked ? 'Unlock email' : 'Lock email'}
-                      >
-                        {editUserForm.email_locked ? <LockIcon fontSize="small" color="warning" /> : <LockOpenIcon fontSize="small" />}
-                      </IconButton>
-                    </Tooltip>
-                  </InputAdornment>
-                ),
-              }}
+              InputProps={{ endAdornment: <LockToggle field="email" label="email" locked={editUserForm.locked_fields} onToggle={toggleEditUserLock} note="(Reserved for when users can edit their own email.)" /> }}
+            />
+            <TextField
+              label="GMRS Callsign"
+              value={editUserForm.gmrs_callsign}
+              onChange={(e) => setEditUserForm({ ...editUserForm, gmrs_callsign: e.target.value.toUpperCase() })}
+              fullWidth
+              inputProps={{ style: { textTransform: 'uppercase' } }}
+              InputProps={{ endAdornment: <LockToggle field="gmrs_callsign" label="GMRS callsign" locked={editUserForm.locked_fields} onToggle={toggleEditUserLock} /> }}
+            />
+            <TextField
+              label="Additional Callsigns"
+              value={editUserForm.callsigns}
+              onChange={(e) => setEditUserForm({ ...editUserForm, callsigns: e.target.value.toUpperCase() })}
+              fullWidth
+              helperText="Separate with commas"
+              inputProps={{ style: { textTransform: 'uppercase' } }}
+              InputProps={{ endAdornment: <LockToggle field="callsigns" label="additional callsigns" locked={editUserForm.locked_fields} onToggle={toggleEditUserLock} /> }}
+            />
+            <TextField
+              label="Default Location"
+              value={editUserForm.location}
+              onChange={(e) => setEditUserForm({ ...editUserForm, location: e.target.value })}
+              fullWidth
+              InputProps={{ endAdornment: <LockToggle field="location" label="default location" locked={editUserForm.locked_fields} onToggle={toggleEditUserLock} /> }}
+            />
+            <TextField
+              label="SKYWARN Spotter Number"
+              value={editUserForm.skywarn_number}
+              onChange={(e) => setEditUserForm({ ...editUserForm, skywarn_number: e.target.value.toUpperCase() })}
+              fullWidth
+              error={!isValidSpotterNumber(editUserForm.skywarn_number)}
+              helperText={!isValidSpotterNumber(editUserForm.skywarn_number) ? SPOTTER_NUMBER_RULE : undefined}
+              inputProps={{ style: { textTransform: 'uppercase' } }}
+              InputProps={{ endAdornment: <LockToggle field="skywarn_number" label="spotter number" locked={editUserForm.locked_fields} onToggle={toggleEditUserLock} /> }}
+            />
+            <TextField
+              label="Website / YouTube Channel"
+              value={editUserForm.website_url}
+              onChange={(e) => setEditUserForm({ ...editUserForm, website_url: e.target.value })}
+              fullWidth
+              InputProps={{ endAdornment: <LockToggle field="website_url" label="website" locked={editUserForm.locked_fields} onToggle={toggleEditUserLock} /> }}
             />
             <FormControl fullWidth>
               <InputLabel>Role</InputLabel>
@@ -922,7 +962,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
           <Button
             onClick={handleSaveEditUser}
             variant="contained"
-            disabled={!editUserForm.email || editUserSaving}
+            disabled={!editUserForm.email || editUserSaving || !isValidSpotterNumber(editUserForm.skywarn_number)}
           >
             {editUserSaving ? <CircularProgress size={24} /> : 'Save'}
           </Button>

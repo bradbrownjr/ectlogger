@@ -1,9 +1,9 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional, List, Literal, Dict, Any, Union
 from datetime import datetime
-from app.models import UserRole, NetStatus, StationStatus, FormDisposition, TrafficAction, RelayMethod, TrafficTestCategory
+from app.models import LOCKABLE_USER_FIELDS, UserRole, NetStatus, StationStatus, FormDisposition, TrafficAction, RelayMethod, TrafficTestCategory
 from app.auth import validate_password_strength
-from app.utils import normalize_email
+from app.utils import normalize_email, normalize_spotter_number, looks_like_email_or_url
 from app.logo_accent import logo_accent_colors
 import json
 import re
@@ -96,19 +96,52 @@ class AdminUserUpdate(BaseModel):
     callsign: Optional[str] = Field(None, max_length=20, min_length=3)
     email: Optional[EmailStr] = None
     role: Optional[UserRole] = None
-    # Padlocks: when set, blocks the user's own PUT /users/me from changing
-    # that field (see update_my_profile). email_locked is stored but
-    # currently inert -- there is no self-service email field to block yet.
-    name_locked: Optional[bool] = None
-    callsign_locked: Optional[bool] = None
-    email_locked: Optional[bool] = None
+    gmrs_callsign: Optional[str] = Field(None, max_length=20)
+    callsigns: Optional[List[str]] = None
+    location: Optional[str] = Field(None, max_length=200)
+    skywarn_number: Optional[str] = Field(None, max_length=50)
+    website_url: Optional[str] = Field(None, max_length=500)
+    # Padlocks: the fields the user's own PUT /users/me may no longer change
+    # (see update_my_profile). Replaces the whole list when supplied. 'email'
+    # is accepted but currently inert -- there is no self-service email
+    # field to block yet.
+    locked_fields: Optional[List[str]] = None
 
     @model_validator(mode='before')
     @classmethod
     def empty_strings_to_none(cls, values: dict) -> dict:
-        if isinstance(values, dict) and values.get('callsign') == '':
-            values['callsign'] = None
+        # Unique-constrained columns must store NULL rather than "".
+        if isinstance(values, dict):
+            for field in ('callsign', 'gmrs_callsign'):
+                if values.get(field) == '':
+                    values[field] = None
         return values
+
+    @field_validator('skywarn_number')
+    @classmethod
+    def validate_skywarn_number(cls, v: Optional[str]) -> Optional[str]:
+        return normalize_spotter_number(v)
+
+    @field_validator('callsigns')
+    @classmethod
+    def validate_callsigns(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v:
+            for callsign in v:
+                if callsign and not re.match(r'^[A-Z0-9/]+$', callsign):
+                    raise ValueError(f'Callsign {callsign} must contain only uppercase letters, numbers, and forward slashes')
+        return v
+
+    @field_validator('locked_fields')
+    @classmethod
+    def validate_locked_fields(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is None:
+            return v
+        unknown = [f for f in v if f not in LOCKABLE_USER_FIELDS]
+        if unknown:
+            raise ValueError(f"Can't lock unknown field(s): {', '.join(unknown)}")
+        # Stored sorted and de-duplicated so the audit log compares lists,
+        # not the order the dialog happened to send them in.
+        return sorted(set(v))
 
     @field_validator('email')
     @classmethod
@@ -189,6 +222,30 @@ class UserUpdate(BaseModel):
             raise ValueError(f'"{v}" is not a recognized theme')
         return v
 
+    @field_validator('skywarn_number')
+    @classmethod
+    def validate_skywarn_number(cls, v: Optional[str]) -> Optional[str]:
+        return normalize_spotter_number(v)
+
+    # Name and Location are auto-filled into check-in forms, where the spam
+    # guard (routers/check_ins.py) rejects a link or email. Checking here
+    # means the station finds out when they save their own profile, instead
+    # of net control finding out mid-net. Website is the one field meant to
+    # hold a link, so it is deliberately not checked.
+    @field_validator('name')
+    @classmethod
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+        if looks_like_email_or_url(v):
+            raise ValueError("Name can't contain a link or email address")
+        return v
+
+    @field_validator('location')
+    @classmethod
+    def validate_location(cls, v: Optional[str]) -> Optional[str]:
+        if looks_like_email_or_url(v):
+            raise ValueError("Default location can't contain a link or email address")
+        return v
+
 
 class UserResponse(UserBase):
     id: int
@@ -228,12 +285,9 @@ class UserResponse(UserBase):
     # change and whether to offer password login at all.
     has_password: bool = False
     mfa_enabled: bool = False
-    # Admin-set field locks (Admin Users "Edit User" dialog). name_locked and
-    # callsign_locked are enforced server-side in update_my_profile;
-    # email_locked is stored but currently inert (see User.email_locked).
-    name_locked: bool = False
-    callsign_locked: bool = False
-    email_locked: bool = False
+    # Admin-set field locks (Admin Users "Edit User" dialog), enforced
+    # server-side in update_my_profile. See User.locked_fields.
+    locked_fields: List[str] = Field(default_factory=list)
 
     class Config:
         from_attributes = True
@@ -259,6 +313,8 @@ class UserResponse(UserBase):
                 obj.previous_callsigns = []
         else:
             obj.previous_callsigns = []
+        # Deserialize locked_fields JSON field
+        obj.locked_fields = obj.get_locked_fields() if hasattr(obj, 'get_locked_fields') else []
         # Compute avatar URL (Gravatar or custom upload)
         obj.avatar_url = get_avatar_url(
             getattr(obj, 'email', None),
@@ -317,7 +373,12 @@ class ContactBase(BaseModel):
 
 
 class ContactCreate(ContactBase):
-    pass
+    # On Create/Update only, never ContactBase: ContactResponse inherits it,
+    # and a stored pre-rule value would then fail every read.
+    @field_validator('skywarn_number')
+    @classmethod
+    def validate_skywarn_number(cls, v: Optional[str]) -> Optional[str]:
+        return normalize_spotter_number(v)
 
 
 class ContactUpdate(BaseModel):
@@ -333,6 +394,11 @@ class ContactUpdate(BaseModel):
     @classmethod
     def normalize_email_field(cls, v: Optional[str]) -> Optional[str]:
         return normalize_email(v) if v else v
+
+    @field_validator('skywarn_number')
+    @classmethod
+    def validate_skywarn_number(cls, v: Optional[str]) -> Optional[str]:
+        return normalize_spotter_number(v)
 
     @field_validator('callsign')
     @classmethod
@@ -993,7 +1059,14 @@ class CheckInCreate(CheckInBase):
     # through a different entry point). Keep the same discipline here: never
     # make anything other than 'standard' the default.
     self_role_choice: Optional[Literal['standard', 'ncs', 'logger']] = 'standard'
-    
+
+    # On CheckInCreate/CheckInUpdate only, never CheckInBase: CheckInResponse
+    # inherits it, and a stored pre-rule value would then fail every read.
+    @field_validator('skywarn_number')
+    @classmethod
+    def validate_skywarn_number(cls, v: Optional[str]) -> Optional[str]:
+        return normalize_spotter_number(v)
+
     @field_validator('custom_fields')
     @classmethod
     def validate_custom_fields(cls, v: dict) -> dict:
@@ -1030,6 +1103,11 @@ class CheckInUpdate(BaseModel):
     topic_response: Optional[str] = Field(None, max_length=2000)
     poll_response: Optional[str] = Field(None, max_length=255)
     hand_raised: Optional[bool] = None
+
+    @field_validator('skywarn_number')
+    @classmethod
+    def validate_skywarn_number(cls, v: Optional[str]) -> Optional[str]:
+        return normalize_spotter_number(v)
 
 
 class CheckInResponse(CheckInBase):
