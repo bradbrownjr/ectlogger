@@ -121,7 +121,7 @@ An off-site target that the application server can log into is also one an intru
   services:
     ectlogger-sftp:
       image: atmoz/sftp
-      command: ectlogger::1001
+      command: ectlogger::1099
       ports:
         - "2222:22"
       volumes:
@@ -131,7 +131,7 @@ An off-site target that the application server can log into is also one an intru
       restart: unless-stopped
   ```
 
-  `ectlogger.pub` is the public key the admin panel shows for the target, and the upload folder must be writable by the account's user id (`sudo chown 1001 /srv/backups/ectlogger/inbox`). Generate the host key once with `ssh-keygen -t ed25519 -N "" -f ssh_host_ed25519_key` and keep it: a container that invents a new one each time it is recreated looks exactly like the server being impersonated, and backups stop until an admin trusts the new key. The target's folder is then `upload`. The image only reads the key when it creates the account, so after adding or changing `ectlogger.pub`, recreate the container (`docker compose up -d --force-recreate`); a plain restart keeps the old key.
+  `ectlogger.pub` is the public key the admin panel shows for the target, and the upload folder must be writable by the account's user id (`sudo chown 1099 /srv/backups/ectlogger/inbox`). Pick an id that no account on the storage machine uses (`getent passwd 1099` prints nothing): the first ordinary accounts are usually 1000 and 1001, and an upload account sharing one would make that person the owner of every backup. Generate the host key once with `ssh-keygen -t ed25519 -N "" -f ssh_host_ed25519_key` and keep it: a container that invents a new one each time it is recreated looks exactly like the server being impersonated, and backups stop until an admin trusts the new key. The target's folder is then `upload`. The image only reads the key when it creates the account, so after adding or changing `ectlogger.pub`, recreate the container (`docker compose up -d --force-recreate`); a plain restart keeps the old key.
 - **A firewall rule** that lets only the application server reach that port, and nothing else on the network.
 - **Move uploads out of reach.** Run a job on the storage machine that moves finished uploads out of the upload folder into one the SFTP account cannot see, and prunes there instead:
 
@@ -145,7 +145,7 @@ An off-site target that the application server can log into is also one an intru
       [ -f "$f" ] || continue
       dest="$archive/$(basename "$f")"
       if [ ! -e "$dest" ]; then
-          mv "$f" "$dest"
+          mv "$f" "$dest" && chown root:root "$dest"
       elif cmp -s "$f" "$dest"; then
           rm -f "$f"    # the same key file, uploaded again
       else
