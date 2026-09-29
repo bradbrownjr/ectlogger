@@ -52,6 +52,9 @@ os.environ.setdefault("EMAIL_ENABLED", "false")
 # app/database.py turns on verbose SQLAlchemy statement echo when app_env ==
 # "development" (its own default) -- not useful here and just noise.
 os.environ.setdefault("APP_ENV", "production")
+# Demo backups go in their own folder, never the real instance's backend/backups.
+# scripts/docs-screenshots/run.sh starts the demo backend with the same value.
+os.environ.setdefault("BACKUP_DIR", str(Path(__file__).resolve().parent.parent / "demo-backups"))
 
 # Same password for every seeded user -- this database is never deployed
 # anywhere real, so there is no reason to vary it, and a single known
@@ -650,6 +653,8 @@ async def _build(db_path: Path, out_path: Path):
         ))
         await db.commit()
 
+        await _seed_backups(db, now, users["W1DEMO"])
+
         # "key" is what scripts/docs-screenshots/capture.mjs matches a
         # {{net:...}} placeholder against first, so every net has an explicit
         # one. Two nets are ACTIVE now, and matching on status alone would
@@ -682,6 +687,92 @@ async def _build(db_path: Path, out_path: Path):
     out_path.write_text(json.dumps(manifest, indent=2))
     print(f"Seeded {db_path}")
     print(f"Wrote manifest to {out_path}")
+
+
+# =====================================================================
+# BACKUPS -- an instance a week into scheduled backups: a key, a daily
+# schedule, one SFTP drop point, and history including one off-site copy
+# that failed. The backup files are sparse placeholders of the recorded
+# size; nothing is ever decrypted from them. They exist so the admin tab
+# counts them as kept on this server and offers its row actions.
+# =====================================================================
+
+DEMO_BACKUP_PASSPHRASE = "demo backup passphrase, not a real one"
+
+
+async def _seed_backups(db, now, admin):
+    import secrets
+    from app.backup import archive, runner, targets
+    from app.backup.paths import backup_dir, ensure_private_dir
+    from app.models import BackupRun, BackupSettings, BackupTarget
+
+    directory = backup_dir()
+    if directory.is_dir():
+        for old in directory.iterdir():
+            if old.is_file():
+                old.unlink()
+    ensure_private_dir(directory)
+
+    settings_row = BackupSettings(
+        id=1, enabled=True, enabled_at=now - timedelta(days=8),
+        schedule_mode="daily", daily_time="03:00", schedule_timezone="America/New_York",
+        last_scheduler_check_at=now - timedelta(minutes=4),
+    )
+    runner.set_passphrase(settings_row, DEMO_BACKUP_PASSPHRASE)
+    settings_row.key_created_at = now - timedelta(days=8)
+    db.add(settings_row)
+    runner.write_key_file(settings_row)
+
+    private_pem, _public = targets.generate_ssh_keypair("ectlogger-backup")
+    host_key = " ".join(targets.public_key_of(targets.generate_ssh_keypair("drop-point")[0]).split()[:2])
+    target = BackupTarget(
+        name="Example County EOC", kind="sftp", enabled=True,
+        config_json=json.dumps({"host": "backups.example.org", "port": 2222,
+                                "username": "ectlogger", "path": "upload"}),
+        secret_encrypted=targets.encrypt_secret(private_pem),
+        trusted_host_key=host_key, prune_enabled=False,
+    )
+    db.add(target)
+    await db.flush()
+
+    def result(ok, message=""):
+        return json.dumps([{"target_id": target.id, "name": target.name, "ok": ok, "message": message}])
+
+    # Newest first: last night's scheduled run, yesterday's manual one (checked),
+    # then five more nights, one of which could not reach the drop point.
+    runs = []
+    last_03 = now.replace(hour=7, minute=0, second=0, microsecond=0)  # 03:00 EDT
+    if last_03 > now:
+        last_03 -= timedelta(days=1)
+    for day in range(6):
+        runs.append(dict(trigger="scheduled", started_at=last_03 - timedelta(days=day),
+                         ok=(day != 3)))
+    runs.insert(1, dict(trigger="manual", started_at=last_03 - timedelta(hours=9), ok=True,
+                        verified=True))
+    size = 3_400_000
+    for spec in reversed(runs):  # oldest first, so ids and sizes grow with time
+        started = spec["started_at"]
+        name = archive.backup_filename(started)
+        size += 17_000
+        run = BackupRun(
+            trigger=spec["trigger"],
+            triggered_by_id=admin.id if spec["trigger"] == "manual" else None,
+            status="success" if spec["ok"] else "partial",
+            started_at=started, finished_at=started + timedelta(seconds=6),
+            filename=name, size_bytes=size, sha256=secrets.token_hex(32),
+            key_fingerprint=settings_row.key_fingerprint,
+            target_results=result(True) if spec["ok"] else result(
+                False, "Could not connect to backups.example.org:2222: timed out"),
+        )
+        if spec.get("verified"):
+            run.verified_at = started + timedelta(minutes=3)
+            run.verify_ok = True
+            run.verify_detail = "Every file matched its checksum and the database passed its integrity check."
+        db.add(run)
+        placeholder = directory / name
+        with open(placeholder, "wb") as fh:
+            fh.truncate(size)
+    await db.commit()
 
 
 def main():

@@ -5,6 +5,36 @@
     "caption": "Most contacts appear on their own as stations check in. Use this to add someone before their first check-in.\n",
     "page": "/docs/admins/contacts/"
   },
+  "admins/backups-add-target": {
+    "path": "/docs/img/admins/backups-add-target.png",
+    "alt": "The Add off-site target dialog, with Type set to SFTP server, and empty Name, Host, Username, and Folder fields. The Port field, already filled in with 22, is outlined in red. Two switches follow, Copy backups here (on) and Delete old backups here by the same rule as this server (off), then Cancel and Save.\n",
+    "caption": "Port starts at 22, the standard SSH port. A drop point on any other port needs it changed here, or the connection test times out.\n",
+    "page": "/docs/admins/backups/"
+  },
+  "admins/backups-history": {
+    "path": "/docs/img/admins/backups-history.png",
+    "alt": "The Recent backups table, newest first, with columns Started, Result, How, Size, Off-site, and Actions. Most rows say Succeeded, scheduled; one says Manual (W1DEMO) and has a check mark for a backup that was checked; one older row says Off-site copy failed. In the first row the Actions cell, holding the Check this backup and Download icons, is outlined in red.\n",
+    "caption": "A backup that has been checked shows a check mark. \"Off-site copy failed\" means the backup was made and kept here, but did not reach a target.\n",
+    "page": "/docs/admins/backups/"
+  },
+  "admins/backups-schedule": {
+    "path": "/docs/img/admins/backups-schedule.png",
+    "alt": "The Schedule card. The Scheduled backups switch at the top right is on and outlined in red. Below it, How often is set to Once a day, At 03:00, and Time zone America/New_York; then Daily 7, Weekly 4 and Monthly 6 under Keep on this server; then the switch to email administrators when a backup fails. The Save schedule button at the bottom is outlined in red.\n",
+    "caption": "Nothing changes until Save schedule is clicked. The time is in the time zone chosen here, not the server's.\n",
+    "page": "/docs/admins/backups/"
+  },
+  "admins/backups-status-and-key": {
+    "path": "/docs/img/admins/backups-status-and-key.png",
+    "alt": "The top of the Backups tab. A green status line reads \"Last successful backup\" with a date, above how many backups are kept on this server and when the scheduler last checked in. Below it, the Encryption card names the key by its ID and creation date, with Change passphrase, Key file (outlined in red), and Replace key buttons.\n",
+    "caption": "Once a passphrase is set, the Encryption card names the key every backup is made with. The key file it downloads is useless without the passphrase.\n",
+    "page": "/docs/admins/backups/"
+  },
+  "admins/backups-targets": {
+    "path": "/docs/img/admins/backups-targets.png",
+    "alt": "The Off-site copies card, with the Add target button at its top right outlined in red. One SFTP target, Example County EOC, is listed with its address, backups.example.org port 2222, and three icons: Test connection (outlined in red), Edit, and Remove.\n",
+    "caption": "Every backup is copied to each target listed here. Test connection is also where a new SFTP server's host key is confirmed.\n",
+    "page": "/docs/admins/backups/"
+  },
   "admins/branding-default-theme": {
     "path": "/docs/img/admins/branding-default-theme.png",
     "alt": "The Default Theme card on the Branding tab, with five named colour swatches -- ECTLogger Blue (currently selected, ticked), Ocean, Forest, Sunset, and Berry -- and a \"Set as System Default\" button outlined in red, greyed out because the selected swatch is already the default.\n",

@@ -64,6 +64,7 @@ if [[ -z "$(backend_pid)" ]]; then
     EMAIL_ENABLED=false SMTP_HOST=127.0.0.1 SMTP_USER=demo@example.com \
     SMTP_PASSWORD=demo SMTP_FROM_EMAIL=demo@example.com \
     SECRET_KEY=demo-only-not-a-real-secret APP_ENV=production \
+    BACKUP_DIR="$REPO/backend/demo-backups" \
     nohup venv/bin/python -m uvicorn app.main:app \
       --host 0.0.0.0 --port "$PORT_BACKEND" > "$LOG" 2>&1 &
   )

@@ -304,7 +304,8 @@ const AdminBackupsTab: React.FC<Props> = ({ showSnackbar }) => {
                     {hasKey ? 'Makes a backup automatically on the schedule below.' : 'Set a passphrase first.'}
                   </Typography>
                 </Box>
-                <Switch checked={form.enabled} disabled={!hasKey} onChange={(e) => set({ enabled: e.target.checked })} />
+                <Switch checked={form.enabled} disabled={!hasKey} onChange={(e) => set({ enabled: e.target.checked })}
+                  inputProps={{ 'aria-label': 'Scheduled backups' }} />
               </Box>
 
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -365,7 +366,8 @@ const AdminBackupsTab: React.FC<Props> = ({ showSnackbar }) => {
                     Also sent once if no backup has succeeded for a day and a half (or one and a half of your intervals).
                   </Typography>
                 </Box>
-                <Switch checked={form.notify_on_failure} onChange={(e) => set({ notify_on_failure: e.target.checked })} />
+                <Switch checked={form.notify_on_failure} onChange={(e) => set({ notify_on_failure: e.target.checked })}
+                  inputProps={{ 'aria-label': 'Email administrators when a backup fails' }} />
               </Box>
 
               <Box>

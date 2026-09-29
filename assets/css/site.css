@@ -787,6 +787,19 @@ footer a { color: var(--text-secondary); }
 @media (max-width: 560px) {
   /* The Home link is redundant with the logo, and the row has to fit. */
   .header-links a.hide-narrow { display: none; }
+
+  /* Even without it, the logo plus Contents, the theme toggle and Open App
+     need about 370px, so on a 360px phone every docs page scrolled sideways.
+     Let the buttons drop to a second row when they do not fit, rather than
+     guessing which one to hide. Where they fit, the header looks the same. */
+  header { padding: 0 16px; }
+  .header-content {
+    height: auto;
+    min-height: 56px;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding: 6px 0;
+  }
 }
 
 /* ========== DARK MODE ========== */

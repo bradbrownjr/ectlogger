@@ -32,6 +32,7 @@ wheels/
 # rebuilt on demand for documentation screenshots, never committed.
 backend/demo.db*
 backend/demo-seed.json
+backend/demo-backups/
 
 # Environment variables
 .env
