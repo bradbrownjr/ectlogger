@@ -367,23 +367,63 @@ def test_stale_scratch_folders_are_removed(tmp_path):
     progress, and ordinary files are never touched."""
     old_check = _scratch(tmp_path, ".verify-killed", 2 * 3600)
     old_build = _scratch(tmp_path, ".staging-killed", 2 * 3600)
+    old_restore = _scratch(tmp_path, ".restore-killed", 2 * 3600)
     running = _scratch(tmp_path, ".verify-running", 60)
     other = _scratch(tmp_path, "not-scratch", 2 * 3600)
     backup = tmp_path / "ectlogger-20260101-030000.tar.gz.age"
     backup.write_bytes(b"x")
 
     removed = archive.remove_stale_scratch(tmp_path)
-    assert sorted(removed) == [".staging-killed", ".verify-killed"]
-    assert not old_check.exists() and not old_build.exists()
+    assert sorted(removed) == [".restore-killed", ".staging-killed", ".verify-killed"]
+    assert not old_check.exists() and not old_build.exists() and not old_restore.exists()
     assert running.exists() and other.exists() and backup.exists()
 
 
 @pytest.mark.asyncio
-async def test_scheduler_check_removes_stale_scratch(db, instance):
-    """Every 15-minute check cleans up, even with backups turned off."""
+async def test_scheduler_check_removes_stale_scratch(db, instance, tmp_path, monkeypatch):
+    """Every 15-minute check cleans up, even with backups turned off: beside
+    the backups, and in backend/ where a restore unpacks."""
     leftover = _scratch(paths.ensure_private_dir(paths.backup_dir()), ".verify-killed", 2 * 3600)
+    backend = tmp_path / "backend"
+    backend.mkdir()
+    monkeypatch.setattr(paths, "BACKEND_DIR", backend)
+    killed_restore = _scratch(backend, ".restore-killed", 2 * 3600)
     assert await runner.run_if_due(db) == "Backups are turned off."
-    assert not leftover.exists()
+    assert not leftover.exists() and not killed_restore.exists()
+
+
+def _load_cli(monkeypatch):
+    """scripts/backup.py as a module. It moves into backend/ as it loads, so
+    the working directory is put back afterwards."""
+    monkeypatch.chdir(os.getcwd())
+    script = Path(__file__).resolve().parents[1] / "scripts" / "backup.py"
+    spec = importlib.util.spec_from_file_location("backup_cli", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.mark.parametrize("replace", [False, True])
+def test_restored_env_files_are_private(instance, tmp_path, monkeypatch, replace):
+    """.env holds SECRET_KEY and the SMTP password. A restore wrote it with
+    whatever mode came out of the archive (644 on the first real restore test,
+    2026-09-29), so any account on the server could read it."""
+    cli = _load_cli(monkeypatch)
+    saved = tmp_path / "unpacked"
+    saved.mkdir()
+    for name in paths.ENV_FILES:
+        (saved / name).write_text("SECRET_KEY=from-backup\n")
+        os.chmod(saved / name, 0o644)
+    backend_env = paths.ENV_FILES["backend.env"]
+    frontend_env = paths.ENV_FILES["frontend.env"]
+    frontend_env.unlink()  # a fresh server: nothing there yet
+
+    cli._restore_env(saved, "20260929-120000", replace)
+
+    assert frontend_env.stat().st_mode & 0o777 == 0o600
+    written = backend_env if replace else backend_env.with_name(".env.from-backup")
+    assert written.read_text() == "SECRET_KEY=from-backup\n"
+    assert written.stat().st_mode & 0o777 == 0o600
 
 
 @pytest.mark.asyncio

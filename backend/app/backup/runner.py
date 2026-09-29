@@ -162,9 +162,11 @@ async def run_backup(db: AsyncSession, trigger: str, user_id: Optional[int] = No
 
 
 def clean_stale_scratch() -> None:
-    """Remove plaintext a killed build or check left beside the backups."""
-    for name in archive.remove_stale_scratch(paths.backup_dir()):
-        logger.warning("BACKUP", f"Removed {name}, left behind by a backup or check that was killed.")
+    """Remove plaintext a killed build, check or restore left behind."""
+    for folder in (paths.backup_dir(), paths.BACKEND_DIR):
+        for name in archive.remove_stale_scratch(folder):
+            logger.warning("BACKUP", f"Removed {folder / name}, left behind by a backup, "
+                                     "check or restore that was killed.")
 
 
 async def _run_locked(db: AsyncSession, trigger: str, user_id: Optional[int]) -> BackupRun:

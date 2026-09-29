@@ -272,10 +272,17 @@ def _cmd_restore(args) -> int:
         print(exc)
         return 2
 
+    # A restore killed before its cleanup ran (Ctrl-C twice, a reboot) left a
+    # decrypted copy here. The web service also clears these every 15 minutes,
+    # but it is stopped for a restore.
+    for name in archive.remove_stale_scratch(BACKEND_DIR):
+        print(f"Removed {name}, a decrypted copy left by an earlier restore that was stopped.")
+
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    staging = BACKEND_DIR / f".restore-{stamp}"
+    staging = BACKEND_DIR / f"{archive.RESTORE_PREFIX}{stamp}"
     print(f"Decrypting {source.name} ...")
     try:
+        staging.mkdir(mode=0o700)
         result = archive.verify(source, identity)
         if not result.ok:
             print("This backup did not pass its checks, so nothing was changed:")
@@ -324,7 +331,16 @@ def _move_into_place(new: Path, current: Path, stamp: str) -> str:
         current.rename(aside)
         note = f" (previous copy kept as {aside.name})"
     shutil.move(str(new), str(current))
-    return f"{current.relative_to(BACKEND_DIR.parent)}{note}"
+    return f"{_shown(current)}{note}"
+
+
+def _shown(path: Path) -> str:
+    """A path as the restore report prints it: relative to the repository when
+    inside it. The database can live anywhere DATABASE_URL points."""
+    try:
+        return str(path.relative_to(BACKEND_DIR.parent))
+    except ValueError:
+        return str(path)
 
 
 def _restore_database(folder: Path, manifest: dict, database_url: str, stamp: str) -> str:
@@ -336,6 +352,7 @@ def _restore_database(folder: Path, manifest: dict, database_url: str, stamp: st
         return _move_into_place(folder / "ectlogger.db", target, stamp)
     dump = BACKEND_DIR / f"database-{stamp}.sql"
     shutil.move(str(folder / "database.sql"), dump)
+    os.chmod(dump, 0o600)
     return (f"Database: PostgreSQL dump written to {dump.name}. Load it into an empty database with\n"
             f'      psql "$DATABASE_URL" < {dump}')
 
@@ -349,14 +366,16 @@ def _restore_env(folder: Path, stamp: str, replace: bool) -> list[str]:
         if not target.exists():
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(saved, target)
-            notes.append(f"{target.relative_to(BACKEND_DIR.parent)} (there was none)")
+            os.chmod(target, 0o600)
+            notes.append(f"{_shown(target)} (there was none)")
         elif replace:
             notes.append(_move_into_place(saved, target, stamp))
+            os.chmod(target, 0o600)
         else:
             side = target.with_name(".env.from-backup")
             shutil.copy2(saved, side)
             os.chmod(side, 0o600)
-            notes.append(f"{side.relative_to(BACKEND_DIR.parent)}: the backup's copy, beside your "
+            notes.append(f"{_shown(side)}: the backup's copy, beside your "
                          "current .env. Its SECRET_KEY must be the one in use, or every admin's "
                          "two-factor login stops working. Use --with-env to replace .env instead.")
     return notes

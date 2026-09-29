@@ -34,10 +34,13 @@ from app.backup import paths
 
 FORMAT_VERSION = 1
 BACKUP_NAME_RE = re.compile(r"^ectlogger-(\d{8})-(\d{6})\.tar\.gz\.age$")
-# Scratch folders beside the backups. Both hold plaintext while they exist:
-# a backup being built, or one decrypted to be checked.
+# Scratch folders. All hold plaintext while they exist: a backup being built
+# or one decrypted to be checked (both beside the backups), or one unpacked
+# for a restore (in backend/).
 STAGING_PREFIX = ".staging-"
 VERIFY_PREFIX = ".verify-"
+RESTORE_PREFIX = ".restore-"
+SCRATCH_PREFIXES = (STAGING_PREFIX, VERIFY_PREFIX, RESTORE_PREFIX)
 # A folder older than this was left by a process that was killed, since no
 # build or check runs anywhere near this long.
 STALE_SCRATCH_SECONDS = 3600
@@ -264,8 +267,9 @@ def remove_stale_scratch(directory: Path, now: Optional[float] = None) -> list[s
     """Delete scratch folders a killed process left behind; returns their names.
 
     Normal runs remove their own on the way out, even after an error. Only a
-    process killed outright (out of memory, a reboot) leaves one, and then it
-    holds a decrypted database until something removes it. The age limit
+    process killed outright (out of memory, a reboot, Ctrl-C twice during a
+    restore) leaves one, and then it holds a decrypted database until
+    something removes it. The age limit
     keeps this from pulling a folder out from under a check still running.
     """
     if not directory.is_dir():
@@ -273,7 +277,7 @@ def remove_stale_scratch(directory: Path, now: Optional[float] = None) -> list[s
     now = now if now is not None else time.time()
     removed = []
     for entry in directory.iterdir():
-        if (entry.is_dir() and entry.name.startswith((STAGING_PREFIX, VERIFY_PREFIX))
+        if (entry.is_dir() and entry.name.startswith(SCRATCH_PREFIXES)
                 and now - entry.stat().st_mtime > STALE_SCRATCH_SECONDS):
             shutil.rmtree(entry, ignore_errors=True)
             removed.append(entry.name)

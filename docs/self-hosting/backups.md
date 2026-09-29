@@ -88,7 +88,7 @@ This replaces the database, the uploaded files, and (optionally) the configurati
 
 The restore checks every file against the manifest first and changes nothing if any check fails. If the backup's `SECRET_KEY` cannot open the two-factor secrets in its own database, it says so and carries on: the data is intact, but those accounts will need their two-factor reset. It refuses to run while the service's port answers, and refuses a backup made by newer code than the checkout it is running from (check out the commit it names first).
 
-Existing `.env` files are not overwritten. The backup's copy is written beside yours as `backend/.env.from-backup` to compare. Pass `--with-env` to replace them instead.
+Existing `.env` files are not overwritten. The backup's copy is written beside yours as `backend/.env.from-backup` to compare. Pass `--with-env` to replace them instead. Every `.env` file the restore writes is readable only by the account that ran it, since it holds `SECRET_KEY` and the mail password.
 
 ## Move an instance to a new server
 
@@ -164,7 +164,7 @@ With all three, the most an intruder on the application server can do to the dro
 
 - **PostgreSQL** needs `pg_dump` installed on the application server. The restore writes the dump as `backend/database-<time>.sql` and prints the `psql` command to load it; load it into an empty database.
 - **MySQL** is not supported by the built-in backups. Back it up with its own tools and set `BACKUP_SCHEDULER=off`.
-- While a backup is being made or checked, the backup folder briefly holds an unencrypted copy of the database and uploaded files, in a hidden `.staging-` or `.verify-` folder, as well as the backup itself, so leave room for both. The copy is deleted when the backup or check finishes, even if it fails. If the process is killed outright (out of memory, a reboot), the next scheduler check or backup deletes the leftover folder once it is an hour old.
+- While a backup is being made or checked, the backup folder briefly holds an unencrypted copy of the database and uploaded files, in a hidden `.staging-` or `.verify-` folder, as well as the backup itself, so leave room for both. The copy is deleted when the backup or check finishes, even if it fails. A restore unpacks into a hidden `.restore-` folder in `backend/` in the same way, and deletes it when it finishes. If any of these is killed outright (out of memory, a reboot), the leftover folder is deleted once it is an hour old: by the next scheduler check or backup, or by the next restore.
 
 ## Next
 
