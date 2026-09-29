@@ -10,7 +10,6 @@ import {
   TableRow,
   TableSortLabel,
   TextField,
-  InputAdornment,
   IconButton,
   CircularProgress,
   Chip,
@@ -27,11 +26,10 @@ import {
   Fab,
   Alert,
 } from '@mui/material';
+import AdminFilterBar from './AdminFilterBar';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
 import useSortableTable from '../../hooks/useSortableTable';
 import { FREQUENCY_MODES } from '../../utils/frequencyModes';
 import { frequencyApi } from '../../services/api';
@@ -236,32 +234,15 @@ const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar }) => {
       </Alert>
 
       {/* ========== FREQUENCY FILTER INPUT ========== */}
-      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <TextField
-          size="small"
-          placeholder="Filter by frequency, mode, network, talkgroup, or description..."
-          value={frequencyFilter}
-          onChange={(e) => setFrequencyFilter(e.target.value)}
-          sx={{ flexGrow: 1, maxWidth: 500 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-            endAdornment: frequencyFilter && (
-              <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setFrequencyFilter('')}>
-                  <ClearIcon fontSize="small" />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
+      <AdminFilterBar
+        value={frequencyFilter}
+        onChange={setFrequencyFilter}
+        placeholder="Filter by frequency, mode, network, talkgroup, or description..."
+      >
         <Typography variant="body2" color="text.secondary">
           {filteredFrequencies.length} of {frequencies.length} frequencies
         </Typography>
-      </Box>
+      </AdminFilterBar>
 
       {frequenciesLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>

@@ -321,11 +321,15 @@ async def get_my_can_hear_coverage(
 @router.get("", response_model=List[UserResponse])
 async def list_users(
     skip: int = 0,
-    limit: int = 100,
+    limit: Optional[int] = None,
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """List all users (admin only)"""
+    """List all users (admin only). Unlimited unless `limit` is given: the
+    Admin Users tab filters and counts this list in the browser, so a cap
+    hides accounts from it outright. It defaulted to 100 until 2026-09-28,
+    when production had 118 accounts and the 18 least recently active could
+    not be found by any filter."""
     # "Has this user ever held NCS on any net?" is computed live via an EXISTS
     # subquery rather than a denormalized column - at this app's scale (low
     # hundreds of users) a live join is simplest and always correct, with no
@@ -340,7 +344,7 @@ async def list_users(
         select(User, is_ncs_subquery)
         .order_by(nullslast(User.last_active.desc()))
         .offset(skip)
-        .limit(limit)
+        .limit(limit)  # None means no limit
     )
     responses = []
     for user, is_ncs in result.all():

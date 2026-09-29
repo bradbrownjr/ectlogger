@@ -11,7 +11,7 @@ vi.mock('../../services/api', () => ({
 }));
 
 import { getCheckInActions } from './checkInActions';
-import { checkInApi } from '../../services/api';
+import { checkInApi, userApi } from '../../services/api';
 
 // ========== TEST HARNESS ==========
 // Mirrors NetView's state wiring closely enough to observe what the operator
@@ -38,6 +38,7 @@ function harness(initialRows: any[], overrides: any = {}) {
     inlineEditValues: {},
     activeSpeakerId: null,
     inlineEditRowRef: { current: null },
+    lookupFilledRef: { current: {} },
     setCheckInForm: vi.fn(),
     setToastMessage: (m: string) => { toasts.push(m); },
     setInlineEditingId: vi.fn(),
@@ -133,5 +134,63 @@ describe('handleStatusChange — optimistic update', () => {
 
     expect(checkInApi.update).not.toHaveBeenCalled();
     expect(h.toasts.join(' ')).toContain('without user accounts');
+  });
+});
+
+
+// ========== CALLSIGN LOOKUP ==========
+// Drives handleCallsignLookup against a form held here, the way NetView's
+// setCheckInForm updater would, to check what the NCS ends up looking at.
+describe('handleCallsignLookup', () => {
+  const SHOWN = { name: { enabled: true }, location: { enabled: true }, skywarn_number: { enabled: false } };
+
+  function lookupHarness(initialForm: any) {
+    let form = initialForm;
+    const lookupFilledRef = { current: {} };
+    const { actions } = harness([], {
+      net: { status: 'active', frequencies: [], field_config: SHOWN },
+      lookupFilledRef,
+      setCheckInForm: (updater: any) => { form = typeof updater === 'function' ? updater(form) : updater; },
+    });
+    return { actions, formNow: () => form, setForm: (f: any) => { form = f; } };
+  }
+
+  const found = (data: any) => (userApi.lookupByCallsign as any).mockResolvedValueOnce({ data });
+
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('never fills a field the net does not show', async () => {
+    const h = lookupHarness({ callsign: 'NB9D', name: '', location: '', skywarn_number: '' });
+    found({ name: 'Neil', location: 'NH', skywarn_number: 'YOUTUBE.COM/@NB9D' });
+    await h.actions.handleCallsignLookup('NB9D');
+    expect(h.formNow()).toMatchObject({ name: 'Neil', location: 'NH', skywarn_number: '' });
+  });
+
+  it("replaces the previous station's filled-in values when the callsign changes", async () => {
+    const h = lookupHarness({ callsign: 'N1AAA', name: '', location: '', skywarn_number: '' });
+    found({ name: 'Bob', location: 'Gray, ME' });
+    await h.actions.handleCallsignLookup('N1AAA');
+    found({ name: 'Carol', location: 'Windham, ME' });
+    await h.actions.handleCallsignLookup('N1BBB');
+    expect(h.formNow()).toMatchObject({ name: 'Carol', location: 'Windham, ME' });
+  });
+
+  it('clears them when the corrected callsign has no profile', async () => {
+    const h = lookupHarness({ callsign: 'N1AAA', name: '', location: '', skywarn_number: '' });
+    found({ name: 'Bob', location: 'Gray, ME' });
+    await h.actions.handleCallsignLookup('N1AAA');
+    found({});
+    await h.actions.handleCallsignLookup('N1BBB');
+    expect(h.formNow()).toMatchObject({ name: '', location: '' });
+  });
+
+  it('keeps anything net control typed by hand', async () => {
+    const h = lookupHarness({ callsign: 'N1AAA', name: '', location: '', skywarn_number: '' });
+    found({ name: 'Bob', location: 'Gray, ME' });
+    await h.actions.handleCallsignLookup('N1AAA');
+    h.setForm({ ...h.formNow(), location: 'Mobile on Route 302' });
+    found({ name: 'Carol', location: 'Windham, ME' });
+    await h.actions.handleCallsignLookup('N1BBB');
+    expect(h.formNow()).toMatchObject({ name: 'Carol', location: 'Mobile on Route 302' });
   });
 });

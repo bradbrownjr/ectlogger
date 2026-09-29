@@ -15,6 +15,10 @@ import { isFieldShown, withOnlyShownFields } from '../../utils/checkInFields';
 // conditional return (Rules of Hooks), but a plain function can be called
 // anywhere — same pattern already used by getCheckInStatusHelpers.
 
+// The profile fields callsign lookup fills into the check-in form.
+const LOOKUP_FIELDS = ['name', 'location', 'skywarn_number'] as const;
+export type LookupFilled = Partial<Record<(typeof LOOKUP_FIELDS)[number], string>>;
+
 export interface CheckInActionsDeps {
   netId: string | undefined;
   net: any;
@@ -33,6 +37,10 @@ export interface CheckInActionsDeps {
   inlineEditValues: any;
   activeSpeakerId: number | null;
   inlineEditRowRef: React.RefObject<HTMLTableRowElement | null>;
+  // What the last callsign lookup filled into the check-in form, so the
+  // next lookup can replace those values without touching anything typed
+  // by hand. See handleCallsignLookup.
+  lookupFilledRef: React.MutableRefObject<LookupFilled>;
 
   setCheckInForm: (value: any) => void;
   setToastMessage: (value: string) => void;
@@ -70,38 +78,49 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
   const {
     netId, net, checkIns, netRoles, user, isOwner, isAdmin,
     canManageCheckIns, userNetRole, ws,
-    checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef,
+    checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef, lookupFilledRef,
     setCheckInForm, setToastMessage, setInlineEditingId, setInlineEditFocusField,
     setInlineEditValues, setCheckIns, setActiveSpeakerId, setNet, setFilteredFrequencyIds,
     fetchCheckIns, fetchNetRoles, fetchPollResponses,
   } = deps;
 
-  // Look up user info by callsign and auto-fill form fields (for NCS)
+  // Look up user info by callsign and auto-fill form fields (for NCS).
+  //
+  // A field is filled only when it is empty or still holds what the previous
+  // lookup put there, and only when this net shows it (a hidden field is one
+  // the NCS can't see or clear, see utils/checkInFields.ts). The second rule
+  // is what lets a corrected callsign bring in the right station: before it,
+  // changing N1AAA to N1BBB left N1AAA's name and location in the form,
+  // because they were no longer empty. Anything typed by hand is kept.
   const handleCallsignLookup = async (callsign: string) => {
     if (!callsign || callsign.length < 3) return;
 
+    let userData: any = {};
     try {
       const response = await userApi.lookupByCallsign(callsign);
-      const userData = response.data;
-
-      // Only auto-fill fields that are currently empty, and only fields this
-      // net shows: a value in a hidden field is one the NCS can't see or
-      // clear (see utils/checkInFields.ts).
-      const fieldConfig = net?.field_config;
-      const fill = (field: 'name' | 'location' | 'skywarn_number', prev: any) =>
-        prev[field] || (isFieldShown(fieldConfig, field) ? userData[field] : '') || '';
-      if (userData.name || userData.location || userData.skywarn_number) {
-        setCheckInForm((prev: any) => ({
-          ...prev,
-          name: fill('name', prev),
-          location: fill('location', prev),
-          skywarn_number: fill('skywarn_number', prev),
-        }));
-      }
+      userData = response.data || {};
     } catch (error) {
-      // Silently fail - user may not be registered
+      // Not registered or lookup failed: still clear the previous station's
+      // values below, so they aren't logged against this callsign.
       console.debug('Callsign lookup failed:', error);
     }
+
+    const fieldConfig = net?.field_config;
+    const previous = lookupFilledRef.current;
+    const filled: LookupFilled = {};
+    for (const field of LOOKUP_FIELDS) {
+      if (isFieldShown(fieldConfig, field) && userData[field]) filled[field] = userData[field];
+    }
+
+    setCheckInForm((prev: any) => {
+      const next = { ...prev };
+      for (const field of LOOKUP_FIELDS) {
+        const untouched = !prev[field] || prev[field] === previous[field];
+        if (untouched) next[field] = filled[field] || '';
+      }
+      return next;
+    });
+    lookupFilledRef.current = filled;
   };
 
   const handleCheckIn = async () => {
@@ -120,6 +139,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         custom_fields: checkInForm.custom_fields,
       }, net?.field_config);
       const response = await checkInApi.create(Number(netId), checkInData);
+      lookupFilledRef.current = {};
 
       // Clear form for next check-in
       setCheckInForm({

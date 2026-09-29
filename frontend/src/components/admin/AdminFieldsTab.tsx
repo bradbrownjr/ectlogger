@@ -10,7 +10,6 @@ import {
   TableRow,
   TableSortLabel,
   TextField,
-  InputAdornment,
   IconButton,
   CircularProgress,
   Chip,
@@ -29,12 +28,11 @@ import {
   Fab,
   Alert,
 } from '@mui/material';
+import AdminFilterBar from './AdminFilterBar';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import UnarchiveIcon from '@mui/icons-material/Unarchive';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
 import useSortableTable from '../../hooks/useSortableTable';
 import api from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
@@ -261,28 +259,12 @@ const AdminFieldsTab: React.FC<Props> = ({ showSnackbar }) => {
       </Alert>
 
       {/* ========== FIELD FILTER INPUT ========== */}
-      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-        <TextField
-          size="small"
-          placeholder="Filter by name, label, or type..."
-          value={fieldFilter}
-          onChange={(e) => setFieldFilter(e.target.value)}
-          sx={{ flexGrow: 1, maxWidth: 400 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-            endAdornment: fieldFilter && (
-              <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setFieldFilter('')}>
-                  <ClearIcon fontSize="small" />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
+      <AdminFilterBar
+        value={fieldFilter}
+        onChange={setFieldFilter}
+        placeholder="Filter by name, label, or type..."
+        maxWidth={400}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Switch
             checked={showArchived}
@@ -296,7 +278,7 @@ const AdminFieldsTab: React.FC<Props> = ({ showSnackbar }) => {
         <Typography variant="body2" color="text.secondary">
           {sortedFields.filter(f => showArchived || !f.is_archived).length} of {fields.length} fields
         </Typography>
-      </Box>
+      </AdminFilterBar>
 
       {fieldsLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>

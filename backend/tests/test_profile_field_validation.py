@@ -192,3 +192,15 @@ def test_migration_079_carries_locks_over(tmp_path):
     assert json.loads(locks["KC1JMH"]) == ["callsign"]
     assert json.loads(locks["W1AW"]) == []
     conn.close()
+
+
+@pytest.mark.asyncio
+async def test_admin_user_list_is_not_capped(client, db, admin):
+    """The Admin Users tab filters this list in the browser, so every
+    account must come back. It was capped at 100 until 2026-09-28."""
+    for i in range(105):
+        db.add(User(email=f"bulk{i}@test.com", callsign=f"KC1B{i:03d}"))
+    await db.commit()
+    resp = await client.get("/api/users", headers=auth_headers(admin))
+    assert resp.status_code == 200
+    assert len(resp.json()) == 106

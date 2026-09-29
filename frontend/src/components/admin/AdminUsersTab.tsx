@@ -29,6 +29,7 @@ import {
   Alert,
   TablePagination,
 } from '@mui/material';
+import AdminFilterBar from './AdminFilterBar';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -36,9 +37,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EmailIcon from '@mui/icons-material/Email';
 import TimerIcon from '@mui/icons-material/Timer';
-import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ClearIcon from '@mui/icons-material/Clear';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
@@ -497,28 +496,11 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
       </Alert>
 
       {/* ========== USER FILTER INPUT ========== */}
-      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <TextField
-          size="small"
-          placeholder="Filter by email, name, callsign, or role..."
-          value={userFilter}
-          onChange={(e) => { setUserFilter(e.target.value); setUsersPage(0); }}
-          sx={{ flexGrow: 1, maxWidth: 500 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-            endAdornment: userFilter && (
-              <InputAdornment position="end">
-                <IconButton size="small" onClick={() => { setUserFilter(''); setUsersPage(0); }}>
-                  <ClearIcon fontSize="small" />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
+      <AdminFilterBar
+        value={userFilter}
+        onChange={(value) => { setUserFilter(value); setUsersPage(0); }}
+        placeholder="Filter by email, name, callsign, or role..."
+      >
         <Typography variant="body2" color="text.secondary">
           {filteredUsers.length} of {users.length} users
           {onlineUserCount > 0 && (
@@ -546,7 +528,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
             </IconButton>
           </Tooltip>
         </Box>
-      </Box>
+      </AdminFilterBar>
 
       <TableContainer>
         {/* Tighter horizontal padding on non-checkbox cells so this wide table (Name

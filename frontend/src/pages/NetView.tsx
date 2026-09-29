@@ -16,7 +16,7 @@ import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelp
 import { buildStaffRoleRankByUserId, compareCheckInsByRole } from '../components/netview/checkInSort';
 import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
 import { STATUS_SELECT_MENU_PROPS } from '../components/netview/statusSelectMenuProps';
-import { getCheckInActions } from '../components/netview/checkInActions';
+import { getCheckInActions, type LookupFilled } from '../components/netview/checkInActions';
 import CheckInMobileList from '../components/netview/CheckInMobileList';
 import CheckInTable from '../components/netview/CheckInTable';
 import NetViewSidePanels from '../components/netview/NetViewSidePanels';
@@ -272,6 +272,8 @@ const NetView: React.FC = () => {
   const [inlineEditValues, setInlineEditValues] = useState<Partial<CheckIn>>({});
   const [inlineEditFocusField, setInlineEditFocusField] = useState<string | null>(null);
   const inlineEditRowRef = useRef<HTMLTableRowElement | null>(null);
+  // What callsign lookup last filled into the check-in form (see checkInActions.ts)
+  const lookupFilledRef = useRef<LookupFilled>({});
   const [checkInListDetached, setCheckInListDetached] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.FLOATING_CHECKIN_LIST, false);
   const [chatDetached, setChatDetached] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.FLOATING_CHAT, false);
   const [chatMinimized, setChatMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.DOCKED_CHAT_MINIMIZED, false);
@@ -1437,7 +1439,7 @@ const NetView: React.FC = () => {
   } = getCheckInActions({
     netId, net, checkIns, netRoles, user, isOwner, isAdmin, owner,
     canManageCheckIns, userNetRole, ws,
-    checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef,
+    checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef, lookupFilledRef,
     setCheckInForm, setToastMessage, setInlineEditingId, setInlineEditFocusField,
     setInlineEditValues, setCheckIns, setActiveSpeakerId, setNet, setFilteredFrequencyIds,
     fetchCheckIns, fetchNetRoles, fetchPollResponses,

@@ -10,7 +10,6 @@ import {
   TableRow,
   TableSortLabel,
   TextField,
-  InputAdornment,
   IconButton,
   CircularProgress,
   Chip,
@@ -24,11 +23,10 @@ import {
   TablePagination,
   Alert,
 } from '@mui/material';
+import AdminFilterBar from './AdminFilterBar';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SendIcon from '@mui/icons-material/Send';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
 import useSortableTable from '../../hooks/useSortableTable';
 import { contactApi } from '../../services/api';
 import { formatDate } from '../../utils/dateUtils';
@@ -319,32 +317,15 @@ const AdminContactsTab: React.FC<Props> = ({ showSnackbar, onUserCreated }) => {
       </Alert>
 
       {/* ========== CONTACT FILTER INPUT ========== */}
-      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <TextField
-          size="small"
-          placeholder="Filter by callsign, name, location, or email..."
-          value={contactFilter}
-          onChange={(e) => { setContactFilter(e.target.value); setContactsPage(0); }}
-          sx={{ flexGrow: 1, maxWidth: 500 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-            endAdornment: contactFilter && (
-              <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setContactFilter('')}>
-                  <ClearIcon fontSize="small" />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
+      <AdminFilterBar
+        value={contactFilter}
+        onChange={(value) => { setContactFilter(value); setContactsPage(0); }}
+        placeholder="Filter by callsign, name, location, or email..."
+      >
         <Typography variant="body2" color="text.secondary">
           {filteredContacts.length} of {contacts.length} contacts
         </Typography>
-      </Box>
+      </AdminFilterBar>
 
       {contactsLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>

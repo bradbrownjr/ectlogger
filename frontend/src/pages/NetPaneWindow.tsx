@@ -24,7 +24,7 @@ import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import CheckInTable from '../components/netview/CheckInTable';
 import CanHearDialog from '../components/netview/CanHearDialog';
 import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
-import { getCheckInActions } from '../components/netview/checkInActions';
+import { getCheckInActions, type LookupFilled } from '../components/netview/checkInActions';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
 import { buildStaffRoleRankByUserId, compareCheckInsByRole } from '../components/netview/checkInSort';
 import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
@@ -73,6 +73,8 @@ const NetPaneWindow: React.FC = () => {
   const [inlineEditValues, setInlineEditValues] = useState<Partial<any>>({});
   const [inlineEditFocusField, setInlineEditFocusField] = useState<string | null>(null);
   const inlineEditRowRef = useRef<HTMLTableRowElement | null>(null);
+  // What callsign lookup last filled into the check-in form (see checkInActions.ts)
+  const lookupFilledRef = useRef<LookupFilled>({});
   // "Can hear" propagation logging: same shape as NetView.tsx - the check-in
   // currently being reported for (dialog open when non-null) and the full
   // report list for this net, refetched on mount and on can_hear_changed.
@@ -374,7 +376,7 @@ const NetPaneWindow: React.FC = () => {
   } = getCheckInActions({
     netId, net, checkIns, netRoles, user, isOwner, isAdmin, owner,
     canManageCheckIns, userNetRole, ws,
-    checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef,
+    checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef, lookupFilledRef,
     setCheckInForm, setToastMessage, setInlineEditingId, setInlineEditFocusField,
     setInlineEditValues, setCheckIns, setActiveSpeakerId, setNet, setFilteredFrequencyIds,
     fetchCheckIns, fetchNetRoles, fetchPollResponses,
