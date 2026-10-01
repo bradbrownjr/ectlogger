@@ -4,7 +4,7 @@ summary: Turning a net into a schedule, the recurrence options, what each net it
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-27
+revised: 2026-09-30
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/recurring-schedules/
@@ -19,6 +19,10 @@ Every net has a schedule, including a one-time net made with the dashboard's **+
 ## A brand-new account may have to wait
 
 Your instance's admins can require an account to be a minimum age and to have checked into at least one net before it's allowed to create a schedule, as an anti-spam measure, plus a daily cap on how many schedules any one account can create. The defaults are 7 days, 1 net, and 5 a day; your instance may have them turned up, down, or off. This applies to every schedule, including the one-time occurrence the dashboard's **+** button creates behind the scenes when you start a net (see [Creating a net](/docs/net-managers/creating-a-net/#starting-a-net)). Admins are exempt, and can give a specific trusted account early access without changing the instance-wide setting; see [Users and roles](/docs/admins/users-and-roles/#early-access-to-schedule-creation).
+
+Every net you were checked into counts toward the net requirement, under any of the callsigns on your profile, including nets where net control logged you before you had an account. It is the same count your profile shows.
+
+If you are turned away, the message offers **Request early access**. Add a note if you like, such as which net you are setting up, and it goes to the admins by email. You get an email back when one of them grants it.
 
 ## Recurrence types
 

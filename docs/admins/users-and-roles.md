@@ -4,7 +4,7 @@ summary: Inviting people, editing an account's identity and role, and banning, r
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-09-29
+revised: 2026-09-30
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/users-and-roles/
@@ -66,7 +66,9 @@ Changing someone's primary callsign, whether from their own Profile or from this
 
 ## Early access to schedule creation
 
-If your instance requires an account to be a certain age or have checked into a minimum number of nets before it can create a schedule (set on the [Security tab](/docs/admins/security-and-mfa/)), a stopwatch icon appears next to accounts that don't meet that bar yet. Click it to grant that one person early access anyway, which is useful for a known, trusted operator who just hasn't hit the threshold. This applies to every schedule, including the one-time occurrence the dashboard's **+** button creates behind the scenes when someone starts a net.
+If your instance requires an account to be a certain age or have checked into a minimum number of nets before it can create a schedule (set on the [Security tab](/docs/admins/security-and-mfa/)), every row carries a stopwatch icon. Click it to grant that one person early access anyway, which is useful for a known, trusted operator who just hasn't hit the threshold. The stopwatch turns green once early access is granted; click it again to take it back. It is orange while the account is still younger than the age requirement. This applies to every schedule, including the one-time occurrence the dashboard's **+** button creates behind the scenes when someone starts a net.
+
+Someone who is turned away when they try to create a schedule can send all admins a request for early access from that same message, with an optional note. It arrives by email with their account age and how many nets they have attended. Before granting it, click their callsign in the Users table to open their profile and see the nets they have attended. When you grant it, they get an email saying they can go ahead.
 
 Early access bypasses the account-age and net-participation requirements only. It does not raise the daily cap on how many schedules an account can create — that limit still applies even to an account you've granted early access to.
 

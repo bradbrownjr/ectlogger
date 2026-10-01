@@ -12,7 +12,8 @@ from app.schemas import UserResponse, UserUpdate, AdminUserCreate, AdminUserUpda
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 from app.auth import generate_temporary_password, hash_password
 from app.email_service import EmailService
-from app.utils import AVATAR_DIR
+from app.logger import logger
+from app.utils import AVATAR_DIR, user_callsigns
 from app.band_utils import band_from_frequency_string
 
 AVATAR_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
@@ -428,26 +429,13 @@ async def get_user_popup(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Collect all callsigns associated with this user (current, aliases, and previous)
-    user_callsigns = [user.callsign] if user.callsign else []
-    if getattr(user, 'gmrs_callsign', None):
-        user_callsigns.append(user.gmrs_callsign)
-    try:
-        additional = json.loads(user.callsigns) if user.callsigns else []
-        user_callsigns.extend(additional)
-    except Exception:
-        pass
-    try:
-        previous = json.loads(user.previous_callsigns) if user.previous_callsigns else []
-        user_callsigns.extend(previous)
-    except Exception:
-        pass
+    callsigns = user_callsigns(user)
 
     # Fetch all check-ins for this user's callsigns, newest first
     ci_result = await db.execute(
         select(CheckIn)
         .options(selectinload(CheckIn.net))
-        .where(CheckIn.callsign.in_(user_callsigns))
+        .where(CheckIn.callsign.in_(callsigns))
         .order_by(CheckIn.checked_in_at.desc())
     )
     check_ins = ci_result.scalars().all()
@@ -848,16 +836,29 @@ async def set_schedule_age_bypass(
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Grant or revoke early schedule-creation access for a user (admin only)."""
+    """Grant or revoke early schedule-creation access for a user (admin only).
+
+    A new grant emails the user, since they usually asked for it from the
+    "Request early access" button (templates_core.py::request_early_access)
+    and would otherwise not know to try again.
+    """
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    newly_granted = grant and not user.schedule_age_bypass
     user.schedule_age_bypass = grant
     await db.commit()
     await db.refresh(user)
+
+    if newly_granted and user.email:
+        try:
+            await EmailService.send_early_access_granted(user.email)
+        except Exception as e:
+            logger.error("USERS", f"Failed to send early access notice to {user.email}: {e}")
+
     return UserResponse.from_orm(user)
 
 

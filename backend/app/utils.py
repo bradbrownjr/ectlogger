@@ -1,6 +1,7 @@
 """Shared utility helpers used across the backend."""
 
 import hashlib
+import json
 import re
 from datetime import datetime, timezone as dt_timezone
 from pathlib import Path
@@ -278,6 +279,28 @@ def display_callsign(user) -> str:
         or getattr(user, 'email', '')
         or ''
     )
+
+
+def user_callsigns(user) -> list[str]:
+    """Every callsign a user's check-ins can be logged under.
+
+    Current, GMRS, additional, and previous callsigns. Check-ins are matched to
+    a person by these, not by ``CheckIn.user_id``: a station logged by voice
+    before registering has ``user_id`` NULL, yet is still that operator's
+    history. Profile stats, the profile popup, and the schedule-creation
+    participation requirement all use this list so they never disagree (the
+    requirement counted ``user_id`` alone until 2026-10-01 and refused AE1RE,
+    GitHub #6, whose profile showed two nets).
+    """
+    callsigns = [user.callsign] if user.callsign else []
+    if getattr(user, 'gmrs_callsign', None):
+        callsigns.append(user.gmrs_callsign)
+    for column in (user.callsigns, user.previous_callsigns):
+        try:
+            callsigns.extend(json.loads(column) if column else [])
+        except (TypeError, ValueError):
+            pass
+    return callsigns
 
 
 def format_ncs_attribution(rows) -> tuple:

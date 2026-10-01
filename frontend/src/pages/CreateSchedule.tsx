@@ -17,6 +17,7 @@ import api from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import BlockingAlert from '../components/BlockingAlert';
+import EarlyAccessRequestDialog from '../components/EarlyAccessRequestDialog';
 import {
   CreateScheduleContext,
   CreateScheduleContextValue,
@@ -149,6 +150,8 @@ const CreateSchedule: React.FC = () => {
     title?: string;
     severity?: 'error' | 'warning' | 'info' | 'success';
   }>({ open: false, message: '' });
+  // Refusal for account age / nets attended, which an admin can waive (null when closed)
+  const [earlyAccessMessage, setEarlyAccessMessage] = useState<string | null>(null);
 
   // ---- Reference data fetches ----
   useEffect(() => {
@@ -357,6 +360,10 @@ const CreateSchedule: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Failed to save schedule:', error);
+      if (error.response?.data?.detail?.code === 'schedule_requirements_not_met') {
+        setEarlyAccessMessage(getErrorMessage(error, 'You do not meet the requirements to create schedules yet.'));
+        return;
+      }
       setBlockingAlert({
         open: true,
         message: getErrorMessage(error, 'Failed to save Schedule'),
@@ -500,6 +507,14 @@ const CreateSchedule: React.FC = () => {
           message={blockingAlert.message}
           title={blockingAlert.title}
           severity={blockingAlert.severity}
+        />
+
+        {/* ========== EARLY ACCESS REQUEST ========== */}
+        {/* Shows when creating is refused for account age or nets attended */}
+        <EarlyAccessRequestDialog
+          open={earlyAccessMessage !== null}
+          onClose={() => setEarlyAccessMessage(null)}
+          message={earlyAccessMessage ?? ''}
         />
 
         {/* Toast for locked check-in field clicks */}

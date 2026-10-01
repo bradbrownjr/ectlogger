@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
 from app.models import CheckIn, Form, Net, NetStatus, TrafficLogEntry, User
+from app.utils import user_callsigns
 from app.schemas import (
     CheckInsByNet,
     FrequentNetStats,
@@ -106,29 +107,14 @@ async def _get_traffic_handled(db: AsyncSession, user: User):
 
 async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsResponse:
     """Helper to build user statistics."""
-    import json
-
     now = datetime.now(timezone.utc)
     last_30d = now - timedelta(days=30)
 
     traffic_handled, traffic_by_action, traffic_handled_list = await _get_traffic_handled(db, user)
 
-    # Get all callsigns for this user (current, additional aliases, and previous)
-    user_callsigns = [user.callsign] if user.callsign else []
-    if user.gmrs_callsign:
-        user_callsigns.append(user.gmrs_callsign)
-    try:
-        additional = json.loads(user.callsigns) if user.callsigns else []
-        user_callsigns.extend(additional)
-    except:
-        pass
-    try:
-        previous = json.loads(user.previous_callsigns) if user.previous_callsigns else []
-        user_callsigns.extend(previous)
-    except:
-        pass
+    callsigns = user_callsigns(user)
 
-    if not user_callsigns:
+    if not callsigns:
         return UserStatsResponse(
             user_id=user.id,
             callsign=user.callsign,
@@ -151,7 +137,7 @@ async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsRespons
     check_ins_result = await db.execute(
         select(CheckIn)
         .options(selectinload(CheckIn.net))
-        .where(CheckIn.callsign.in_(user_callsigns))
+        .where(CheckIn.callsign.in_(callsigns))
         .order_by(CheckIn.checked_in_at.desc())
     )
     check_ins = check_ins_result.scalars().all()

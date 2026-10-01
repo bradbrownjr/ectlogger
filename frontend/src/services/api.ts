@@ -220,6 +220,9 @@ export const canHearApi = {
 // Template API
 export const templateApi = {
   create: (data: any) => api.post('/templates/', data),
+  // Emails the admins asking for early access to schedule creation
+  // (templates_core.py::request_early_access). 400 if not needed, 429 after 3/day.
+  requestEarlyAccess: (note?: string) => api.post('/templates/early-access-request', { note }),
   list: (params?: { my_templates?: boolean; include_inactive?: boolean }) => 
     api.get('/templates/', { params }),
   get: (id: number) => api.get(`/templates/${id}`),

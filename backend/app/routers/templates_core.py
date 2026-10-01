@@ -1,16 +1,22 @@
 import json
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from io import BytesIO
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from PIL import Image
+from pydantic import BaseModel, Field
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
+from app.email_service import EmailService
+from app.logger import logger
 from app.models import (
     AppSettings,
     CheckIn,
@@ -29,7 +35,7 @@ from app.schemas import (
     NetTemplateUpdate,
     public_display_name,
 )
-from app.utils import NET_LOGO_DIR, save_resized_logo
+from app.utils import NET_LOGO_DIR, save_resized_logo, user_callsigns
 
 # Same limits/pattern as the net logo upload (routers/nets_core.py) and the
 # profile avatar upload (routers/users.py).
@@ -38,6 +44,7 @@ TEMPLATE_LOGO_MAX_DIM = 256
 TEMPLATE_LOGO_ALLOWED_MIME = {"image/png", "image/jpeg", "image/webp"}
 
 router = APIRouter()
+_limiter = Limiter(key_func=get_remote_address)
 
 
 async def is_active_co_manager(db: AsyncSession, template_id: int, user_id: int) -> bool:
@@ -53,13 +60,55 @@ async def is_active_co_manager(db: AsyncSession, template_id: int, user_id: int)
     return result.scalar_one_or_none() is not None
 
 
-async def check_schedule_creation_eligibility(db: AsyncSession, user: User) -> tuple[bool, str]:
+# Code sent in a 403's detail when the account-age or net-participation
+# requirement refused a new schedule. The app keys off it to offer "Request
+# early access" (POST /templates/early-access-request). The daily limit does
+# not carry it, since early access does not lift that limit.
+SCHEDULE_REQUIREMENTS_NOT_MET = "schedule_requirements_not_met"
+
+
+@dataclass
+class ScheduleEligibility:
+    """Outcome of check_schedule_creation_eligibility.
+
+    ``early_access_would_help`` is True when the refusal is one an admin's
+    early access (User.schedule_age_bypass) clears: account age or net
+    participation, never the daily limit. The counts and minimums are filled in
+    for every non-admin so the early access request email can quote them.
+    """
+    eligible: bool
+    message: str = ""
+    early_access_would_help: bool = False
+    account_age_days: int = 0
+    min_age_days: int = 0
+    nets_participated: int = 0
+    min_participations: int = 0
+
+
+async def count_nets_participated(db: AsyncSession, user: User) -> int:
+    """Distinct nets this user has checked into, under any of their callsigns.
+
+    Matches by callsign like the profile's own net count (utils.user_callsigns),
+    so a station logged by voice before registering still counts.
+    """
+    callsigns = user_callsigns(user)
+    if not callsigns:
+        return 0
+    result = await db.execute(
+        select(func.count(func.distinct(CheckIn.net_id)))
+        .where(CheckIn.callsign.in_(callsigns))
+    )
+    return result.scalar() or 0
+
+
+async def check_schedule_creation_eligibility(db: AsyncSession, user: User) -> ScheduleEligibility:
     """Check if user is eligible to create schedules based on app settings.
 
-    Returns (is_eligible, error_message). Admins bypass all checks.
+    Admins bypass all checks. Early access (``schedule_age_bypass``) bypasses
+    the account-age and participation requirements but not the daily limit.
     """
     if user.role == UserRole.ADMIN:
-        return True, ""
+        return ScheduleEligibility(eligible=True)
 
     result = await db.execute(select(AppSettings).where(AppSettings.id == 1))
     settings = result.scalar_one_or_none()
@@ -73,20 +122,30 @@ async def check_schedule_creation_eligibility(db: AsyncSession, user: User) -> t
         min_participations = settings.schedule_min_net_participations if settings.schedule_min_net_participations is not None else 1
         max_per_day = settings.schedule_max_per_day if settings.schedule_max_per_day is not None else 5
 
-    if min_age_days > 0 and user.created_at and not getattr(user, 'schedule_age_bypass', False):
-        account_age = datetime.now(timezone.utc) - user.created_at.replace(tzinfo=timezone.utc)
-        if account_age.days < min_age_days:
-            days_remaining = min_age_days - account_age.days
-            return False, f"Your account must be at least {min_age_days} days old to create schedules. Please wait {days_remaining} more day(s)."
+    account_age_days = 0
+    if user.created_at:
+        account_age_days = (datetime.now(timezone.utc) - user.created_at.replace(tzinfo=timezone.utc)).days
+    outcome = ScheduleEligibility(
+        eligible=True,
+        account_age_days=account_age_days,
+        min_age_days=min_age_days,
+        nets_participated=await count_nets_participated(db, user),
+        min_participations=min_participations,
+    )
 
-    if min_participations > 0 and not getattr(user, 'schedule_age_bypass', False):
-        participation_result = await db.execute(
-            select(func.count(func.distinct(CheckIn.net_id)))
-            .where(CheckIn.user_id == user.id)
-        )
-        participation_count = participation_result.scalar() or 0
-        if participation_count < min_participations:
-            return False, f"You must participate in at least {min_participations} net(s) before creating schedules. You have participated in {participation_count}."
+    if not user.schedule_age_bypass:
+        if min_age_days > 0 and user.created_at and account_age_days < min_age_days:
+            days_remaining = min_age_days - account_age_days
+            outcome.eligible = False
+            outcome.early_access_would_help = True
+            outcome.message = f"Your account must be at least {min_age_days} days old to create schedules. Please wait {days_remaining} more day(s)."
+            return outcome
+
+        if min_participations > 0 and outcome.nets_participated < min_participations:
+            outcome.eligible = False
+            outcome.early_access_would_help = True
+            outcome.message = f"You must participate in at least {min_participations} net(s) before creating schedules. You have participated in {outcome.nets_participated}."
+            return outcome
 
     if max_per_day > 0:
         today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -97,9 +156,63 @@ async def check_schedule_creation_eligibility(db: AsyncSession, user: User) -> t
         )
         templates_today = templates_today_result.scalar() or 0
         if templates_today >= max_per_day:
-            return False, f"You have reached the daily limit of {max_per_day} schedules. Please try again tomorrow."
+            outcome.eligible = False
+            outcome.message = f"You have reached the daily limit of {max_per_day} schedules. Please try again tomorrow."
 
-    return True, ""
+    return outcome
+
+
+class EarlyAccessRequest(BaseModel):
+    note: Optional[str] = Field(None, max_length=1000)
+
+
+@router.post("/early-access-request")
+@_limiter.limit("3/day")
+async def request_early_access(
+    request: Request,
+    data: EarlyAccessRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Ask the admins, by private email, for early access to schedule creation.
+
+    Request: ``{"note": optional str}``. Response: ``{"message": str}``.
+    400 when the requirements a grant would lift aren't what is holding this
+    user back (already eligible, already granted, or only the daily limit).
+    """
+    outcome = await check_schedule_creation_eligibility(db, current_user)
+    if not outcome.early_access_would_help:
+        raise HTTPException(status_code=400, detail="You don't need early access to create schedules.")
+
+    admins = (await db.execute(
+        select(User).where(User.role == UserRole.ADMIN, User.is_active == True)
+    )).scalars().all()
+    if not admins:
+        logger.warning("SCHEDULE", f"Early access requested by {current_user.email}, but there are no admins to ask")
+        raise HTTPException(status_code=503, detail="There is no administrator to send this to. Please try again later.")
+
+    requester_display = current_user.callsign or current_user.name or current_user.email
+    if current_user.callsign and current_user.name:
+        requester_display = f"{current_user.callsign} ({current_user.name})"
+    note = (data.note or "").strip() or None
+
+    for admin in admins:
+        try:
+            await EmailService.send_early_access_request(
+                to_email=admin.email,
+                requester_display=requester_display,
+                requester_email=current_user.email,
+                account_age_days=outcome.account_age_days,
+                min_age_days=outcome.min_age_days,
+                nets_participated=outcome.nets_participated,
+                min_participations=outcome.min_participations,
+                note=note,
+            )
+        except Exception as e:
+            logger.error("SCHEDULE", f"Failed to send early access request to admin {admin.email}: {e}")
+
+    logger.info("SCHEDULE", f"Early access to schedule creation requested by {requester_display}")
+    return {"message": "Your request was sent to the administrators."}
 
 
 @router.post("/", response_model=NetTemplateResponse, status_code=status.HTTP_201_CREATED)
@@ -110,9 +223,14 @@ async def create_template(
 ):
     """Create a new net template"""
     # Check eligibility for schedule creation (admins bypass)
-    is_eligible, error_message = await check_schedule_creation_eligibility(db, current_user)
-    if not is_eligible:
-        raise HTTPException(status_code=403, detail=error_message)
+    eligibility = await check_schedule_creation_eligibility(db, current_user)
+    if not eligibility.eligible:
+        if eligibility.early_access_would_help:
+            raise HTTPException(status_code=403, detail={
+                "code": SCHEDULE_REQUIREMENTS_NOT_MET,
+                "message": eligibility.message,
+            })
+        raise HTTPException(status_code=403, detail=eligibility.message)
     
     # Serialize field_config and schedule_config to JSON
     field_config_json = json.dumps(template_data.field_config) if template_data.field_config else None

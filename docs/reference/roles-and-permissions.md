@@ -4,7 +4,7 @@ summary: Every role ECTLogger has, at every level, and a grid of who can do what
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-09-30
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/roles-and-permissions/
@@ -66,7 +66,7 @@ Since 2026-09-25 each toolbar and net-card button appears only when that action 
 
 ## Who can create a schedule
 
-Any account can create a schedule, but a standard user has to clear three anti-spam thresholds first, each configurable from Admin > Security and each off if set to 0: the account must be a minimum number of days old (7 by default), must have already checked into a minimum number of nets (1 by default), and stays under a daily cap on new schedules per account (5 by default). An admin bypasses all three, and an admin can exempt one account from the age and net-count thresholds (not the daily cap) with the early-access button on the Users tab. This covers a single net as well as a recurring schedule: the dashboard's **+** button creates a one-time schedule behind the scenes, so it is held to the same thresholds.
+Any account can create a schedule, but a standard user has to clear three anti-spam thresholds first, each configurable from Admin > Security and each off if set to 0: the account must be a minimum number of days old (7 by default), must have already checked into a minimum number of nets (1 by default; counted under any of the account's callsigns, as on its profile), and stays under a daily cap on new schedules per account (5 by default). An admin bypasses all three, and an admin can exempt one account from the age and net-count thresholds (not the daily cap) with the early-access button on the Users tab. A refused user can request that from the refusal message itself. This covers a single net as well as a recurring schedule: the dashboard's **+** button creates a one-time schedule behind the scenes, so it is held to the same thresholds.
 
 ## Becoming NCS or Logger by checking yourself in
 

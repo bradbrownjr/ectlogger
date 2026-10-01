@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-28
+revised: 2026-09-30
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,22 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# September 30, 2026
+
+## New Features
+
+* **Schedules: Request early access** — If you can't create a schedule yet, the message now lets you ask the administrators for early access, with an optional note, and you get an email when it is granted.
+
+## Improvements
+
+* **Admin: Early access and profiles from the user list** — You can grant or revoke early schedule access for any user at any time, not only while their account is new, and click a callsign to see their profile and nets attended before deciding.
+
+## Bug Fixes
+
+* **Schedules: Earlier check-ins count toward creating a schedule** — Nets you were checked into before you registered, or under another of your callsigns, now count toward the net requirement, matching what your profile shows.
 
 ---
 

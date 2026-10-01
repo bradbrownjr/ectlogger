@@ -61,14 +61,16 @@ async def db(engine):
 
 @pytest.fixture(autouse=True)
 def _reset_rate_limiters():
-    """Per-route slowapi limiters (routers/auth.py, routers/feedback.py) keep
+    """Per-route slowapi limiters (routers/auth.py, routers/feedback.py, routers/templates_core.py) keep
     in-memory counters for the life of the process, not per-test -- without
     this, a test file that calls a rate-limited endpoint more than its
     per-minute budget starts getting real 429s from earlier tests' traffic."""
     from app.routers.auth import _limiter as auth_limiter
     from app.routers.feedback import _limiter as feedback_limiter
+    from app.routers.templates_core import _limiter as templates_limiter
     auth_limiter.reset()
     feedback_limiter.reset()
+    templates_limiter.reset()
     yield
 
 

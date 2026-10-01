@@ -28,8 +28,10 @@ import {
   Fab,
   Alert,
   TablePagination,
+  Link,
 } from '@mui/material';
 import AdminFilterBar from './AdminFilterBar';
+import UserProfileDialog from '../UserProfileDialog';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -128,6 +130,9 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
   const [usersPage, setUsersPage] = useState(0);
   const [usersPerPage, setUsersPerPage] = useState(25);
   const [scheduleMinAccountAgeDays, setScheduleMinAccountAgeDays] = useState(0);
+  const [scheduleMinNetParticipations, setScheduleMinNetParticipations] = useState(0);
+  // Profile popup (nets attended, recent nets) opened by clicking a callsign
+  const [profileUserId, setProfileUserId] = useState<number | null>(null);
 
   // Columns where "most interesting first" means descending on the first click
   // (has the badge / is active / most recent), unlike the text columns which
@@ -155,6 +160,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
     fetchUsers();
     api.get('/settings').then((r) => {
       setScheduleMinAccountAgeDays(r.data.schedule_min_account_age_days ?? 7);
+      setScheduleMinNetParticipations(r.data.schedule_min_net_participations ?? 1);
     }).catch(() => {});
   }, []);
 
@@ -364,10 +370,11 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
   const handleScheduleBypass = async (userId: number, grant: boolean) => {
     try {
       await api.put(`/users/${userId}/schedule-bypass?grant=${grant}`);
+      showSnackbar(grant ? 'Early access granted. The user has been emailed.' : 'Early access revoked.', 'success');
       fetchUsers();
     } catch (error) {
       console.error('Failed to update schedule bypass:', error);
-      alert('Failed to update schedule bypass');
+      showSnackbar(getErrorMessage(error, 'Failed to update early access'), 'error');
     }
   };
 
@@ -660,7 +667,14 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
                   </TableCell>
                   {/* Reordered columns: Name, Callsign, Email */}
                   <TableCell>{user.name || '-'}</TableCell>
-                  <TableCell>{user.callsign || '-'}</TableCell>
+                  {/* Callsign opens the profile popup, to check nets attended before granting early access */}
+                  <TableCell>
+                    {user.callsign ? (
+                      <Link component="button" underline="hover" onClick={() => setProfileUserId(user.id)} sx={{ fontWeight: 500 }}>
+                        {user.callsign}
+                      </Link>
+                    ) : '-'}
+                  </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <Chip
@@ -738,31 +752,25 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
                         <CheckCircleIcon />
                       </IconButton>
                     )}
-                    {scheduleMinAccountAgeDays > 0 && (() => {
+                    {/* Early access toggle: offered whenever a schedule requirement is on,
+                        whatever the account's age. The server can't be asked per row whether
+                        the nets-attended requirement is met, so it never hides itself the way
+                        it did when it keyed off account age alone (GitHub #6). */}
+                    {(scheduleMinAccountAgeDays > 0 || scheduleMinNetParticipations > 0) && (() => {
                       const accountAgeDays = Math.floor(
                         (Date.now() - new Date(user.created_at.endsWith('Z') ? user.created_at : user.created_at + 'Z').getTime())
                         / (1000 * 60 * 60 * 24)
                       );
-                      const minAge = scheduleMinAccountAgeDays;
-                      const underAge = accountAgeDays < minAge;
-                      if (!underAge) {
-                        return (
-                          <Tooltip title={`Age requirement met (${accountAgeDays} day${accountAgeDays !== 1 ? 's' : ''} old)`}>
-                            <span>
-                              <IconButton size="small" disabled>
-                                <TimerIcon fontSize="small" sx={{ color: 'text.disabled' }} />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                        );
-                      }
+                      const underAge = accountAgeDays < scheduleMinAccountAgeDays;
+                      const ageText = `Account is ${accountAgeDays} day${accountAgeDays !== 1 ? 's' : ''} old`;
                       if (user.schedule_age_bypass) {
                         return (
-                          <Tooltip title="Early access granted — bypasses account age and net participation requirements (click to revoke)">
+                          <Tooltip title={`Early access granted: account age and nets-attended requirements waived. ${ageText}. Click to revoke.`}>
                             <IconButton
                               size="small"
                               color="success"
                               onClick={() => handleScheduleBypass(user.id, false)}
+                              aria-label="Revoke early access"
                             >
                               <TimerIcon fontSize="small" />
                             </IconButton>
@@ -770,11 +778,12 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
                         );
                       }
                       return (
-                        <Tooltip title={`Account is ${accountAgeDays} of ${minAge} day${minAge !== 1 ? 's' : ''} old — click to grant early access (bypasses age and net participation requirements)`}>
+                        <Tooltip title={`${ageText}. Click to grant early access, which waives the account age and nets-attended requirements. Click the callsign to see nets attended.`}>
                           <IconButton
                             size="small"
                             onClick={() => handleScheduleBypass(user.id, true)}
-                            sx={{ color: 'warning.main' }}
+                            sx={{ color: underAge ? 'warning.main' : 'text.secondary' }}
+                            aria-label="Grant early access"
                           >
                             <TimerIcon fontSize="small" />
                           </IconButton>
@@ -1047,6 +1056,9 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* ========== USER PROFILE POPUP ========== */}
+      <UserProfileDialog userId={profileUserId} onClose={() => setProfileUserId(null)} />
     </>
   );
 };
