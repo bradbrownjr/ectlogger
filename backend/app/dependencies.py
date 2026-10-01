@@ -11,7 +11,12 @@ from app.logger import logger
 from app.security import get_client_ip
 from app.session_config import get_session_config
 
-security = HTTPBearer()
+# auto_error=False on both: get_current_user raises its own 401 for a missing
+# or non-Bearer Authorization header. HTTPBearer's built-in error is 403 before
+# FastAPI 0.122 and 401 from it, and requirements.txt only sets a floor, so
+# beta (0.121) and production (0.123) answered the same request differently
+# until 2026-10-01 and two "requires auth" tests failed on beta only.
+security = HTTPBearer(auto_error=False)
 optional_security = HTTPBearer(auto_error=False)
 
 # ========== BACKGROUND REQUEST MARKER ==========
@@ -44,9 +49,15 @@ def is_background_request(request: Request) -> bool:
 async def get_current_user(
     request: Request,
     response: Response,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: AsyncSession = Depends(get_db)
 ) -> User:
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     token = credentials.credentials
     client_ip = get_client_ip(request)
     logger.debug("AUTH", "Authenticating user from token")
