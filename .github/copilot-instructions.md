@@ -659,6 +659,30 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
 - **Email**: two independent guards, and **both must stay in place**. `EMAIL_ENABLED=false` in `.env` makes every send a logged no-op before any connection is attempted, and `SMTP_HOST=127.0.0.1` makes connections fail anyway. Never set `EMAIL_ENABLED=true` on beta or alpha without the user explicitly asking — beta's database holds real user addresses. See `docs/DEVELOPMENT.md` "Enabling and disabling outbound email" for the temporary-enable procedure.
 - **Database**: SQLite at `/home/bradb/ectlogger/backend/ectlogger.db`
 
+#### Keeping beta's Python packages at or ahead of production
+
+**Always upgrade beta when any Python package there is older than production's
+(Brad, 2026-10-01).** `requirements.txt` sets minimums only (`fastapi>=0.104.0`),
+so each venv keeps whatever it last installed, and beta silently fell behind:
+FastAPI 0.121.3 on beta against 0.123.4 on production. FastAPI 0.122 changed a
+missing bearer token from 403 to 401, so two tests failed on beta only, and
+beta was not testing what production runs. Compare before any beta test whose
+result you will rely on, and whenever a beta-only failure appears:
+
+```bash
+/home/bradb/ectlogger/backend/venv/bin/pip freeze | sort > /tmp/beta.txt
+ssh ectlogger@app.ectlogger.us "~/ectlogger/backend/venv/bin/pip freeze" | sort > /tmp/prod.txt
+diff /tmp/beta.txt /tmp/prod.txt
+```
+
+For each package where production's version is newer, install that exact version
+on beta (`venv/bin/pip install "<pkg>==<prod version>"`), run `venv/bin/pip check`,
+restart beta, and run the backend suite. Match production's version rather than
+taking the latest, so beta tests what production runs. Beta being *ahead* is
+fine (that is where an upgrade gets tested first); never downgrade production
+to match beta. Packages that exist only on beta (pytest and friends) are
+expected.
+
 #### Refreshing beta's database from production
 
 Beta has held a copy of production's database since 2026-08-11 (see `docs/DEVELOPMENT.md` if it
