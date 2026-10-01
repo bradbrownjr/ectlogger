@@ -382,90 +382,85 @@ const Statistics: React.FC = () => {
         {/* ========== SELECTED PERIOD ========== */}
         {/* Everything from here down, the map included, follows the window selector */}
         <Typography variant="h6" sx={{ mb: 1.5 }}>{windowHeading}</Typography>
+        {/* ===== Period summary + charts (full width) ===== */}
+        <Paper sx={{ p: 3, mb: 2 }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+          {/* Period summary figures */}
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 2,
+              mb: 2,
+              gridTemplateColumns: { xs: 'repeat(3, 1fr)', sm: 'repeat(6, 1fr)' },
+            }}
+          >
+            {periodFigures.map(f => (
+              <Box key={f.label}>
+                <Typography variant="h5" fontWeight="bold" sx={{ color: f.color }}>
+                  {f.value.toLocaleString()}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">{f.label}</Typography>
+              </Box>
+            ))}
+          </Box>
+
+          <Tabs
+            value={chartTab}
+            onChange={(_, v) => setChartTab(v)}
+            variant="scrollable"
+            scrollButtons={false}
+            sx={{
+              mb: 2,
+              borderBottom: 1,
+              borderColor: 'divider',
+              '& .MuiTab-root': { minWidth: { xs: 80, sm: 110 }, px: { xs: 1, sm: 2 } },
+            }}
+          >
+            {charts.map(c => <Tab key={c.key} label={c.tab} />)}
+          </Tabs>
+
+          {/* Active chart. Fixed height so the whole card fits on one
+              screen; it used to stretch to a neighbouring column and
+              reached ~900px with real data. */}
+          <Box sx={{ height: 300 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={activeChart.data}>
+                <defs>
+                  <linearGradient id={`color-${activeChart.key}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={activeChart.color} stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor={activeChart.color} stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 12 }}
+                  interval={isMobile ? 4 : 2}
+                />
+                <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                <RechartsTooltip
+                  contentStyle={{
+                    backgroundColor: theme.palette.background.paper,
+                    border: `1px solid ${theme.palette.divider}`,
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  name={activeChart.tab}
+                  stroke={activeChart.color}
+                  fillOpacity={1}
+                  fill={`url(#color-${activeChart.key})`}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Box>
+        </Paper>
+
+        {/* ===== Scoreboards (side by side on desktop; stacked on mobile) ===== */}
         <Grid container spacing={2} sx={{ mb: 4 }}>
-          {/* ===== Period summary + charts (left, ~2/3 on desktop) ===== */}
-          <Grid item xs={12} md={8}>
-            <Paper
-              sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
-            >
-              {/* Period summary figures */}
-              <Box
-                sx={{
-                  display: 'grid',
-                  gap: 2,
-                  mb: 2,
-                  gridTemplateColumns: { xs: 'repeat(3, 1fr)', sm: 'repeat(6, 1fr)' },
-                }}
-              >
-                {periodFigures.map(f => (
-                  <Box key={f.label}>
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: f.color }}>
-                      {f.value.toLocaleString()}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">{f.label}</Typography>
-                  </Box>
-                ))}
-              </Box>
-
-              <Tabs
-                value={chartTab}
-                onChange={(_, v) => setChartTab(v)}
-                variant="scrollable"
-                scrollButtons={false}
-                sx={{
-                  mb: 2,
-                  borderBottom: 1,
-                  borderColor: 'divider',
-                  '& .MuiTab-root': { minWidth: { xs: 80, sm: 110 }, px: { xs: 1, sm: 2 } },
-                }}
-              >
-                {charts.map(c => <Tab key={c.key} label={c.tab} />)}
-              </Tabs>
-
-              {/* Active chart. Grows to fill the card so it lines up with the
-                  scoreboard column beside it. */}
-              <Box sx={{ flexGrow: 1, minHeight: 360 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={activeChart.data}>
-                    <defs>
-                      <linearGradient id={`color-${activeChart.key}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={activeChart.color} stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor={activeChart.color} stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 12 }}
-                      interval={isMobile ? 4 : 2}
-                    />
-                    <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-                    <RechartsTooltip
-                      contentStyle={{
-                        backgroundColor: theme.palette.background.paper,
-                        border: `1px solid ${theme.palette.divider}`,
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      name={activeChart.tab}
-                      stroke={activeChart.color}
-                      fillOpacity={1}
-                      fill={`url(#color-${activeChart.key})`}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </Box>
-            </Paper>
-          </Grid>
-
-          {/* ===== Scoreboards (right, ~1/3 on desktop; stacked below on mobile) ===== */}
-          <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Grid item xs={12} md={6}>
             {/* Most-attended nets: one row per schedule */}
-            <Paper sx={{ p: 2 }}>
+            <Paper sx={{ p: 2, height: '100%' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <EmojiEvents color="primary" />
                 <Typography variant="h6">Most-Attended Nets</Typography>
@@ -481,22 +476,30 @@ const Statistics: React.FC = () => {
                       key={entry.template_id}
                       component={RouterLink}
                       to={`/statistics/schedules/${entry.template_id}`}
-                      sx={{ borderRadius: 1, px: 1 }}
+                      sx={{ borderRadius: 1, px: 1, gap: 1 }}
                     >
+                      {/* One line per net so this board matches the operators board's height */}
                       <ListItemText
                         primary={`${i + 1}. ${entry.template_name}`}
-                        secondary={`${entry.occurrence_count} net${entry.occurrence_count === 1 ? '' : 's'} held`}
+                        title={entry.template_name}
+                        primaryTypographyProps={{ noWrap: true }}
+                        sx={{ minWidth: 0 }}
                       />
+                      <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                        {`${entry.occurrence_count} net${entry.occurrence_count === 1 ? '' : 's'}`}
+                      </Typography>
                       <Chip size="small" label={`${entry.total_check_ins} check-ins`} color="primary" variant="outlined" />
                     </ListItemButton>
                   ))}
                 </List>
               )}
             </Paper>
+          </Grid>
 
+          <Grid item xs={12} md={6}>
             {/* Most-active operators: distinct nets attended per callsign.
                 The callsign opens the operator's profile popup. */}
-            <Paper sx={{ p: 2 }}>
+            <Paper sx={{ p: 2, height: '100%' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <Star color="primary" />
                 <Typography variant="h6">Most-Active Operators</Typography>
