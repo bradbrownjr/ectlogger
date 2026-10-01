@@ -1,7 +1,8 @@
 import re
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -127,6 +128,7 @@ def _nearest_region(lat: float, lon: float) -> str | None:
 
 @router.get("/checkin-map", response_model=CheckInMapResponse)
 async def get_checkin_map(
+    days: int = Query(0, ge=0, le=3650, description="Only check-ins from the last N days; 0 = all time"),
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
@@ -135,13 +137,16 @@ async def get_checkin_map(
     All locations — whether grid squares or text — are resolved to the nearest
     US state or Canadian province centroid, so each region produces at most one pin.
     No authentication required (public statistics).
+    `days` matches the window on GET /statistics/global (filtered on
+    CheckIn.checked_in_at, like its windowed check-in count).
     """
     # Query all distinct locations with their check-in counts
-    result = await db.execute(
-        select(CheckIn.location, func.count(CheckIn.id).label("count"))
-        .where(CheckIn.location != None, CheckIn.location != "")
-        .group_by(CheckIn.location)
+    query = select(CheckIn.location, func.count(CheckIn.id).label("count")).where(
+        CheckIn.location != None, CheckIn.location != ""
     )
+    if days:
+        query = query.where(CheckIn.checked_in_at >= datetime.now(timezone.utc) - timedelta(days=days))
+    result = await db.execute(query.group_by(CheckIn.location))
     location_counts = result.all()
 
     # Aggregate by coarsened region (4-char grid or state/province)

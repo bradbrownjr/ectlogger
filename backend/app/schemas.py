@@ -1885,11 +1885,23 @@ class TopNetEntry(BaseModel):
     occurrence_count: int
 
 
+class TopOperatorEntry(BaseModel):
+    """One row of the most-active-operators scoreboard (Statistics.tsx):
+    a callsign and the number of distinct held nets it checked into within
+    the window. `user_id` is set when any of those check-ins is linked to an
+    account, so the page can open that profile."""
+    callsign: str
+    first_name: Optional[str] = None
+    user_id: Optional[int] = None
+    nets_attended: int
+
+
 class GlobalStatsResponse(BaseModel):
-    """Global platform statistics. `total_*`, `active_nets`, and
-    `traffic_handled`/`traffic_by_action` are lifetime/current-moment figures
-    and are not affected by the `days` window on GET /statistics/global;
-    `window_*`, `top_nets`, and the `*_over_time` series all are."""
+    """Global platform statistics. `total_*`, `active_nets`,
+    `avg_check_ins_per_net`, and `traffic_handled`/`traffic_by_action` are
+    lifetime/current-moment figures and are not affected by the `days`
+    window on GET /statistics/global; `window_*`, `top_nets`,
+    `top_operators`, and the `*_over_time` series all are."""
     # All-time / current-moment totals
     total_nets: int
     total_check_ins: int
@@ -1902,6 +1914,11 @@ class GlobalStatsResponse(BaseModel):
     window_check_ins: int
     window_unique_operators: int
     window_avg_check_ins_per_net: float
+    window_new_operators: int = 0
+    window_traffic_handled: int = 0
+
+    # All-time mean check-ins per finished net
+    avg_check_ins_per_net: float = 0
 
     # Assisted Traffic Handling: distinct forms with any traffic_log_entries
     # row, platform-wide, broken out by action (see
@@ -1911,12 +1928,14 @@ class GlobalStatsResponse(BaseModel):
 
     # Most-attended nets scoreboard, windowed
     top_nets: List[TopNetEntry] = Field(default_factory=list)
+    top_operators: List[TopOperatorEntry] = Field(default_factory=list)
 
     # Time series for charts. Bucket granularity (daily/weekly/monthly) is
     # chosen server-side from the requested window.
     nets_over_time: List[TimeSeriesDataPoint]
     check_ins_over_time: List[TimeSeriesDataPoint]
     unique_operators_over_time: List[TimeSeriesDataPoint]
+    traffic_over_time: List[TimeSeriesDataPoint] = Field(default_factory=list)
 
 
 class NetStatsResponse(BaseModel):

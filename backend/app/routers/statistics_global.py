@@ -7,11 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user_optional
-from app.models import CheckIn, Net, NetStatus, NetTemplate, TrafficLogEntry, User
+from app.models import CheckIn, Contact, Net, NetStatus, NetTemplate, TrafficLogEntry, User
 from app.schemas import (
     GlobalStatsResponse,
     TimeSeriesDataPoint,
     TopNetEntry,
+    TopOperatorEntry,
 )
 
 router = APIRouter()
@@ -41,8 +42,11 @@ async def get_global_statistics(
     cutoff = None if days == 0 else now - timedelta(days=days)
 
     # ===== ALL-TIME / CURRENT-MOMENT TOTALS =====
+    # Held nets only, the same rule as window_nets: counting `!= DRAFT` here
+    # included cancelled and still-scheduled nets, so the all-time card read
+    # higher than the number of nets that ever ran (95 vs 90 on 2026-10-01).
     total_nets_result = await db.execute(
-        select(func.count(Net.id)).where(Net.status != NetStatus.DRAFT)
+        select(func.count(Net.id)).where(Net.status.in_(_HELD_NET_STATUSES))
     )
     total_nets = total_nets_result.scalar() or 0
 
@@ -80,20 +84,25 @@ async def get_global_statistics(
         window_unique_operators_query = window_unique_operators_query.where(CheckIn.checked_in_at >= cutoff)
     window_unique_operators = (await db.execute(window_unique_operators_query)).scalar() or 0
 
-    window_avg_query = select(func.avg(
-        select(func.count(CheckIn.id))
-        .where(CheckIn.net_id == Net.id)
-        .correlate(Net)
-        .scalar_subquery()
-    )).where(Net.status.in_([NetStatus.CLOSED, NetStatus.ARCHIVED]))
+    # A callsign is "new" in the window when its first check-in anywhere on
+    # the instance falls inside it. All-time, every operator is new.
+    first_seen = (
+        select(func.min(CheckIn.checked_in_at).label("first_at"))
+        .group_by(CheckIn.callsign)
+        .subquery()
+    )
+    window_new_operators_query = select(func.count()).select_from(first_seen)
     if cutoff is not None:
-        window_avg_query = window_avg_query.where(Net.started_at >= cutoff)
-    window_avg_check_ins_per_net = round((await db.execute(window_avg_query)).scalar() or 0, 1)
+        window_new_operators_query = window_new_operators_query.where(first_seen.c.first_at >= cutoff)
+    window_new_operators = (await db.execute(window_new_operators_query)).scalar() or 0
+
+    avg_check_ins_per_net = await _avg_check_ins_per_net(db, None)
+    window_avg_check_ins_per_net = await _avg_check_ins_per_net(db, cutoff)
 
     # ===== ASSISTED TRAFFIC HANDLING =====
     # Distinct forms with any traffic_log_entries row platform-wide, broken
     # out by action (see TRAFFIC-HANDLING-DESIGN.md section 3.5).
-    # Deliberately all-time rather than windowed for now.
+    # All-time, like the other totals; the windowed count is below.
     traffic_entries_result = await db.execute(
         select(TrafficLogEntry.action, TrafficLogEntry.form_id)
     )
@@ -106,8 +115,14 @@ async def get_global_statistics(
     traffic_by_action = {action: len(form_ids) for action, form_ids in traffic_by_action_forms.items()}
     traffic_handled = len(all_traffic_form_ids)
 
+    window_traffic_query = select(func.count(distinct(TrafficLogEntry.form_id)))
+    if cutoff is not None:
+        window_traffic_query = window_traffic_query.where(TrafficLogEntry.created_at >= cutoff)
+    window_traffic_handled = (await db.execute(window_traffic_query)).scalar() or 0
+
     # ===== MOST-ATTENDED NETS SCOREBOARD =====
     top_nets = await _get_top_nets(db, cutoff)
+    top_operators = await _get_top_operators(db, cutoff)
 
     # ===== TIME SERIES =====
     earliest_started_result = await db.execute(
@@ -119,6 +134,7 @@ async def get_global_statistics(
     nets_over_time = await _count_nets_per_bucket(db, edges)
     check_ins_over_time = await _count_check_ins_per_bucket(db, edges)
     unique_operators_over_time = await _count_unique_operators_per_bucket(db, edges)
+    traffic_over_time = await _count_traffic_per_bucket(db, edges)
 
     return GlobalStatsResponse(
         total_nets=total_nets,
@@ -130,13 +146,83 @@ async def get_global_statistics(
         window_check_ins=window_check_ins,
         window_unique_operators=window_unique_operators,
         window_avg_check_ins_per_net=window_avg_check_ins_per_net,
+        window_new_operators=window_new_operators,
+        window_traffic_handled=window_traffic_handled,
+        avg_check_ins_per_net=avg_check_ins_per_net,
         traffic_handled=traffic_handled,
         traffic_by_action=traffic_by_action,
         top_nets=top_nets,
+        top_operators=top_operators,
         nets_over_time=nets_over_time,
         check_ins_over_time=check_ins_over_time,
         unique_operators_over_time=unique_operators_over_time,
+        traffic_over_time=traffic_over_time,
     )
+
+
+async def _avg_check_ins_per_net(db: AsyncSession, cutoff: Optional[datetime]) -> float:
+    """Mean check-ins per finished (CLOSED/ARCHIVED) net, optionally limited
+    to nets started on or after `cutoff`."""
+    query = select(func.avg(
+        select(func.count(CheckIn.id))
+        .where(CheckIn.net_id == Net.id)
+        .correlate(Net)
+        .scalar_subquery()
+    )).where(Net.status.in_([NetStatus.CLOSED, NetStatus.ARCHIVED]))
+    if cutoff is not None:
+        query = query.where(Net.started_at >= cutoff)
+    return round((await db.execute(query)).scalar() or 0, 1)
+
+
+async def _get_top_operators(db: AsyncSession, cutoff: Optional[datetime], limit: int = 10) -> List[TopOperatorEntry]:
+    """Most-active operators scoreboard: callsigns ranked by how many distinct
+    held nets they checked into within the window (a recheck in the same net
+    counts once, matching the schedule statistics check-in leaderboard).
+    `user_id` lets the page open the operator's profile; without an account
+    it opens the callsign profile instead. `first_name` is the first word of
+    the account's name, falling back to the Contact record built from their
+    check-ins."""
+    query = (
+        select(
+            CheckIn.callsign,
+            func.count(func.distinct(CheckIn.net_id)).label("nets_attended"),
+            func.max(CheckIn.user_id).label("user_id"),
+        )
+        .join(Net, Net.id == CheckIn.net_id)
+        .where(Net.status.in_(_HELD_NET_STATUSES))
+    )
+    if cutoff is not None:
+        query = query.where(Net.started_at >= cutoff)
+    query = (
+        query.group_by(CheckIn.callsign)
+        .order_by(func.count(func.distinct(CheckIn.net_id)).desc(), CheckIn.callsign)
+        .limit(limit)
+    )
+    rows = (await db.execute(query)).all()
+    if not rows:
+        return []
+
+    user_ids = [r.user_id for r in rows if r.user_id]
+    user_names = {}
+    if user_ids:
+        user_names = dict((await db.execute(
+            select(User.id, User.name).where(User.id.in_(user_ids))
+        )).all())
+    contact_names = dict((await db.execute(
+        select(Contact.callsign, Contact.name).where(Contact.callsign.in_([r.callsign for r in rows]))
+    )).all())
+
+    entries = []
+    for r in rows:
+        full_name = user_names.get(r.user_id) or contact_names.get(r.callsign) or ""
+        parts = full_name.split()
+        entries.append(TopOperatorEntry(
+            callsign=r.callsign,
+            first_name=parts[0] if parts else None,
+            user_id=r.user_id,
+            nets_attended=r.nets_attended,
+        ))
+    return entries
 
 
 async def _get_top_nets(db: AsyncSession, cutoff: Optional[datetime], limit: int = 10) -> List[TopNetEntry]:
@@ -269,6 +355,21 @@ async def _count_unique_operators_per_bucket(
         count_result = await db.execute(
             select(func.count(distinct(CheckIn.callsign))).where(
                 and_(CheckIn.checked_in_at >= start, CheckIn.checked_in_at < end)
+            )
+        )
+        result.append(TimeSeriesDataPoint(label=label, value=count_result.scalar() or 0, date=start.date().isoformat()))
+    return result
+
+
+async def _count_traffic_per_bucket(
+    db: AsyncSession, edges: List[Tuple[datetime, datetime, str]]
+) -> List[TimeSeriesDataPoint]:
+    """Distinct traffic forms with any log entry recorded in each bucket."""
+    result = []
+    for start, end, label in edges:
+        count_result = await db.execute(
+            select(func.count(distinct(TrafficLogEntry.form_id))).where(
+                and_(TrafficLogEntry.created_at >= start, TrafficLogEntry.created_at < end)
             )
         )
         result.append(TimeSeriesDataPoint(label=label, value=count_result.scalar() or 0, date=start.date().isoformat()))

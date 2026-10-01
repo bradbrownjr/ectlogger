@@ -1,6 +1,31 @@
 {
-  "version": "2026.09.30",
+  "version": "2026.10.01",
   "entries": [
+    {
+      "version": "2026.10.01",
+      "date": "2026-10-01",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Statistics: Clearer time periods and top operators — The top cards are now labeled as all-time totals, and the period you pick heads the rest of the page: a summary of nets, check-ins, operators, new operators, average check-ins per net and traffic handled above the charts, a new Traffic chart, and a Most-Active Operators list beside the most-attended nets, where clicking a callsign opens that operator's profile.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Statistics: Total Nets counts only nets that ran — Cancelled nets and nets still waiting to start were included in the total, so it read higher than the number of nets actually held."
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.30",
       "date": "2026-09-30",

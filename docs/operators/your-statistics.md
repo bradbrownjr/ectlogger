@@ -4,7 +4,7 @@ summary: What ECTLogger counts for you, where to see it, and how the leaderboard
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-10-01
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/your-statistics/
@@ -48,6 +48,10 @@ You can narrow any of them to the last 30 days, 90 days, a year, or all time.
   <figcaption>The check-in leaderboard for a recurring net, filtered to the last 90 days.</figcaption>
 </figure>
 
-The top-level `/statistics` page itself is instance-wide rather than per-net or per-schedule: **Nets**, **Check-ins**, and **Operators** tabs, each with trend charts over time and a global check-in map. It's a good place to get a feel for how active the instance is as a whole, separate from either your own numbers or one schedule's leaderboard.
+The top-level `/statistics` page itself is instance-wide rather than per-net or per-schedule. It's a good place to get a feel for how active the instance is as a whole, separate from either your own numbers or one schedule's leaderboard. It has three parts:
+
+- **All-time totals** - the cards across the top: nets held, check-ins, registered users, distinct callsigns, average check-ins per net, traffic handled, and nets running right now. These never change with the period buttons.
+- **The selected period** - pick **Week**, **Month**, **6 Months**, **Year**, or **All Time** at the top of the page, and the heading below the totals names the period you chose. Under it are that period's figures (nets, check-ins, operators, new operators, average check-ins per net, and traffic handled), a chart with **Nets**, **Check-ins**, **Operators**, and **Traffic** tabs, and two scoreboards: **Most-Attended Nets** and **Most-Active Operators**. Click a net to open its schedule's statistics, or a callsign to open that operator's profile. An operator's count is the number of nets they checked into, so checking in twice to the same net counts once. Month means the last 30 days, not the calendar month.
+- **Check-in map** - roughly where the selected period's check-ins came from, by state or province.
 
 Both views are reading the same underlying check-in history — your Activity tab is the personal cut of it, the leaderboards and instance-wide charts are the comparative ones.

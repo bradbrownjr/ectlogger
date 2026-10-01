@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-30
+revised: 2026-10-01
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,18 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# October 1, 2026
+
+## Improvements
+
+* **Statistics: Clearer time periods and top operators** — The top cards are now labeled as all-time totals, and the period you pick heads the rest of the page: a summary of nets, check-ins, operators, new operators, average check-ins per net and traffic handled above the charts, a new Traffic chart, and a Most-Active Operators list beside the most-attended nets, where clicking a callsign opens that operator's profile.
+
+## Bug Fixes
+
+* **Statistics: Total Nets counts only nets that ran** — Cancelled nets and nets still waiting to start were included in the total, so it read higher than the number of nets actually held.
 
 ---
 

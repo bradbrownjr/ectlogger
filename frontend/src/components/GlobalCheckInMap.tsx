@@ -73,7 +73,12 @@ const FitBounds: React.FC<{ positions: [number, number][] }> = ({ positions }) =
 
 // ========== Main Component ==========
 
-const GlobalCheckInMap: React.FC = () => {
+interface GlobalCheckInMapProps {
+  // Statistics page window in days; 0 = all time
+  days: number;
+}
+
+const GlobalCheckInMap: React.FC<GlobalCheckInMapProps> = ({ days }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
@@ -81,12 +86,14 @@ const GlobalCheckInMap: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch check-in map data on mount
+  // Fetch check-in map data on mount and whenever the period changes
   useEffect(() => {
     let cancelled = false;
     const fetchData = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const response = await statisticsApi.getCheckinMap();
+        const response = await statisticsApi.getCheckinMap(days);
         if (!cancelled) {
           setData(response.data);
         }
@@ -101,7 +108,7 @@ const GlobalCheckInMap: React.FC = () => {
     };
     fetchData();
     return () => { cancelled = true; };
-  }, []);
+  }, [days]);
 
   // Tile layer -- see utils/mapTiles.ts for why dark mode is a CSS filter on
   // OSM tiles rather than a separate tile server.
@@ -116,7 +123,9 @@ const GlobalCheckInMap: React.FC = () => {
 
   // ========== Render ==========
 
-  if (loading) {
+  // Spinner only on first load; a period change keeps the old map up until
+  // the new data arrives instead of collapsing the card.
+  if (loading && !data) {
     return (
       <Paper elevation={2} sx={{ p: 3, mt: 3, textAlign: 'center' }}>
         <CircularProgress size={32} />
@@ -139,7 +148,7 @@ const GlobalCheckInMap: React.FC = () => {
     return (
       <Paper elevation={2} sx={{ p: 3, mt: 3, textAlign: 'center' }}>
         <Typography variant="body2" color="text.secondary">
-          No geographic check-in data available yet.
+          No check-in locations in this period.
         </Typography>
       </Paper>
     );

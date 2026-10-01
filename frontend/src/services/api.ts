@@ -319,7 +319,7 @@ export const statisticsApi = {
     api.get(`/statistics/templates/${templateId}`, { params: days !== undefined ? { days } : undefined }),
   getUserStats: () => api.get('/statistics/users/me'),
   getUserStatsById: (userId: number) => api.get(`/statistics/users/${userId}`),
-  getCheckinMap: () => api.get('/statistics/checkin-map'),
+  getCheckinMap: (days: number = 0) => api.get('/statistics/checkin-map', { params: { days } }),
 };
 
 // Net Role API (for NCS frequency claiming)
