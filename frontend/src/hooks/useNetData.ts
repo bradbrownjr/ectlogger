@@ -1,31 +1,24 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { netApi, checkInApi, userApi, BACKGROUND_REQUEST_CONFIG } from '../services/api';
 import api from '../services/api';
 import useVisibilityAwareInterval from './useVisibilityAwareInterval';
+import {
+  distinctPollResponses, summarizePollResults, summarizeTopicResponses,
+  type PollResults, type TopicResponses,
+} from '../utils/netResponses';
 
 // ========== useNetData ==========
 // Owns the net's core data: the net itself, check-ins, roles, live stats,
-// field definitions, the directory of all users, the owner profile, and
-// poll/topic responses. Extracted verbatim from NetView so the page stays
+// field definitions, the directory of all users, the owner profile, and the
+// poll/topic summaries (derived from check-ins, see utils/netResponses.ts). Extracted verbatim from NetView so the page stays
 // focused on rendering; every fetch function and its backing state moved
 // together since they're a 1:1 pair (fetchX always sets stateX).
 //
 // Behavior preserved from the original inline implementation:
 //   - On mount (and whenever netId changes): fetch net, check-ins, roles,
 //     stats, and field definitions; poll stats every 10s for online users.
-//   - Whenever net.owner_id / poll_enabled / topic_of_week_enabled become
-//     available: fetch the owner profile and poll/topic data.
-
-interface PollResults {
-  question: string | null;
-  results: { response: string; count: number }[];
-}
-
-interface TopicResponses {
-  prompt: string | null;
-  responses: { callsign: string; name: string; response: string }[];
-}
+//   - Whenever net.owner_id becomes available: fetch the owner profile.
 
 export interface UseNetDataResult {
   net: any | null;
@@ -51,9 +44,6 @@ export interface UseNetDataResult {
   fetchFieldDefinitions: () => Promise<void>;
   fetchAllUsers: () => Promise<void>;
   fetchOwner: () => Promise<void>;
-  fetchPollResponses: () => Promise<void>;
-  fetchPollResults: () => Promise<void>;
-  fetchTopicResponses: () => Promise<void>;
 }
 
 export function useNetData(netId: string | undefined): UseNetDataResult {
@@ -65,9 +55,18 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
   const [fieldDefinitions, setFieldDefinitions] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [owner, setOwner] = useState<any | null>(null);
-  const [pollResponses, setPollResponses] = useState<string[]>([]);
-  const [pollResults, setPollResults] = useState<PollResults>({ question: null, results: [] });
-  const [topicResponses, setTopicResponses] = useState<TopicResponses>({ prompt: null, responses: [] });
+
+  // Derived from the live check-in list rather than fetched: a one-time fetch
+  // went stale the moment anyone answered (see utils/netResponses.ts).
+  const pollResponses = useMemo(() => distinctPollResponses(checkIns), [checkIns]);
+  const pollResults = useMemo<PollResults>(
+    () => (net?.poll_enabled ? summarizePollResults(checkIns, net.poll_question ?? null) : { question: null, results: [] }),
+    [checkIns, net?.poll_enabled, net?.poll_question],
+  );
+  const topicResponses = useMemo<TopicResponses>(
+    () => (net?.topic_of_week_enabled ? summarizeTopicResponses(checkIns, net.topic_of_week_prompt ?? null) : { prompt: null, responses: [] }),
+    [checkIns, net?.topic_of_week_enabled, net?.topic_of_week_prompt],
+  );
 
   const fetchNet = async () => {
     try {
@@ -84,36 +83,6 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
       setFieldDefinitions(response.data);
     } catch (error) {
       console.error('Failed to fetch field definitions:', error);
-    }
-  };
-
-  const fetchPollResponses = async () => {
-    if (!netId) return;
-    try {
-      const response = await api.get(`/nets/${netId}/poll-responses`);
-      setPollResponses(response.data);
-    } catch (error) {
-      console.error('Failed to fetch poll responses:', error);
-    }
-  };
-
-  const fetchPollResults = async () => {
-    if (!netId) return;
-    try {
-      const response = await api.get(`/nets/${netId}/poll-results`);
-      setPollResults(response.data);
-    } catch (error) {
-      console.error('Failed to fetch poll results:', error);
-    }
-  };
-
-  const fetchTopicResponses = async () => {
-    if (!netId) return;
-    try {
-      const response = await api.get(`/nets/${netId}/topic-responses`);
-      setTopicResponses(response.data);
-    } catch (error) {
-      console.error('Failed to fetch topic responses:', error);
     }
   };
 
@@ -196,19 +165,8 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
     if (net?.owner_id) {
       fetchOwner();
     }
-    // Fetch poll responses if poll is enabled
-    if (net?.poll_enabled) {
-      fetchPollResponses();
-    }
-    // Fetch poll results and topic responses for summary display (any status, shown for closed/archived)
-    if (net?.poll_enabled) {
-      fetchPollResults();
-    }
-    if (net?.topic_of_week_enabled) {
-      fetchTopicResponses();
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [net?.owner_id, net?.poll_enabled, net?.topic_of_week_enabled]);
+  }, [net?.owner_id]);
 
   return {
     net,
@@ -234,8 +192,5 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
     fetchFieldDefinitions,
     fetchAllUsers,
     fetchOwner,
-    fetchPollResponses,
-    fetchPollResults,
-    fetchTopicResponses,
   };
 }

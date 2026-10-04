@@ -50,7 +50,6 @@ function harness(initialRows: any[], overrides: any = {}) {
     setFilteredFrequencyIds: vi.fn(),
     fetchCheckIns: vi.fn(async () => {}),
     fetchNetRoles: vi.fn(async () => {}),
-    fetchPollResponses: vi.fn(async () => {}),
     ...overrides,
   } as any);
 

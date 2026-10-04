@@ -54,7 +54,6 @@ export interface CheckInActionsDeps {
 
   fetchCheckIns: () => Promise<void>;
   fetchNetRoles: () => Promise<void>;
-  fetchPollResponses: () => Promise<void>;
 }
 
 export interface CheckInActions {
@@ -81,7 +80,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef, lookupFilledRef,
     setCheckInForm, setToastMessage, setInlineEditingId, setInlineEditFocusField,
     setInlineEditValues, setCheckIns, setActiveSpeakerId, setNet, setFilteredFrequencyIds,
-    fetchCheckIns, fetchNetRoles, fetchPollResponses,
+    fetchCheckIns, fetchNetRoles,
   } = deps;
 
   // Look up user info by callsign and auto-fill form fields (for NCS).
@@ -170,11 +169,6 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       // routers/check_ins.py::create_check_in) -- and the list is ordered by
       // checked_in_at, so the newest row always belongs at the end.
       setCheckIns((prev: any[]) => [...prev, response.data]);
-
-      // Refresh poll responses after new check-in (in case new response was added)
-      if (net?.poll_enabled) {
-        fetchPollResponses();
-      }
 
       // Focus back on callsign field
       setTimeout(() => {
@@ -347,10 +341,6 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       // edit never changes checked_in_at, so row order is unaffected.
       const edited = response.data;
       setCheckIns((prev: any[]) => prev.map(ci => (ci.id === edited.id ? edited : ci)));
-      // Refresh poll responses in case a new answer was added
-      if (net?.poll_enabled) {
-        fetchPollResponses();
-      }
     } catch (error) {
       console.error('Failed to update check-in:', error);
       setToastMessage(getErrorMessage(error, 'Failed to update check-in'));

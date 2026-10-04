@@ -109,7 +109,7 @@ const NetPaneWindow: React.FC = () => {
   const {
     net, setNet, checkIns, setCheckIns, netRoles, onlineUserIds, fieldDefinitions, owner,
     pollResponses, topicResponses,
-    fetchNet, fetchCheckIns, fetchNetRoles, fetchNetStats, fetchPollResponses,
+    fetchNet, fetchCheckIns, fetchNetRoles, fetchNetStats,
   } = useNetData(netId);
 
   // Which check-ins are currently mid-flash for having self-checked-in
@@ -379,7 +379,7 @@ const NetPaneWindow: React.FC = () => {
     checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef, lookupFilledRef,
     setCheckInForm, setToastMessage, setInlineEditingId, setInlineEditFocusField,
     setInlineEditValues, setCheckIns, setActiveSpeakerId, setNet, setFilteredFrequencyIds,
-    fetchCheckIns, fetchNetRoles, fetchPollResponses,
+    fetchCheckIns, fetchNetRoles,
   });
 
   const filteredCheckIns = checkIns.filter((checkIn: any) => {

@@ -186,9 +186,6 @@ const NetView: React.FC = () => {
     fetchNetRoles,
     fetchNetStats,
     fetchAllUsers,
-    fetchPollResponses,
-    fetchPollResults,
-    fetchTopicResponses,
   } = useNetData(netId);
   const roleDialog = useDialog();
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
@@ -1043,16 +1040,9 @@ const NetView: React.FC = () => {
       
       await netApi.close(Number(netId));
       closeNetDialog.onClose();
-      // fetchNet will trigger the useEffect that fetches poll results/topic responses
-      // based on whether those features are enabled
+      // Poll results and topic answers are derived from the check-in list
+      // (utils/netResponses.ts), so they need no fetch of their own here
       await fetchNet();
-      // Explicitly fetch poll/topic data if features are enabled
-      if (net?.poll_enabled) {
-        fetchPollResults();
-      }
-      if (net?.topic_of_week_enabled) {
-        fetchTopicResponses();
-      }
       
       // ========== SUBSCRIPTION PROMPT ==========
       // If net was created from a RECURRING schedule (has template_id AND
@@ -1447,7 +1437,7 @@ const NetView: React.FC = () => {
     checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef, lookupFilledRef,
     setCheckInForm, setToastMessage, setInlineEditingId, setInlineEditFocusField,
     setInlineEditValues, setCheckIns, setActiveSpeakerId, setNet, setFilteredFrequencyIds,
-    fetchCheckIns, fetchNetRoles, fetchPollResponses,
+    fetchCheckIns, fetchNetRoles,
   });
 
   // Filter check-ins based on search query AND frequency filter
