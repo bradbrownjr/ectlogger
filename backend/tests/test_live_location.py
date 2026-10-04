@@ -183,3 +183,24 @@ async def test_editing_the_location_drops_the_grid(client, db, owner, other):
     )
     assert edited.status_code == 200
     assert edited.json()["grid_square"] is None
+
+
+@pytest.mark.asyncio
+async def test_starting_a_net_checks_ncs_in_from_their_live_town(client, db, owner):
+    """The automatic NCS check-in on start follows the same rule as the form."""
+    owner.location = "Somewhere, ME"
+    owner.location_awareness = True
+    await _set_live(db, owner)
+    net_id = await _active_net(client, owner)
+    rows = (await client.get(f"/api/check-ins/nets/{net_id}/check-ins", headers=auth_headers(owner))).json()
+    assert [(r["location"], r["grid_square"]) for r in rows] == [("Waterboro, ME", "FN43QL")]
+
+
+@pytest.mark.asyncio
+async def test_starting_a_net_without_location_awareness_uses_the_profile(client, db, owner):
+    owner.location = "Somewhere, ME"
+    owner.location_awareness = False
+    await _set_live(db, owner)
+    net_id = await _active_net(client, owner)
+    rows = (await client.get(f"/api/check-ins/nets/{net_id}/check-ins", headers=auth_headers(owner))).json()
+    assert [(r["location"], r["grid_square"]) for r in rows] == [("Somewhere, ME", None)]

@@ -712,14 +712,21 @@ async def _begin_net(net_id: int, current_user: User, db: AsyncSession, *, to_lo
         db.add(ncs_role)
         await db.commit()
     
-    # Auto-check-in the NCS
+    # Auto-check-in the NCS, from the same location the check-in form would
+    # pre-fill: their live town with location awareness on, else the profile's
     from app.models import CheckIn, StationStatus
+    from app.services.live_location import live_location_display, live_location_for_check_in
+    ncs_location = (
+        (current_user.location_awareness and live_location_display(current_user))
+        or current_user.location or ''
+    )
     ncs_check_in = CheckIn(
         net_id=net_id,
         user_id=current_user.id,
         callsign=display_callsign(current_user) or current_user.email.split('@')[0].upper(),
         name=current_user.name or '',
-        location=current_user.location or '',
+        location=ncs_location,
+        grid_square=live_location_for_check_in(current_user, ncs_location),
         status=StationStatus.CHECKED_IN,
         checked_in_by_id=current_user.id,
         is_recheck=False
