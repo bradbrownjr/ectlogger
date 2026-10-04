@@ -11,9 +11,31 @@ from typing import List, Optional
 
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY, WEEKLY, rrule
+from sqlalchemy.orm import selectinload
 
 from app.models import NCSRotationMember, NCSScheduleOverride, NetTemplate
 from app.schemas import NCSScheduleEntry
+
+
+def ncs_schedule_load_options() -> tuple:
+    """Eager loads for a NetTemplate query whose result is passed to
+    compute_anchored_ncs_schedule / compute_ncs_schedule.
+
+    Those functions read every rotation member's .user, every override's
+    .replacement_user, and the template's .fifth_week_user. Under AsyncSession a
+    relationship that was not eager-loaded raises MissingGreenlet when touched -
+    unless the related User happens to already sit in the session's identity map,
+    in which case it silently works. That is what hid this from 2026-06 until
+    2026-10-04: the 1h reminder path loaded the on-duty NCS to email them, so the
+    same call succeeded there, while the 24h auto-create and auto-lobby jobs (fresh
+    sessions) failed every tick, the net only appearing at the 1h fallback and its
+    lobby never auto-opening. Every caller uses this tuple instead of its own list.
+    """
+    return (
+        selectinload(NetTemplate.rotation_members).selectinload(NCSRotationMember.user),
+        selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.replacement_user),
+        selectinload(NetTemplate.fifth_week_user),
+    )
 
 def _template_local_tz(template: NetTemplate):
     """Resolve the template's scheduling timezone, defaulting to America/New_York."""

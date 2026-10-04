@@ -14,13 +14,15 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload, sessionmaker
 
 from app.models import (
     CheckIn,
     NCSRotationMember,
     NCSScheduleOverride,
     Net,
+    NetRole,
     NetStatus,
     NetTemplate,
     StationStatus,
@@ -168,6 +170,36 @@ async def test_occurrence_staffed_when_there_is_no_rotation(db, owner):
 
     ad_hoc = await _net(db, owner.id, auto_lobby_minutes=20)
     assert await NCSReminderService()._is_occurrence_staffed(db, ad_hoc)
+
+
+@pytest.mark.asyncio
+async def test_duty_lookups_work_in_a_session_that_has_not_loaded_the_ncs(engine, db, owner):
+    """The scheduler's jobs each open a fresh session, so the on-duty member's User
+    is not already in it. The tests above all pass `db`, where the owner (the only
+    rotation member) is already loaded, which hid a lazy load of member.user: in
+    production the 24h auto-create and the auto-lobby open both raised MissingGreenlet
+    every tick (2026-10-04, ME Dirigo Net), and the net only appeared at the 1h
+    reminder fallback, its lobby never opening.
+    """
+    template = await _evening_template(db, owner.id)
+    net = await _net(db, owner.id, template_id=template.id, auto_lobby_minutes=20)
+    factory = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    async with factory() as fresh:
+        assert await NCSReminderService()._is_occurrence_staffed(fresh, await fresh.get(Net, net.id))
+
+    async with factory() as fresh:
+        fresh_template = (await fresh.execute(
+            select(NetTemplate)
+            .options(selectinload(NetTemplate.frequencies))  # what _check_and_auto_create_nets loads
+            .where(NetTemplate.id == template.id)
+        )).scalar_one()
+        next_week = _UTC_EVENING + timedelta(days=7)
+        net_id = await NCSReminderService()._get_or_create_scheduled_net(fresh, fresh_template, next_week)
+
+    assert net_id is not None
+    roles = (await db.execute(select(NetRole).where(NetRole.net_id == net_id))).scalars().all()
+    assert [(r.user_id, r.role) for r in roles] == [(owner.id, "NCS")]
 
 
 # ==========================================================================

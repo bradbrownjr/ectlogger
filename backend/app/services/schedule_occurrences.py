@@ -30,10 +30,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import CheckIn, NCSRotationMember, NCSScheduleOverride, Net, NetStatus, NetTemplate
+from app.models import CheckIn, Net, NetStatus, NetTemplate
 from app.routers.ncs_schedule import (
     calculate_schedule_dates,
     compute_anchored_ncs_schedule,
+    ncs_schedule_load_options,
     template_local_to_utc,
     template_utc_to_local,
 )
@@ -133,9 +134,7 @@ async def get_occurrences(
         templates = (await db.execute(
             select(NetTemplate)
             .options(
-                selectinload(NetTemplate.rotation_members).selectinload(NCSRotationMember.user),
-                selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.replacement_user),
-                selectinload(NetTemplate.fifth_week_user),
+                *ncs_schedule_load_options(),
             )
             .where(NetTemplate.is_active == True)  # noqa: E712
             .where(NetTemplate.schedule_type.in_(RECURRING_TYPES))

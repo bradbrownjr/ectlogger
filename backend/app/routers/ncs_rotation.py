@@ -26,6 +26,7 @@ from app.permissions import check_template_permission
 from app.routers.ncs_schedule import (
     calculate_schedule_dates,
     compute_anchored_ncs_schedule,
+    ncs_schedule_load_options,
     stamp_rotation_anchor,
     template_utc_to_local,
 )
@@ -44,11 +45,9 @@ async def get_template_or_404(template_id: int, db: AsyncSession) -> NetTemplate
     result = await db.execute(
         select(NetTemplate)
         .options(
-            selectinload(NetTemplate.rotation_members).selectinload(NCSRotationMember.user),
+            *ncs_schedule_load_options(),
             selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.original_user),
-            selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.replacement_user),
             selectinload(NetTemplate.staff).selectinload(TemplateStaff.user),
-            selectinload(NetTemplate.fifth_week_user),
         )
         .where(NetTemplate.id == template_id)
     )

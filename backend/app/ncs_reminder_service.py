@@ -6,6 +6,7 @@ Background task service that sends email reminders to NCS operators
 """
 
 import asyncio
+import traceback
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, and_, or_, func
 from sqlalchemy.orm import selectinload
@@ -24,7 +25,9 @@ from app.routers.ncs_rotation import (
 )
 # template_*_to_* are defined in ncs_schedule; import them from there rather than
 # through ncs_rotation, which only ever passed them along.
-from app.routers.ncs_schedule import template_local_to_utc, template_utc_to_local
+from app.routers.ncs_schedule import (
+    ncs_schedule_load_options, template_local_to_utc, template_utc_to_local,
+)
 
 
 class NCSReminderService:
@@ -203,7 +206,7 @@ class NCSReminderService:
 
             return net.id
         except Exception as e:
-            logger.error("NCS_REMINDER", f"Failed to auto-create net for template {template.id}: {e}")
+            logger.error("NCS_REMINDER", f"Failed to auto-create net for template {template.id}: {e}\n{traceback.format_exc()}")
             await db.rollback()
             return None
 
@@ -214,17 +217,9 @@ class NCSReminderService:
         database so this method is safe to call regardless of what relationships are
         already eager-loaded on the template object.
         """
-        from sqlalchemy.orm import selectinload as _sil
-
-        # Load the template with the relationships the schedule computation needs
-        from app.models import NCSScheduleOverride as _Override
         tpl_result = await db.execute(
             select(NetTemplate)
-            .options(
-                _sil(NetTemplate.rotation_members),
-                _sil(NetTemplate.schedule_overrides).selectinload(_Override.replacement_user),
-                _sil(NetTemplate.fifth_week_user),
-            )
+            .options(*ncs_schedule_load_options())
             .where(NetTemplate.id == template_id)
         )
         tpl = tpl_result.scalar_one_or_none()
@@ -315,15 +310,9 @@ class NCSReminderService:
         if not net.template_id:
             return True
 
-        from app.models import NCSScheduleOverride as _Override
-
         tpl_result = await db.execute(
             select(NetTemplate)
-            .options(
-                selectinload(NetTemplate.rotation_members),
-                selectinload(NetTemplate.schedule_overrides).selectinload(_Override.replacement_user),
-                selectinload(NetTemplate.fifth_week_user),
-            )
+            .options(*ncs_schedule_load_options())
             .where(NetTemplate.id == net.template_id)
         )
         tpl = tpl_result.scalar_one_or_none()
@@ -398,7 +387,7 @@ class NCSReminderService:
                     await auto_open_lobby(db, net)
                     opened += 1
                 except Exception as e:
-                    logger.error("NCS_REMINDER", f"Auto-lobby failed for net {net.id}: {e}")
+                    logger.error("NCS_REMINDER", f"Auto-lobby failed for net {net.id}: {e}\n{traceback.format_exc()}")
                     await db.rollback()
 
             if opened > 0:
@@ -564,10 +553,8 @@ class NCSReminderService:
             result = await db.execute(
                 select(NetTemplate)
                 .options(
-                    selectinload(NetTemplate.rotation_members).selectinload(NCSRotationMember.user),
+                    *ncs_schedule_load_options(),
                     selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.original_user),
-                    selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.replacement_user),
-                    selectinload(NetTemplate.fifth_week_user),
                     selectinload(NetTemplate.frequencies)
                 )
                 .where(NetTemplate.is_active == True)
