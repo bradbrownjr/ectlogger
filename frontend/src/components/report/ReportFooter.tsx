@@ -20,13 +20,16 @@ const ReportFooter: React.FC<{ generatedAt: string }> = ({ generatedAt }) => (
       gap: '8px 16px',
       mt: 3,
       pt: 1.5,
-      borderTop: '1px solid #dde0e6',
+      borderTop: 1,
+      borderColor: 'divider',
       fontSize: 11,
-      color: '#7b8190',
+      color: 'text.secondary',
     }}
   >
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-      <AppLogo size={16} variant="light" />
+      {/* The theme's logo on screen; the light one in a PDF (utils/pdfExport.ts) */}
+      <Box component="span" data-export-hide sx={{ display: 'inline-flex' }}><AppLogo size={16} /></Box>
+      <Box component="span" data-export-show="inline-flex" sx={{ display: 'none' }}><AppLogo size={16} variant="light" /></Box>
       Logged with ECTLogger · {window.location.host}
     </Box>
     <Box>Generated {generatedAt}</Box>

@@ -141,7 +141,8 @@ import { exportElementToPdf, exportElementToPng, exportToPng } from '../utils/pd
 import { computeCheckInTimeline } from '../utils/checkInTimeline';
 import CardActionButton from '../components/CardActionButton';
 import ReportPaper from '../components/report/ReportPaper';
-import { getReportAccent } from '../components/report/ReportAccent';
+import { getScreenReportAccent } from '../components/report/ReportAccent';
+import { MAP_TILE_URL, MAP_TILE_ATTRIBUTION, getMapTileClassName } from '../utils/mapTiles';
 import ReportMasthead from '../components/report/ReportMasthead';
 import ReportFigures from '../components/report/ReportFigures';
 import ReportSectionTitle from '../components/report/ReportSectionTitle';
@@ -272,10 +273,12 @@ const NetReport: React.FC = () => {
   // an already-long report substantially longer, so they're off by default.
   const [includeCoverageMaps, setIncludeCoverageMaps] = useState(false);
 
-  // Always use OSM light tiles in the report — this is a print/export document
-  // and dark tiles are unreadable on white paper regardless of app UI mode.
-  const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const tileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  // The report's maps follow the app theme on screen like the rest of the
+  // report; the PDF and PNG exports strip the dark tile class from their
+  // copy, so paper always gets plain tiles (utils/pdfExport.ts).
+  const tileUrl = MAP_TILE_URL;
+  const tileAttribution = MAP_TILE_ATTRIBUTION;
+  const tileClassName = getMapTileClassName(theme.palette.mode === 'dark');
 
   // State for mapped locations. Parsing/geocoding lives in the shared hook so
   // this map always plots exactly what the statistics page's map does --
@@ -674,7 +677,7 @@ const NetReport: React.FC = () => {
   // Masthead date line, e.g. "Monday, September 21, 2026 · 5:52 – 6:23 PM EDT".
   // Single-series graphs (activity, frequencies) take the logo's accent
   // color; the status pie keeps its per-status colors.
-  const reportAccent = getReportAccent(net.logo_accent_colors).accent;
+  const reportAccent = getScreenReportAccent(net.logo_accent_colors, theme).accent;
   // Shared by the report's figures row and the social summary image.
   const reportFigures = [
     { value: stats.total_check_ins, label: 'Total Check-ins' },
@@ -755,8 +758,8 @@ const NetReport: React.FC = () => {
       )}
 
       {/* ========== PDF CONTENT WRAPPER ========== */}
-      {/* Always a white page, on screen and in the PDF, tinted to the net's
-          logo colors (components/report/ReportPaper.tsx). */}
+      {/* Follows the app theme on screen; the PDF is recolored for paper.
+          Tinted to the net's logo colors (components/report/ReportPaper.tsx). */}
       <ReportPaper id="net-report-content" accentColors={net.logo_accent_colors}>
         
         {/* ========== REPORT MASTHEAD ========== */}
@@ -1047,7 +1050,7 @@ const NetReport: React.FC = () => {
                       >
                         <TileLayer
                           attribution={tileAttribution}
-                          url={tileUrl}
+                          url={tileUrl} className={tileClassName}
                           eventHandlers={{ load: () => setMapTilesReady(true) }}
                         />
                         <FitBounds positions={dualMapData.clusterPositions} resizeToken={isMapPngExport ? 1 : 0} />
@@ -1095,7 +1098,7 @@ const NetReport: React.FC = () => {
                       >
                         <TileLayer
                           attribution={tileAttribution}
-                          url={tileUrl}
+                          url={tileUrl} className={tileClassName}
                           eventHandlers={{ load: () => setMapTilesReady(true) }}
                         />
                         <FitBounds positions={dualMapData.allPositions} resizeToken={isMapPngExport ? 1 : 0} />
@@ -1152,7 +1155,7 @@ const NetReport: React.FC = () => {
                   >
                     <TileLayer
                       attribution={tileAttribution}
-                      url={tileUrl}
+                      url={tileUrl} className={tileClassName}
                       eventHandlers={{ load: () => setMapTilesReady(true) }}
                     />
                     <FitBounds
@@ -1538,7 +1541,7 @@ const NetReport: React.FC = () => {
                                 scrollWheelZoom={false}
                                 preferCanvas
                               >
-                                <TileLayer attribution={tileAttribution} url={tileUrl} />
+                                <TileLayer attribution={tileAttribution} url={tileUrl} className={tileClassName} />
                                 <FitBounds positions={positions} />
                                 {mappableHeard.map((h) => (
                                   <Polyline
@@ -1677,7 +1680,7 @@ const NetReport: React.FC = () => {
                   <Box sx={{ height: 'calc(100vh - 130px)', borderRadius: 1, overflow: 'hidden' }}>
                     <MapContainer key="rep-exp-cluster" center={[39.8283, -98.5795]} zoom={4}
                       style={{ height: '100%', width: '100%' }} scrollWheelZoom>
-                      <TileLayer attribution={tileAttribution} url={tileUrl} />
+                      <TileLayer attribution={tileAttribution} url={tileUrl} className={tileClassName} />
                       <FitBounds positions={dualMapData.clusterPositions} />
                       {mappedCheckIns.map(mapped => (
                         <Marker key={`rep-exp-c-${mapped.checkIn.id}`}
@@ -1700,7 +1703,7 @@ const NetReport: React.FC = () => {
                   <Box sx={{ height: 'calc(100vh - 130px)', borderRadius: 1, overflow: 'hidden' }}>
                     <MapContainer key="rep-exp-overview" center={[39.8283, -98.5795]} zoom={4}
                       style={{ height: '100%', width: '100%' }} scrollWheelZoom>
-                      <TileLayer attribution={tileAttribution} url={tileUrl} />
+                      <TileLayer attribution={tileAttribution} url={tileUrl} className={tileClassName} />
                       <FitBounds positions={dualMapData.allPositions} />
                       {mappedCheckIns.map(mapped => (
                         <Marker key={`rep-exp-o-${mapped.checkIn.id}`}
@@ -1724,7 +1727,7 @@ const NetReport: React.FC = () => {
               <Box sx={{ flex: 1, borderRadius: 1, overflow: 'hidden' }}>
                 <MapContainer key="rep-exp-single" center={[39.8283, -98.5795]} zoom={4}
                   style={{ height: '100%', width: '100%' }} scrollWheelZoom>
-                  <TileLayer attribution={tileAttribution} url={tileUrl} />
+                  <TileLayer attribution={tileAttribution} url={tileUrl} className={tileClassName} />
                   <FitBounds positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])} />
                   {mappedCheckIns.map(mapped => (
                     <Marker key={`rep-exp-${mapped.checkIn.id}`}

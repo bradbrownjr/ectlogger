@@ -1,5 +1,6 @@
 import React from 'react';
 import Box from '@mui/material/Box';
+import { useTheme } from '@mui/material/styles';
 import { useReportAccent } from './ReportAccent';
 
 // ========== REPORT FIGURES ROW ==========
@@ -12,12 +13,11 @@ export interface ReportFigure {
   label: string;
 }
 
-const RULE = '#dde0e6';
-
 // `compact` (the social-media images) puts number and label side by side on
 // one slim line, leaving the height to the check-in list.
 const ReportFigures: React.FC<{ figures: ReportFigure[]; compact?: boolean }> = ({ figures, compact }) => {
   const { accent } = useReportAccent();
+  const RULE = useTheme().palette.divider;
   if (compact) {
     return (
       <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${figures.length}, 1fr)`, borderTop: `1px solid ${RULE}`, borderBottom: `1px solid ${RULE}`, mb: 2.25 }}>
@@ -27,7 +27,7 @@ const ReportFigures: React.FC<{ figures: ReportFigure[]; compact?: boolean }> = 
             sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 1, py: 0.875, px: 1, borderLeft: i ? `1px solid ${RULE}` : 'none' }}
           >
             <Box sx={{ fontSize: 28, fontWeight: 700, lineHeight: 1.1, color: accent, fontVariantNumeric: 'tabular-nums' }}>{f.value}</Box>
-            <Box sx={{ fontSize: 15, color: '#4a505c' }}>{f.label}</Box>
+            <Box sx={{ fontSize: 15, color: 'text.secondary' }}>{f.label}</Box>
           </Box>
         ))}
       </Box>
@@ -57,7 +57,7 @@ const ReportFigures: React.FC<{ figures: ReportFigure[]; compact?: boolean }> = 
           <Box sx={{ fontSize: { xs: 28, sm: 34 }, fontWeight: 700, lineHeight: 1.1, color: accent, fontVariantNumeric: 'tabular-nums' }}>
             {f.value}
           </Box>
-          <Box sx={{ fontSize: 12, color: '#4a505c', mt: 0.5 }}>{f.label}</Box>
+          <Box sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>{f.label}</Box>
         </Box>
       ))}
     </Box>

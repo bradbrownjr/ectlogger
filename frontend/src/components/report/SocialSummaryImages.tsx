@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import {
   AreaChart,
   Area,
@@ -13,13 +14,16 @@ import {
   Bar,
   LabelList,
 } from 'recharts';
-import { ReportAccentProvider, useReportAccent } from './ReportAccent';
+import { ReportAccentProvider, getReportAccent, useReportAccent } from './ReportAccent';
 import ReportMasthead from './ReportMasthead';
 import ReportFigures, { ReportFigure } from './ReportFigures';
 import ReportSectionTitle from './ReportSectionTitle';
 import { getCheckInMarkerColor } from '../../utils/checkInMarkers';
 import { getStatusLabel } from '../netview/checkInStatusHelpers';
 import type { TimelineBin } from '../../utils/checkInTimeline';
+
+// These pages exist only as white images, so they always use the light theme.
+const LIGHT_THEME = createTheme({ palette: { mode: 'light' } });
 
 // ========== SOCIAL SUMMARY IMAGES ==========
 // The net's social-media images: header, figures, graphs and the check-in
@@ -209,32 +213,34 @@ const SocialSummaryImages: React.FC<SocialSummaryImagesProps> = (props) => {
   }, []);
 
   return (
-    <ReportAccentProvider colors={accentColors}>
-      {/* Off-screen: this exists only to be captured. */}
-      <Box aria-hidden sx={{ position: 'fixed', left: -20000, top: 0, display: 'grid', gap: 2 }}>
-        {pages === null ? (
-          <>
-            <PageShell ref={firstProbe}>{masthead('Net Summary')}{firstTop}{listTitle('Check-ins')}</PageShell>
-            <PageShell ref={nextProbe}>{masthead('Net Summary · 2 of 2')}{listTitle('Check-ins')}</PageShell>
-          </>
-        ) : (
-          pages.map((p, k) => (
-            <PageShell key={k} page={k}>
-              {masthead(pages.length > 1 ? `Net Summary · ${k + 1} of ${pages.length}` : 'Net Summary')}
-              {k === 0 && firstTop}
-              {p.count > 0 && (
-                <>
-                  {listTitle(pages.length === 1
-                    ? `Check-ins (${rows.length})`
-                    : `Check-ins ${p.from + 1}–${p.from + p.count} of ${rows.length}`)}
-                  <Roster rows={rows.slice(p.from, p.from + p.count)} from={p.from} />
-                </>
-              )}
-            </PageShell>
-          ))
-        )}
-      </Box>
-    </ReportAccentProvider>
+    <ThemeProvider theme={LIGHT_THEME}>
+      <ReportAccentProvider accent={getReportAccent(accentColors)}>
+        {/* Off-screen: this exists only to be captured. */}
+        <Box aria-hidden sx={{ position: 'fixed', left: -20000, top: 0, display: 'grid', gap: 2 }}>
+          {pages === null ? (
+            <>
+              <PageShell ref={firstProbe}>{masthead('Net Summary')}{firstTop}{listTitle('Check-ins')}</PageShell>
+              <PageShell ref={nextProbe}>{masthead('Net Summary · 2 of 2')}{listTitle('Check-ins')}</PageShell>
+            </>
+          ) : (
+            pages.map((p, k) => (
+              <PageShell key={k} page={k}>
+                {masthead(pages.length > 1 ? `Net Summary · ${k + 1} of ${pages.length}` : 'Net Summary')}
+                {k === 0 && firstTop}
+                {p.count > 0 && (
+                  <>
+                    {listTitle(pages.length === 1
+                      ? `Check-ins (${rows.length})`
+                      : `Check-ins ${p.from + 1}–${p.from + p.count} of ${rows.length}`)}
+                    <Roster rows={rows.slice(p.from, p.from + p.count)} from={p.from} />
+                  </>
+                )}
+              </PageShell>
+            ))
+          )}
+        </Box>
+      </ReportAccentProvider>
+    </ThemeProvider>
   );
 };
 

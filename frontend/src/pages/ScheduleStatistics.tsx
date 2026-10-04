@@ -58,7 +58,7 @@ import ReportPaper from '../components/report/ReportPaper';
 import ReportMasthead from '../components/report/ReportMasthead';
 import ReportFigures from '../components/report/ReportFigures';
 import ReportSectionTitle from '../components/report/ReportSectionTitle';
-import { getReportAccent } from '../components/report/ReportAccent';
+import { getScreenReportAccent } from '../components/report/ReportAccent';
 
 interface RegularOperator {
   callsign: string;
@@ -412,7 +412,7 @@ const ScheduleStatistics: React.FC = () => {
   const reportRange = datedInstances.length
     ? `${formatReportShortDate(datedInstances[datedInstances.length - 1].date!, user?.prefer_utc || false)} – ${formatReportShortDate(datedInstances[0].date!, user?.prefer_utc || false)}`
     : 'No nets in this window';
-  const accent = getReportAccent(stats.logo_accent_colors).accent;
+  const accent = getScreenReportAccent(stats.logo_accent_colors, theme).accent;
 
   // Prepare instances data for trend chart (reverse to show oldest first)
   const instancesChartData = [...stats.instances]

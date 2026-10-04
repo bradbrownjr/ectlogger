@@ -1291,10 +1291,11 @@ that endpoint's anonymous quota ran out, permanently covering every dark-mode
 map (live and exported) in a watermarked "API KEY REQUIRED" tile. The CSS
 filter has no external dependency and can't run out of quota.
 
-A PDF/PNG export always passes `suppressDark: true` to `getMapTileClassName`
-regardless of theme (see `CheckInMap.tsx`/`NetStatistics.tsx`), since
-html2canvas bakes in whatever's on screen at capture time and the export
-renders on a forced-white background.
+An export never shows the dark filter: `utils/pdfExport.ts` removes the
+`dark-mode-map-tiles` class from the copy it captures, so the report maps
+use the theme's tiles on screen and plain tiles on paper. `CheckInMap.tsx`
+captures its live map instead, and still passes `suppressDark: true` while
+it exports.
 
 ## Reports (`components/report/`)
 
@@ -1302,9 +1303,13 @@ The net report (`NetReport.tsx`) and the schedule report
 (`ScheduleStatistics.tsx`) share one set of parts, so the two PDFs read as the
 same kind of document:
 
-- **`ReportPaper`** is the white page, on screen and in the PDF, whatever the
-  app theme. It forces MUI surfaces and text to print colors and provides the
-  accent colors to everything inside it.
+- **`ReportPaper`** is the report's page. On screen it follows the app theme
+  like every other page; nobody reading statistics in dark mode should be hit
+  with a white page. Only the export is light: `utils/pdfExport.ts` recolors
+  an off-screen copy (see DEVELOPMENT.md "Net and schedule reports"). It
+  provides the accent colors to everything inside it. Until 2026-10-04 it was
+  forced white on screen as well, and the MUI surfaces it didn't override
+  (sticky table headings) came out black on black in dark mode.
 - **`ReportMasthead`** leads with the net's (or schedule's) logo at 148 px,
   the name as the title, the report type as a small uppercase label above it,
   and the date line below. With no logo the title takes the full width; there
@@ -1319,15 +1324,18 @@ same kind of document:
 
 **Accent colors come only from the API** (`logo_accent_colors`, picked by
 `backend/app/logo_accent.py` from a vetted palette that is readable on white).
-Never color report text from `theme.palette.primary`: a dark theme's primary
-is a light blue that disappears on the white page. The fallback is the fixed
-`DEFAULT_REPORT_ACCENT`. Semantic colors (status badges, the status pie) stay
+Those are the print colors. On a dark theme, `getScreenReportAccent` lightens
+each just enough to reach 4.5:1 on the dark page, and `ReportPaper` tells the
+export to put the print color back. Never color report text from
+`theme.palette.primary`: it differs per theme and would print differently
+depending on who exported. The fallback is the fixed `DEFAULT_REPORT_ACCENT`. Semantic colors (status badges, the status pie) stay
 semantic; only single-series graphs and the report's own chrome take the
 accent.
 
-These parts use plain `Box` elements, not `Typography`, because `ReportPaper`
-forces every `.MuiTypography-root` to black for print, which would erase the
-accent.
+These parts color text with theme tokens (`text.primary`, `text.secondary`,
+`divider`), never hard-coded print greys, which vanish on a dark page.
+`SocialSummaryImages` is the exception: it exists only as white images, so it
+renders under a light theme of its own.
 
 ### Social-media images (`SocialSummaryImages`)
 

@@ -234,8 +234,33 @@ Whichever kind of split you're doing, after moving code out of a file:
 
 ## Net and schedule reports
 
-The report layout itself is in `docs/DESIGN.md` "Reports". Three mechanics
+The report layout itself is in `docs/DESIGN.md` "Reports". The mechanics
 behind it:
+
+- **The screen follows the theme; only the export is light.** Every PDF and
+  PNG goes through `utils/pdfExport.ts`, which copies the element into a
+  hidden same-origin iframe (every stylesheet copied in), recolors the copy
+  for paper and captures that. Nothing on screen changes during an export,
+  so a dark-mode user never sees the page flash white. A PDF's frame is the
+  width of a US Letter page inside its margins (`PAPER_PX_PER_MM`, matched to
+  the 780 px print views), and the frame's width is its viewport, so the
+  page's own breakpoints lay the copy out for paper: a phone and a desktop
+  export the same document. A PNG's frame is the element's own width.
+  Where the copy is a different width from the screen, each Leaflet map is
+  captured as it stands and swapped in as a picture (a map can't re-lay
+  itself out in a copy), and each Recharts chart is resized through its SVG
+  viewBox, enlarged by at most 1.6x. Before 2026-10-04 the copy was laid out
+  at the screen's width and printed on A4, so a phone exported a long strip
+  of phone-width pages.
+- **Steering the copy.** An element can carry `data-export-hide` (left out),
+  `data-export-show="<display>"` (hidden on screen, shown in the export), or
+  `data-export-colors` (a JSON map of screen colors to print colors, applied
+  to text, fills, borders, gradients and SVG fill/stroke inside it).
+  `ReportPaper` uses the last to turn a dark-mode accent back into the logo's
+  print color. The light pass also removes the dark map-tile class from the
+  copy, repaints grey dark surfaces white, turns light text dark (dimmed
+  secondary text to grey), and dark mode's translucent white rules to light
+  grey.
 
 - **Logo accent colors** are computed by `backend/app/logo_accent.py` from
   the file a `logo_url` points at, cached per path and modification time, and

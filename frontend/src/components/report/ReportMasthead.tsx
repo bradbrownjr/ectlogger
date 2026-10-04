@@ -7,9 +7,8 @@ import { useReportAccent } from './ReportAccent';
 // image, the net name as the title, and the report type as a small label
 // above it. ECTLogger itself is credited in ReportFooter, not here.
 //
-// Plain Box elements, not Typography: the report wrappers force every
-// .MuiTypography-root to black (!important) for print, which would erase
-// the accent color from the label.
+// Plain Box elements with theme text colors, so the masthead follows the
+// app's theme on screen; the PDF export recolors its copy for paper.
 
 interface ReportMastheadProps {
   logoUrl?: string | null;
@@ -59,7 +58,7 @@ const ReportMasthead: React.FC<ReportMastheadProps> = ({ logoUrl, eyebrow, title
               lineHeight: 1.1,
               fontWeight: 900,
               letterSpacing: '-0.01em',
-              color: '#1a1c21',
+              color: 'text.primary',
               m: 0,
               mt: compact ? 0.5 : 0.75,
               mb: compact ? 0.75 : 1.25,
@@ -70,8 +69,8 @@ const ReportMasthead: React.FC<ReportMastheadProps> = ({ logoUrl, eyebrow, title
             {title}
           </Box>
           {(when || whenDetail) && (
-            <Box sx={{ fontSize: compact ? 18 : { xs: 14, sm: 17 }, color: '#4a505c' }}>
-              {when && <Box component="span" sx={{ fontWeight: 500, color: '#1a1c21' }}>{when}</Box>}
+            <Box sx={{ fontSize: compact ? 18 : { xs: 14, sm: 17 }, color: 'text.secondary' }}>
+              {when && <Box component="span" sx={{ fontWeight: 500, color: 'text.primary' }}>{when}</Box>}
               {when && whenDetail && ' · '}
               {whenDetail}
             </Box>

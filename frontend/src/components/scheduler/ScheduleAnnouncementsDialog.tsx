@@ -14,7 +14,7 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ReportPaper from '../report/ReportPaper';
 import ReportMasthead from '../report/ReportMasthead';
 import ReportFooter from '../report/ReportFooter';
-import { getReportAccent } from '../report/ReportAccent';
+import { getScreenReportAccent } from '../report/ReportAccent';
 import MarkdownRender from '../shared/MarkdownRender';
 import { exportElementToPdf } from '../../utils/pdfExport';
 import { formatDateTime } from '../../utils/dateUtils';
@@ -50,7 +50,7 @@ const ScheduleAnnouncementsDialog: React.FC<ScheduleAnnouncementsDialogProps> = 
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useAuth();
   const [exporting, setExporting] = useState(false);
-  const { accent } = getReportAccent(logoAccentColors);
+  const { accent } = getScreenReportAccent(logoAccentColors, theme);
 
   const handleExportPdf = async () => {
     setExporting(true);
@@ -80,9 +80,8 @@ const ScheduleAnnouncementsDialog: React.FC<ScheduleAnnouncementsDialogProps> = 
         {/* Everything inside the ReportPaper is what the PDF captures. */}
         <ReportPaper id={CONTENT_ID} accentColors={logoAccentColors}>
           <ReportMasthead logoUrl={logoUrl} eyebrow="Announcements" title={scheduleName} />
-          {/* Headings, links and rules are recolored for the white report
-              page: MarkdownRender's defaults come from the app theme, which
-              a dark theme makes unreadable on white (see DESIGN.md "Reports"). */}
+          {/* Headings and links take the report accent; ReportPaper has the
+              PDF put the logo's print color back (see DESIGN.md "Reports"). */}
           <MarkdownRender
             content={announcements}
             emptyText="No schedule announcements have been defined."
@@ -90,7 +89,7 @@ const ScheduleAnnouncementsDialog: React.FC<ScheduleAnnouncementsDialogProps> = 
             sx={{
               '& h1, & h2, & h3': { mt: 2, mb: 1, color: accent },
               '& a': { color: accent },
-              '& hr': { border: 'none', borderTop: '1px solid #dde0e6', my: 2 },
+              '& hr': { border: 'none', borderTop: 1, borderColor: 'divider', my: 2 },
             }}
           />
           <ReportFooter generatedAt={formatDateTime(new Date().toISOString(), user?.prefer_utc || false)} />

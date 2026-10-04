@@ -1,13 +1,18 @@
 import React from 'react';
 import Box from '@mui/material/Box';
-import { ReportAccentProvider } from './ReportAccent';
+import { useTheme } from '@mui/material/styles';
+import { ReportAccentProvider, getReportAccent, getScreenReportAccent, reportExportColors } from './ReportAccent';
 
 // ========== REPORT PAPER ==========
-// The white page every net and schedule report is drawn on, on screen as
-// well as in the PDF, regardless of the app's theme. Forces MUI's own
-// surfaces and text to print colors (a dark theme would otherwise put light
-// text on the forced-white page), and provides the report's accent colors
-// from the logo to everything inside it. `id` is what the PDF export captures.
+// The page every net and schedule report is drawn on. On screen it follows
+// the app's theme, so a dark-mode user reading statistics stays in dark mode.
+// Paper is the export's job: utils/pdfExport.ts recolors an off-screen copy
+// for print, and data-export-colors tells it which on-screen accents to turn
+// back into the logo's print colors. Until 2026-10-04 this was forced white
+// on screen too, and every MUI surface it didn't think to override (sticky
+// table headings) came out black on black in dark mode.
+// Provides the report's accent colors to everything inside it. `id` is what
+// the PDF export captures.
 
 interface ReportPaperProps {
   id: string;
@@ -15,51 +20,25 @@ interface ReportPaperProps {
   children: React.ReactNode;
 }
 
-const ReportPaper: React.FC<ReportPaperProps> = ({ id, accentColors, children }) => (
-  <ReportAccentProvider colors={accentColors}>
-    <Box
-      id={id}
-      sx={{
-        backgroundColor: '#ffffff !important',
-        color: '#000000 !important',
-        p: { xs: 2, sm: 4 },
-        borderRadius: 1,
-        // Force all text to be dark for printing
-        '& *': {
-          colorAdjust: 'exact',
-          WebkitPrintColorAdjust: 'exact',
-          printColorAdjust: 'exact',
-        },
-        '& .MuiTypography-root': {
-          color: '#000000 !important',
-        },
-        '& .MuiTypography-colorTextSecondary': {
-          color: '#666666 !important',
-        },
-        '& .MuiPaper-root': {
-          backgroundColor: '#ffffff !important',
-        },
-        '& .MuiTableCell-root': {
-          color: '#000000 !important',
-          borderColor: '#e0e0e0 !important',
-        },
-        '& .MuiCard-root': {
-          backgroundColor: '#ffffff !important',
-        },
-        '& .MuiCardContent-root': {
-          backgroundColor: '#ffffff !important',
-        },
-        '& .MuiChip-label': {
-          color: '#000000 !important',
-        },
-        '& .MuiChip-root': {
-          borderColor: '#666666 !important',
-        },
-      }}
-    >
-      {children}
-    </Box>
-  </ReportAccentProvider>
-);
+const ReportPaper: React.FC<ReportPaperProps> = ({ id, accentColors, children }) => {
+  const theme = useTheme();
+  const screen = getScreenReportAccent(accentColors, theme);
+  return (
+    <ReportAccentProvider accent={screen}>
+      <Box
+        id={id}
+        data-export-colors={reportExportColors(screen, getReportAccent(accentColors))}
+        sx={{
+          bgcolor: 'background.paper',
+          color: 'text.primary',
+          p: { xs: 2, sm: 4 },
+          borderRadius: 1,
+        }}
+      >
+        {children}
+      </Box>
+    </ReportAccentProvider>
+  );
+};
 
 export default ReportPaper;
