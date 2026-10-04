@@ -23,6 +23,7 @@ import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
 import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS, useOffscreenArrivalIndicator } from './sneakInHighlight';
 import OffscreenArrivalArrow from './OffscreenArrivalArrow';
 import CheckInLocation from './CheckInLocation';
+import HandRaisedIndicator from './HandRaisedIndicator';
 
 // ========== CHECK-IN LIST TABLE 2: Mobile View ==========
 // The small-screen (xs only) check-in table. Intentionally simpler than the
@@ -350,6 +351,10 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                         <span>📡</span>
                       </Tooltip>
                     )}
+                    {/* Raised hand: read-only, visible to every viewer (this
+                        list has no hand toggle, so it is the only place a
+                        phone user, staff included, sees it) */}
+                    <HandRaisedIndicator handRaised={checkIn.hand_raised} status={checkIn.status} />
                     {net?.authenticated && (
                       canManageCheckIns && checkIn.user_id ? (
                         <IconButton

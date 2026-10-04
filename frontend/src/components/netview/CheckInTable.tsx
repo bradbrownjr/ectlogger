@@ -31,6 +31,7 @@ import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
 import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS, useOffscreenArrivalIndicator } from './sneakInHighlight';
 import OffscreenArrivalArrow from './OffscreenArrivalArrow';
 import CheckInLocation from './CheckInLocation';
+import HandRaisedIndicator from './HandRaisedIndicator';
 import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
 
 // ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ==========
@@ -568,6 +569,8 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                                 <span style={{ cursor: 'help' }}>📡</span>
                               </Tooltip>
                             )}
+                            {/* Raised hand: read-only, visible to every viewer */}
+                            <HandRaisedIndicator handRaised={checkIn.hand_raised} status={checkIn.status} />
                             {/* Authenticated net: identity padlock. Visible to everyone;
                                 clickable (opens IdentityVerifyDialog) only for NCS/Logger
                                 on a station with MFA enrolled. */}
