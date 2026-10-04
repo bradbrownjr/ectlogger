@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-01
+revised: 2026-10-04
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,22 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# October 4, 2026
+
+## Improvements
+
+* **Check-in: Your town instead of a grid square** — With location awareness on, your check-in now fills in your town (like Waterboro, ME) instead of a grid square, and so does net control's callsign lookup, so they can read your location on the air. Hover over or tap the location in the check-in list to see the grid square, and the menu bar shows your town beside it.
+
+* **Check-in: See who has a hand up** — A raised hand now shows beside the station's callsign for everyone in the net, on phones too, so you can see who else is waiting with a question or input.
+
+## Bug Fixes
+
+* **Schedules: Nets show up a day ahead again** — Some recurring schedules only created their next net an hour before it started, and "open the lobby before the net" never opened the lobby. Both now happen on time.
+
+* **Net View: See everyone's topic answers** — After a net ends, the Topic of the Week answers under the check-in list now show everyone's answer, not just a few. Poll results are fixed the same way.
 
 ---
 
