@@ -108,11 +108,15 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
-  // A station can report what it itself can hear (unless the net has turned
-  // self-reporting off), so the Actions column (and its per-row icon) must
-  // also show for the viewer's own check-in even without canManage/canReportCanHear.
-  const selfCanHearAllowed = net?.self_can_hear_enabled !== false;
-  const hasOwnCheckIn = selfCanHearAllowed && filteredCheckIns.some((c) => c.user_id === user?.id);
+  // The Actions column is for staff acting on other stations' rows: delete
+  // (NCS/Logger) and "who can this station hear?" (Relay too, only on a net
+  // that logs coverage). A station's own controls (hand, step away, I hear)
+  // live in the toolbar. Until 2026-10-04 the column also appeared for
+  // anyone with their own check-in, for a self "can hear" icon that only
+  // existed when coverage logging was on, so on most nets a participant got
+  // an empty column on their own row and nothing on anyone else's.
+  const showCanHear = !!net?.propagation_logging_enabled && canReportCanHear;
+  const showActions = canManage || showCanHear;
 
   // A shadow on the frozen Actions column's left edge signals "there's more
   // to the left" only while that's actually true — see CheckInTable.tsx for
@@ -197,10 +201,8 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
             {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
             {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
             <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
-            {/* Actions column also shows for Relay-only staff (canReportCanHear),
-                who can't manage check-ins but can report "can hear" edges, and
-                for anyone with their own check-in in this net (self-report) */}
-            {(canManage || canReportCanHear || hasOwnCheckIn) && (
+            {/* Actions column: staff only (see showActions) */}
+            {showActions && (
               <TableCell
                 sx={{
                   whiteSpace: 'nowrap',
@@ -406,7 +408,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                 {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}
                 {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.relayed_by || ''}</TableCell>}
                 <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
-                {(canManage || canReportCanHear || (checkIn.user_id === user?.id && selfCanHearAllowed)) && (
+                {showActions && (
                   <TableCell
                     sx={{
                       whiteSpace: 'nowrap',
@@ -420,7 +422,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                     {canManage && (
                       <IconButton size="small" onClick={() => onDeleteCheckIn(checkIn.id)}><DeleteIcon fontSize="small" /></IconButton>
                     )}
-                    {net.propagation_logging_enabled && (canReportCanHear || (checkIn.user_id === user?.id && selfCanHearAllowed)) && (net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
+                    {showCanHear && (net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
                       <IconButton
                         size="small"
                         onClick={() => onOpenCanHearDialog(checkIn.id)}
