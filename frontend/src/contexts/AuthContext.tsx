@@ -18,6 +18,7 @@ interface User {
   location_awareness?: boolean;
   live_location?: string;
   live_location_updated?: string;
+  live_location_town?: string;
   email_notifications?: boolean;
   notify_net_start?: boolean;
   notify_net_close?: boolean;

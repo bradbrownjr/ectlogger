@@ -301,6 +301,25 @@ report and statistics pages reported different station counts for the same map
 that had already been found and removed elsewhere. A new map surface consumes
 the hook; it does not filter `checkIns` on its way in.
 
+### Live location: town plus grid
+
+With location awareness on, `LocationContext.tsx` sends `PUT /users/me/location`
+the grid square and the coordinates rounded to 2 decimal places (about 1 km).
+The server reverse-geocodes them (`routers/geocode.py::reverse_geocode_town`,
+sharing one rate limiter with the forward search: Nominatim allows 1 request
+per second for the whole app) into `users.live_location_town`, formatted
+`Town, ST` for the US, Canada, Australia and Mexico and `Town, Country`
+elsewhere (`format_town`).
+
+`services/live_location.py` is the one freshness rule (1 hour). Callsign lookup
+fills in the town, or the grid if the lookup failed. A check-in keeps the grid in
+`check_ins.grid_square` only when its location is that station's fresh live town
+(`live_location_for_check_in`), decided server-side on create and on every
+location edit, never accepted from a client, so the hover in
+`components/netview/CheckInLocation.tsx` can never show a grid for somewhere
+else. `useMappedCheckIns` maps `grid_square` ahead of `location`, so swapping the
+grid for a town costs the map no precision.
+
 ---
 
 ## Check-in fields and profile values

@@ -4,7 +4,7 @@ summary: The check-in form, which fields are required, and what happens the mome
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-10-04
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/checking-in/
@@ -37,7 +37,7 @@ You can also open the same form later from the net's toolbar.
 - On a net with more than one working frequency, an **Available Frequencies** picker lets you say which ones you can reach, which is mainly useful on SKYWARN nets that ask spotters to confirm coverage on more than one repeater.
 - Some nets add their own custom fields on top of the standard set (a text box, a number, or a dropdown), defined by whoever set up the net.
 
-Your Name and Location auto-fill from your [profile](/docs/operators/account-and-profile/) if you've set a default there, or from your live GPS-derived grid square if you've turned on [location awareness](/docs/operators/location-and-the-map/). Spotter # does not carry over automatically; type it each time the field is on. All of it is still yours to edit before you submit.
+Your Name and Location auto-fill from your [profile](/docs/operators/account-and-profile/) if you've set a default there, or from the town your GPS position is in (such as `Waterboro, ME`) if you've turned on [location awareness](/docs/operators/location-and-the-map/), so net control can read it on the air. Spotter # does not carry over automatically; type it each time the field is on. All of it is still yours to edit before you submit.
 
 If the net doesn't offer you a check-in form at all, with no banner and no button, its manager has turned off self-check-in for that net. That isn't a bug: some nets want every check-in to come through Net Control by voice, usually for accountability during an exercise. Call in as usual and NCS or the Logger will log you.
 

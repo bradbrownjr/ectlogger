@@ -28,6 +28,10 @@ import { parseLocation, geocodeAddress, ParsedLocation } from '../utils/location
 export interface MappableCheckIn {
   id: number;
   location?: string | null;
+  // The station's GPS grid, kept by the server when location is the town that
+  // grid resolved to. Mapped in preference to the town: a grid square pins the
+  // station to a few km, a town name only to the town center.
+  grid_square?: string | null;
   status?: string;
 }
 
@@ -67,7 +71,7 @@ export function useMappedCheckIns<T extends MappableCheckIn>(
   // reflects. The array identity itself changes on every poll and every
   // WebSocket update, which would otherwise re-geocode the whole net.
   const checkInsKey = checkIns
-    .map(c => `${c.id}:${c.location ?? ''}:${c.status ?? ''}`)
+    .map(c => `${c.id}:${c.grid_square ?? ''}:${c.location ?? ''}:${c.status ?? ''}`)
     .join('|');
 
   // Derived rather than its own state: "there is a check-in set we have not
@@ -89,12 +93,13 @@ export function useMappedCheckIns<T extends MappableCheckIn>(
 
       // First pass: everything parseable without a network call
       for (const checkIn of checkIns) {
-        if (!checkIn.location) {
+        const source = checkIn.grid_square || checkIn.location;
+        if (!source) {
           failed.push(checkIn);
           continue;
         }
 
-        const parsed = parseLocation(checkIn.location);
+        const parsed = parseLocation(source);
         if (!parsed) {
           failed.push(checkIn);
         } else if (parsed.type === 'address') {

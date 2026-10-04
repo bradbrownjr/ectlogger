@@ -148,13 +148,13 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
             label="Enable location awareness"
           />
           <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
-            Show your Maidenhead grid square in the navbar and use it to auto-fill location on check-ins.
+            Show your Maidenhead grid square and town in the navbar, and fill in your town as your location on check-ins.
             Your browser will prompt for location permission.
           </Typography>
           {formData.location_awareness && user?.live_location && (
             <Box sx={{ ml: 4, mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography variant="body2" color="text.secondary">
-                Current GPS-derived location: <strong>{user.live_location}</strong>
+                Current GPS-derived location: <strong>{user.live_location_town ? `${user.live_location_town} (${user.live_location})` : user.live_location}</strong>
                 {user.live_location_updated && (
                   <> (last updated {new Date(user.live_location_updated).toLocaleString()})</>
                 )}

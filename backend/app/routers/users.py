@@ -8,12 +8,13 @@ from io import BytesIO
 from PIL import Image, ImageOps
 from app.database import get_db
 from app.models import User, UserRole, Contact, NetRole, CanHearReport, CheckIn, Frequency, net_frequencies, AdminAuditLog
-from app.schemas import UserResponse, UserUpdate, AdminUserCreate, AdminUserUpdate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse, AdminPasswordResetResult
+from app.schemas import LiveLocationUpdate, UserResponse, UserUpdate, AdminUserCreate, AdminUserUpdate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse, AdminPasswordResetResult
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 from app.auth import generate_temporary_password, hash_password
 from app.email_service import EmailService
 from app.logger import logger
 from app.utils import AVATAR_DIR, user_callsigns
+from app.services.live_location import live_location_display
 from app.band_utils import band_from_frequency_string
 
 AVATAR_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
@@ -173,28 +174,40 @@ async def delete_my_avatar(
 
 @router.put("/me/location")
 async def update_my_location(
-    location_data: dict,
+    location_data: LiveLocationUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Update current user's live location (grid square).
-    
+    """Update current user's live location (grid square, plus the town it is in).
+
     Called automatically when location_awareness is enabled and GPS position updates.
     This allows NCS to see the user's current location when checking them in.
     Stored separately from the user's default location so GPS doesn't overwrite manual entry.
+    The town is reverse-geocoded from the (already rounded) coordinates so net
+    control can read "Waterboro, ME" on the air instead of a grid square.
     """
     from datetime import datetime, UTC
-    location = location_data.get('location', '')
-    if location:
-        current_user.live_location = location.upper()
+    from app.routers.geocode import reverse_geocode_town
+    if location_data.location:
+        current_user.live_location = location_data.location.upper()
         current_user.live_location_updated = datetime.now(UTC)
+        current_user.live_location_town = (
+            await reverse_geocode_town(location_data.lat, location_data.lon)
+            if location_data.lat is not None and location_data.lon is not None
+            else None
+        )
     else:
         # Empty string clears the GPS-derived location so the static profile
         # default takes over in callsign lookups.
         current_user.live_location = None
         current_user.live_location_updated = None
+        current_user.live_location_town = None
     await db.commit()
-    return {"status": "ok", "live_location": current_user.live_location}
+    return {
+        "status": "ok",
+        "live_location": current_user.live_location,
+        "live_location_town": current_user.live_location_town,
+    }
 
 
 @router.get("/me/can-hear-coverage", response_model=List[CoverageStationResponse])
@@ -887,17 +900,9 @@ async def lookup_by_callsign(
     user = result.scalar_one_or_none()
     
     if user:
-        # Prefer live GPS location if available and recent (within 1 hour), otherwise use static default
-        from datetime import datetime, UTC, timedelta
-        location = None
-        if user.live_location and user.live_location_updated:
-            age = datetime.now(UTC) - user.live_location_updated.replace(tzinfo=UTC)
-            if age < timedelta(hours=1):
-                location = user.live_location
-        
-        # Fall back to static default location if no recent live location
-        if not location:
-            location = user.location
+        # Prefer the live GPS position if recent (its town, or the grid if the
+        # town lookup failed), otherwise the static profile location
+        location = live_location_display(user) or user.location
         
         return CallsignLookupResponse(
             name=user.name,

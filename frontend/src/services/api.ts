@@ -119,7 +119,10 @@ export const authApi = {
 export const userApi = {
   getProfile: () => api.get('/users/me'),
   updateProfile: (data: any) => api.put('/users/me', data),
-  updateLocation: (location: string) => api.put('/users/me/location', { location }),
+  // lat/lon are sent rounded to ~1 km (see LocationContext) so the server can
+  // name the town; only the grid is required.
+  updateLocation: (location: string, lat?: number, lon?: number) =>
+    api.put('/users/me/location', { location, lat, lon }),
   // Phase 5 of "Can hear" propagation logging (see docs/ROADMAP.md) - the
   // current user's personal coverage rollup for the Profile "Coverage" tab.
   getCanHearCoverage: () => api.get('/users/me/can-hear-coverage'),

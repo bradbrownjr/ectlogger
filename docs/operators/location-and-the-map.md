@@ -4,7 +4,7 @@ summary: Town and state, GPS coordinates, Maidenhead, UTM, MGRS: what each looks
 kind: Explanation
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-10-04
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/location-and-the-map/
@@ -31,7 +31,7 @@ Any of these works equally well. Which one to use is really "whichever one you o
 Two settings, both in your [profile](/docs/operators/account-and-profile/), can save you from typing a location every time:
 
 - **Default Location** fills in whatever you set, every time, until you change it or override it in the moment.
-- **Location awareness** asks your browser for GPS permission and keeps a live Maidenhead grid square, shown in the navbar and used to auto-fill Location on check-in instead of your static default. It only updates while the setting is on and your browser has actually granted permission. There's a **Clear GPS location** button in Settings if you want to drop the stored value and stop using it without turning location awareness off entirely.
+- **Location awareness** asks your browser for GPS permission and keeps a live Maidenhead grid square and the town it falls in, both shown in the navbar. Your check-in's Location fills in with the town (`Waterboro, ME`, or `Guildford, United Kingdom` outside the US, Canada, Australia and Mexico) instead of your static default, because a town is something net control can read aloud. Hover over that location in the check-in list, or tap it on a phone, to see the grid square behind it. The map still plots you from the grid square, which is more precise than the town. If the town can't be looked up, the grid square fills in instead. It only updates while the setting is on and your browser has actually granted permission. There's a **Clear GPS location** button in Settings if you want to drop the stored value and stop using it without turning location awareness off entirely.
 
 Either way, whatever auto-fills is still just text in the field before you submit, so edit it if it's wrong.
 

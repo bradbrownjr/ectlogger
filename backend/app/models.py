@@ -161,6 +161,7 @@ class User(Base):
     location = Column(String(255))  # User's default/static location
     live_location = Column(String(50))  # GPS-derived grid square (updated automatically)
     live_location_updated = Column(DateTime(timezone=True))  # When live_location was last updated
+    live_location_town = Column(String(100))  # "Town, ST" reverse-geocoded from the same GPS fix as live_location
     prefer_utc = Column(Boolean, default=False)  # Display times in UTC instead of local time
     last_active = Column(DateTime(timezone=True), index=True)  # Last API request timestamp for online tracking
     schedule_age_bypass = Column(Boolean, default=False)  # Admin-granted early access to schedule creation
@@ -438,6 +439,7 @@ class CheckIn(Base):
     callsign = Column(String(50), nullable=False)
     name = Column(String(255), nullable=False)
     location = Column(String(255), nullable=False)
+    grid_square = Column(String(10))  # Station's live grid, kept when location is the town it resolved to (live_location_for_check_in)
     
     # Optional fields
     skywarn_number = Column(String(50))

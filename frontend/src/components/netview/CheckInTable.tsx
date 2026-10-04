@@ -30,6 +30,7 @@ import { formatTimeWithDate } from '../../utils/dateUtils';
 import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
 import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS, useOffscreenArrivalIndicator } from './sneakInHighlight';
 import OffscreenArrivalArrow from './OffscreenArrivalArrow';
+import CheckInLocation from './CheckInLocation';
 import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
 
 // ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ==========
@@ -646,7 +647,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                               inputProps={{ style: { padding: '4px 8px' } }}
                               sx={{ width: '100%' }}
                             />
-                          ) : checkIn.location}
+                          ) : <CheckInLocation location={checkIn.location} gridSquare={checkIn.grid_square} />}
                         </TableCell>
                       )}
                       {/* Skywarn Number - inline editable */}

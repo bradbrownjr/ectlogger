@@ -4,6 +4,9 @@ import { userApi } from '../services/api';
 
 interface LocationContextType {
   gridSquare: string | null;
+  // "Town, ST" the server resolved the position to; null until it answers,
+  // or if the lookup failed (callers fall back to the grid square)
+  town: string | null;
   latitude: number | null;
   longitude: number | null;
   loading: boolean;
@@ -43,18 +46,23 @@ function toMaidenhead(lat: number, lon: number): string {
 export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [gridSquare, setGridSquare] = useState<string | null>(null);
+  const [town, setTown] = useState<string | null>(null);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lastSavedGrid = useRef<string | null>(null);
 
-  // Save grid square to database when it changes
-  const saveLocationToServer = useCallback(async (grid: string) => {
+  // Save grid square to database when it changes. The coordinates go along
+  // rounded to 2 decimal places (~1 km), enough for the server to name the
+  // town and no more precise than that needs.
+  const saveLocationToServer = useCallback(async (grid: string, lat: number, lon: number) => {
     if (grid && grid !== lastSavedGrid.current) {
       try {
-        await userApi.updateLocation(grid);
+        const round = (n: number) => Math.round(n * 100) / 100;
+        const response = await userApi.updateLocation(grid, round(lat), round(lon));
         lastSavedGrid.current = grid;
+        setTown(response.data?.live_location_town ?? null);
         console.debug('[LOCATION] Saved grid square to server:', grid);
       } catch (err) {
         console.error('[LOCATION] Failed to save grid square:', err);
@@ -65,6 +73,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const fetchLocation = useCallback(() => {
     if (!user?.location_awareness) {
       setGridSquare(null);
+      setTown(null);
       setLatitude(null);
       setLongitude(null);
       return;
@@ -88,7 +97,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setLoading(false);
         
         // Save to database for NCS lookup
-        saveLocationToServer(newGridSquare);
+        saveLocationToServer(newGridSquare, lat, lon);
       },
       (err) => {
         console.error('[LOCATION] Geolocation error:', err.message);
@@ -122,6 +131,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     <LocationContext.Provider
       value={{
         gridSquare,
+        town,
         latitude,
         longitude,
         loading,

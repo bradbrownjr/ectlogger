@@ -22,6 +22,7 @@ import { formatTimeWithDate } from '../../utils/dateUtils';
 import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
 import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS, useOffscreenArrivalIndicator } from './sneakInHighlight';
 import OffscreenArrivalArrow from './OffscreenArrivalArrow';
+import CheckInLocation from './CheckInLocation';
 
 // ========== CHECK-IN LIST TABLE 2: Mobile View ==========
 // The small-screen (xs only) check-in table. Intentionally simpler than the
@@ -383,7 +384,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                   </Box>
                 </TableCell>
                 {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.name}</TableCell>}
-                {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.location}</TableCell>}
+                {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}><CheckInLocation location={checkIn.location} gridSquare={checkIn.grid_square} /></TableCell>}
                 {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.skywarn_number}</TableCell>}
                 {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.weather_observation}</TableCell>}
                 {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.power_source}</TableCell>}

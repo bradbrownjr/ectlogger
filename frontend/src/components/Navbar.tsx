@@ -68,7 +68,7 @@ interface NavbarClockProps {
 
 const NavbarClock: React.FC<NavbarClockProps> = ({ compact = false }) => {
   const [time, setTime] = useState(new Date());
-  const { gridSquare, loading: locationLoading } = useLocation();
+  const { gridSquare, town, loading: locationLoading } = useLocation();
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -79,9 +79,8 @@ const NavbarClock: React.FC<NavbarClockProps> = ({ compact = false }) => {
   const utcTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' });
   const localTz = time.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').pop() || 'Local';
 
-  const tooltipContent = gridSquare
-    ? `${localTz}: ${localTime} | UTC: ${utcTime} | Grid: ${gridSquare}`
-    : `${localTz}: ${localTime} | UTC: ${utcTime}`;
+  const placeText = gridSquare ? ` | Grid: ${gridSquare}${town ? ` (${town})` : ''}` : '';
+  const tooltipContent = `${localTz}: ${localTime} | UTC: ${utcTime}${placeText}`;
 
   if (compact) {
     return (
@@ -146,6 +145,12 @@ const NavbarClock: React.FC<NavbarClockProps> = ({ compact = false }) => {
             <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', fontWeight: 'bold' }}>
               {gridSquare}
             </Typography>
+            {/* Town the grid is in - wide layout only; the compact bar shows it in the tooltip */}
+            {town && (
+              <Typography variant="caption" noWrap sx={{ fontSize: '0.75rem', opacity: 0.9, maxWidth: 180 }}>
+                {town}
+              </Typography>
+            )}
           </>
         )}
         {locationLoading && (

@@ -13,6 +13,7 @@ from app.dependencies import get_current_user, get_current_user_optional
 from app.utils import display_callsign, looks_like_email_or_url
 from app.permissions import check_net_permission, is_eligible_for_logger_self_grant, is_eligible_for_ncs_auto_grant
 from app.auth import decrypt_mfa_secret, current_totp_codes
+from app.services.live_location import live_location_for_check_in
 
 logger = logging.getLogger(__name__)
 
@@ -286,6 +287,9 @@ async def create_check_in(
             callsign=check_in_data.callsign,
             name=check_in_data.name or root_check_in.name,
             location=check_in_data.location or root_check_in.location,
+            grid_square=live_location_for_check_in(
+                matching_user, check_in_data.location or root_check_in.location
+            ),
             skywarn_number=check_in_data.skywarn_number,
             weather_observation=check_in_data.weather_observation,
             power_source=check_in_data.power_source,
@@ -312,6 +316,7 @@ async def create_check_in(
             callsign=check_in_data.callsign,
             name=check_in_data.name,
             location=check_in_data.location,
+            grid_square=live_location_for_check_in(matching_user, check_in_data.location),
             skywarn_number=check_in_data.skywarn_number,
             weather_observation=check_in_data.weather_observation,
             power_source=check_in_data.power_source,
@@ -581,6 +586,12 @@ async def update_check_in(
     # Update remaining fields
     for field, value in update_data.items():
         setattr(check_in, field, value)
+
+    # An edited location keeps its grid square only if it is still the
+    # station's live town; a hand-corrected location drops it, so hovering
+    # never shows a grid for somewhere else.
+    if 'location' in update_data:
+        check_in.grid_square = live_location_for_check_in(check_in.user, check_in.location)
     
     # When checking out, mark ALL rows for this callsign in this net as checked out
     if check_in_update.status == StationStatus.CHECKED_OUT:

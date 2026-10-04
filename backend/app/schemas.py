@@ -278,6 +278,7 @@ class UserResponse(UserBase):
     created_at: datetime
     live_location: Optional[str] = None
     live_location_updated: Optional[datetime] = None
+    live_location_town: Optional[str] = None
     avatar_url: Optional[str] = None
     website_url: Optional[str] = None
     # Never the hash itself -- just whether a password fallback is set up,
@@ -336,13 +337,25 @@ class UserDirectoryEntry(BaseModel):
         from_attributes = True
 
 
+class LiveLocationUpdate(BaseModel):
+    """PUT /users/me/location. Empty location clears the live position.
+
+    lat/lon are optional so an older open tab that sends only the grid keeps
+    working (it just gets no town). The browser rounds them to 2 decimal places
+    (about 1 km) before sending: enough to name a town, no more.
+    """
+    location: str = Field(default='', max_length=10)
+    lat: Optional[float] = Field(None, ge=-90, le=90)
+    lon: Optional[float] = Field(None, ge=-180, le=180)
+
+
 # Callsign Lookup Response (limited info for privacy)
 class CallsignLookupResponse(BaseModel):
     """Limited user info returned when looking up by callsign - for NCS auto-fill.
     Source indicates where the data came from: 'user', 'contact', or None if unknown.
     """
     name: Optional[str] = None
-    location: Optional[str] = None  # Grid square if location_awareness enabled
+    location: Optional[str] = None  # Live town (or grid) if recent, else the profile location
     skywarn_number: Optional[str] = None
     source: Optional[str] = None  # 'user' or 'contact' — helps NCS know data origin
 
@@ -1124,6 +1137,9 @@ class CheckInResponse(CheckInBase):
     checked_in_by_id: Optional[int] = None
     checked_in_at: datetime
     checked_out_at: Optional[datetime] = None
+    # Set by the server only (live_location_for_check_in), never accepted from
+    # a client, so it can't disagree with the town shown in location.
+    grid_square: Optional[str] = None
     avatar_url: Optional[str] = None
     # Authenticated nets (Net.authenticated) -- meaningless otherwise.
     identity_verified: bool = False

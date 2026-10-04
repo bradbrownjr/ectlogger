@@ -4,7 +4,7 @@ summary: Adding a station, editing a row in place, fixing a misheard callsign, a
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-29
+revised: 2026-10-04
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/logging-check-ins/
@@ -22,7 +22,7 @@ There's a second, narrower way in, worth knowing about because it's easy to miss
 
 On a phone or a narrow window, NCS and Logger also get an always-available collapsible **New Check-in** panel above the check-in list, which stays reachable regardless of your own check-in status.
 
-When you type a callsign into the check-in form and move on to the next field, ECTLogger fills in that station's Name, Location, and Spotter # from their profile, or from their past check-ins if they have no account. If you correct the callsign, the new station's details replace the ones filled in for the old one, but anything you typed yourself is left alone. Only fields this net shows are ever filled. A field the net has turned off is never filled in or sent, so something in a station's profile you can't see can never stop you from saving the check-in.
+When you type a callsign into the check-in form and move on to the next field, ECTLogger fills in that station's Name, Location, and Spotter # from their profile, or from their past check-ins if they have no account. A station using location awareness gets the town its GPS position is in, such as `Waterboro, ME`, rather than a grid square; hover over the location in the check-in list to see the grid. If you correct the callsign, the new station's details replace the ones filled in for the old one, but anything you typed yourself is left alone. Only fields this net shows are ever filled. A field the net has turned off is never filled in or sent, so something in a station's profile you can't see can never stop you from saving the check-in.
 
 ## Editing a row in place
 
