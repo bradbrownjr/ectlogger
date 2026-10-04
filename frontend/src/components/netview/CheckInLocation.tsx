@@ -14,8 +14,10 @@ interface CheckInLocationProps {
 
 const CheckInLocation: React.FC<CheckInLocationProps> = ({ location, gridSquare }) => {
   if (!gridSquare) return <>{location}</>;
+  // Stored upper-case; written the conventional way (FN43pm), as in the navbar
+  const grid = gridSquare.slice(0, 4).toUpperCase() + gridSquare.slice(4).toLowerCase();
   return (
-    <Tooltip title={`Grid ${gridSquare}`} enterTouchDelay={0}>
+    <Tooltip title={`Grid ${grid}`} enterTouchDelay={0}>
       {/* Dotted underline: the usual hint that hovering reveals more */}
       <Box component="span" sx={{ textDecoration: 'underline dotted', textUnderlineOffset: 3, cursor: 'help' }}>
         {location}
