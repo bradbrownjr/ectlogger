@@ -141,6 +141,7 @@ import { exportElementToPdf, exportElementToPng, exportToPng } from '../utils/pd
 import { computeCheckInTimeline } from '../utils/checkInTimeline';
 import CardActionButton from '../components/CardActionButton';
 import ReportPaper from '../components/report/ReportPaper';
+import ReportPageHeader from '../components/report/ReportPageHeader';
 import { getScreenReportAccent } from '../components/report/ReportAccent';
 import { MAP_TILE_URL, MAP_TILE_ATTRIBUTION, getMapTileClassName } from '../utils/mapTiles';
 import ReportMasthead from '../components/report/ReportMasthead';
@@ -696,18 +697,15 @@ const NetReport: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* ========== HEADER (outside PDF content) ========== */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <IconButton onClick={() => navigate(-1)}>
-          <ArrowBack />
-        </IconButton>
-        <Box sx={{ flexGrow: 1 }}>
-          <Typography variant="h5" fontWeight="bold">
-            Net Report
-          </Typography>
+      <ReportPageHeader
+        onBack={() => navigate(-1)}
+        title="Net Report"
+        subtitle={
           <Typography variant="body2" color="text.secondary">
             Comprehensive report for {net.name}
           </Typography>
-        </Box>
+        }
+      >
         <Tooltip title="Export to PDF">
           <Button
             variant="contained"
@@ -737,7 +735,7 @@ const NetReport: React.FC = () => {
         >
           View Net
         </Button>
-      </Box>
+      </ReportPageHeader>
 
       {/* Report-wide options live at the top, not buried next to the section
           they affect further down the page, so a user scanning the report

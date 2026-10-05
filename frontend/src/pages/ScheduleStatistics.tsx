@@ -55,6 +55,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { exportElementToPdf } from '../utils/pdfExport';
 import { formatSchedule } from '../components/scheduler/ScheduleCard';
 import ReportPaper from '../components/report/ReportPaper';
+import ReportPageHeader from '../components/report/ReportPageHeader';
 import ReportMasthead from '../components/report/ReportMasthead';
 import ReportFigures from '../components/report/ReportFigures';
 import ReportSectionTitle from '../components/report/ReportSectionTitle';
@@ -429,18 +430,16 @@ const ScheduleStatistics: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header (excluded from PDF export) */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-        <IconButton onClick={() => navigate('/scheduler')}>
-          <ArrowBack />
-        </IconButton>
-        <Box sx={{ flexGrow: 1, minWidth: 200 }}>
-          <Typography variant="h5" fontWeight="bold">
-            {stats.template_name}
-          </Typography>
+      <ReportPageHeader
+        onBack={() => navigate('/scheduler')}
+        title={stats.template_name}
+        mb={2}
+        subtitle={
           <Typography variant="body2" color="text.secondary">
             Historical statistics for this scheduled net series
           </Typography>
-        </Box>
+        }
+      >
         {/* ========== TIME WINDOW FILTER ========== */}
         {/* Applies to all stats below: instance count, check-in counts,
             leaderboards, and history log. Default 30 days. 0 = all-time. */}
@@ -482,7 +481,7 @@ const ScheduleStatistics: React.FC = () => {
         >
           Back to Scheduler
         </Button>
-      </Box>
+      </ReportPageHeader>
 
       {/* ========== EXPORTABLE STATS CONTENT ========== */}
       {/* Everything inside #schedule-stats-content is captured by the PDF

@@ -73,6 +73,7 @@ import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import { MAP_TILE_URL, MAP_TILE_ATTRIBUTION, getMapTileClassName } from '../utils/mapTiles';
 import { computeCheckInTimeline } from '../utils/checkInTimeline';
+import ReportPageHeader from '../components/report/ReportPageHeader';
 
 // Fix default Leaflet marker icons for Vite/webpack
 const DefaultIcon = L.icon({
@@ -305,15 +306,11 @@ const NetStatistics: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <IconButton onClick={() => navigate(-1)}>
-          <ArrowBack />
-        </IconButton>
-        <Box sx={{ flexGrow: 1 }}>
-          <Typography variant="h5" fontWeight="bold">
-            {stats.net_name}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+      <ReportPageHeader
+        onBack={() => navigate(-1)}
+        title={stats.net_name}
+        subtitle={
+          <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
             <Chip
               label={stats.status.toUpperCase()}
               color={stats.status === 'active' ? 'success' : stats.status === 'closed' ? 'default' : 'info'}
@@ -326,7 +323,8 @@ const NetStatistics: React.FC = () => {
               </Typography>
             )}
           </Box>
-        </Box>
+        }
+      >
         {/* Export controls match NetReport.tsx exactly -- same labels and
             variant, per the DESIGN.md symmetry rule. Export PDF opens the net
             report and exports it from there. */}
@@ -366,7 +364,7 @@ const NetStatistics: React.FC = () => {
             All-Time Stats
           </Button>
         )}
-      </Box>
+      </ReportPageHeader>
 
       <Box id="net-stats-content">
         {/* Summary Cards */}
