@@ -24,11 +24,19 @@ All notable changes to ECTLogger are documented here.
 
 * **Check-in: See who has a hand up** — A raised hand now shows beside the station's callsign for everyone in the net, on phones too, so you can see who else is waiting with a question or input.
 
+* **Reports: Dark mode stays dark, PDFs print on Letter paper** — Net reports and schedule statistics now follow your dark or light setting on screen instead of switching to a bright white page. Export PDF still prints in light colors, now on US Letter pages that come out the same whether you export from a phone or a computer.
+
 ## Bug Fixes
 
 * **Schedules: Nets show up a day ahead again** — Some recurring schedules only created their next net an hour before it started, and "open the lobby before the net" never opened the lobby. Both now happen on time.
 
 * **Net View: See everyone's topic answers** — After a net ends, the Topic of the Week answers under the check-in list now show everyone's answer, not just a few. Poll results are fixed the same way.
+
+* **Schedule Statistics: Readable column headings in dark mode** — On a phone in dark mode, the column headings in a schedule's leaderboards and net history were black on black. They now read clearly.
+
+* **Reports: Percentages show in PDFs** — The participation percentages on a schedule report's leaderboard came out as blank colored pills in the PDF. They now print.
+
+* **Check-in: No empty column on phones** — On a phone, your own row in the check-in list could show an empty Actions column. It's gone; your hand, step away, and "I hear" buttons are in the toolbar.
 
 ---
 
