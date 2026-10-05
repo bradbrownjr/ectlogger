@@ -38,6 +38,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Check-in: No empty column on phones** — On a phone, your own row in the check-in list could show an empty Actions column. It's gone; your hand, step away, and "I hear" buttons are in the toolbar.
 
+* **Statistics: Page headers fit on phones** — On a phone, the top of the net report and a net's statistics page crammed the net name and the export buttons into one row, squeezing the name and pushing the buttons off the edge of the page. The name now uses the full width, with the buttons on their own row underneath.
+
 ---
 
 # October 1, 2026
