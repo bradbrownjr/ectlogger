@@ -1,10 +1,10 @@
 ---
 title: Net staff and the NCS rotation
-summary: Who is allowed to run your net, co-managers, the NCS rotation, and why an auto-created net deliberately starts with nobody assigned.
+summary: Who is allowed to run your net, co-managers, the NCS rotation, why an auto-created net deliberately starts with nobody assigned, and the link that invites people to subscribe.
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-10-13
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/net-staff-and-rotation/
@@ -18,7 +18,7 @@ There are two separate lists here, and they answer two different questions. **Au
 
 <figure>
   <img src="/docs/img/net-managers/staff-and-rotation.png"
-       alt="The Net Staff tab of Edit Schedule: the Schedule Manager, an Authorized Net Staff list with a co-manager star and an active/inactive switch per row, and an NCS Rotation list below it with up/down reordering arrows.">
+       alt="The Net Staff tab of Edit Schedule: the Schedule Manager, an Authorized Net Staff list with a co-manager star and an active/inactive switch per row, an NCS Rotation list below it with up/down reordering arrows, and a Subscribers section at the bottom with the schedule's subscribe link.">
   <figcaption>Staff can start and run nets the moment they're added, and so can anyone in the rotation below even if they were never added as staff. The rotation is optional; its added job is deciding who gets pre-assigned NCS ahead of time.</figcaption>
 </figure>
 
@@ -45,6 +45,22 @@ If a net somehow ends up active with nobody holding NCS at all (the assigned rot
 Net Control, Logger, and Relay can also be assigned directly from a net's **Roles** button ("Manage Net Control Staff"), which lists current assignments and lets you add or remove them. This works regardless of net status, so a role assigned to the wrong person on a closed net can still be corrected after the fact. It's a separate action from the self-grant above: this is for staff assigning someone else (or logging a Relay station), not for claiming a role yourself.
 
 A net can legitimately have more than one active NCS at once: a multi-desk exercise with several people each running their own frequency, for example. The check-in list marks every NCS after the first as **2nd NCS** in its legend; it's not a separate assignable role, just how the list marks an additional active one. See [Station statuses](/docs/reference/station-statuses/) for the full legend.
+
+## Inviting people to subscribe
+
+A schedule's subscribers are emailed when one of its nets starts. Anyone can subscribe from the Schedule page, but that depends on them finding your net there first. To send people straight to it, copy the schedule's **Subscribe link** and post it wherever your group already looks: a club website, an email, a dashboard.
+
+<figure>
+  <img src="/docs/img/net-managers/subscribe-link.png"
+       alt="The Subscribers tab of the Staff dialog: a Subscribe link field holding the schedule's link, with the Copy link button beside it outlined in red, above a subscriber list that is still empty.">
+  <figcaption>The link sits above the subscriber list, so the people it brings in show up right below it.</figcaption>
+</figure>
+
+The link is above the subscriber list in two places: the **Subscribers** tab of the **Staff** dialog, and the bottom of the **Net Staff** tab when you edit the schedule. Click **Copy link**. It's offered to the same people who can see the subscriber list: the schedule manager, co-managers, and admins.
+
+Whoever opens the link sees the net's name, description, when it runs, and its frequencies, with one **Subscribe** button. Someone who isn't signed in gets **Sign in to subscribe** instead and is brought back to the same page afterward, which also works for a person creating their account on the spot. Opening the link never subscribes anybody by itself; they always click the button.
+
+The link doesn't expire and it isn't a secret. It shows nothing the public Schedule page doesn't already show, so it's safe to post in the open. A link to a schedule that has since been deactivated tells the visitor the net is no longer scheduled.
 
 ## Related
 

@@ -95,13 +95,14 @@ export default api;
 
 // Auth API
 export const authApi = {
-  requestMagicLink: (email: string) =>
-    api.post('/auth/magic-link/request', { email: email.trim().toLowerCase() }),
+  // redirect: in-app path the emailed link lands on after sign-in
+  requestMagicLink: (email: string, redirect?: string | null) =>
+    api.post('/auth/magic-link/request', { email: email.trim().toLowerCase(), redirect: redirect || undefined }),
   verifyMagicLink: (token: string, totp_code?: string) =>
     api.post('/auth/magic-link/verify', { token, totp_code }),
   // Emails a fresh link to the address an expired one was issued for.
-  resendMagicLink: (token: string) =>
-    api.post('/auth/magic-link/resend', { token }),
+  resendMagicLink: (token: string, redirect?: string | null) =>
+    api.post('/auth/magic-link/resend', { token, redirect: redirect || undefined }),
   passwordLogin: (identifier: string, password: string, totp_code?: string) =>
     api.post('/auth/login', { identifier, password, totp_code }),
   setPassword: (new_password: string, current_password?: string) =>

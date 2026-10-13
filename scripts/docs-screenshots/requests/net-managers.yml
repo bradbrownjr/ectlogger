@@ -93,6 +93,16 @@ shots:
     steps:
       - click: 'button[role="tab"]:has-text("Net Staff")'
       - wait_for: 'div[role="tabpanel"]:visible li'
+      # The subscriber section renders after the staff list has loaded
+      - wait_for: 'div[role="tabpanel"]:visible button:has-text("Copy link")'
+      # The field shows the demo instance's own address. Show the hosted
+      # site's instead, so the figure reads as a link a reader could be sent.
+      - evaluate: >
+          document.querySelectorAll('input[readonly]').forEach((el) => {
+            if (el.value.includes('/subscribe/')) {
+              el.value = 'https://app.ectlogger.us' + el.value.slice(el.value.indexOf('/subscribe/'));
+            }
+          })
     element: 'div[role="tabpanel"]:visible'
     # No padding, or the app bar sitting directly above the panel puts a strip
     # of solid blue across the top of the figure.
@@ -100,8 +110,9 @@ shots:
     alt: >
       The Net Staff tab of Edit Schedule: the Schedule Manager, an
       Authorized Net Staff list with a co-manager star and an active/inactive
-      switch per row, and an NCS Rotation list below it with up/down
-      reordering arrows.
+      switch per row, an NCS Rotation list below it with up/down reordering
+      arrows, and a Subscribers section at the bottom with the schedule's
+      subscribe link.
     caption: >
       Staff can start and run nets the moment they're added. The rotation
       below is optional -- it only decides who gets pre-assigned NCS ahead of time.
@@ -293,3 +304,35 @@ shots:
       -- Check-ins, NCS, Logger, and Relay -- and a ranked table with medal
       icons on the top three rows.
     caption: Each leaderboard is its own ranking; a station can lead Check-ins without ever running the net as NCS.
+
+  - id: subscribe-link
+    section: net-managers
+    page: /docs/net-managers/net-staff-and-rotation/
+    route: /scheduler
+    as: W1PINE
+    wait_for: 'button:has-text("Staff")'
+    steps:
+      - click: 'button:has-text("Staff")'
+      - wait_for: '.MuiDialog-paper button[role="tab"]:has-text("Subscribers")'
+      - click: '.MuiDialog-paper button[role="tab"]:has-text("Subscribers")'
+      - wait_for: '.MuiDialog-paper button:has-text("Copy link")'
+      # The field shows the demo instance's own address. Show the hosted
+      # site's instead, so the figure reads as a link a reader could be sent.
+      - evaluate: >
+          document.querySelectorAll('input[readonly]').forEach((el) => {
+            if (el.value.includes('/subscribe/')) {
+              el.value = 'https://app.ectlogger.us' + el.value.slice(el.value.indexOf('/subscribe/'));
+            }
+          })
+    element: '.MuiDialog-paper'
+    pad: 16
+    annotate:
+      - selector: '.MuiDialog-paper button:has-text("Copy link")'
+        style: box
+    alt: >
+      The Subscribers tab of the Staff dialog: a Subscribe link field holding
+      the schedule's link, with the Copy link button beside it outlined in
+      red, above a subscriber list that is still empty.
+    caption: >
+      The link sits above the subscriber list, so the people it brings in
+      show up right below it.

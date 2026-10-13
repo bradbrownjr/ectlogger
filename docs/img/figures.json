@@ -289,8 +289,14 @@
   },
   "net-managers/staff-and-rotation": {
     "path": "/docs/img/net-managers/staff-and-rotation.png",
-    "alt": "The Net Staff tab of Edit Schedule: the Schedule Manager, an Authorized Net Staff list with a co-manager star and an active/inactive switch per row, and an NCS Rotation list below it with up/down reordering arrows.\n",
+    "alt": "The Net Staff tab of Edit Schedule: the Schedule Manager, an Authorized Net Staff list with a co-manager star and an active/inactive switch per row, an NCS Rotation list below it with up/down reordering arrows, and a Subscribers section at the bottom with the schedule's subscribe link.\n",
     "caption": "Staff can start and run nets the moment they're added. The rotation below is optional -- it only decides who gets pre-assigned NCS ahead of time.\n",
+    "page": "/docs/net-managers/net-staff-and-rotation/"
+  },
+  "net-managers/subscribe-link": {
+    "path": "/docs/img/net-managers/subscribe-link.png",
+    "alt": "The Subscribers tab of the Staff dialog: a Subscribe link field holding the schedule's link, with the Copy link button beside it outlined in red, above a subscriber list that is still empty.\n",
+    "caption": "The link sits above the subscriber list, so the people it brings in show up right below it.\n",
     "page": "/docs/net-managers/net-staff-and-rotation/"
   },
   "operators/account-profile-tab": {
@@ -400,6 +406,12 @@
     "alt": "A check-in row's status dropdown open, listing Checked in, Listening, Relay, Away, Has traffic, Announcements, Mobile, and Checked out.\n",
     "caption": "Every status is one dropdown away, on your own row.",
     "page": "/docs/operators/status-and-checking-out/"
+  },
+  "operators/subscribe-page": {
+    "path": "/docs/img/operators/subscribe-page.png",
+    "alt": "The page a subscribe link opens, for a visitor who is not signed in: the net's name, description, when it runs, and its frequencies, with the Sign in to subscribe button outlined in red.\n",
+    "caption": "The page names the net before asking for anything, so you know what you're subscribing to.\n",
+    "page": "/docs/operators/finding-a-net/"
   },
   "operators/traffic-composer-picker": {
     "path": "/docs/img/operators/traffic-composer-picker.png",

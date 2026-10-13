@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import AppLogo from '../components/AppLogo';
 import AppWordmark from '../components/AppWordmark';
 import {
@@ -16,10 +16,16 @@ import {
 import { authApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getErrorMessage } from '../utils/apiErrors';
+import { safeRedirectPath } from '../utils/redirectPath';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  // Where to return after sign-in (e.g. a schedule's subscribe link sent the
+  // visitor here). Carried on the emailed link, or used directly by password
+  // sign-in below.
+  const [searchParams] = useSearchParams();
+  const redirect = safeRedirectPath(searchParams.get('redirect'));
 
   // 'magic-link' is the default/primary sign-in path. 'password' is the
   // fallback for when email delivery is down and a magic link can't be
@@ -48,7 +54,7 @@ const Login: React.FC = () => {
     setMagicMessage('');
 
     try {
-      await authApi.requestMagicLink(email);
+      await authApi.requestMagicLink(email, redirect);
       setMagicMessage('Check your email for a magic link to sign in! If you don\'t see it, check your spam folder.');
       setEmail('');
     } catch (err: any) {
@@ -85,7 +91,7 @@ const Login: React.FC = () => {
       // admin can still sign in, they just get routed to enrollment before
       // reaching any admin-only feature (see api.ts's response interceptor).
       await login(access_token);
-      navigate(login_status === 'mfa_setup_required' ? '/profile?tab=security&mfaRequired=1' : '/dashboard');
+      navigate(login_status === 'mfa_setup_required' ? '/profile?tab=security&mfaRequired=1' : (redirect || '/dashboard'));
     } catch (err: any) {
       if (mfaRequired) {
         setPasswordError(getErrorMessage(err, 'Incorrect verification code.'));

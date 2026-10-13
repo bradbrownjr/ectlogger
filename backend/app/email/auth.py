@@ -1,16 +1,25 @@
+from typing import Optional
+from urllib.parse import quote
+
 from app.logger import logger
 from jinja2 import Template
 
 from app.config import settings
 from app.email.base import send_email
 
-async def send_magic_link(email: str, token: str, expire_days: int = 30):
-    """Send magic link email for authentication"""
+async def send_magic_link(email: str, token: str, expire_days: int = 30, redirect: Optional[str] = None):
+    """Send magic link email for authentication.
+
+    redirect: optional path in this app to land on after sign-in. Callers
+    pass one already validated by utils.safe_redirect_path.
+    """
     logger.info("MAGIC LINK", f"Generating magic link for {email}")
     logger.debug("MAGIC LINK", f"Token: {token[:20]}...{token[-10:]} (truncated)")
     logger.debug("MAGIC LINK", f"Expires in: {expire_days} days")
     
     magic_link = f"{settings.frontend_url}/auth/verify?token={token}"
+    if redirect:
+        magic_link += f"&redirect={quote(redirect, safe='/')}"
     
     # Format expiration time nicely
     if expire_days == 1:

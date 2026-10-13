@@ -1,6 +1,22 @@
 {
-  "version": "2026.10.04c",
+  "version": "2026.10.13",
   "entries": [
+    {
+      "version": "2026.10.13",
+      "date": "2026-10-13",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Schedule: Share a subscribe link — Net managers can now copy a link from Staff > Subscribers and post it anywhere. Anyone who opens it sees the net and can subscribe to its notifications, signing in first if they need to.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.10.04c",
       "date": "2026-10-04",

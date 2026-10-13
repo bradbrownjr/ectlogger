@@ -24,6 +24,7 @@ import NetStatistics from './pages/NetStatistics';
 import NetReport from './pages/NetReport';
 import ScheduleStatistics from './pages/ScheduleStatistics';
 import Unsubscribe from './pages/Unsubscribe';
+import SubscribeToSchedule from './pages/SubscribeToSchedule';
 import Traffic from './pages/Traffic';
 import Navbar from './components/Navbar';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
@@ -179,6 +180,8 @@ const AppRoutes: React.FC = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/auth/verify" element={<VerifyMagicLink />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
+          {/* A schedule's shared subscribe link. Public: signed-out visitors land here. */}
+          <Route path="/subscribe/:scheduleId" element={<SubscribeToSchedule />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route
             path="/nets/create"

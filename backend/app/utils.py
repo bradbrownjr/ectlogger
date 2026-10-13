@@ -90,6 +90,28 @@ def normalize_email(email: str) -> str:
     return email.strip().lower()
 
 
+def safe_redirect_path(path: Optional[str]) -> Optional[str]:
+    """Validate a post-sign-in destination: a path inside this app, or nothing.
+
+    The value is put on an emailed sign-in link, so it must never be able to
+    send someone to another site. Only a path starting with a single "/" is
+    accepted: "//host" and "/\\host" are read by browsers as another origin,
+    and a scheme ("https:...") never starts with "/" at all. Raises ValueError
+    for anything else, so a schema validator can use it directly.
+    """
+    if path is None or path == "":
+        return None
+    if (
+        len(path) > 300
+        or not path.startswith("/")
+        or path.startswith("//")
+        or "\\" in path
+        or any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in path)
+    ):
+        raise ValueError("redirect must be a path within this site")
+    return path
+
+
 _EMAIL_LIKE_PATTERN = re.compile(r"\S+@\S+\.\S+")
 _URL_LIKE_PATTERN = re.compile(
     r"(https?://\S+|www\.\S+|\b[a-z0-9-]+\.(?:com|net|org|us|io|tv|me|co|gov|edu|info|biz)(?:/\S*)?\b)",

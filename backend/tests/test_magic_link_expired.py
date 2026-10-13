@@ -33,7 +33,7 @@ def sent(monkeypatch):
     """Record magic-link emails instead of sending them."""
     calls = []
 
-    async def fake_send(email, token, days):
+    async def fake_send(email, token, days, redirect=None):
         calls.append((email, token))
 
     monkeypatch.setattr(EmailService, "send_magic_link", staticmethod(fake_send))

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Typography, Chip, List, ListItem, ListItemText } from '@mui/material';
+import SubscribeLinkField from '../scheduler/SubscribeLinkField';
 
 interface TemplateSubscriber {
   id: number;
@@ -12,20 +13,23 @@ interface TemplateSubscriber {
 
 interface NCSStaffSubscribersTabProps {
   hasTemplateContext: boolean;
+  // The schedule the list belongs to; null when the net has none
+  templateId: number | null;
   canViewSubscribers: boolean;
   subscribers: TemplateSubscriber[];
 }
 
 // ========== SUBSCRIBERS TAB ==========
-// Read-only list of the schedule's template subscribers. No handlers, no
-// local state — extracted verbatim from NCSStaffModal's renderSubscribersTab.
+// The schedule's subscribe link to share, above a read-only list of its
+// subscribers.
 
 const NCSStaffSubscribersTab: React.FC<NCSStaffSubscribersTabProps> = ({
   hasTemplateContext,
+  templateId,
   canViewSubscribers,
   subscribers,
 }) => {
-  if (!hasTemplateContext) {
+  if (!hasTemplateContext || templateId == null) {
     return (
       <Typography color="text.secondary" sx={{ py: 2 }}>
         This net is not linked to a schedule, so it has no subscriber list.
@@ -47,6 +51,7 @@ const NCSStaffSubscribersTab: React.FC<NCSStaffSubscribersTabProps> = ({
         <Typography variant="subtitle2">Subscribers</Typography>
         <Chip label={`${subscribers.length} subscribed`} size="small" variant="outlined" />
       </Box>
+      <SubscribeLinkField scheduleId={templateId} />
       {subscribers.length === 0 ? (
         <Typography color="text.secondary" sx={{ py: 2 }}>
           No subscribers yet.

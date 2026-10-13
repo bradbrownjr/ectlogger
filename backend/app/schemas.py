@@ -3,7 +3,7 @@ from typing import Optional, List, Literal, Dict, Any, Union
 from datetime import datetime
 from app.models import LOCKABLE_USER_FIELDS, UserRole, NetStatus, StationStatus, FormDisposition, TrafficAction, RelayMethod, TrafficTestCategory
 from app.auth import validate_password_strength
-from app.utils import normalize_email, normalize_spotter_number, looks_like_email_or_url
+from app.utils import normalize_email, normalize_spotter_number, looks_like_email_or_url, safe_redirect_path
 from app.logo_accent import logo_accent_colors
 import json
 import re
@@ -1385,15 +1385,32 @@ class Token(BaseModel):
 
 class MagicLinkRequest(BaseModel):
     email: EmailStr
+    # Where the emailed link lands after sign-in (a path in this app), so a
+    # visitor who had to sign in first, e.g. from a schedule's subscribe
+    # link, returns to what they were doing instead of the dashboard.
+    redirect: Optional[str] = None
 
     @field_validator('email')
     @classmethod
     def normalize_email_field(cls, v: str) -> str:
         return normalize_email(v)
 
+    @field_validator('redirect')
+    @classmethod
+    def validate_redirect(cls, v: Optional[str]) -> Optional[str]:
+        return safe_redirect_path(v)
+
 
 class MagicLinkResend(BaseModel):
     token: str = Field(max_length=500)
+    # Carried over from the expired link's own URL so the replacement lands
+    # in the same place.
+    redirect: Optional[str] = None
+
+    @field_validator('redirect')
+    @classmethod
+    def validate_redirect(cls, v: Optional[str]) -> Optional[str]:
+        return safe_redirect_path(v)
 
 
 class MagicLinkVerify(BaseModel):

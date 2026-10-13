@@ -24,6 +24,7 @@ import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { ncsRotationApi, templateStaffApi, templateApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
+import SubscribeLinkField from '../scheduler/SubscribeLinkField';
 import {
   useCreateScheduleContext,
   User,
@@ -636,8 +637,9 @@ const StaffRotationTab: React.FC = () => {
                 <Chip label={`${subscribers.length} subscribed`} size="small" variant="outlined" />
               </Box>
               <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                Users who clicked the bell or accepted the reminder prompt for this schedule.
+                Users who clicked the bell, accepted the reminder prompt, or used the subscribe link for this schedule.
               </Typography>
+              {scheduleId && <SubscribeLinkField scheduleId={scheduleId} />}
 
               {subscribers.length === 0 ? (
                 <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>

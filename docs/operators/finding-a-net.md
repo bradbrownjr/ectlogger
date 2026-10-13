@@ -4,7 +4,7 @@ summary: The dashboard, what each net status means, the Schedule page's calendar
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-28
+revised: 2026-10-13
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/finding-a-net/
@@ -65,6 +65,14 @@ When a net's schedule has standing announcements (club news, upcoming exam sessi
 ## Getting emails about a net
 
 Once you're signed in, a net card from a schedule has a **Subscribe** button. It subscribes you to the schedule, not just tonight's net, so you hear about every net it runs. The button turns into **Unsubscribe** once you're subscribed, and it's the same subscription as the one on the Schedule page, so you can change it from either place. Which emails you actually get (the net starting, the net closing with its log, a reminder beforehand) is up to your [profile's notification settings](/docs/operators/account-and-profile/).
+
+A net manager may also send you a **subscribe link**. It opens a page for that one net, so there's no need to hunt for it on the Schedule page. Click **Subscribe**, or **Sign in to subscribe** if you aren't signed in yet; signing in brings you back to the same page to finish. It's the same subscription as the button on the card, and the page offers **Unsubscribe** if you open the link again later.
+
+<figure>
+  <img src="/docs/img/operators/subscribe-page.png"
+       alt="The page a subscribe link opens, for a visitor who is not signed in: the net's name, description, when it runs, and its frequencies, with the Sign in to subscribe button outlined in red.">
+  <figcaption>The page names the net before asking for anything, so you know what you're subscribing to.</figcaption>
+</figure>
 
 ## Finding a net that runs on a schedule
 

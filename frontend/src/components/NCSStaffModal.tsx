@@ -784,6 +784,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const renderSubscribersTab = () => (
     <NCSStaffSubscribersTab
       hasTemplateContext={hasTemplateContext}
+      templateId={templateId ?? null}
       canViewSubscribers={canViewSubscribers}
       subscribers={subscribers}
     />

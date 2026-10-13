@@ -4,6 +4,7 @@ import { Container, Typography, CircularProgress, Box, Button, TextField, Alert 
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
+import { safeRedirectPath } from '../utils/redirectPath';
 
 const VerifyMagicLink: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -20,7 +21,7 @@ const VerifyMagicLink: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const token = searchParams.get('token');
-  const redirect = searchParams.get('redirect');
+  const redirect = safeRedirectPath(searchParams.get('redirect'));
 
   const attemptVerify = async (code?: string) => {
     if (!token) {
@@ -73,7 +74,7 @@ const VerifyMagicLink: React.FC = () => {
     if (!token) return;
     setResending(true);
     try {
-      const response = await authApi.resendMagicLink(token);
+      const response = await authApi.resendMagicLink(token, redirect);
       setResentTo(response.data.email_hint);
     } catch (err: any) {
       setError(getErrorMessage(err, "We couldn't send a new link. Request one from the sign-in page."));

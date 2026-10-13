@@ -315,6 +315,52 @@ async def create_template(
     return NetTemplateResponse.from_orm(template, subscriber_count=0, is_subscribed=False, can_manage=True, can_create_net=True, is_owner_or_staff=is_owner_or_staff)
 
 
+async def _template_response_for_viewer(
+    db: AsyncSession, template: NetTemplate, current_user: Optional[User]
+) -> NetTemplateResponse:
+    """Build one schedule's response for whoever is asking, guest included.
+
+    Shared by the list and the single-schedule endpoint so a schedule reads
+    the same from both. `template.owner` must already be loaded.
+    """
+    count_result = await db.execute(
+        select(func.count(NetTemplateSubscription.id))
+        .where(NetTemplateSubscription.template_id == template.id)
+    )
+    subscriber_count = count_result.scalar() or 0
+
+    # Guests are never subscribed and can manage nothing
+    is_subscribed = False
+    can_manage = False
+    is_owner_or_staff = False
+    if current_user:
+        subscription_result = await db.execute(
+            select(NetTemplateSubscription)
+            .where(
+                NetTemplateSubscription.template_id == template.id,
+                NetTemplateSubscription.user_id == current_user.id
+            )
+        )
+        is_subscribed = subscription_result.scalar_one_or_none() is not None
+
+        # Check if user can manage (owner, admin, or NCS rotation member)
+        can_manage = await check_template_permission(db, template, current_user)
+        # Same, minus the admin bypass -- see check_template_staff_access's
+        # docstring for why the frontend needs this reported separately.
+        is_owner_or_staff = await check_template_staff_access(db, template, current_user)
+
+    return NetTemplateResponse.from_orm(
+        template,
+        subscriber_count=subscriber_count,
+        is_subscribed=is_subscribed,
+        owner_callsign=template.owner.callsign if template.owner else None,
+        owner_name=public_display_name(template.owner.name if template.owner else None, current_user is not None),
+        can_manage=can_manage,
+        can_create_net=can_manage,  # Same permission - owner, admin, or NCS staff
+        is_owner_or_staff=is_owner_or_staff
+    )
+
+
 @router.get("/", response_model=List[NetTemplateResponse])
 async def list_templates(
     skip: int = 0,
@@ -353,60 +399,27 @@ async def list_templates(
     result = await db.execute(query)
     templates = result.scalars().all()
     
-    # Get subscriber counts and subscription status for each template
-    template_responses = []
-    for template in templates:
-        count_result = await db.execute(
-            select(func.count(NetTemplateSubscription.id))
-            .where(NetTemplateSubscription.template_id == template.id)
-        )
-        subscriber_count = count_result.scalar() or 0
-        
-        # Check if current user is subscribed (guests are never subscribed)
-        is_subscribed = False
-        can_manage = False
-        is_owner_or_staff = False
-        if current_user:
-            subscription_result = await db.execute(
-                select(NetTemplateSubscription)
-                .where(
-                    NetTemplateSubscription.template_id == template.id,
-                    NetTemplateSubscription.user_id == current_user.id
-                )
-            )
-            is_subscribed = subscription_result.scalar_one_or_none() is not None
-
-            # Check if user can manage (owner, admin, or NCS rotation member)
-            can_manage = await check_template_permission(db, template, current_user)
-            # Same, minus the admin bypass -- see check_template_staff_access's
-            # docstring for why the frontend needs this reported separately.
-            is_owner_or_staff = await check_template_staff_access(db, template, current_user)
-
-        template_responses.append(NetTemplateResponse.from_orm(
-            template,
-            subscriber_count=subscriber_count,
-            is_subscribed=is_subscribed,
-            owner_callsign=template.owner.callsign if template.owner else None,
-            owner_name=public_display_name(template.owner.name if template.owner else None, current_user is not None),
-            can_manage=can_manage,
-            can_create_net=can_manage,  # Same permission - owner, admin, or NCS staff
-            is_owner_or_staff=is_owner_or_staff
-        ))
-    
-    return template_responses
+    return [await _template_response_for_viewer(db, template, current_user) for template in templates]
 
 
 @router.get("/{template_id}", response_model=NetTemplateResponse)
 async def get_template(
     template_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get template by ID"""
+    """Get one schedule by ID.
+
+    No auth required, same as the list above and returning the same fields:
+    a schedule's subscribe link (/subscribe/{id}) has to show a signed-out
+    visitor which net they are about to subscribe to. A guest gets
+    is_subscribed/can_manage False and a redacted owner_name.
+    """
     result = await db.execute(
         select(NetTemplate)
         .options(
             selectinload(NetTemplate.frequencies),
+            selectinload(NetTemplate.owner),
             selectinload(NetTemplate.fifth_week_user),
         )
         .where(NetTemplate.id == template_id)
@@ -415,29 +428,8 @@ async def get_template(
     
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
-    
-    # Get subscriber count
-    count_result = await db.execute(
-        select(func.count(NetTemplateSubscription.id))
-        .where(NetTemplateSubscription.template_id == template_id)
-    )
-    subscriber_count = count_result.scalar() or 0
-    
-    # Check if current user is subscribed
-    subscription_result = await db.execute(
-        select(NetTemplateSubscription)
-        .where(
-            NetTemplateSubscription.template_id == template_id,
-            NetTemplateSubscription.user_id == current_user.id
-        )
-    )
-    is_subscribed = subscription_result.scalar_one_or_none() is not None
-    
-    # Check if user can manage
-    can_manage = await check_template_permission(db, template, current_user)
-    is_owner_or_staff = await check_template_staff_access(db, template, current_user)
 
-    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=can_manage, can_create_net=can_manage, is_owner_or_staff=is_owner_or_staff)
+    return await _template_response_for_viewer(db, template, current_user)
 
 
 @router.put("/{template_id}", response_model=NetTemplateResponse)

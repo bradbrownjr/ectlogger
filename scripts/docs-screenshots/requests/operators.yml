@@ -421,3 +421,23 @@ shots:
       that it adds a 6-digit code from an authenticator app, with the Set Up
       Two-Factor Authentication button outlined in red.
     caption: Directly below the password section on the same tab.
+
+  # ========== Subscribe link landing page ==========
+  # Signed out on purpose: that is how most people sent a link arrive.
+  - id: subscribe-page
+    section: operators
+    page: /docs/operators/finding-a-net/
+    route: /subscribe/{{template:weekly}}
+    wait_for: 'button:has-text("Sign in to subscribe")'
+    element: 'main .MuiPaper-root'
+    pad: 16
+    annotate:
+      - selector: 'button:has-text("Sign in to subscribe")'
+        style: box
+    alt: >
+      The page a subscribe link opens, for a visitor who is not signed in:
+      the net's name, description, when it runs, and its frequencies, with
+      the Sign in to subscribe button outlined in red.
+    caption: >
+      The page names the net before asking for anything, so you know what
+      you're subscribing to.

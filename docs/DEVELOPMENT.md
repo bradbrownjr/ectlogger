@@ -698,6 +698,35 @@ The Schedule page's **Calendar view** (`components/scheduler/ScheduleCalendar.ts
 
 ---
 
+## Subscribe links and returning after sign-in
+
+A schedule's subscribe link is `/subscribe/<schedule id>` (`pages/SubscribeToSchedule.tsx`;
+the path is built only by `utils/subscribeLink.ts`). The page is public and reads the
+schedule through `GET /templates/<id>`, which takes optional auth and returns exactly
+what the public list returns: both go through `_template_response_for_viewer` in
+`routers/templates_core.py`, so a guest can never see more from one than from the other.
+
+Two rules to keep:
+
+- **Opening the link never subscribes anyone.** Subscribing is a click on the page, by a
+  signed-in user, through the existing `POST /templates/<id>/subscribe`. A link that
+  subscribed on load would let a crafted URL, or a chat app's link preview, subscribe
+  somebody without their say.
+- **The return path stays inside the site.** A signed-out visitor goes to
+  `/login?redirect=/subscribe/<id>`. Password sign-in navigates there directly; the
+  magic-link request carries it as `redirect`, and `email/auth.py` puts it on the emailed
+  link, where `VerifyMagicLink.tsx` already honoured it for net-start emails. Because it
+  ends up in an email, `utils.py::safe_redirect_path` accepts only a path starting with a
+  single `/` (the schema rejects anything else with a 422), and
+  `frontend/src/utils/redirectPath.ts` applies the same test on the way back in. Any new
+  "sign in and come back" flow should reuse this parameter instead of adding another.
+
+No web-server rule is needed: Caddy's catch-all serves `index.html` for any path that is
+not one of its proxied prefixes. A social-media preview of the link is therefore the
+generic site preview, not the net's own name and logo.
+
+Tests: `backend/tests/test_subscribe_link.py`, `frontend/src/utils/redirectPath.test.ts`.
+
 ## Backups
 
 Encrypted backups of the database, `backend/data/` and both `.env` files.

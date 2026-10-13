@@ -233,9 +233,10 @@ def mask_email(email: str) -> str:
     return f"{local[:1]}{'•' * max(len(local) - 1, 3)}@{domain}"
 
 
-async def _send_magic_link(db: AsyncSession, email: str, client_ip: str) -> dict:
+async def _send_magic_link(db: AsyncSession, email: str, client_ip: str, redirect: Optional[str] = None) -> dict:
     """Email a fresh magic link, shared by a new request and a resend for an
-    expired link. Refuses a deactivated account."""
+    expired link. Refuses a deactivated account. `redirect` is the in-app
+    path the link lands on after sign-in (already validated by the schema)."""
     # Check if user exists and is banned. Case-insensitive: see get_or_create_user.
     result = await db.execute(select(User).where(func.lower(User.email) == email))
     existing_user = result.scalar_one_or_none()
@@ -250,7 +251,7 @@ async def _send_magic_link(db: AsyncSession, email: str, client_ip: str) -> dict
         token = create_magic_link_token(email)
         logger.debug("API", "Token generated successfully")
 
-        await EmailService.send_magic_link(email, token, settings.magic_link_expire_days)
+        await EmailService.send_magic_link(email, token, settings.magic_link_expire_days, redirect)
 
         logger.info("API", f"Magic link sent successfully to {email}")
         return {
@@ -278,7 +279,7 @@ async def request_magic_link(
     """Request a magic link to sign in via email"""
     client_ip = get_client_ip(request)
     logger.info("API", f"Magic link request received for {payload.email}", ip=client_ip)
-    return await _send_magic_link(db, payload.email, client_ip)
+    return await _send_magic_link(db, payload.email, client_ip, payload.redirect)
 
 
 @router.post("/magic-link/resend")
@@ -306,7 +307,7 @@ async def resend_magic_link(
             detail="This sign-in link isn't valid. Enter your email on the sign-in page to get a new one."
         )
     logger.info("API", f"Magic link resend for expired link to {email}", ip=client_ip)
-    result = await _send_magic_link(db, email, client_ip)
+    result = await _send_magic_link(db, email, client_ip, payload.redirect)
     return {**result, "email_hint": mask_email(email)}
 
 
