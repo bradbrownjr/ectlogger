@@ -1,10 +1,10 @@
 ---
 title: Scripts, notes, and announcements
-summary: The script Net Control reads from, standing weekly announcements, one-night notes, and the printable version of the first and last.
+summary: The script Net Control reads from, standing weekly announcements, one-night notes, and how to print any of them.
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-27
+revised: 2026-10-15
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/scripts-and-announcements/
@@ -42,6 +42,8 @@ Set it on the schedule and every net that schedule creates starts with the same 
 
 During a live or lobby net, the **Script** button in the toolbar opens it for Net Control to read from, and only appears once a script is actually set.
 
+Net Control can also fix the script from that panel with its pencil. A change made there is saved to this net and to the schedule, so the next net starts with it too. The pencil is offered to the people who can edit the net itself: its manager, an admin, and an active NCS.
+
 ## Standing announcements
 
 The schedule's own **Announcements** tab holds text that should show up every week without you re-typing it: club news, DMR network updates, upcoming exam sessions, reminders. During a net, the **Announcements** toolbar button shows this text to everyone watching. It appears once the first station has checked in.
@@ -54,7 +56,11 @@ The **Notes for this net only** box on Edit Net's Announcements tab (opened live
 
 ## The printable version
 
-The toolbar's **Paperwork** button downloads a single PDF combining the **net script** and **this net's own notes**, which suits a Net Control operator who wants a paper copy in hand instead of a second screen. It's built fresh from whatever's currently saved, so it always matches the net regardless of which panels happen to be open on screen. It does **not** include the schedule's standing announcements. Those are a separate, schedule-level thing, and they have their own **Export PDF** from the schedule card's Announcements line (see [Standing announcements](#standing-announcements)).
+Each of the three panels (**Script**, **Announcements**, and **Notes**) has a PDF button next to its pencil. It saves just that document, with the net's name and the date at the top, wherever the panel is open: docked, floating, or in its own window. A Net Control operator who wants a paper copy in hand prints the script this way instead of reading it from a second screen.
+
+The toolbar's **Paperwork** button saves all three in one PDF: the script, the schedule's announcements, and this net's notes, skipping any that are empty.
+
+Both are built from what's currently saved, so they always match the net whatever happens to be open on screen. Between nets, the schedule's announcements can also be printed from the **Export PDF** button on the schedule card's Announcements line (see [Standing announcements](#standing-announcements)).
 
 ## Related
 

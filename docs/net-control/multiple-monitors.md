@@ -4,7 +4,7 @@ summary: Detaching and popping out the check-in list, chat, and other panels, an
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-10-15
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/multiple-monitors/
@@ -12,7 +12,7 @@ permalink: /docs/net-control/multiple-monitors/
 
 # Multiple monitors and wide screens
 
-Running a busy net from a single laptop screen is a real constraint, and ECTLogger's net view is built to spread across more room when you have it. Chat, the Activity Log, the check-in list, Map, Coverage, and Traffic can each be moved independently, and every one of them offers the same three moves.
+Running a busy net from a single laptop screen is a real constraint, and ECTLogger's net view is built to spread across more room when you have it. Chat, the Activity Log, the check-in list, Map, Coverage, Traffic, and the net's Script, Notes, and Announcements can each be moved independently, and every one of them offers the same three moves.
 
 ## The three moves
 

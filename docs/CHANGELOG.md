@@ -18,8 +18,13 @@ All notable changes to ECTLogger are documented here.
 
 # October 15, 2026
 
+## Improvements
+
+* **Net View: Print the script, announcements, or notes** — The Script, Announcements, and Notes panels each have a PDF button next to the pencil, so you can print just that one. The Paperwork button now includes the schedule's announcements too, and opening a panel in a new window gives you the full panel there, including editing and printing.
+
 ## Bug Fixes
 
+* **Net View: Script edits stay put** — Editing the script from its panel during a net now keeps the change on that net after a reload, and a script opened in a new window shows its section headings again.
 * **Schedule: Net staff list** — The public net staff list now shows only call signs and first names.
 
 ---

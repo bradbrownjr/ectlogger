@@ -21,6 +21,9 @@ import { getMarkerRoleIds } from '../utils/checkInMarkers';
 import CoverageReport from '../components/netview/CoverageReport';
 import TrafficPanel from '../components/netview/TrafficPanel';
 import FileTrafficDialog from '../components/netview/FileTrafficDialog';
+import NetScript from '../components/NetScript';
+import Announcements from '../components/Announcements';
+import ScheduleAnnouncements from '../components/ScheduleAnnouncements';
 import CheckInTable from '../components/netview/CheckInTable';
 import CanHearDialog from '../components/netview/CanHearDialog';
 import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
@@ -30,6 +33,7 @@ import { buildStaffRoleRankByUserId, compareCheckInsByRole } from '../components
 import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
 import { CheckInFormState } from '../components/netview/CheckInFormDialog';
 import { canHearApi } from '../services/api';
+import { getNetActions } from '../utils/netActions';
 
 // NCS color palette for check-in row / frequency-chip coloring — duplicated
 // from NetView.tsx (a small static constant, not worth a shared module for).
@@ -49,6 +53,9 @@ const PANE_LABELS: Record<string, string> = {
   map: 'Map',
   coverage: 'Station Coverage',
   traffic: 'Traffic',
+  script: 'Net Script',
+  announcements: 'Announcements',
+  notes: 'Net Notes',
 };
 
 // Bare-bones page rendered inside a real popped-out browser window (see
@@ -62,7 +69,7 @@ const PANE_LABELS: Record<string, string> = {
 // NetView's data layer.
 const NetPaneWindow: React.FC = () => {
   const { netId, paneType } = useParams<{ netId: string; paneType: string }>();
-  const { user } = useAuth();
+  const { user, simulateRegularUser } = useAuth();
   const [toastMessage, setToastMessage] = useState('');
   const [, setHighlightCheckIn] = useState(false);
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
@@ -306,6 +313,50 @@ const NetPaneWindow: React.FC = () => {
   // through simulateRegularUser's "View as Regular User" mode).
   const canManage = isOwner || isAdmin || isNCS || !!net?.is_owner_or_ncs;
   const canManageCheckIns = canManage || isNCSOrLogger;
+
+  // Script / Announcements / Notes: the same panel as NetView's docked one,
+  // with no chrome props -- in a real window the browser closes it. Pencils
+  // are gated exactly as NetView gates them: Script and Notes save to the
+  // net (actions.edit), Announcements only to the schedule (canManage).
+  if (paneType === 'script' || paneType === 'announcements' || paneType === 'notes') {
+    const canEditNet = getNetActions(net, simulateRegularUser).edit;
+    return (
+      <Box sx={{ height: '100vh', width: '100vw', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {paneType === 'script' && (
+          <NetScript
+            embedded
+            open
+            script={net.script || ''}
+            netName={net.name || 'Net'}
+            netId={Number(netId)}
+            templateId={net.template_id}
+            canEdit={canEditNet && !!net.template_id}
+            onSaved={(text) => setNet((prev: any) => prev ? { ...prev, script: text } : prev)}
+          />
+        )}
+        {paneType === 'announcements' && net.template_id && (
+          <ScheduleAnnouncements
+            embedded
+            open
+            templateId={net.template_id}
+            netName={net.name || 'Net'}
+            canEdit={canManage}
+          />
+        )}
+        {paneType === 'notes' && (
+          <Announcements
+            embedded
+            open
+            announcements={net.announcements || ''}
+            netName={net.name || 'Net'}
+            netId={Number(netId)}
+            canEdit={canEditNet}
+            onSaved={(text) => setNet((prev: any) => prev ? { ...prev, announcements: text } : prev)}
+          />
+        )}
+      </Box>
+    );
+  }
 
   // Relay staff can't manage check-ins generally, but can report "can hear" -
   // see NetView.tsx's identical derivation.

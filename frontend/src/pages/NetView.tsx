@@ -67,7 +67,7 @@ import { netApi, checkInApi, netRoleApi, templateApi, canHearApi } from '../serv
 import api from '../services/api';
 import { exportElementToPdf } from '../utils/pdfExport';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
-import NetPaperworkPrintView from '../components/netview/NetPaperworkPrintView';
+import { exportMarkdownDocsPdf, pdfFileStem } from '../utils/markdownDocsPdf';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import CheckInMap from '../components/CheckInMap';
@@ -818,6 +818,35 @@ const NetView: React.FC = () => {
     else setToastMessage('Popup blocked — please allow popups for this site.');
   };
   const handleFloatToWindowTraffic = () => { handleAttachTraffic(); handlePopOutTraffic(); };
+  // Script, Announcements and Notes in their own real windows (NetPaneWindow
+  // renders the same panel there). Like Map/Traffic these are one-off panels
+  // opened from the toolbar, so popping one out closes it here.
+  const scriptPopout = usePoppedOutWindow(`/nets/${netId}/pane/script`, `ectlogger-script-${netId}`, 'script', 700, 800);
+  const scheduleAnnouncementsPopout = usePoppedOutWindow(`/nets/${netId}/pane/announcements`, `ectlogger-announcements-${netId}`, 'scheduleAnnouncements', 700, 800);
+  const notesPopout = usePoppedOutWindow(`/nets/${netId}/pane/notes`, `ectlogger-notes-${netId}`, 'notes', 700, 800);
+  const handlePopOutScript = () => {
+    if (scriptPopout.open()) script.onClose();
+    else setToastMessage('Popup blocked — please allow popups for this site.');
+  };
+  const handlePopOutScheduleAnnouncements = () => {
+    if (scheduleAnnouncementsPopout.open()) scheduleAnnouncements.onClose();
+    else setToastMessage('Popup blocked — please allow popups for this site.');
+  };
+  const handlePopOutNotes = () => {
+    if (notesPopout.open()) announcements.onClose();
+    else setToastMessage('Popup blocked — please allow popups for this site.');
+  };
+  // A popped-out window can edit the script or notes, which this window only
+  // holds in `net` - reload it when such a window closes so reopening the
+  // panel (or the combined PDF) shows what was saved there. Announcements
+  // need nothing: that panel fetches its own text each time it opens.
+  const docPopoutOpen = scriptPopout.isOpen || notesPopout.isOpen;
+  const prevDocPopoutOpen = React.useRef(false);
+  React.useEffect(() => {
+    if (prevDocPopoutOpen.current && !docPopoutOpen) fetchNet();
+    prevDocPopoutOpen.current = docPopoutOpen;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docPopoutOpen]);
   // Lets a pane jump directly from the in-page floating overlay to a real
   // window in one click, instead of re-docking first and then popping out.
   const handleFloatToWindowChat = () => { handleAttachChat(); handlePopOutChat(); };
@@ -1177,13 +1206,30 @@ const NetView: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ics309PrintData]);
 
-  // Combined script + announcements PDF -- unlike the ICS-309 PDF above, both
-  // sections are already in `net` state (no fetch needed), so the off-screen
-  // print view is mounted permanently and this just captures it directly.
+  // Combined PDF of the net's three Markdown documents (script, the
+  // schedule's announcements, the net's notes) -- the same print layout each
+  // panel's own PDF button uses (utils/markdownDocsPdf.tsx). The schedule's
+  // announcements aren't part of the net, so they are fetched at click time.
   const handleExportNetPaperworkPdf = async () => {
+    if (!net) return;
     try {
-      await exportElementToPdf('net-paperwork-print-view', {
-        filename: `${net?.name.replace(/[^a-zA-Z0-9]/g, '_') || 'Net'}_Paperwork`,
+      let scheduleAnnouncementsText = '';
+      if (net.template_id) {
+        try {
+          scheduleAnnouncementsText = (await templateApi.get(net.template_id)).data.announcements || '';
+        } catch {
+          // Export what the net itself has rather than nothing.
+        }
+      }
+      await exportMarkdownDocsPdf({
+        netName: net.name,
+        label: 'Net Paperwork',
+        sections: [
+          { title: 'Net Script', content: net.script || '' },
+          { title: 'Announcements', content: scheduleAnnouncementsText },
+          { title: 'Net Notes', content: net.announcements || '' },
+        ],
+        filename: `${pdfFileStem(net.name)}_Paperwork`,
       });
     } catch (error) {
       console.error('Failed to export net paperwork PDF:', error);
@@ -1700,21 +1746,6 @@ const NetView: React.FC = () => {
         </Box>
       )}
 
-      {/* Off-screen combined net script + notes print view, mounted whenever
-          there's content to export -- see NetPaperworkPrintView.tsx for why
-          this reads net state directly instead of capturing either
-          docked/floating panel's DOM. */}
-      {(!!net.script || !!net.announcements) && (
-        <Box sx={{ position: 'fixed', top: 0, left: -9999, width: 0, height: 0, overflow: 'hidden' }}>
-          <NetPaperworkPrintView
-            id="net-paperwork-print-view"
-            netName={net.name}
-            script={net.script || ''}
-            notes={net.announcements || ''}
-          />
-        </Box>
-      )}
-
       {/* Persistent banner while no NCS is actively present — see app/net_pause.py */}
       {!!net.paused_at && (
         <Alert variant="filled" severity="info" sx={{ borderRadius: 0 }}>
@@ -1728,6 +1759,7 @@ const NetView: React.FC = () => {
               netId={netId}
               net={net}
               canManage={canManage}
+              canEditNet={actions.edit}
               width={columnWidths.left}
               columnStyle={leftColumnStyle}
               scriptOpen={script.open}
@@ -1745,6 +1777,9 @@ const NetView: React.FC = () => {
               onUndockScript={handleUndockScript}
               onUndockAnnouncements={handleUndockAnnouncements}
               onUndockScheduleAnnouncements={handleUndockScheduleAnnouncements}
+              onPopOutScript={handlePopOutScript}
+              onPopOutAnnouncements={handlePopOutNotes}
+              onPopOutScheduleAnnouncements={handlePopOutScheduleAnnouncements}
               onMinimizeScript={() => setScriptMinimized(true)}
               onRestoreScript={() => setScriptMinimized(false)}
               onMinimizeAnnouncements={() => setAnnouncementsMinimized(true)}
@@ -2946,9 +2981,10 @@ const NetView: React.FC = () => {
         netName={net?.name || 'Net'}
         netId={Number(netId)}
         templateId={net?.template_id}
-        canEdit={canManage && !!net?.template_id}
+        canEdit={actions.edit && !!net?.template_id}
         onSaved={(newScript) => setNet((prev: any) => prev ? { ...prev, script: newScript } : prev)}
         onDock={isXlUp ? handleDockScript : undefined}
+        onPopOut={handlePopOutScript}
       />
       )}
 
@@ -2960,9 +2996,10 @@ const NetView: React.FC = () => {
         announcements={net?.announcements || ''}
         netName={net?.name || 'Net'}
         netId={Number(netId)}
-        canEdit={canManage}
+        canEdit={actions.edit}
         onSaved={(newAnnouncements) => setNet((prev: any) => prev ? { ...prev, announcements: newAnnouncements } : prev)}
         onDock={isXlUp ? handleDockAnnouncements : undefined}
+        onPopOut={handlePopOutNotes}
       />
       )}
 
@@ -2975,6 +3012,7 @@ const NetView: React.FC = () => {
           netName={net?.name || 'Net'}
           canEdit={canManage}
           onDock={isXlUp ? handleDockScheduleAnnouncements : undefined}
+          onPopOut={handlePopOutScheduleAnnouncements}
         />
       )}
 

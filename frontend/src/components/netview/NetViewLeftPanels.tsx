@@ -23,6 +23,9 @@ interface NetViewLeftPanelsProps {
   netId: string | undefined;
   net: any;
   canManage: boolean;
+  // actions.edit (utils/netActions.ts): Script and Notes save to the net
+  // itself, which the server allows only for may_edit_net.
+  canEditNet: boolean;
   width: number;
   // Inline style override for resizable column-width mode (md+) - see
   // NetView.tsx's leftColumnStyle / useResizableSplit.ts.
@@ -42,6 +45,9 @@ interface NetViewLeftPanelsProps {
   onUndockScript: () => void;
   onUndockAnnouncements: () => void;
   onUndockScheduleAnnouncements: () => void;
+  onPopOutScript: () => void;
+  onPopOutAnnouncements: () => void;
+  onPopOutScheduleAnnouncements: () => void;
   onMinimizeScript: () => void;
   onRestoreScript: () => void;
   onMinimizeAnnouncements: () => void;
@@ -56,6 +62,7 @@ const NetViewLeftPanels: React.FC<NetViewLeftPanelsProps> = ({
   netId,
   net,
   canManage,
+  canEditNet,
   width,
   columnStyle,
   scriptOpen,
@@ -73,6 +80,9 @@ const NetViewLeftPanels: React.FC<NetViewLeftPanelsProps> = ({
   onUndockScript,
   onUndockAnnouncements,
   onUndockScheduleAnnouncements,
+  onPopOutScript,
+  onPopOutAnnouncements,
+  onPopOutScheduleAnnouncements,
   onMinimizeScript,
   onRestoreScript,
   onMinimizeAnnouncements,
@@ -103,9 +113,10 @@ const NetViewLeftPanels: React.FC<NetViewLeftPanelsProps> = ({
           netName={net?.name || 'Net'}
           netId={Number(netId)}
           templateId={net?.template_id}
-          canEdit={canManage && !!net?.template_id}
+          canEdit={canEditNet && !!net?.template_id}
           onSaved={onScriptSaved}
           onUndock={onUndockScript}
+          onPopOut={onPopOutScript}
           minimized={scriptMinimized}
           onMinimize={onMinimizeScript}
           onRestore={onRestoreScript}
@@ -126,6 +137,7 @@ const NetViewLeftPanels: React.FC<NetViewLeftPanelsProps> = ({
           templateId={net?.template_id}
           canEdit={canManage}
           onUndock={onUndockScheduleAnnouncements}
+          onPopOut={onPopOutScheduleAnnouncements}
           minimized={scheduleAnnouncementsMinimized}
           onMinimize={onMinimizeScheduleAnnouncements}
           onRestore={onRestoreScheduleAnnouncements}
@@ -145,9 +157,10 @@ const NetViewLeftPanels: React.FC<NetViewLeftPanelsProps> = ({
           announcements={net?.announcements || ''}
           netName={net?.name || 'Net'}
           netId={Number(netId)}
-          canEdit={canManage}
+          canEdit={canEditNet}
           onSaved={onAnnouncementsSaved}
           onUndock={onUndockAnnouncements}
+          onPopOut={onPopOutAnnouncements}
           minimized={announcementsMinimized}
           onMinimize={onMinimizeAnnouncements}
           onRestore={onRestoreAnnouncements}
