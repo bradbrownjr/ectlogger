@@ -16,7 +16,8 @@ from app.schemas import (
     NCSRotationMemberCreate, NCSRotationMemberResponse, NCSRotationMemberReorder,
     NCSScheduleOverrideCreate, NCSScheduleOverrideResponse,
     NCSScheduleEntry, NCSScheduleResponse,
-    TemplateStaffCreate, TemplateStaffResponse
+    TemplateStaffCreate, TemplateStaffResponse,
+    public_display_name,
 )
 from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
@@ -32,6 +33,18 @@ from app.routers.ncs_schedule import (
 )
 
 router = APIRouter(prefix="/templates/{template_id}/ncs-rotation", tags=["ncs-rotation"])
+
+
+def _entries_for_viewer(entries: List[NCSScheduleEntry], signed_in: bool) -> List[NCSScheduleEntry]:
+    """The schedule endpoints are public; a guest sees first names only.
+
+    compute_anchored_ncs_schedule stays viewer-agnostic because the reminder
+    service uses it too, so the redaction happens here, on the way out.
+    """
+    return [
+        e.model_copy(update={"user_name": public_display_name(e.user_name, signed_in)})
+        for e in entries
+    ]
 
 
 class TemplateStaffUpdateRequest(BaseModel):
@@ -190,7 +203,7 @@ async def list_rotation_members(
     template = await get_template_or_404(template_id, db)
     
     return [
-        NCSRotationMemberResponse.from_orm_with_user(member)
+        NCSRotationMemberResponse.from_orm_with_user(member, current_user is not None)
         for member in sorted(template.rotation_members, key=lambda m: m.position)
     ]
 
@@ -242,7 +255,7 @@ async def add_rotation_member(
     )
     member = result.scalar_one()
     
-    return NCSRotationMemberResponse.from_orm_with_user(member)
+    return NCSRotationMemberResponse.from_orm_with_user(member, True)
 
 
 @router.delete("/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -366,7 +379,7 @@ async def update_rotation_member(
     )
     member = result.scalar_one()
 
-    return NCSRotationMemberResponse.from_orm_with_user(member)
+    return NCSRotationMemberResponse.from_orm_with_user(member, True)
 
 
 @router.put("/members/reorder", response_model=List[NCSRotationMemberResponse])
@@ -403,7 +416,7 @@ async def reorder_rotation_members(
     # Reload and return
     template = await get_template_or_404(template_id, db)
     return [
-        NCSRotationMemberResponse.from_orm_with_user(member)
+        NCSRotationMemberResponse.from_orm_with_user(member, True)
         for member in sorted(template.rotation_members, key=lambda m: m.position)
     ]
 
@@ -435,10 +448,13 @@ async def get_ncs_schedule(
         template_id=template_id,
         fifth_week_user_id=template.fifth_week_user_id,
         fifth_week_user_callsign=template.fifth_week_user.callsign if template.fifth_week_user else None,
-        fifth_week_user_name=template.fifth_week_user.name if template.fifth_week_user else None,
-        schedule=schedule,
+        fifth_week_user_name=public_display_name(
+            template.fifth_week_user.name if template.fifth_week_user else None,
+            current_user is not None,
+        ),
+        schedule=_entries_for_viewer(schedule, current_user is not None),
         rotation_members=[
-            NCSRotationMemberResponse.from_orm_with_user(m)
+            NCSRotationMemberResponse.from_orm_with_user(m, current_user is not None)
             for m in sorted(template.rotation_members, key=lambda m: m.position)
         ]
     )
@@ -469,7 +485,7 @@ async def get_next_ncs(
         template.schedule_overrides
     )
 
-    return schedule[0] if schedule else None
+    return _entries_for_viewer(schedule, current_user is not None)[0] if schedule else None
 
 
 @router.post("/overrides", response_model=NCSScheduleOverrideResponse, status_code=status.HTTP_201_CREATED)
@@ -598,7 +614,7 @@ async def create_schedule_override(
         if subscriber_count > 0:
             logger.info("NCS_ROTATION", f"Queued cancellation notice to {subscriber_count} subscribers")
     
-    return NCSScheduleOverrideResponse.from_orm_with_users(override)
+    return NCSScheduleOverrideResponse.from_orm_with_users(override, True)
 
 
 @router.delete("/overrides/{override_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -638,7 +654,7 @@ async def list_schedule_overrides(
     template = await get_template_or_404(template_id, db)
     
     return [
-        NCSScheduleOverrideResponse.from_orm_with_users(override)
+        NCSScheduleOverrideResponse.from_orm_with_users(override, current_user is not None)
         for override in template.schedule_overrides
     ]
 
@@ -657,7 +673,7 @@ async def list_template_staff(
     template = await get_template_or_404(template_id, db)
     
     return [
-        TemplateStaffResponse.from_orm_with_user(staff)
+        TemplateStaffResponse.from_orm_with_user(staff, current_user is not None)
         for staff in template.staff
     ]
 
@@ -701,7 +717,7 @@ async def add_template_staff(
     )
     staff = result.scalar_one()
     
-    return TemplateStaffResponse.from_orm_with_user(staff)
+    return TemplateStaffResponse.from_orm_with_user(staff, True)
 
 
 @router.delete("/staff/{staff_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -774,4 +790,4 @@ async def update_template_staff(
     await db.commit()
     await db.refresh(staff)
     
-    return TemplateStaffResponse.from_orm_with_user(staff)
+    return TemplateStaffResponse.from_orm_with_user(staff, True)

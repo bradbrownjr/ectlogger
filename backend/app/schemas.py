@@ -889,7 +889,7 @@ class NetTemplateResponse(NetTemplateBase):
     is_owner_or_staff: bool = False
 
     @classmethod
-    def from_orm(cls, template, subscriber_count: int = 0, is_subscribed: bool = False, owner_callsign: str = None, owner_name: str = None, can_manage: bool = False, can_create_net: bool = False, is_owner_or_staff: bool = False):
+    def from_orm(cls, template, subscriber_count: int = 0, is_subscribed: bool = False, owner_callsign: str = None, owner_name: str = None, can_manage: bool = False, can_create_net: bool = False, is_owner_or_staff: bool = False, signed_in: bool = False):
         import json
         data = {
             'id': template.id,
@@ -904,7 +904,7 @@ class NetTemplateResponse(NetTemplateBase):
             'owner_name': owner_name,
             'fifth_week_user_id': template.fifth_week_user_id,
             'fifth_week_user_callsign': template.fifth_week_user.callsign if template.fifth_week_user else None,
-            'fifth_week_user_name': template.fifth_week_user.name if template.fifth_week_user else None,
+            'fifth_week_user_name': public_display_name(template.fifth_week_user.name if template.fifth_week_user else None, signed_in),
             'logo_url': template.logo_url,
             'logo_accent_colors': logo_accent_colors(template.logo_url),
             'field_config': json.loads(template.field_config) if template.field_config else None,
@@ -1674,8 +1674,8 @@ class NCSRotationMemberResponse(NCSRotationMemberBase):
     id: int
     template_id: int
     created_at: datetime
-    # User info for display
-    user_email: Optional[str] = None
+    # User info for display. No email address: this list is public (guests
+    # can open a schedule's Staff view), see from_orm_with_user.
     user_name: Optional[str] = None
     user_callsign: Optional[str] = None
 
@@ -1683,7 +1683,9 @@ class NCSRotationMemberResponse(NCSRotationMemberBase):
         from_attributes = True
 
     @classmethod
-    def from_orm_with_user(cls, member):
+    def from_orm_with_user(cls, member, signed_in: bool):
+        """``signed_in`` has no default on purpose: every caller must say who
+        is looking, and a guest gets only the first name (public_display_name)."""
         return cls(
             id=member.id,
             template_id=member.template_id,
@@ -1691,8 +1693,7 @@ class NCSRotationMemberResponse(NCSRotationMemberBase):
             position=member.position,
             is_active=member.is_active,
             created_at=member.created_at,
-            user_email=member.user.email if member.user else None,
-            user_name=member.user.name if member.user else None,
+            user_name=public_display_name(member.user.name if member.user else None, signed_in),
             user_callsign=member.user.callsign if member.user else None,
         )
 
@@ -1722,7 +1723,8 @@ class NCSScheduleOverrideResponse(BaseModel):
         from_attributes = True
 
     @classmethod
-    def from_orm_with_users(cls, override):
+    def from_orm_with_users(cls, override, signed_in: bool):
+        """Public list; a guest gets first names only (see NCSRotationMemberResponse)."""
         return cls(
             id=override.id,
             template_id=override.template_id,
@@ -1732,9 +1734,9 @@ class NCSScheduleOverrideResponse(BaseModel):
             reason=override.reason,
             created_by_id=override.created_by_id,
             created_at=override.created_at,
-            original_user_name=override.original_user.name if override.original_user else None,
+            original_user_name=public_display_name(override.original_user.name if override.original_user else None, signed_in),
             original_user_callsign=override.original_user.callsign if override.original_user else None,
-            replacement_user_name=override.replacement_user.name if override.replacement_user else None,
+            replacement_user_name=public_display_name(override.replacement_user.name if override.replacement_user else None, signed_in),
             replacement_user_callsign=override.replacement_user.callsign if override.replacement_user else None,
         )
 
@@ -1745,7 +1747,6 @@ class NCSScheduleEntry(BaseModel):
     user_id: Optional[int]
     user_name: Optional[str]
     user_callsign: Optional[str]
-    user_email: Optional[str]
     is_override: bool = False
     is_fifth_week: bool = False
     is_cancelled: bool = False
@@ -1805,8 +1806,8 @@ class TemplateStaffResponse(BaseModel):
     is_active: bool
     is_co_manager: bool = False
     created_at: datetime
-    # User info for display
-    user_email: Optional[str] = None
+    # User info for display. No email address: this list is public (guests
+    # can open a schedule's Staff view); the avatar URL is resolved server-side.
     user_name: Optional[str] = None
     user_callsign: Optional[str] = None
     avatar_url: Optional[str] = None
@@ -1815,7 +1816,8 @@ class TemplateStaffResponse(BaseModel):
         from_attributes = True
 
     @classmethod
-    def from_orm_with_user(cls, staff):
+    def from_orm_with_user(cls, staff, signed_in: bool):
+        """A guest gets only the first name (public_display_name)."""
         from app.utils import get_avatar_url
         return cls(
             id=staff.id,
@@ -1824,8 +1826,7 @@ class TemplateStaffResponse(BaseModel):
             is_active=staff.is_active,
             is_co_manager=getattr(staff, 'is_co_manager', False),
             created_at=staff.created_at,
-            user_email=staff.user.email if staff.user else None,
-            user_name=staff.user.name if staff.user else None,
+            user_name=public_display_name(staff.user.name if staff.user else None, signed_in),
             user_callsign=staff.user.callsign if staff.user else None,
             avatar_url=get_avatar_url(
                 staff.user.email if staff.user else None,

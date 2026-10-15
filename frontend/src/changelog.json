@@ -1,6 +1,22 @@
 {
-  "version": "2026.10.13",
+  "version": "2026.10.15",
   "entries": [
+    {
+      "version": "2026.10.15",
+      "date": "2026-10-15",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Schedule: Net staff list — The public net staff list now shows only call signs and first names.",
+              "userImpact": false
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.10.13",
       "date": "2026-10-13",

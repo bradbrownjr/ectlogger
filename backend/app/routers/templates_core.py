@@ -312,7 +312,7 @@ async def create_template(
     # different user via template_data.owner_id above, in which case the
     # creator themselves is not actually that template's owner or staff.
     is_owner_or_staff = await check_template_staff_access(db, template, current_user)
-    return NetTemplateResponse.from_orm(template, subscriber_count=0, is_subscribed=False, can_manage=True, can_create_net=True, is_owner_or_staff=is_owner_or_staff)
+    return NetTemplateResponse.from_orm(template, subscriber_count=0, is_subscribed=False, can_manage=True, can_create_net=True, is_owner_or_staff=is_owner_or_staff, signed_in=True)
 
 
 async def _template_response_for_viewer(
@@ -357,7 +357,8 @@ async def _template_response_for_viewer(
         owner_name=public_display_name(template.owner.name if template.owner else None, current_user is not None),
         can_manage=can_manage,
         can_create_net=can_manage,  # Same permission - owner, admin, or NCS staff
-        is_owner_or_staff=is_owner_or_staff
+        is_owner_or_staff=is_owner_or_staff,
+        signed_in=current_user is not None,
     )
 
 
@@ -597,7 +598,7 @@ async def update_template(
     # rather than assumed true (an admin editing a template they aren't
     # actually owner/staff of is exactly the case this field exists for).
     is_owner_or_staff = await check_template_staff_access(db, template, current_user)
-    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=True, can_create_net=True, is_owner_or_staff=is_owner_or_staff)
+    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=True, can_create_net=True, is_owner_or_staff=is_owner_or_staff, signed_in=True)
 
 
 @router.post("/{template_id}/logo", response_model=NetTemplateResponse)
@@ -640,7 +641,7 @@ async def upload_template_logo(
         .where(NetTemplate.id == template.id)
     )
     template = result.scalar_one()
-    return NetTemplateResponse.from_orm(template)
+    return NetTemplateResponse.from_orm(template, signed_in=True)
 
 
 @router.delete("/{template_id}/logo", response_model=NetTemplateResponse)
@@ -667,7 +668,7 @@ async def delete_template_logo(
         .where(NetTemplate.id == template.id)
     )
     template = result.scalar_one()
-    return NetTemplateResponse.from_orm(template)
+    return NetTemplateResponse.from_orm(template, signed_in=True)
 
 
 @router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
