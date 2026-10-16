@@ -447,10 +447,10 @@ const NetReport: React.FC = () => {
     // to full width and the map block changes shape, and both Recharts'
     // ResponsiveContainer and Leaflet re-measure asynchronously. 60ms is
     // enough for a visibility toggle but not for a reflow -- too short and the
-    // charts capture at their old width. The map waits longer still, because
-    // invalidateSize() has to fetch tiles for the edges its new shape exposes.
-    const reflowDelayMs = elementId === 'net-report-map' ? 900 : 350;
-    await new Promise(resolve => setTimeout(resolve, reflowDelayMs));
+    // charts capture at their old width. The map's new tiles are waited for
+    // by the capture itself (pdfExport.ts::waitForMapTiles), not by a pause:
+    // a fixed 900ms here left grey squares on any slower connection.
+    await new Promise(resolve => setTimeout(resolve, 350));
     try {
       const netLabel = net?.name ? net.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Net';
       await exportElementToPng(elementId, {

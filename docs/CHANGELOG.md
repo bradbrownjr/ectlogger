@@ -26,6 +26,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Net View: Script edits stay put** — Editing the script from its panel during a net now keeps the change on that net after a reload, and a script opened in a new window shows its section headings again.
 * **Schedule: Net staff list** — The public net staff list now shows only call signs and first names.
+* **Reports: Complete map images** — The map image from Export PNG no longer has grey patches where parts of the map hadn't finished loading on slower connections.
 
 ---
 

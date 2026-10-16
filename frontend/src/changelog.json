@@ -26,6 +26,10 @@
             {
               "text": "Schedule: Net staff list — The public net staff list now shows only call signs and first names.",
               "userImpact": false
+            },
+            {
+              "text": "Reports: Complete map images — The map image from Export PNG no longer has grey patches where parts of the map hadn't finished loading on slower connections.",
+              "userImpact": false
             }
           ]
         }

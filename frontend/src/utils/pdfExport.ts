@@ -406,6 +406,40 @@ const createExportFrame = async (width: number): Promise<HTMLIFrameElement> => {
   return frame;
 };
 
+// How long a capture waits for map tiles before taking the picture anyway, so
+// a blocked or dead tile server can't hang an export.
+const MAP_TILE_WAIT_MS = 10000;
+// Leaflet fades each tile in over 0.2 s after it arrives; a tile captured
+// mid-fade comes out washed out or missing.
+const MAP_TILE_SETTLE_MS = 300;
+
+/**
+ * Wait until every map tile inside `element` has finished downloading (or
+ * failed), and no new ones have been requested for MAP_TILE_SETTLE_MS.
+ *
+ * A map that was just reshaped or re-fitted for an export (the report's PNG
+ * map, see NetReport.tsx) asks for the tiles its new view exposes, and on an
+ * ordinary connection those take longer than any fixed pause: captured
+ * early, every missing tile is a grey square in the picture. Waiting on the
+ * tiles themselves works however slow the connection is.
+ */
+const waitForMapTiles = async (element: HTMLElement): Promise<void> => {
+  if (!element.querySelector('.leaflet-container')) return;
+  const deadline = Date.now() + MAP_TILE_WAIT_MS;
+  let settledSince: number | null = null;
+  while (Date.now() < deadline) {
+    const tiles = Array.from(element.querySelectorAll<HTMLImageElement>('img.leaflet-tile'));
+    // complete is true for a tile that failed as well as one that loaded
+    if (tiles.every((tile) => tile.complete)) {
+      settledSince ??= Date.now();
+      if (Date.now() - settledSince >= MAP_TILE_SETTLE_MS) return;
+    } else {
+      settledSince = null;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+};
+
 /**
  * A Leaflet map can't re-lay itself out in a copy: its tiles are positioned
  * for the size it has on screen. When the copy is a different width, each
@@ -463,6 +497,7 @@ const captureElementAsCanvas = async (
   captureMode: 'clone' | 'live' = 'clone',
   layoutWidth?: number
 ): Promise<CapturedElement> => {
+  await waitForMapTiles(element);
   if (captureMode === 'live') {
     const canvas = await html2canvas(element, html2canvasOptions(scale));
     return { canvas, avoidRanges: measureAvoidRanges(element, scale) };
