@@ -14,6 +14,8 @@ import CropSquareIcon from '@mui/icons-material/CropSquare';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import { Rnd } from 'react-rnd';
+import { useFloatingRect } from '../hooks/useFloatingRect';
+import { FLOATING_DRAG_CANCEL, fitFloatingRect, floatingPageSize } from '../utils/floatingWindow';
 
 interface SearchCheckInsProps {
   open: boolean;
@@ -32,22 +34,21 @@ const SearchCheckIns: React.FC<SearchCheckInsProps> = ({
 }) => {
   const [minimized, setMinimized] = useState(false);
 
-  // Window position and size state. document.body.offsetWidth, not
-  // window.innerWidth -- see FloatingWindow.tsx's `bounds` comment.
-  const [windowState, setWindowState] = useState({
-    x: Math.max(50, document.body.offsetWidth - 450),
+  // Window position and size, fitted to the page (utils/floatingWindow.ts).
+  const [windowState, setWindowState] = useFloatingRect(() => ({
+    x: Math.max(50, floatingPageSize().width - 450),
     y: 60,
     width: 400,
     height: minimized ? 48 : 140,
-  });
+  }));
 
   // Update height when minimized state changes
   useEffect(() => {
-    setWindowState(prev => ({
+    setWindowState(prev => fitFloatingRect({
       ...prev,
       height: minimized ? 48 : 140,
     }));
-  }, [minimized]);
+  }, [minimized, setWindowState]);
 
   if (!open) return null;
 
@@ -70,6 +71,7 @@ const SearchCheckIns: React.FC<SearchCheckInsProps> = ({
       minHeight={minimized ? 48 : 120}
       bounds="body"
       dragHandleClassName="drag-handle"
+      cancel={FLOATING_DRAG_CANCEL}
       enableResizing={!minimized}
       style={{ zIndex: 1300 }}
     >

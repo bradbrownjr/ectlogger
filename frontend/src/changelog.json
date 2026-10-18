@@ -1,6 +1,22 @@
 {
-  "version": "2026.10.15",
+  "version": "2026.10.18",
   "entries": [
+    {
+      "version": "2026.10.18",
+      "date": "2026-10-18",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net View: Floating windows on phones — The close, minimize and other title-bar buttons on floating windows now respond to a tap, and the Script, Announcements and Net Notes windows now open sized to your screen and stay visible when you rotate your phone.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.10.15",
       "date": "2026-10-15",

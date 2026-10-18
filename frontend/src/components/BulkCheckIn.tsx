@@ -14,6 +14,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import { Rnd } from 'react-rnd';
+import { useFloatingRect } from '../hooks/useFloatingRect';
+import { FLOATING_DRAG_CANCEL, fitFloatingRect, floatingPageSize } from '../utils/floatingWindow';
 import { checkInApi } from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
 import { CHECKIN_TOGGLEABLE_FIELDS } from '../utils/checkInFields';
@@ -140,26 +142,21 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
     return examples.join('; ');
   };
 
-  // Window position and size state. document.body.offsetWidth, not
-  // window.innerWidth -- this Rnd's own position/width are LOCAL pixel
-  // units (the space its `bounds="body"` below also uses), while
-  // window.innerWidth is TRUE/visual viewport pixels; the two only match
-  // outside NetView's short-viewport zoom. See FloatingWindow.tsx's
-  // `bounds` comment for the full explanation.
-  const [windowState, setWindowState] = useState({
-    x: Math.max(0, document.body.offsetWidth - 720),
+  // Window position and size, fitted to the page (utils/floatingWindow.ts).
+  const [windowState, setWindowState] = useFloatingRect(() => ({
+    x: Math.max(0, floatingPageSize().width - 720),
     y: 100,
-    width: Math.min(680, document.body.offsetWidth - 16),
+    width: 680,
     height: minimized ? 48 : 340,
-  });
+  }));
 
   // Update height when minimized state changes
   useEffect(() => {
-    setWindowState(prev => ({
+    setWindowState(prev => fitFloatingRect({
       ...prev,
       height: minimized ? 48 : 340,
     }));
-  }, [minimized]);
+  }, [minimized, setWindowState]);
 
   if (!open) return null;
 
@@ -302,11 +299,12 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
             y: position.y,
           });
         }}
-        minWidth={Math.min(500, document.body.offsetWidth - 16)}
+        minWidth={Math.min(500, windowState.width)}
         minHeight={minimized ? 48 : 280}
         // "body", not "window" -- see FloatingWindow.tsx's `bounds` comment.
         bounds="body"
         dragHandleClassName="drag-handle"
+        cancel={FLOATING_DRAG_CANCEL}
         enableResizing={!minimized}
         style={{ zIndex: 1300 }}
       >

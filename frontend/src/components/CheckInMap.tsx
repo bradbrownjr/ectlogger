@@ -24,6 +24,8 @@ import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import HearingIcon from '@mui/icons-material/Hearing';
 import { Rnd } from 'react-rnd';
+import { useFloatingRect } from '../hooks/useFloatingRect';
+import { FLOATING_DRAG_CANCEL, fitFloatingRect, floatingPageSize } from '../utils/floatingWindow';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -327,50 +329,27 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   // below needs the local-vs-visual distinction, see the Rnd's `bounds`
   // comment further down.
   const isMobile = window.innerWidth < 768;
-  const [windowState, setWindowState] = useState(() => {
+  // Fitted to the page on open and on every resize/rotation by the shared
+  // hook (utils/floatingWindow.ts), in local units -- see the Rnd's `bounds`
+  // comment below for why that is document.body's size, not window.inner*.
+  const [windowState, setWindowState] = useFloatingRect(() => {
+    const page = floatingPageSize();
     if (isMobile) {
       // On mobile, use almost full screen with some padding
       return {
         x: 10,
         y: 60,
-        width: Math.min(document.body.offsetWidth - 20, 700),
-        height: Math.min(document.body.offsetHeight - 120, 500),
+        width: Math.min(page.width - 20, 700),
+        height: Math.min(page.height - 120, 500),
       };
     }
     return {
-      x: Math.max(20, document.body.offsetWidth - 720),
+      x: Math.max(20, page.width - 720),
       y: 100,
       width: 700,
       height: 500,
     };
   });
-
-  // Keep window within viewport bounds on resize. document.body.offsetWidth/
-  // offsetHeight, not window.innerWidth/innerHeight -- windowState.x/y/width/
-  // height are LOCAL pixel units (the same space this component's own Rnd
-  // below renders in), while window.innerWidth/innerHeight are TRUE/visual
-  // viewport pixels. NetView.tsx's short-viewport zoom inflates local units
-  // by 1/zoom relative to visual ones, so comparing local state directly
-  // against window.innerWidth clamped the window well short of the real
-  // edge -- confirmed by direct measurement (document.body.offsetWidth 1000
-  // vs window.innerWidth 800 at zoom 0.8) and reported as "can't drag the
-  // map any further down or right." See the Rnd's `bounds="body"` below for
-  // the matching fix to the live drag/resize limit itself -- this effect
-  // only handles the window being resized AFTER the fact, not the drag
-  // itself, which react-rnd clamps internally via `bounds`.
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowState(prev => ({
-        ...prev,
-        x: Math.max(0, Math.min(prev.x, document.body.offsetWidth - 100)),
-        y: Math.max(0, Math.min(prev.y, document.body.offsetHeight - 50)),
-        width: Math.min(prev.width, document.body.offsetWidth - 20),
-        height: Math.min(prev.height, document.body.offsetHeight - 100),
-      }));
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Invalidate map size after resize
   const handleResizeStop = () => {
@@ -392,7 +371,8 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     if (maximized) {
       // Restore previous size
       if (preMaximizeState) {
-        setWindowState(preMaximizeState);
+        // Refit: the page may have changed size while maximized.
+        setWindowState(fitFloatingRect(preMaximizeState));
         setPreMaximizeState(null);
       }
       setMaximized(false);
@@ -924,6 +904,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       // identical to "window" mode everywhere zoom is 1.
       bounds="body"
       dragHandleClassName="drag-handle"
+      cancel={FLOATING_DRAG_CANCEL}
       enableResizing={!minimized}
       style={{ zIndex: 1300 }}
     >

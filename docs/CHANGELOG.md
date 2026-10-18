@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-15
+revised: 2026-10-18
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,14 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# October 18, 2026
+
+## Bug Fixes
+
+* **Net View: Floating windows on phones** — The close, minimize and other title-bar buttons on floating windows now respond to a tap, and the Script, Announcements and Net Notes windows now open sized to your screen and stay visible when you rotate your phone.
 
 ---
 

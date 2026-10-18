@@ -725,6 +725,26 @@ panel with an inline editor should use that hook rather than a bare
 
 ---
 
+## Floating Windows (react-rnd)
+
+Every in-page floating window (`FloatingWindow`, `MarkdownDocPanel`,
+`CheckInMap`, `BulkCheckIn`, `SearchCheckIns`) follows two rules, both in
+`utils/floatingWindow.ts`:
+
+1. **Pass `cancel={FLOATING_DRAG_CANCEL}` on the `<Rnd>`.** Inside a drag
+   handle, react-draggable cancels the default action of `touchstart`, so on a
+   touch screen a title-bar button shows its ripple but its click never fires.
+   Until 2026-10-18 no floating window passed it, and every title-bar button
+   (close, minimize, dock, pop-out, edit, PDF) was dead on phones.
+2. **Keep position and size in `useFloatingRect`**, not a bare `useState`. It
+   fits the window to the page when it opens and again on every resize or
+   rotation (`fitFloatingRect`). Refit through `fitFloatingRect` too when
+   restoring a saved size (un-minimize, un-maximize). `MarkdownDocPanel` had
+   no fitting at all: it opened 500px wide off the right edge of a phone,
+   and in landscape it dropped below the page and disappeared.
+
+---
+
 ## Docked Pane Width Gating
 
 NetView's docked panes live in two different columns, and only one of them

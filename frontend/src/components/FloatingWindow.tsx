@@ -12,6 +12,8 @@ import CropSquareIcon from '@mui/icons-material/CropSquare';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
 import { isNetViewLayoutRemembered } from '../utils/localStorageKeys';
+import { useFloatingRect } from '../hooks/useFloatingRect';
+import { FLOATING_DRAG_CANCEL, FloatingRect, floatingPageSize } from '../utils/floatingWindow';
 
 interface FloatingWindowProps {
   title: string;
@@ -37,13 +39,6 @@ interface FloatingWindowProps {
   storageKey?: string;
 }
 
-interface WindowPosition {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 const FloatingWindow: React.FC<FloatingWindowProps> = ({
   title,
   children,
@@ -58,7 +53,7 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
   storageKey,
 }) => {
   const [isMinimized, setIsMinimized] = useState(false);
-  const [position, setPosition] = useState<WindowPosition>(() => {
+  const [position, setPosition] = useFloatingRect((): FloatingRect => {
     // Try to load saved position from localStorage
     if (storageKey && isNetViewLayoutRemembered()) {
       const saved = localStorage.getItem(`floatingWindow_${storageKey}`);
@@ -70,14 +65,12 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
         }
       }
     }
-    // Default position - center of viewport. document.body.offsetWidth/
-    // offsetHeight, not window.innerWidth/innerHeight -- see the bounds
-    // comment below on the same local-vs-visual distinction; identical
-    // numbers outside a zoomed context, so this is a no-op anywhere but
-    // NetView.
+    // Default position - center of the page (floatingPageSize: local units,
+    // see the bounds comment below).
+    const page = floatingPageSize();
     return {
-      x: Math.max(50, (document.body.offsetWidth - defaultWidth) / 2),
-      y: Math.max(50, (document.body.offsetHeight - defaultHeight) / 3),
+      x: Math.max(50, (page.width - defaultWidth) / 2),
+      y: Math.max(50, (page.height - defaultHeight) / 3),
       width: defaultWidth,
       height: defaultHeight,
     };
@@ -89,24 +82,6 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
       localStorage.setItem(`floatingWindow_${storageKey}`, JSON.stringify(position));
     }
   }, [position, storageKey, isDetached]);
-
-  // Handle window resize to keep floating window in bounds. Same local-vs-
-  // visual distinction as the Rnd's own `bounds="body"` below -- position.x/y
-  // are LOCAL units, so the clamp must compare against document.body's own
-  // LOCAL offsetWidth/offsetHeight, not the VISUAL window.innerWidth/Height
-  // (identical numerically outside a zoomed context, so this is a no-op
-  // anywhere but NetView).
-  useEffect(() => {
-    const handleResize = () => {
-      setPosition((prev: WindowPosition) => ({
-        ...prev,
-        x: Math.min(prev.x, document.body.offsetWidth - 100),
-        y: Math.min(prev.y, document.body.offsetHeight - 100),
-      }));
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   if (!isDetached) {
     // Docked mode: children own their own headers (Chat/ActivityLog render their own title rows).
@@ -124,7 +99,7 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
       size={{ width: position.width, height: isMinimized ? 40 : position.height }}
       position={{ x: position.x, y: position.y }}
       onDragStop={(_e, d) => {
-        setPosition((prev: WindowPosition) => ({ ...prev, x: d.x, y: d.y }));
+        setPosition((prev: FloatingRect) => ({ ...prev, x: d.x, y: d.y }));
       }}
       onResizeStop={(_e, _direction, ref, _delta, pos) => {
         setPosition({
@@ -157,6 +132,7 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
       // else in the app.
       bounds="body"
       dragHandleClassName="floating-window-handle"
+      cancel={FLOATING_DRAG_CANCEL}
       enableResizing={!isMinimized}
       style={{
         zIndex: 1300, // Above MUI dialogs

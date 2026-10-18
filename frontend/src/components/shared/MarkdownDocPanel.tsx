@@ -28,6 +28,8 @@ import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { Rnd } from 'react-rnd';
+import { useFloatingRect } from '../../hooks/useFloatingRect';
+import { FLOATING_DRAG_CANCEL, fitFloatingRect } from '../../utils/floatingWindow';
 import useEditDraft from '../../hooks/useEditDraft';
 import MarkdownRender from './MarkdownRender';
 import { exportMarkdownDocsPdf, pdfFileStem } from '../../utils/markdownDocsPdf';
@@ -108,7 +110,9 @@ const MarkdownDocPanel: React.FC<MarkdownDocPanelProps> = ({
   const [previewing, setPreviewing] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
-  const [windowState, setWindowState] = useState({
+  // Fitted to the page, so on a phone it opens screen-width with its
+  // title-bar buttons reachable and stays on the page when rotated.
+  const [windowState, setWindowState] = useFloatingRect({
     x: defaultX,
     y: 100,
     width: 500,
@@ -122,7 +126,8 @@ const MarkdownDocPanel: React.FC<MarkdownDocPanelProps> = ({
       expandedHeightRef.current = windowState.height;
       setWindowState(prev => ({ ...prev, height: 48 }));
     } else {
-      setWindowState(prev => ({ ...prev, height: expandedHeightRef.current }));
+      // Refit: the page may have changed size (rotated) while minimized.
+      setWindowState(prev => fitFloatingRect({ ...prev, height: expandedHeightRef.current }));
     }
     setMinimized(prev => !prev);
   };
@@ -374,6 +379,7 @@ const MarkdownDocPanel: React.FC<MarkdownDocPanelProps> = ({
       // "body", not "window" -- see FloatingWindow.tsx's `bounds` comment.
       bounds="body"
       dragHandleClassName="drag-handle"
+      cancel={FLOATING_DRAG_CANCEL}
       enableResizing={!minimized}
       style={{ zIndex: 1300 }}
     >
