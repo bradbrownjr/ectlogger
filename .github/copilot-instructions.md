@@ -131,6 +131,18 @@ on the broad `canManage`. Until 2026-09-25 that is exactly what the toolbar
 did, so staff saw Close/Import/Edit/Archive buttons the server refused and a
 Logger could close a net with no button to do it.
 
+**The schedule's manager manages every net from it; `Net.owner_id` is credit.**
+`permissions.py::is_schedule_manager` makes a schedule's owner a manager of
+each of its nets (`_manager`, `check_net_permission`) and counts them as its
+net staff (`is_active_template_staff`, so start and NCS/Logger self-grant).
+This matters for a net a staff member made by hand with **Create Net**, which
+makes that staff member the net's owner. **Never reassign `Net.owner_id` to
+the schedule's manager**, on create or by migration: it is also the "nets you
+ran" credit (Profile "Nets as NCS", the Archived Nets "Ran" filter), which
+belongs to the operator who ran it. Added 2026-10-18 after net 109 left
+N1KWG, the schedule's manager, with no controls on a net from their own
+schedule.
+
 ## File Structure
 
 - Models: singular (`User`, `Net`, `CheckIn`)

@@ -583,9 +583,20 @@ async def update_check_in(
         existing_custom.update(update_data.pop('custom_fields') or {})
         check_in.custom_fields = json.dumps(existing_custom)
     
+    old_callsign = check_in.callsign
+
     # Update remaining fields
     for field, value in update_data.items():
         setattr(check_in, field, value)
+
+    # A corrected callsign is a different station, so the row follows the new
+    # callsign's account, the same lookup create_check_in does. Without this,
+    # a row first logged with a typo stayed a guest row forever, and roles
+    # could not be assigned from it (net 124, 2026-10-12: KB1JCZ corrected to
+    # KB1JCX). Staff edits only: an operator editing their own row (a
+    # portable suffix, say) must not detach it from their own account.
+    if check_in.callsign != old_callsign and not is_own_check_in:
+        check_in.user = await _find_user_by_callsign(db, check_in.callsign)
 
     # An edited location keeps its grid square only if it is still the
     # station's live town; a hand-corrected location drops it, so hovering

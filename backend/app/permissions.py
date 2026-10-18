@@ -71,6 +71,12 @@ async def check_net_permission(
     if net.owner_id == user.id or is_admin(user):
         return True
 
+    # The schedule's manager manages every net from it, including one a staff
+    # member created by hand with Create Net (which makes that staff member
+    # the net's owner). See is_schedule_manager.
+    if net.template_id and await is_schedule_manager(db, net.template_id, user.id):
+        return True
+
     if required_roles:
         # Bounded with limit(1): a user can legitimately hold more than one
         # NetRole on the same net (opening the lobby as Logger and then taking
@@ -94,9 +100,35 @@ async def check_net_permission(
     return False
 
 
+async def is_schedule_manager(db: AsyncSession, template_id: int, user_id: int) -> bool:
+    """Return True when user_id owns (manages) the schedule template_id.
+
+    The schedule's manager is a manager of every net created from it. That is
+    usually also true through Net.owner_id, since the auto-create job makes
+    the schedule's owner the net's owner, but a staff member who clicks
+    Create Net on the schedule becomes the owner of that one net instead
+    (create_net_from_template). Net.owner_id is deliberately left alone there:
+    it is also the "nets you ran" credit (statistics_user.py "Nets as NCS",
+    the Archived Nets "Ran" filter), which belongs to the operator who ran it.
+
+    Reported 2026-10-05 (net 109, Weekly Greater Manchester NH ARES Net): a
+    staff member created the occurrence a week early by hand, so N1KWG, the
+    schedule's manager but not on its own staff list, had no controls on it
+    at all: no Start, Close, Roles or Claim NCS, and no self check-in as NCS
+    or Logger on a net with self check-in turned off.
+    """
+    result = await db.execute(
+        select(NetTemplate.id)
+        .where(NetTemplate.id == template_id, NetTemplate.owner_id == user_id)
+        .limit(1)
+    )
+    return result.scalar_one_or_none() is not None
+
+
 async def is_active_template_staff(db: AsyncSession, template_id: int, user_id: int) -> bool:
     """Return True when user_id is any active TemplateStaff member or active
-    NCS rotation member for template_id -- the "net staff" trust bar shared by
+    NCS rotation member for template_id, or the schedule's own manager (see
+    is_schedule_manager) -- the "net staff" trust bar shared by
     the self-grant eligibility checks below, can_manage_net_roles, and
     routers/nets_core.start_net.
 
@@ -139,6 +171,11 @@ async def is_active_template_staff(db: AsyncSession, template_id: int, user_id: 
     MultipleResultsFound -- the same defect class that took GET /nets/{id} down
     on 2026-09-03.
     """
+    # The manager has always been documented as implicitly net staff, but
+    # was never actually counted until 2026-10-18 (see is_schedule_manager).
+    if await is_schedule_manager(db, template_id, user_id):
+        return True
+
     staff_result = await db.execute(
         select(TemplateStaff.id)
         .where(
@@ -203,7 +240,8 @@ class NetAccess:
 
 
 def _manager(a: NetAccess) -> bool:
-    return a.is_owner or a.is_admin
+    # The schedule's manager manages every net from it (is_schedule_manager).
+    return a.is_owner or a.is_admin or a.is_template_owner
 
 
 def may_edit_net(a: NetAccess) -> bool:
@@ -335,7 +373,9 @@ async def load_net_access(
             is_owner=n.owner_id == user.id,
             active_roles=frozenset(roles.get(n.id, ())),
             has_template=bool(n.template_id),
-            is_template_staff=n.template_id in staff,
+            # The schedule's manager counts as its staff too, matching
+            # is_active_template_staff.
+            is_template_staff=n.template_id in staff or n.template_id in owned,
             is_template_owner=n.template_id in owned,
             is_template_co_manager=n.template_id in co_manager,
         )
