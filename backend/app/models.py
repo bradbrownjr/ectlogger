@@ -141,6 +141,7 @@ class User(Base):
     gmrs_callsign = Column(String(50), unique=True, index=True, nullable=True)  # GMRS callsign (e.g., WROP123)
     callsigns = Column(Text, default='[]')  # JSON array of additional callsigns
     previous_callsigns = Column(Text, default='[]')  # JSON array of former primary callsigns (auto-populated on callsign change)
+    banned_callsign = Column(String(50), nullable=True)  # Primary callsign a ban took off this account, so the real operator can use it; unban puts it back if still free (routers/users.py)
     role = Column(Enum(UserRole), default=UserRole.USER, index=True)
     oauth_provider = Column(String(50))  # google, microsoft, github, email
     oauth_id = Column(String(255), unique=True, index=True)

@@ -244,7 +244,7 @@ async def _rotation_of_one_callsign(client, db, owner, callsign="KB1JCX"):
 @pytest.mark.asyncio
 async def test_schedule_shows_the_callsign_on_duty(client, db, owner):
     template = await _rotation_of_one_callsign(client, db, owner)
-    schedule = (await client.get(f"/api/templates/{template.id}/ncs-rotation/schedule")).json()["schedule"]
+    schedule = (await client.get(f"/api/templates/{template.id}/ncs-rotation/schedule", headers=auth_headers(owner))).json()["schedule"]
     assert schedule and all(e["user_callsign"] == "KB1JCX" and e["has_account"] is False for e in schedule)
 
 
@@ -731,6 +731,46 @@ async def test_ban_reverts_all_claims(client, db, owner, admin):
     # And a banned account is never offered for linking again.
     listed = (await client.get(_staff_url(template.id), headers=auth_headers(owner))).json()[0]
     assert listed["account_available"] is False
+
+
+@pytest.mark.asyncio
+async def test_ban_frees_the_callsign_for_the_real_operator(client, db, owner, admin):
+    """The primary callsign is unique: without this, the real operator got
+    'already in use' until an admin renamed the banned account."""
+    _template, _net, _past, troll = await _troll_linked(client, db, owner)
+    ban = (await client.put(f"/api/users/{troll.id}/ban", headers=auth_headers(admin))).json()
+    assert (ban["callsign"], ban["banned_callsign"]) == (None, "KB1JCX")
+
+    real = await _user(db, "real@example.com", callsign=None)
+    resp = await client.put("/api/users/me", json={"callsign": "KB1JCX"}, headers=auth_headers(real))
+    assert resp.status_code == 200, resp.text
+
+    # Unbanning can't take it back from the real operator.
+    unban = (await client.put(f"/api/users/{troll.id}/unban", headers=auth_headers(admin))).json()
+    assert (unban["callsign"], unban["banned_callsign"]) == (None, "KB1JCX")
+
+
+@pytest.mark.asyncio
+async def test_unban_restores_a_callsign_nobody_took(client, db, admin):
+    user = await _user(db, "mistake@example.com", callsign="KB1MIS")
+    await client.put(f"/api/users/{user.id}/ban", headers=auth_headers(admin))
+    unban = (await client.put(f"/api/users/{user.id}/unban", headers=auth_headers(admin))).json()
+    assert (unban["callsign"], unban["banned_callsign"], unban["is_active"]) == ("KB1MIS", None, True)
+
+
+@pytest.mark.asyncio
+async def test_guests_are_not_told_who_has_an_account(client, db, owner):
+    template = await _rotation_of_one_callsign(client, db, owner)
+    await client.post(_staff_url(template.id), json={"callsign": "KB1JCX"}, headers=auth_headers(owner))
+    staff = (await client.get(_staff_url(template.id))).json()
+    members = (await client.get(_members_url(template.id))).json()
+    schedule = (await client.get(f"/api/templates/{template.id}/ncs-rotation/schedule")).json()
+    assert staff and all(s["has_account"] and not s["invited"] for s in staff)
+    assert members and all(m["has_account"] for m in members)
+    assert schedule["schedule"] and all(e["has_account"] for e in schedule["schedule"])
+    # Signed in, the same entries say so.
+    signed_in = (await client.get(_staff_url(template.id), headers=auth_headers(owner))).json()
+    assert [s["has_account"] for s in signed_in] == [False]
 
 
 @pytest.mark.asyncio

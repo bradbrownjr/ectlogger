@@ -782,6 +782,11 @@ async def ban_user(
         raise HTTPException(status_code=400, detail="Cannot ban yourself")
     
     user.is_active = False
+    # Free the primary callsign, so the real operator can set it on their
+    # own account (it is a unique column). Unban puts it back if still free.
+    if user.callsign:
+        user.banned_callsign = user.callsign
+        user.callsign = None
     # A banned account gives back every staff, rotation and role entry it
     # took over by callsign; they become callsign-only again, waiting for
     # the real operator (services/callsign_people.py).
@@ -878,6 +883,15 @@ async def unban_user(
         raise HTTPException(status_code=404, detail="User not found")
     
     user.is_active = True
+    # Give back the callsign the ban freed, unless the real operator has
+    # since taken it; then it stays on banned_callsign for the admin to see.
+    if user.banned_callsign and not user.callsign:
+        taken = (await db.execute(
+            select(User.id).where(func.upper(User.callsign) == user.banned_callsign.upper()).limit(1)
+        )).scalar_one_or_none()
+        if taken is None:
+            user.callsign = user.banned_callsign
+            user.banned_callsign = None
     await db.commit()
     await db.refresh(user)
     return UserResponse.from_orm(user)

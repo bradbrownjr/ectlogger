@@ -34,6 +34,7 @@ ADDED_COLUMNS = [
     ("ncs_schedule_overrides", "original_callsign", "VARCHAR(50)"),
     ("ncs_schedule_overrides", "replacement_callsign", "VARCHAR(50)"),
     ("net_templates", "fifth_week_callsign", "VARCHAR(50)"),
+    ("users", "banned_callsign", "VARCHAR(50)"),
 ]
 
 NEW_TABLES = {

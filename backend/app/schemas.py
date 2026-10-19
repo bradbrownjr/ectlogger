@@ -268,6 +268,8 @@ class UserResponse(UserBase):
     schedule_sort_order: str = 'date'
     theme: Optional[str] = None
     previous_callsigns: List[str] = Field(default_factory=list)
+    # The primary callsign a ban freed (see User.banned_callsign).
+    banned_callsign: Optional[str] = None
     last_active: Optional[datetime] = None
     schedule_age_bypass: bool = False
     # Whether this user has ever held the NCS role on any net. Computed live by
@@ -911,7 +913,7 @@ class NetTemplateResponse(NetTemplateBase):
             'fifth_week_callsign': template.fifth_week_callsign,
             'fifth_week_user_callsign': template.fifth_week_user.callsign if template.fifth_week_user else template.fifth_week_callsign,
             'fifth_week_user_name': public_display_name(template.fifth_week_user.name if template.fifth_week_user else None, signed_in),
-            'fifth_week_has_account': template.fifth_week_callsign is None,
+            'fifth_week_has_account': template.fifth_week_callsign is None or not signed_in,
             'logo_url': template.logo_url,
             'logo_accent_colors': logo_accent_colors(template.logo_url),
             'field_config': json.loads(template.field_config) if template.field_config else None,
@@ -1727,7 +1729,8 @@ class NCSRotationMemberResponse(NCSRotationMemberBase):
             created_at=member.created_at,
             user_name=public_display_name(member.user.name if member.user else None, signed_in),
             user_callsign=member.user.callsign if member.user else member.callsign,
-            has_account=member.user_id is not None,
+            # Whether an entry has an account is for signed-in viewers only.
+            has_account=member.user_id is not None or not signed_in,
             account_available=account_available and signed_in,
         )
 
@@ -1882,7 +1885,7 @@ class TemplateStaffResponse(BaseModel):
             created_at=staff.created_at,
             user_name=public_display_name(staff.user.name if staff.user else None, signed_in),
             user_callsign=staff.user.callsign if staff.user else staff.callsign,
-            has_account=staff.user_id is not None,
+            has_account=staff.user_id is not None or not signed_in,
             account_available=account_available and signed_in,
             invited=invited and signed_in,
             avatar_url=get_avatar_url(

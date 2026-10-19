@@ -26,7 +26,7 @@ From a schedule's **Net Staff** tab (or the **Staff** button on its card), add a
 
 Each staff row has its own switch to disable someone temporarily without removing them, and a star to promote them to **co-manager**. Co-manager is a strictly higher tier than plain staff: it's for schedule-ownership actions (transferring ownership, merging schedules, archiving or deleting a net from this schedule), not for who can run a net night to night. Plain active staff can already do that.
 
-The staff list, the rotation, and who has NCS on upcoming dates are public, so anyone can see who runs your net. Visitors who aren't signed in see call signs and first names only, and nobody sees a staff member's email address.
+The staff list, the rotation, and who has NCS on upcoming dates are public, so anyone can see who runs your net. Visitors who aren't signed in see call signs and first names only, and not which operators have an account yet. Nobody sees a staff member's email address.
 
 **Since 2026-09-18, any active staff member can also claim NCS or Logger on a net just by checking themselves in as one**, the same as a rotation member could before; co-manager status isn't required for that. Pick **Check In as NCS** or **Check In as Logger** on the check-in banner or form when it's offered; see [Checking in](/docs/operators/checking-in/) for what that looks like. Only a genuine self-check-in grants a role this way. If Net Control or the Logger enters someone else's check-in by voice, it never grants NCS or Logger on their behalf, even if that person is staff.
 

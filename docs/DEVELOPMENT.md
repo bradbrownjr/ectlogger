@@ -754,6 +754,10 @@ Rules to keep:
 - **Never match two people on `user_id` alone**, on either side. Two callsign-only rows
   both have `user_id: null`. Use `samePerson` / `personKey` (`staffPeople.ts`) or
   `roleMatchesCheckIn` (`stationRoles.ts`).
+- **Who has an account is for signed-in viewers.** The staff, rotation and schedule
+  reads are public; for a guest `has_account` / `fifth_week_has_account` are always
+  true and `invited` / `account_available` false, and the Staff dialog hides the
+  chips. `user_id` is still null on those rows, so this is presentation, not a secret.
 - **A typed callsign proves nothing, so taking over is per schedule and gated.**
   `claim_callsign_placeholders` runs on sign-up (`auth.py::get_or_create_user`,
   `contacts.py` invite, admin create) and when an account's *primary* callsign actually
@@ -772,7 +776,9 @@ Rules to keep:
 - **Reversible.** A `linked` claim's `rows` JSON lists every row converted, so
   `revert_callsign_claim` replays it backwards and clears co-manager; callers then run
   `resync_pending_duty_ncs` so duty roles assigned in the window go back to the
-  callsign. Ban and delete revert all of an account's claims; a reverted claim is never
+  callsign. Ban and delete revert all of an account's claims, and ban moves the primary
+  callsign to `User.banned_callsign` (it is unique) so the real operator can set it;
+  unban restores it only if still free. A reverted claim is never
   re-taken automatically by that account; inactive accounts never claim, resolve or
   show as available.
 - **Correcting a check-in's callsign onto an account** turns its credit into a real

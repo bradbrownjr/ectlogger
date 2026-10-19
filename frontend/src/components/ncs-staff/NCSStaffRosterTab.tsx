@@ -27,6 +27,7 @@ import { samePerson } from '../../utils/staffPeople';
 import PlaceholderEditDialog from './PlaceholderEditDialog';
 import AddStaffField, { AddStaffRequest } from './AddStaffField';
 import PlaceholderChips from './PlaceholderChips';
+import { useAuth } from '../../contexts/AuthContext';
 
 // user_id is null for an operator added by callsign with no account yet.
 interface RotationMember {
@@ -172,6 +173,7 @@ const NCSStaffRosterTab: React.FC<NCSStaffRosterTabProps> = ({
   handleAddNetRole,
   handleRemoveNetRole,
 }) => {
+  const { isAuthenticated } = useAuth();
   // The callsign-only operator whose typo/invite dialog is open.
   const [editingPlaceholder, setEditingPlaceholder] = useState<StaffMember | null>(null);
 
@@ -315,7 +317,8 @@ const NCSStaffRosterTab: React.FC<NCSStaffRosterTabProps> = ({
                       <Chip label="Inactive" size="small" variant="outlined" />
                     )}
                     {/* Callsign-only operator: on the list, but no access until they sign up */}
-                    {!hasAccount && <PlaceholderChips invited={s.invited} accountAvailable={s.account_available} />}
+                    {/* Signed-in viewers only: who has an account isn't shown to guests */}
+                    {!hasAccount && isAuthenticated && <PlaceholderChips invited={s.invited} accountAvailable={s.account_available} />}
                   </Box>
                 }
               />

@@ -73,6 +73,7 @@ interface AdminUser {
   mfa_enabled: boolean;
   gmrs_callsign?: string;
   callsigns?: string[];
+  banned_callsign?: string | null;
   location?: string;
   skywarn_number?: string;
   website_url?: string;
@@ -674,6 +675,13 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
                       <Link component="button" underline="hover" onClick={() => setProfileUserId(user.id)} sx={{ fontWeight: 500 }}>
                         {user.callsign}
                       </Link>
+                    ) : user.banned_callsign ? (
+                      // Shows when a ban freed this account's callsign
+                      <Tooltip title="Freed by the ban so the real operator can use it. Unbanning puts it back if nobody has taken it.">
+                        <Typography variant="body2" color="text.secondary" component="span">
+                          was {user.banned_callsign}
+                        </Typography>
+                      </Tooltip>
                     ) : '-'}
                   </TableCell>
                   <TableCell>{user.email}</TableCell>

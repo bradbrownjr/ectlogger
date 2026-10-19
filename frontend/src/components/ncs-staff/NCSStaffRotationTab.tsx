@@ -20,6 +20,7 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import BlockIcon from '@mui/icons-material/Block';
 import { personKey, personLabel, samePerson, SchedulePerson } from '../../utils/staffPeople';
+import { useAuth } from '../../contexts/AuthContext';
 
 // user_id is null for an operator added by callsign with no account yet.
 interface RotationMember {
@@ -97,6 +98,7 @@ const NCSStaffRotationTab: React.FC<NCSStaffRotationTabProps> = ({
   handleRemoveMember,
   handleUpdateFifthWeekUser,
 }) => {
+  const { isAuthenticated } = useAuth();
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const dragItemIdx = useRef<number | null>(null);
 
@@ -183,8 +185,8 @@ const NCSStaffRotationTab: React.FC<NCSStaffRotationTabProps> = ({
                       {member.user_callsign}
                       {member.user_name && ` (${member.user_name})`}
                     </Typography>
-                    {/* On the rotation by callsign: credited as NCS on their nets, no reminder email */}
-                    {member.user_id == null && (
+                    {/* On the rotation by callsign: credited as NCS on their nets, no reminder email. Signed-in viewers only */}
+                    {member.user_id == null && isAuthenticated && (
                       <Tooltip title="No account yet. On their turn they're listed as the net's NCS, but they won't get a reminder email.">
                         <Chip label="No account yet" size="small" variant="outlined" color="warning" />
                       </Tooltip>

@@ -53,7 +53,11 @@ def _entries_for_viewer(entries: List[NCSScheduleEntry], signed_in: bool) -> Lis
     service uses it too, so the redaction happens here, on the way out.
     """
     return [
-        e.model_copy(update={"user_name": public_display_name(e.user_name, signed_in)})
+        e.model_copy(update={
+            "user_name": public_display_name(e.user_name, signed_in),
+            # Whether the operator has an account is for signed-in viewers only.
+            "has_account": e.has_account or not signed_in,
+        })
         for e in entries
     ]
 
@@ -595,7 +599,7 @@ async def get_ncs_schedule(
             template.fifth_week_user.name if template.fifth_week_user else None,
             current_user is not None,
         ),
-        fifth_week_has_account=template.fifth_week_callsign is None,
+        fifth_week_has_account=template.fifth_week_callsign is None or current_user is None,
         schedule=_entries_for_viewer(schedule, current_user is not None),
         rotation_members=[
             NCSRotationMemberResponse.from_orm_with_user(m, current_user is not None)
