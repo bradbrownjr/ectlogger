@@ -1,10 +1,10 @@
 ---
 title: Users and roles
-summary: Inviting people, editing an account's identity and role, and banning, resetting, or deleting an account.
+summary: Inviting people, editing an account's identity and role, undoing a callsign someone claimed that isn't theirs, and banning, resetting, or deleting an account.
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-09-30
+revised: 2026-10-19
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/users-and-roles/
@@ -57,12 +57,20 @@ If the person has already checked into a net under a callsign you recognize, che
 
 Each row's action icons cover the rest of account management:
 
-- **Ban** deactivates the account (`is_active` off). They can't sign in, but nothing about their history changes, and it's fully reversible with **Unban**. This is the right tool for "stop this person from logging in" in every case except one, described next.
+- **Ban** deactivates the account (`is_active` off). They can't sign in, but nothing about their history changes, and it's fully reversible with **Unban**. The one exception is team spots the account took over by callsign: banning gives those back (see below), and unbanning doesn't take them again. This is the right tool for "stop this person from logging in" in every case except one, described next.
 - **Reset password** issues a one-time temporary password, shown to you once. Share it with the person over a trusted channel, not email, if email is the reason they're locked out in the first place. It never gets logged or emailed to them in the clear.
 - **Reset two-factor authentication** clears their MFA enrollment so they can set it up again from scratch. Only shows up for accounts that have MFA enabled. Covered in more detail in [Security, MFA, and lockouts](/docs/admins/security-and-mfa/).
 - **Delete** permanently removes the account. It cannot be undone, and you can't delete yourself or the account you're currently signed in as. Check-ins that person already logged keep the callsign and name they typed at the time, since those are stored on the check-in itself rather than looked up live from the account. Anything that depends on the account still existing (their profile popup, being credited by a live link rather than by callsign) stops resolving once the account is gone. If your actual goal is "stop this person from doing anything," Ban is almost always the better tool, since it's reversible and Delete isn't.
 
 Changing someone's primary callsign, whether from their own Profile or from this dialog, doesn't lose their history either: the system remembers the old callsign and keeps their past check-ins and statistics attached to the same account.
+
+## Undoing a callsign that isn't theirs
+
+A schedule's manager can put an operator on the team by callsign before that operator has an account (see [Net staff and the NCS rotation](/docs/net-managers/net-staff-and-rotation/)). Whoever signs up with that callsign takes over those spots. If someone signs up with a callsign that isn't theirs to get onto a team, you can hand the spots back.
+
+Open the account with **Edit User**. When the account has taken over any spots this way, the dialog lists them under **Teams joined by callsign**, with the date and how many entries each one covered. Click **Revert** to give them back to the callsign. The staff row, rotation position, swaps, and NCS credit go back to how they were, and the account can't take them again just by editing its profile. A reverted entry stays in the list, marked **Reverted**, for the record.
+
+**Banning the account reverts all of them at once**, so for an account you're banning anyway you don't need to revert each one first. The schedule's manager can still link the real operator by hand once they sign up.
 
 ## Early access to schedule creation
 

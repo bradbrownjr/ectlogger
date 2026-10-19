@@ -14,6 +14,7 @@ import {
   Switch,
 } from '@mui/material';
 import { useCreateScheduleContext, User } from '../../contexts/CreateScheduleContext';
+import { personKey, personLabel, SchedulePerson, toPerson, userToPerson, uniquePeople } from '../../utils/staffPeople';
 
 // ========== TAB 1: SCHEDULE CONFIGURATION ==========
 // Schedule type (one-time, ad-hoc, daily, weekly, monthly), recurrence time/day,
@@ -24,6 +25,7 @@ const ScheduleTab: React.FC = () => {
     scheduleType, setScheduleType,
     scheduleConfig, setScheduleConfig,
     fifthWeekUserId, setFifthWeekUserId,
+    fifthWeekCallsign, setFifthWeekCallsign,
     timezoneAbbr,
     currentUser,
     ownerId,
@@ -61,17 +63,17 @@ const ScheduleTab: React.FC = () => {
     staff.some(s => s.user_id === currentUser.id && s.is_active && s.is_co_manager)
   );
 
-  const eligibleForRotationIds = new Set<number>([
-    ...(ownerId ? [ownerId] : []),
-    ...staff.filter(s => s.is_active).map(s => s.user_id),
+  // The schedule manager plus active staff (accounts and callsign-only
+  // operators), plus whoever is already picked so the field never blanks.
+  const owner = users.find((u: User) => u.id === ownerId);
+  const fifthWeekPeople = uniquePeople([
+    ...(owner ? [userToPerson(owner)] : []),
+    ...staff.filter(s => s.is_active).map(s => toPerson(s)),
+    ...(fifthWeekUserId ? users.filter((u: User) => u.id === fifthWeekUserId).map((u: User) => userToPerson(u)) : []),
+    ...(!fifthWeekUserId && fifthWeekCallsign ? [toPerson({ user_id: null, callsign: fifthWeekCallsign })] : []),
   ]);
-  const eligibleForFifthWeekIds = new Set<number>([
-    ...eligibleForRotationIds,
-    ...(fifthWeekUserId ? [fifthWeekUserId] : []),
-  ]);
-  const availableUsersForFifthWeek = users.filter(
-    (u: User) => eligibleForFifthWeekIds.has(u.id)
-  );
+  const fifthWeekKey = fifthWeekUserId ? personKey(fifthWeekUserId, null) : fifthWeekCallsign ? personKey(null, fifthWeekCallsign) : null;
+
 
   return (
     <>
@@ -166,10 +168,14 @@ const ScheduleTab: React.FC = () => {
           </Box>
           {canConfigureFifthWeekOperator && (
             <Autocomplete
-              options={availableUsersForFifthWeek}
-              getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-              value={availableUsersForFifthWeek.find((u: User) => u.id === fifthWeekUserId) || null}
-              onChange={(_: any, value: User | null) => setFifthWeekUserId(value?.id ?? null)}
+              options={fifthWeekPeople}
+              getOptionLabel={(option: SchedulePerson) => personLabel(option)}
+              isOptionEqualToValue={(a: SchedulePerson, b: SchedulePerson) => a.key === b.key}
+              value={fifthWeekPeople.find(p => p.key === fifthWeekKey) || null}
+              onChange={(_: any, value: SchedulePerson | null) => {
+                setFifthWeekUserId(value?.user_id ?? null);
+                setFifthWeekCallsign(value && value.user_id == null ? value.callsign : null);
+              }}
               renderInput={(params: any) => (
                 <TextField
                   {...params}

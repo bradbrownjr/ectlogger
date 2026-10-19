@@ -1,10 +1,10 @@
 ---
 title: Net staff and the NCS rotation
-summary: Who is allowed to run your net, co-managers, the NCS rotation, why an auto-created net deliberately starts with nobody assigned, and the link that invites people to subscribe.
+summary: Who is allowed to run your net, adding operators who haven't signed up yet, co-managers, the NCS rotation, why an auto-created net deliberately starts with nobody assigned, and the link that invites people to subscribe.
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-18
+revised: 2026-10-19
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/net-staff-and-rotation/
@@ -30,9 +30,23 @@ The staff list, the rotation, and who has NCS on upcoming dates are public, so a
 
 **Since 2026-09-18, any active staff member can also claim NCS or Logger on a net just by checking themselves in as one**, the same as a rotation member could before; co-manager status isn't required for that. Pick **Check In as NCS** or **Check In as Logger** on the check-in banner or form when it's offered; see [Checking in](/docs/operators/checking-in/) for what that looks like. Only a genuine self-check-in grants a role this way. If Net Control or the Logger enters someone else's check-in by voice, it never grants NCS or Logger on their behalf, even if that person is staff.
 
+## Operators who haven't signed up yet
+
+You don't have to wait for every net control operator to make an account before you build the team. In the add box on the staff list, type the operator's callsign. If nobody with an account has that callsign, they're added **by callsign** and their row is marked **No account yet**. You can also give an email address there, and ECTLogger sends them an invitation to sign up. Their row then reads **Invited**.
+
+An operator on the list by callsign can go in the rotation, take the fifth week, and be swapped in for a single night, just like anyone else. When their week comes up, the net names them as its NCS, so the net card, the report, the ICS-309, and the closing log all credit the right person. What they can't do is use ECTLogger's net controls, because there's no account to sign in with yet. Someone else, usually the Logger, runs the net in the app and checks them in. They also can't be made a co-manager until they have an account.
+
+**When they sign up with that callsign, they take over their spot on the team.** Their staff row, their rotation position, any swaps naming them, and any nets where they were credited as NCS all move to their new account. You get an email saying they joined. Nothing is lost, and nobody has to re-add them.
+
+If you invited them at one address and they sign up with a different one, ECTLogger doesn't hand over the spot automatically. You get an email instead, and their row shows **Signed up with another address** and a link button. Click it once you're sure the new account is really them. This protects your team from someone signing up with a callsign that isn't theirs.
+
+**To fix a typo** in a callsign, or to send an invitation you skipped, click the pencil on that row. A corrected callsign also changes in the rotation and on any swaps. If the corrected callsign already belongs to an account, the row joins that account straight away.
+
+If someone ever does sign up with a callsign that isn't theirs and takes a spot, an admin can undo it from the user's account in the admin panel, and banning that account undoes all of them at once. See [Users and roles](/docs/admins/users-and-roles/) for the admin side.
+
 ## The NCS rotation (optional)
 
-The rotation is a separate, ordered list. Reorder it with the up/down arrows, or build it in one step from the **Build rotation from staff** button, which adds every active staff member (and the manager) who isn't already in it. Being in the rotation carries the same starting and self-grant access as being on Authorized Net Staff, even for someone added only to the rotation and never to the staff list. On top of that, it's what decides who gets **pre-assigned** NCS automatically, ahead of time, on each occurrence a recurring schedule creates. If the rotation is empty, nobody is pre-assigned (see below). Deactivate a rotation member the same way as a staff row, to skip them without losing their place in line.
+The rotation is a separate, ordered list. Reorder it with the up/down arrows, or build it in one step from the **Build rotation from staff** button, which adds every active staff member (and the manager) who isn't already in it, including anyone on the staff list by callsign. Being in the rotation carries the same starting and self-grant access as being on Authorized Net Staff, even for someone added only to the rotation and never to the staff list. On top of that, it's what decides who gets **pre-assigned** NCS automatically, ahead of time, on each occurrence a recurring schedule creates. If the rotation is empty, nobody is pre-assigned (see below). Deactivate a rotation member the same way as a staff row, to skip them without losing their place in line.
 
 A single date can be overridden from the schedule's **Schedule** tab in the Net Staff dialog: swap a specific night to someone else, or mark it as no coverage, without touching the rotation's permanent order.
 

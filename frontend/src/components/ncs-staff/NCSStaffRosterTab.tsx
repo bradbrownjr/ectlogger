@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -21,11 +21,17 @@ import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
+import LinkIcon from '@mui/icons-material/Link';
 import UserAvatar from '../UserAvatar';
+import { samePerson } from '../../utils/staffPeople';
+import PlaceholderEditDialog from './PlaceholderEditDialog';
+import AddStaffField, { AddStaffRequest } from './AddStaffField';
+import PlaceholderChips from './PlaceholderChips';
 
+// user_id is null for an operator added by callsign with no account yet.
 interface RotationMember {
   id: number;
-  user_id: number;
+  user_id: number | null;
   user_callsign: string;
   user_name: string | null;
   position: number;
@@ -34,12 +40,15 @@ interface RotationMember {
 
 interface StaffMember {
   id: number;
-  user_id: number;
+  user_id: number | null;
   user_callsign: string;
   user_name: string | null;
   avatar_url?: string | null;
   is_active: boolean;
   is_co_manager: boolean;
+  has_account?: boolean;
+  account_available?: boolean;
+  invited?: boolean;
 }
 
 interface ScheduleEntry {
@@ -81,7 +90,9 @@ interface NCSStaffRosterTabProps {
   selectedUser: User | null;
   setSelectedUser: (user: User | null) => void;
   users: User[];
-  handleAddStaff: () => void;
+  handleAddStaff: (request: AddStaffRequest) => Promise<boolean>;
+  handleEditPlaceholder: (staffMember: StaffMember, changes: { callsign?: string; invite_email?: string }) => void;
+  handleLinkStaff: (staffMember: StaffMember) => void;
   localOwner: { id: number; callsign?: string; name?: string } | null;
   schedule?: {
     id: number;
@@ -139,6 +150,8 @@ const NCSStaffRosterTab: React.FC<NCSStaffRosterTabProps> = ({
   setSelectedUser,
   users,
   handleAddStaff,
+  handleEditPlaceholder,
+  handleLinkStaff,
   localOwner,
   schedule,
   net,
@@ -159,6 +172,9 @@ const NCSStaffRosterTab: React.FC<NCSStaffRosterTabProps> = ({
   handleAddNetRole,
   handleRemoveNetRole,
 }) => {
+  // The callsign-only operator whose typo/invite dialog is open.
+  const [editingPlaceholder, setEditingPlaceholder] = useState<StaffMember | null>(null);
+
   if (isScheduleContext) {
     return (
       <Box>
@@ -169,29 +185,16 @@ const NCSStaffRosterTab: React.FC<NCSStaffRosterTabProps> = ({
           Any of these operators can start and run nets from this schedule.
         </Typography>
 
-        {/* Add staff - owners/admins only */}
+        {/* Add staff - owners/admins only. Pick someone with an account, or
+            type a callsign that has none yet (optionally with an address to
+            invite them at). */}
         {canEdit && (
-          <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
-            <Autocomplete
-              options={availableStaffUsers}
-              getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-              value={selectedUser}
-              onChange={(_: any, value: User | null) => setSelectedUser(value)}
-              noOptionsText={users.length === 0 ? 'Loading users…' : 'No other users available'}
-              renderInput={(params: any) => (
-                <TextField {...params} label="Add NCS operator" size="small" />
-              )}
-              sx={{ flex: 1 }}
-            />
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleAddStaff}
-              disabled={!selectedUser}
-            >
-              Add
-            </Button>
-          </Box>
+          <AddStaffField
+            options={availableStaffUsers}
+            loading={users.length === 0}
+            isMobile={isMobile}
+            onAdd={handleAddStaff}
+          />
         )}
 
         {/* Manager (owner) — always shown first */}
@@ -271,7 +274,9 @@ const NCSStaffRosterTab: React.FC<NCSStaffRosterTabProps> = ({
           </ListItem>
 
           {/* Additional staff members — skip owner, already shown above as Manager */}
-          {staff.filter((s: StaffMember) => s.user_id !== (localOwner?.id ?? schedule?.owner_id)).map((s: StaffMember) => (
+          {staff.filter((s: StaffMember) => s.user_id !== (localOwner?.id ?? schedule?.owner_id)).map((s: StaffMember) => {
+            const hasAccount = s.user_id != null;
+            return (
             <ListItem
               key={s.id}
               sx={{
@@ -279,23 +284,26 @@ const NCSStaffRosterTab: React.FC<NCSStaffRosterTabProps> = ({
                 bgcolor: s.is_active ? undefined : 'action.disabledBackground',
                 borderRadius: 1,
                 mb: 0.5,
+                // Room for the extra Link/Edit buttons a callsign-only row has.
+                pr: canEdit ? (hasAccount ? 16 : 20) : undefined,
               }}
             >
+              {/* No profile to open for a callsign with no account */}
               <Box
-                onClick={() => setProfileUserId(s.user_id)}
-                sx={{ cursor: 'pointer', display: 'inline-flex', mr: 1 }}
+                onClick={() => { if (s.user_id != null) setProfileUserId(s.user_id); }}
+                sx={{ cursor: hasAccount ? 'pointer' : 'default', display: 'inline-flex', mr: 1 }}
               >
                 <UserAvatar
                   avatarUrl={s.avatar_url}
                   callsign={s.user_callsign}
                   name={s.user_name}
                   size={32}
-                  hasProfile
+                  hasProfile={hasAccount}
                 />
               </Box>
               <ListItemText
                 primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                     <Typography variant="body2">
                       {s.user_callsign}
                       {s.user_name && ` (${s.user_name})`}
@@ -306,18 +314,36 @@ const NCSStaffRosterTab: React.FC<NCSStaffRosterTabProps> = ({
                     {!s.is_active && (
                       <Chip label="Inactive" size="small" variant="outlined" />
                     )}
+                    {/* Callsign-only operator: on the list, but no access until they sign up */}
+                    {!hasAccount && <PlaceholderChips invited={s.invited} accountAvailable={s.account_available} />}
                   </Box>
                 }
               />
               {/* Edit controls - owners/admins/co-managers only */}
               {canEdit && (
                 <ListItemSecondaryAction>
-                  <Tooltip title={s.is_co_manager ? 'Remove co-manager role' : 'Promote to co-manager'}>
-                    <IconButton size="small" onClick={() => handleToggleCoManager(s)}>
-                      {s.is_co_manager
-                        ? <StarIcon fontSize="small" color="primary" />
-                        : <StarBorderIcon fontSize="small" />}
-                    </IconButton>
+                  {!hasAccount && s.account_available && (
+                    <Tooltip title={`Link to the account that now has ${s.user_callsign}`}>
+                      <IconButton size="small" color="primary" onClick={() => handleLinkStaff(s)}>
+                        <LinkIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  {!hasAccount && (
+                    <Tooltip title="Fix the callsign or send an invite">
+                      <IconButton size="small" onClick={() => setEditingPlaceholder(s)}>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  <Tooltip title={!hasAccount ? 'They need an account before they can be a co-manager' : s.is_co_manager ? 'Remove co-manager role' : 'Promote to co-manager'}>
+                    <span>
+                      <IconButton size="small" onClick={() => handleToggleCoManager(s)} disabled={!hasAccount}>
+                        {s.is_co_manager
+                          ? <StarIcon fontSize="small" color="primary" />
+                          : <StarBorderIcon fontSize="small" />}
+                      </IconButton>
+                    </span>
                   </Tooltip>
                   <Tooltip title={s.is_active ? 'Mark inactive' : 'Mark active'}>
                     <IconButton size="small" onClick={() => handleToggleStaffActive(s)}>
@@ -330,8 +356,19 @@ const NCSStaffRosterTab: React.FC<NCSStaffRosterTabProps> = ({
                 </ListItemSecondaryAction>
               )}
             </ListItem>
-          ))}
+            );
+          })}
         </List>
+
+        {/* ========== CALLSIGN-ONLY OPERATOR: FIX CALLSIGN / INVITE ========== */}
+        <PlaceholderEditDialog
+          staffMember={editingPlaceholder}
+          onClose={() => setEditingPlaceholder(null)}
+          onSave={(changes) => {
+            if (editingPlaceholder) handleEditPlaceholder(editingPlaceholder, changes);
+            setEditingPlaceholder(null);
+          }}
+        />
 
         {staff.length === 0 && !canEdit && (
           <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
@@ -352,11 +389,12 @@ const NCSStaffRosterTab: React.FC<NCSStaffRosterTabProps> = ({
       const dutyEntry = scheduleEntries.find(
         (e: ScheduleEntry) => e.date && e.date.slice(0, 10) === todayStr
       );
-      const dutyUserId = dutyEntry?.user_id ?? null;
       const assignedUserIds = new Set(ncsRoles.map((r: NetRole) => r.user_id));
+      // Matched with samePerson: a callsign-only duty entry has a null user_id,
+      // which would equal every callsign-only member's.
       const dutyIsSubstitute =
-        dutyEntry?.user_id != null &&
-        !activeRotationMembers.some((m: RotationMember) => m.user_id === dutyEntry.user_id);
+        !!dutyEntry?.user_callsign &&
+        !activeRotationMembers.some((m: RotationMember) => samePerson(m, dutyEntry));
 
       return (
         <Box>
@@ -390,26 +428,26 @@ const NCSStaffRosterTab: React.FC<NCSStaffRosterTabProps> = ({
 
           <List dense>
             {activeRotationMembers.map((member: RotationMember) => {
-              const isOnDuty = member.user_id === dutyUserId;
-              const isAssigned = assignedUserIds.has(member.user_id);
-              const netRole = ncsRoles.find((r: NetRole) => r.user_id === member.user_id);
+              const isOnDuty = !!dutyEntry?.user_callsign && samePerson(member, dutyEntry);
+              const isAssigned = member.user_id != null && assignedUserIds.has(member.user_id);
+              const netRole = member.user_id != null ? ncsRoles.find((r: NetRole) => r.user_id === member.user_id) : undefined;
               return (
                 <ListItem
-                  key={member.user_id}
+                  key={member.id}
                   sx={{
                     py: 0.5, borderRadius: 1, mb: 0.5,
                     ...(isOnDuty && { bgcolor: 'success.light' }),
                   }}
                 >
                   <Box
-                    onClick={() => setProfileUserId(member.user_id)}
-                    sx={{ cursor: 'pointer', display: 'inline-flex', mr: 1 }}
+                    onClick={() => { if (member.user_id != null) setProfileUserId(member.user_id); }}
+                    sx={{ cursor: member.user_id != null ? 'pointer' : 'default', display: 'inline-flex', mr: 1 }}
                   >
                     <UserAvatar
                       callsign={member.user_callsign}
                       name={member.user_name}
                       size={32}
-                      hasProfile
+                      hasProfile={member.user_id != null}
                     />
                   </Box>
                   <ListItemText
@@ -421,6 +459,7 @@ const NCSStaffRosterTab: React.FC<NCSStaffRosterTabProps> = ({
                         </Typography>
                         {isOnDuty && <Chip label="Today's NCS" size="small" color="success" />}
                         {isAssigned && !isOnDuty && <Chip label="Assigned" size="small" color="primary" variant="outlined" />}
+                        {member.user_id == null && <Chip label="No account yet" size="small" variant="outlined" color="warning" />}
                       </Box>
                     }
                   />

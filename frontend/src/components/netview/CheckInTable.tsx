@@ -33,6 +33,7 @@ import OffscreenArrivalArrow from './OffscreenArrivalArrow';
 import CheckInLocation from './CheckInLocation';
 import HandRaisedIndicator from './HandRaisedIndicator';
 import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
+import { findCheckInRole, roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
 
 // ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ==========
 // The full-featured desktop check-in table: sticky header, inline click-to-edit
@@ -50,8 +51,9 @@ type NcsColor = { bg: string; border: string; text: string } | null;
 interface CheckInTableProps {
   net: any;
   filteredCheckIns: any[];
-  netRoles: any[];
-  ncsRoles: any[];
+  // Account and callsign-only roles merged (utils/stationRoles.ts).
+  netRoles: StationRole[];
+  ncsRoles: StationRole[];
   user: any;
   onlineUserIds: number[];
   activeSpeakerId: number | null;
@@ -69,7 +71,7 @@ interface CheckInTableProps {
   inlineEditValues: any;
   inlineEditFocusField: string | null;
   inlineEditRowRef: React.Ref<HTMLTableRowElement>;
-  getNcsColor: (userId: number) => NcsColor;
+  getNcsColor: (station: { user_id?: number | null; callsign?: string | null }) => NcsColor;
   getNcsColorForFrequency: (frequencyId: number) => NcsColor;
   getEnabledCustomFields: () => any[];
   isFieldRequired: (fieldName: string) => boolean;
@@ -336,8 +338,8 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       checkIn.available_frequencies && 
                       checkIn.available_frequencies.includes(net.active_frequency_id);
                     // Get NCS color if this user is an NCS
-                    const ncsColor = checkIn.user_id ? getNcsColor(checkIn.user_id) : null;
-                    const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
+                    const ncsColor = getNcsColor(checkIn);
+                    const isNcsUser = ncsRoles.some((r: any) => roleMatchesCheckIn(r, checkIn));
                     
                     // Calculate column count for frequency chip row colspan
                     const hasFrequencyChips = net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0;
@@ -455,7 +457,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
 
                           // Ensure selectValue matches MenuItem values exactly
                           // Determine selectValue: show role if present, else status
-                          const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+                          const userRole = findCheckInRole(netRoles, checkIn);
                           let selectValue = checkIn.status.toLowerCase();
                           // The role only takes over the control's value while the station
                           // is in the default checked-in state, mirroring getStatusIcon's

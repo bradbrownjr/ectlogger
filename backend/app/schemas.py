@@ -798,6 +798,9 @@ class NetTemplateBase(BaseModel):
     schedule_type: Optional[str] = Field(default='ad_hoc')  # ad_hoc, daily, weekly, monthly
     schedule_config: Optional[dict] = Field(default_factory=dict)  # {day_of_week, week_of_month, time}
     fifth_week_user_id: Optional[int] = None
+    # The 5th-week operator by callsign when they have no account yet; never
+    # set together with fifth_week_user_id (services/callsign_people.py).
+    fifth_week_callsign: Optional[str] = None
     ics309_enabled: bool = False  # Enable ICS-309 format for net close emails
     ics309_hide_muted_stations: bool = True  # Seeds Net.ics309_hide_muted_stations for nets created from this template
     propagation_logging_enabled: bool = False  # Seeds propagation_logging_enabled for nets created from this template
@@ -842,6 +845,7 @@ class NetTemplateUpdate(BaseModel):
     schedule_type: Optional[str] = None
     schedule_config: Optional[dict] = None
     fifth_week_user_id: Optional[int] = None
+    fifth_week_callsign: Optional[str] = None
     owner_id: Optional[int] = None  # Allow changing the owner (admin only or current owner)
     ics309_enabled: Optional[bool] = None
     ics309_hide_muted_stations: Optional[bool] = None
@@ -871,6 +875,7 @@ class NetTemplateResponse(NetTemplateBase):
     owner_name: Optional[str] = None
     fifth_week_user_callsign: Optional[str] = None
     fifth_week_user_name: Optional[str] = None
+    fifth_week_has_account: bool = True
     # Uploaded via POST /templates/{id}/logo, not settable through
     # NetTemplateCreate/Update (mirrors User.avatar_url and NetResponse.logo_url).
     logo_url: Optional[str] = None
@@ -903,8 +908,10 @@ class NetTemplateResponse(NetTemplateBase):
             'owner_callsign': owner_callsign,
             'owner_name': owner_name,
             'fifth_week_user_id': template.fifth_week_user_id,
-            'fifth_week_user_callsign': template.fifth_week_user.callsign if template.fifth_week_user else None,
+            'fifth_week_callsign': template.fifth_week_callsign,
+            'fifth_week_user_callsign': template.fifth_week_user.callsign if template.fifth_week_user else template.fifth_week_callsign,
             'fifth_week_user_name': public_display_name(template.fifth_week_user.name if template.fifth_week_user else None, signed_in),
+            'fifth_week_has_account': template.fifth_week_callsign is None,
             'logo_url': template.logo_url,
             'logo_accent_colors': logo_accent_colors(template.logo_url),
             'field_config': json.loads(template.field_config) if template.field_config else None,
@@ -1656,13 +1663,33 @@ class FieldDefinitionResponse(BaseModel):
 
 # NCS Rotation Schemas
 class NCSRotationMemberBase(BaseModel):
-    user_id: int
+    # None for an operator added by callsign who has no account yet.
+    user_id: Optional[int] = None
     position: int
     is_active: bool = True
 
 
-class NCSRotationMemberCreate(BaseModel):
-    user_id: int
+class PersonRef(BaseModel):
+    """Names an operator: an account, or a callsign that has no account yet.
+
+    Exactly one of the two. A callsign that belongs to an account resolves to
+    that account (services/callsign_people.py::resolve_person)."""
+    user_id: Optional[int] = None
+    callsign: Optional[str] = Field(None, max_length=20)
+
+
+class PlaceholderInvite(PersonRef):
+    """PersonRef plus an optional address to invite a callsign-only operator at."""
+    invite_email: Optional[EmailStr] = None
+
+    @field_validator('invite_email')
+    @classmethod
+    def normalize_invite_email(cls, v):
+        return normalize_email(v) if v else v
+
+
+class NCSRotationMemberCreate(PlaceholderInvite):
+    pass
 
 
 class NCSRotationMemberReorder(BaseModel):
@@ -1678,12 +1705,17 @@ class NCSRotationMemberResponse(NCSRotationMemberBase):
     # can open a schedule's Staff view), see from_orm_with_user.
     user_name: Optional[str] = None
     user_callsign: Optional[str] = None
+    # False for an operator added by callsign who has no account yet.
+    has_account: bool = True
+    # Callsign-only entry whose callsign now belongs to an account the manager
+    # can link by hand (the claim was held: see callsign_people.py).
+    account_available: bool = False
 
     class Config:
         from_attributes = True
 
     @classmethod
-    def from_orm_with_user(cls, member, signed_in: bool):
+    def from_orm_with_user(cls, member, signed_in: bool, account_available: bool = False):
         """``signed_in`` has no default on purpose: every caller must say who
         is looking, and a guest gets only the first name (public_display_name)."""
         return cls(
@@ -1694,13 +1726,18 @@ class NCSRotationMemberResponse(NCSRotationMemberBase):
             is_active=member.is_active,
             created_at=member.created_at,
             user_name=public_display_name(member.user.name if member.user else None, signed_in),
-            user_callsign=member.user.callsign if member.user else None,
+            user_callsign=member.user.callsign if member.user else member.callsign,
+            has_account=member.user_id is not None,
+            account_available=account_available and signed_in,
         )
 
 
 class NCSScheduleOverrideCreate(BaseModel):
     scheduled_date: datetime
-    replacement_user_id: Optional[int] = None  # None = cancel the net
+    # Neither set = cancel the net. replacement_callsign names an operator
+    # with no account yet (resolved to an account when it has one).
+    replacement_user_id: Optional[int] = None
+    replacement_callsign: Optional[str] = Field(None, max_length=20)
     reason: Optional[str] = Field(None, max_length=500)
 
 
@@ -1718,6 +1755,7 @@ class NCSScheduleOverrideResponse(BaseModel):
     original_user_callsign: Optional[str] = None
     replacement_user_name: Optional[str] = None
     replacement_user_callsign: Optional[str] = None
+    is_cancellation: bool = False
 
     class Config:
         from_attributes = True
@@ -1735,9 +1773,10 @@ class NCSScheduleOverrideResponse(BaseModel):
             created_by_id=override.created_by_id,
             created_at=override.created_at,
             original_user_name=public_display_name(override.original_user.name if override.original_user else None, signed_in),
-            original_user_callsign=override.original_user.callsign if override.original_user else None,
+            original_user_callsign=override.original_user.callsign if override.original_user else override.original_callsign,
             replacement_user_name=public_display_name(override.replacement_user.name if override.replacement_user else None, signed_in),
-            replacement_user_callsign=override.replacement_user.callsign if override.replacement_user else None,
+            replacement_user_callsign=override.replacement_user.callsign if override.replacement_user else override.replacement_callsign,
+            is_cancellation=override.replacement_user_id is None and not override.replacement_callsign,
         )
 
 
@@ -1747,11 +1786,20 @@ class NCSScheduleEntry(BaseModel):
     user_id: Optional[int]
     user_name: Optional[str]
     user_callsign: Optional[str]
+    # False when the operator on duty was added by callsign and has no
+    # account yet: they get no reminder email, and the role on the net is
+    # credit only (NetCallsignRole). A slot is staffed when user_id or
+    # user_callsign is set (see is_staffed).
+    has_account: bool = True
     is_override: bool = False
     is_fifth_week: bool = False
     is_cancelled: bool = False
     override_reason: Optional[str] = None
     override_id: Optional[int] = None  # ID of the override, if this is an override
+
+    @property
+    def is_staffed(self) -> bool:
+        return not self.is_cancelled and bool(self.user_id or self.user_callsign)
 
 
 class NCSScheduleResponse(BaseModel):
@@ -1760,6 +1808,7 @@ class NCSScheduleResponse(BaseModel):
     fifth_week_user_id: Optional[int] = None
     fifth_week_user_callsign: Optional[str] = None
     fifth_week_user_name: Optional[str] = None
+    fifth_week_has_account: bool = True
     schedule: List[NCSScheduleEntry]
     rotation_members: List[NCSRotationMemberResponse]
 
@@ -1793,18 +1842,23 @@ class CalendarOccurrence(BaseModel):
 
 
 # Template Staff Schemas (separate from rotation)
-class TemplateStaffCreate(BaseModel):
-    """Request to add a staff member"""
-    user_id: int
+class TemplateStaffCreate(PlaceholderInvite):
+    """Request to add a staff member: an account, or a callsign with no
+    account yet (optionally with an address to invite them at)."""
 
 
 class TemplateStaffResponse(BaseModel):
     """Response for a template staff member"""
     id: int
     template_id: int
-    user_id: int
+    user_id: Optional[int] = None
     is_active: bool
     is_co_manager: bool = False
+    has_account: bool = True
+    account_available: bool = False
+    # Callsign-only entries: whether a sign-up invite went out. Signed-in
+    # viewers only; the address itself is never returned.
+    invited: bool = False
     created_at: datetime
     # User info for display. No email address: this list is public (guests
     # can open a schedule's Staff view); the avatar URL is resolved server-side.
@@ -1816,7 +1870,7 @@ class TemplateStaffResponse(BaseModel):
         from_attributes = True
 
     @classmethod
-    def from_orm_with_user(cls, staff, signed_in: bool):
+    def from_orm_with_user(cls, staff, signed_in: bool, account_available: bool = False, invited: bool = False):
         """A guest gets only the first name (public_display_name)."""
         from app.utils import get_avatar_url
         return cls(
@@ -1827,7 +1881,10 @@ class TemplateStaffResponse(BaseModel):
             is_co_manager=getattr(staff, 'is_co_manager', False),
             created_at=staff.created_at,
             user_name=public_display_name(staff.user.name if staff.user else None, signed_in),
-            user_callsign=staff.user.callsign if staff.user else None,
+            user_callsign=staff.user.callsign if staff.user else staff.callsign,
+            has_account=staff.user_id is not None,
+            account_available=account_available and signed_in,
+            invited=invited and signed_in,
             avatar_url=get_avatar_url(
                 staff.user.email if staff.user else None,
                 getattr(staff.user, 'avatar_url', None) if staff.user else None,

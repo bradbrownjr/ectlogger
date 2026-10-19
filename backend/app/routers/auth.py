@@ -122,12 +122,22 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
         select(Contact).where(func.lower(Contact.email) == email)
     )
     contact = contact_result.scalar_one_or_none()
+
+    # The contact's callsign is only a prefill: if another account already
+    # holds it, leave it off rather than fail the sign-in on the unique
+    # constraint. A schedule manager inviting a callsign at this address
+    # (Staff dialog) made that far likelier than it used to be.
+    prefill_callsign = contact.callsign if contact else None
+    if prefill_callsign:
+        taken = await db.execute(select(User.id).where(User.callsign == prefill_callsign).limit(1))
+        if taken.scalar_one_or_none() is not None:
+            prefill_callsign = None
     
     # Create new user with unsubscribe token
     user = User(
         email=email,
         name=contact.name if contact and contact.name else name,
-        callsign=contact.callsign if contact else None,
+        callsign=prefill_callsign,
         location=contact.location if contact else None,
         skywarn_number=contact.skywarn_number if contact else None,
         oauth_provider=provider,
@@ -139,7 +149,7 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
     await db.flush()
     
     # Link the contact to the new user
-    if contact and not contact.user_id:
+    if contact and not contact.user_id and prefill_callsign:
         contact.user_id = user.id
     
     await db.commit()
@@ -149,6 +159,14 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
         logger.info("API", f"New user auto-populated from contact: {email} (callsign={contact.callsign})")
     if user.role == UserRole.ADMIN:
         logger.info("API", f"First user created as admin: {email}")
+
+    # Someone invited from a schedule's Staff dialog arrives with their
+    # callsign filled in from the Contact above, and takes their place on
+    # that schedule here (services/callsign_people.py).
+    if user.callsign:
+        from app.services.callsign_people import claim_and_queue_notices
+        await claim_and_queue_notices(db, user)
+        await db.refresh(user)
     
     return user
 

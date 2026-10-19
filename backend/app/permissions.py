@@ -171,6 +171,13 @@ async def is_active_template_staff(db: AsyncSession, template_id: int, user_id: 
     MultipleResultsFound -- the same defect class that took GET /nets/{id} down
     on 2026-09-03.
     """
+    # Fail closed on a missing account. TemplateStaff and NCSRotationMember
+    # rows may name an operator by callsign alone, with user_id NULL, and
+    # SQLAlchemy turns `user_id == None` into `IS NULL`: without this guard
+    # a caller passing no user would match every callsign-only entry.
+    if user_id is None:
+        return False
+
     # The manager has always been documented as implicitly net staff, but
     # was never actually counted until 2026-10-18 (see is_schedule_manager).
     if await is_schedule_manager(db, template_id, user_id):

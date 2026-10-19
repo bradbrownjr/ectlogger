@@ -17,6 +17,7 @@ from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
 from app.logger import logger
+from app.services.callsign_people import resolve_person
 from app.models import (
     AppSettings,
     CheckIn,
@@ -244,11 +245,12 @@ async def create_template(
         if target_user.scalar_one_or_none():
             owner_id = template_data.owner_id
 
-    fifth_week_user_id = template_data.fifth_week_user_id
-    if fifth_week_user_id is not None:
-        result = await db.execute(select(User).where(User.id == fifth_week_user_id))
-        if result.scalar_one_or_none() is None:
-            raise HTTPException(status_code=404, detail="Fifth-week user not found")
+    # The 5th-week operator is an account or a callsign with no account yet
+    # (services/callsign_people.py::resolve_person).
+    fifth_week_user_id, fifth_week_callsign = None, None
+    if template_data.fifth_week_user_id is not None or template_data.fifth_week_callsign:
+        person = await resolve_person(db, template_data.fifth_week_user_id, template_data.fifth_week_callsign)
+        fifth_week_user_id, fifth_week_callsign = person.user_id, person.callsign
     
     template = NetTemplate(
         name=template_data.name,
@@ -259,6 +261,7 @@ async def create_template(
         announcements=template_data.announcements,
         owner_id=owner_id,
         fifth_week_user_id=fifth_week_user_id,
+        fifth_week_callsign=fifth_week_callsign,
         field_config=field_config_json,
         schedule_type=template_data.schedule_type,
         schedule_config=schedule_config_json,
@@ -474,17 +477,15 @@ async def update_template(
         template.schedule_type = template_data.schedule_type
     if template_data.schedule_config is not None:
         template.schedule_config = json.dumps(template_data.schedule_config)
-    if "fifth_week_user_id" in template_data.model_fields_set:
-        if template_data.fifth_week_user_id is None:
+    if {"fifth_week_user_id", "fifth_week_callsign"} & template_data.model_fields_set:
+        # Setting either replaces the 5th-week operator; both empty clears it.
+        if template_data.fifth_week_user_id is None and not template_data.fifth_week_callsign:
             template.fifth_week_user_id = None
+            template.fifth_week_callsign = None
         else:
-            fifth_week_user_result = await db.execute(
-                select(User).where(User.id == template_data.fifth_week_user_id)
-            )
-            fifth_week_user = fifth_week_user_result.scalar_one_or_none()
-            if not fifth_week_user:
-                raise HTTPException(status_code=404, detail="Fifth-week user not found")
-            template.fifth_week_user_id = template_data.fifth_week_user_id
+            person = await resolve_person(db, template_data.fifth_week_user_id, template_data.fifth_week_callsign)
+            template.fifth_week_user_id = person.user_id
+            template.fifth_week_callsign = person.callsign
     if template_data.ics309_enabled is not None:
         template.ics309_enabled = template_data.ics309_enabled
     if template_data.ics309_hide_muted_stations is not None:

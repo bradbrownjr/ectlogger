@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
-from app.models import CheckIn, Net, NetRole, NetStatus, User, net_frequencies
+from app.models import CheckIn, Net, NetStatus, User, net_frequencies
 from app.models import Form as TrafficFormModel
 from app.permissions import (
     check_net_lifecycle_permission,
@@ -42,7 +42,7 @@ from app.traffic.ics309 import (
     traffic_to_station,
 )
 from app.traffic.rri_strip import make_nts_safe
-from app.utils import GUEST_REDACTED_CHECK_IN_FIELDS, display_callsign, format_ncs_attribution, format_time_for_net, redact_contact_info, resolve_display_tz, to_display_tz
+from app.utils import GUEST_REDACTED_CHECK_IN_FIELDS, display_callsign, format_time_for_net, redact_contact_info, resolve_display_tz, to_display_tz
 
 router = APIRouter()
 
@@ -446,14 +446,8 @@ async def _build_ics309_data(db: AsyncSession, net: Net, current_user: Optional[
     # the wrong operator on the official ICS-309 for both multi-NCS nets and
     # single-NCS rotation nets (the rotation's scheduled pick is assigned ~24h
     # ahead, so any later grant outranked them).
-    ncs_role_result = await db.execute(
-        select(User.callsign, User.name)
-        .join(NetRole, NetRole.user_id == User.id)
-        .where(NetRole.net_id == net.id, NetRole.role == "NCS")
-        .where(NetRole.is_active == True)  # noqa: E712
-        .order_by(NetRole.assigned_at.asc())
-    )
-    ncs_callsign, ncs_name = format_ncs_attribution(ncs_role_result.all())
+    from app.services.ncs_attribution import net_ncs_attribution
+    ncs_callsign, ncs_name = await net_ncs_attribution(db, net.id)
     if not ncs_callsign:
         ncs_callsign = display_callsign(net.owner) if net.owner else "Unknown"
         ncs_name = (net.owner.name or None) if net.owner else None

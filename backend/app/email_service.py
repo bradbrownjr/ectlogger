@@ -11,6 +11,7 @@ Implementation lives in:
   email/net_logs.py      — send_net_log, send_ics309_log
   email/digest.py        — send_feedback_email, send_whats_new_email
   email/schedule_access.py — send_early_access_request, send_early_access_granted
+  email/team_invites.py  — send_team_invite, send_callsign_claimed, send_callsign_claim_held
   email/traffic.py       — send_traffic_reminder, send_traffic_hxb_final_notice,
                             send_traffic_stale_digest
 """
@@ -26,6 +27,7 @@ from app.email.base import (
 )
 from app.email.digest import send_feedback_email, send_whats_new_email
 from app.email.schedule_access import send_early_access_granted, send_early_access_request
+from app.email.team_invites import send_callsign_claim_held, send_callsign_claimed, send_team_invite
 from app.email.net_lifecycle import (
     send_net_cancellation,
     send_net_invitation,
@@ -70,6 +72,9 @@ class EmailService:
     send_whats_new_email = staticmethod(send_whats_new_email)
     send_early_access_request = staticmethod(send_early_access_request)
     send_early_access_granted = staticmethod(send_early_access_granted)
+    send_team_invite = staticmethod(send_team_invite)
+    send_callsign_claimed = staticmethod(send_callsign_claimed)
+    send_callsign_claim_held = staticmethod(send_callsign_claim_held)
     send_traffic_reminder = staticmethod(send_traffic_reminder)
     send_traffic_hxb_final_notice = staticmethod(send_traffic_hxb_final_notice)
     send_traffic_stale_digest = staticmethod(send_traffic_stale_digest)

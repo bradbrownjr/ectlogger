@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, nullslast, and_, func
 from sqlalchemy.orm import aliased
@@ -15,6 +15,7 @@ from app.email_service import EmailService
 from app.logger import logger
 from app.utils import AVATAR_DIR, user_callsigns
 from app.services.live_location import live_location_display
+from app.services.callsign_people import claim_and_queue_notices, revert_all_claims, revert_callsign_claim
 from app.band_utils import band_from_frequency_string
 
 AVATAR_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
@@ -64,9 +65,16 @@ async def get_my_profile(current_user: User = Depends(get_current_user)):
     return UserResponse.from_orm(current_user)
 
 
+# The profile fields find_user_by_callsign matches a station on; changing any
+# of them can make an account the owner of a callsign-only staff or rotation
+# entry (services/callsign_people.py).
+CALLSIGN_FIELDS = {'callsign', 'gmrs_callsign', 'callsigns'}
+
+
 @router.put("/me", response_model=UserResponse)
 async def update_my_profile(
     user_update: UserUpdate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -113,6 +121,10 @@ async def update_my_profile(
             status_code=status.HTTP_409_CONFLICT,
             detail="That callsign is already in use by another account."
         )
+    # A callsign the account just gained may name it on a schedule's staff
+    # or rotation already (added before it signed up): take those over.
+    if CALLSIGN_FIELDS & update_data.keys():
+        await claim_and_queue_notices(db, current_user, background_tasks)
     await db.refresh(current_user)
     return UserResponse.from_orm(current_user)
 
@@ -371,6 +383,7 @@ async def list_users(
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_data: AdminUserCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -396,6 +409,9 @@ async def create_user(
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+    if new_user.callsign:
+        await claim_and_queue_notices(db, new_user, background_tasks)
+        await db.refresh(new_user)
     
     return UserResponse.from_orm(new_user)
 
@@ -604,6 +620,7 @@ async def get_user(
 async def admin_update_user(
     user_id: int,
     user_update: AdminUserUpdate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -718,6 +735,9 @@ async def admin_update_user(
 
     if 'email' in changed_fields and old_email and user.email:
         await EmailService.send_admin_email_change_notice(old_email, user.email)
+    if CALLSIGN_FIELDS & set(changed_fields):
+        await claim_and_queue_notices(db, user, background_tasks)
+        await db.refresh(user)
 
     return UserResponse.from_orm(user)
 
@@ -759,9 +779,67 @@ async def ban_user(
         raise HTTPException(status_code=400, detail="Cannot ban yourself")
     
     user.is_active = False
+    # A banned account gives back every staff, rotation and role entry it
+    # took over by callsign; they become callsign-only again, waiting for
+    # the real operator (services/callsign_people.py).
+    restored = await revert_all_claims(db, user, current_user)
+    if restored:
+        logger.warning("CALLSIGN_CLAIM", f"Ban of user {user.id} returned {restored} callsign entries")
     await db.commit()
     await db.refresh(user)
     return UserResponse.from_orm(user)
+
+
+@router.get("/{user_id}/callsign-claims")
+async def list_callsign_claims(
+    user_id: int,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """The callsign entries this account took over when it signed up or
+    gained a callsign (admin only): what to check when a schedule manager
+    reports someone signed up with a callsign that isn't theirs."""
+    import json
+    from app.models import CallsignClaim
+
+    claims = (await db.execute(
+        select(CallsignClaim).where(CallsignClaim.user_id == user_id).order_by(CallsignClaim.claimed_at.desc())
+    )).scalars().all()
+    return [
+        {
+            "id": c.id,
+            "callsign": c.callsign,
+            "claimed_at": c.claimed_at,
+            "via_invite": c.via_invite,
+            "reverted_at": c.reverted_at,
+            "entries": len(json.loads(c.rows or "[]")),
+        }
+        for c in claims
+    ]
+
+
+@router.post("/{user_id}/callsign-claims/{claim_id}/revert")
+async def revert_user_callsign_claim(
+    user_id: int,
+    claim_id: int,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Give back what one claim took over (admin only). The entries become
+    callsign-only again, and this account can't take them back by editing
+    its profile; banning it reverts every claim at once."""
+    from app.models import CallsignClaim
+
+    claim = (await db.execute(
+        select(CallsignClaim).where(CallsignClaim.id == claim_id, CallsignClaim.user_id == user_id)
+    )).scalar_one_or_none()
+    if claim is None:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    if claim.reverted_at is not None:
+        raise HTTPException(status_code=400, detail="Already reverted")
+    restored = await revert_callsign_claim(db, claim, current_user)
+    await db.commit()
+    return {"restored": restored}
 
 
 @router.put("/{user_id}/unban", response_model=UserResponse)

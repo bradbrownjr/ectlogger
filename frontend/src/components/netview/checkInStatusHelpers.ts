@@ -8,8 +8,12 @@
 // is a factory: call it once in render with the current context and destructure
 // the four functions. Behavior is identical to the previous inline definitions.
 
+import { findCheckInRole, roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
+
 interface StatusHelperContext {
-  netRoles: any[];
+  // Account and callsign-only roles merged (utils/stationRoles.ts), so a
+  // station with no account that holds NCS gets the crown too.
+  netRoles: StationRole[];
   checkIns: any[];
   // NCS roles sorted by assigned_at (for primary vs secondary crown logic).
   ncsRoles: any[];
@@ -63,7 +67,7 @@ export function getCheckInStatusHelpers({
   const getStatusIcon = (status: string, checkIn?: any) => {
     // Show role icons for users with active roles
     if (checkIn && roleBadgeApplies(status)) {
-      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
+      const userRole = findCheckInRole(netRoles, checkIn);
       if (userRole?.role?.toUpperCase() === 'NCS') {
         // First-assigned active NCS is primary; any other active NCS is
         // secondary while the primary is still checked in. Matches the
@@ -73,10 +77,10 @@ export function getCheckInStatusHelpers({
         // role like anyone else (see the ME Dirigo Net report, 2026-09-06:
         // an owner who checked in as Standard was still shown with the NCS
         // crown, and it demoted the real NCS to secondary).
-        const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
+        const ncsIndex = ncsRoles.findIndex((r: any) => r.is_active !== false && roleMatchesCheckIn(r, checkIn));
         if (ncsIndex > 0) {
           const primaryNCS = ncsRoles[0];
-          const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
+          const primaryCheckedIn = checkIns.some(c => roleMatchesCheckIn(primaryNCS, c) && c.status !== 'checked_out');
           if (primaryCheckedIn) {
             return '🤴';
           }
@@ -109,13 +113,13 @@ export function getCheckInStatusHelpers({
     // icon above, so the tooltip never describes a station's role while the
     // icon beside it is showing that station's current status.
     if (checkIn && roleBadgeApplies(status)) {
-      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
+      const userRole = findCheckInRole(netRoles, checkIn);
       if (userRole?.role?.toUpperCase() === 'NCS') {
         // Check if this is a secondary NCS (not first in the list)
-        const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
+        const ncsIndex = ncsRoles.findIndex((r: any) => r.is_active !== false && roleMatchesCheckIn(r, checkIn));
         if (ncsIndex > 0) {
           const primaryNCS = ncsRoles[0];
-          const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
+          const primaryCheckedIn = checkIns.some(c => roleMatchesCheckIn(primaryNCS, c) && c.status !== 'checked_out');
           if (primaryCheckedIn) {
             return '2nd NCS - assists primary Net Control Station';
           }
@@ -142,10 +146,10 @@ export function getCheckInStatusHelpers({
 
   // Helper to get the NCS icon for a specific check-in (primary crown or secondary prince)
   const getNcsIcon = (checkIn: any) => {
-    const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
+    const ncsIndex = ncsRoles.findIndex((r: any) => r.is_active !== false && roleMatchesCheckIn(r, checkIn));
     if (ncsIndex > 0) {
       const primaryNCS = ncsRoles[0];
-      const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
+      const primaryCheckedIn = checkIns.some(c => roleMatchesCheckIn(primaryNCS, c) && c.status !== 'checked_out');
       if (primaryCheckedIn) return '🤴';
     }
 

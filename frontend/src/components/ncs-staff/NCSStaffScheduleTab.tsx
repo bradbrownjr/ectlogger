@@ -25,6 +25,7 @@ import UndoIcon from '@mui/icons-material/Undo';
 import BlockIcon from '@mui/icons-material/Block';
 import { ncsRotationApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
+import { personLabel, samePerson, SchedulePerson, toPerson, userToPerson, uniquePeople } from '../../utils/staffPeople';
 
 interface ScheduleEntry {
   date: string;
@@ -38,9 +39,10 @@ interface ScheduleEntry {
   override_id: number | null;
 }
 
+// user_id is null for an operator added by callsign with no account yet.
 interface StaffMember {
   id: number;
-  user_id: number;
+  user_id: number | null;
   user_callsign: string;
   user_name: string | null;
   avatar_url?: string | null;
@@ -113,7 +115,7 @@ const NCSStaffScheduleTab: React.FC<NCSStaffScheduleTabProps> = ({
 }) => {
   const [swapDialogOpen, setSwapDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<ScheduleEntry | null>(null);
-  const [swapUser, setSwapUser] = useState<User | null>(null);
+  const [swapUser, setSwapUser] = useState<SchedulePerson | null>(null);
   const [swapReason, setSwapReason] = useState('');
   const [isCancellation, setIsCancellation] = useState(false);
 
@@ -131,7 +133,8 @@ const NCSStaffScheduleTab: React.FC<NCSStaffScheduleTabProps> = ({
     try {
       await ncsRotationApi.createOverride(scheduleId, {
         scheduled_date: selectedEntry.date,
-        replacement_user_id: isCancellation ? null : swapUser?.id || null,
+        replacement_user_id: isCancellation ? null : swapUser?.user_id ?? null,
+        replacement_callsign: isCancellation || !swapUser || swapUser.user_id != null ? null : swapUser.callsign,
         reason: swapReason || undefined,
       });
 
@@ -152,6 +155,16 @@ const NCSStaffScheduleTab: React.FC<NCSStaffScheduleTabProps> = ({
       reportError(getErrorMessage(err, 'Failed to cancel swap'));
     }
   };
+
+  // Who can take a swap: the manager and active staff, including staff on the
+  // list by callsign only, but not whoever already has the date.
+  const swapCandidates: SchedulePerson[] = uniquePeople([
+    ...users.filter((u: User) => u.id === scheduleOwnerId).map((u: User) => userToPerson(u)),
+    ...staff.filter((s: StaffMember) => s.is_active).map((s: StaffMember) => {
+      const account = s.user_id != null ? users.find((u: User) => u.id === s.user_id) : undefined;
+      return account ? userToPerson(account) : toPerson(s);
+    }),
+  ]).filter((p: SchedulePerson) => !selectedEntry || !samePerson({ user_id: p.user_id, user_callsign: p.callsign }, selectedEntry));
 
   if (!hasTemplateContext) {
     return (
@@ -262,13 +275,11 @@ const NCSStaffScheduleTab: React.FC<NCSStaffScheduleTabProps> = ({
 
           {!isCancellation && (
             <Autocomplete
-              options={users.filter((u: User) =>
-                (staff.some((s: StaffMember) => s.user_id === u.id && s.is_active) || u.id === scheduleOwnerId) &&
-                u.id !== selectedEntry?.user_id
-              )}
-              getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+              options={swapCandidates}
+              getOptionLabel={(option: SchedulePerson) => personLabel(option)}
+              isOptionEqualToValue={(a: SchedulePerson, b: SchedulePerson) => a.key === b.key}
               value={swapUser}
-              onChange={(_: any, value: User | null) => {
+              onChange={(_: any, value: SchedulePerson | null) => {
                 setSwapUser(value);
               }}
               renderInput={(params: any) => (
@@ -293,6 +304,9 @@ const NCSStaffScheduleTab: React.FC<NCSStaffScheduleTabProps> = ({
             variant="contained"
             onClick={handleCreateOverride}
             color={isCancellation ? 'error' : 'primary'}
+            // A swap with nobody picked used to send no replacement, which the
+            // server reads as cancelling the net.
+            disabled={!isCancellation && !swapUser}
           >
             {isCancellation ? 'Cancel Net' : 'Create Swap'}
           </Button>

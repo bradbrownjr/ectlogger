@@ -24,6 +24,7 @@ import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS, useOffscreenArrivalIndicator } from
 import OffscreenArrivalArrow from './OffscreenArrivalArrow';
 import CheckInLocation from './CheckInLocation';
 import HandRaisedIndicator from './HandRaisedIndicator';
+import { findCheckInRole, roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
 
 // ========== CHECK-IN LIST TABLE 2: Mobile View ==========
 // The small-screen (xs only) check-in table. Intentionally simpler than the
@@ -37,8 +38,9 @@ type NcsColor = { bg: string; border: string; text: string } | null;
 interface CheckInMobileListProps {
   net: any;
   filteredCheckIns: any[];
-  netRoles: any[];
-  ncsRoles: any[];
+  // Account and callsign-only roles merged (utils/stationRoles.ts).
+  netRoles: StationRole[];
+  ncsRoles: StationRole[];
   user: any;
   onlineUserIds: number[];
   activeSpeakerId: number | null;
@@ -46,7 +48,7 @@ interface CheckInMobileListProps {
   hasAnyRelayedBy: boolean;
   canManage: boolean;
   canManageCheckIns: boolean | undefined;
-  getNcsColor: (userId: number) => NcsColor;
+  getNcsColor: (station: { user_id?: number | null; callsign?: string | null }) => NcsColor;
   getEnabledCustomFields: () => any[];
   isFieldRequired: (fieldName: string) => boolean;
   getStatusIcon: (status: string, checkIn?: any) => string;
@@ -222,8 +224,8 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
           {filteredCheckIns.map((checkIn, index) => {
             const isOnActiveFrequency = net.active_frequency_id && checkIn.available_frequencies?.includes(net.active_frequency_id);
             // Get NCS color if this user is an NCS
-            const ncsColor = checkIn.user_id ? getNcsColor(checkIn.user_id) : null;
-            const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
+            const ncsColor = getNcsColor(checkIn);
+            const isNcsUser = ncsRoles.some((r: any) => roleMatchesCheckIn(r, checkIn));
             const isPriorRowMobile = (() => {
               const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
               return latest !== undefined && checkIn.checked_in_at < latest;
@@ -276,7 +278,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                       misattributed NCS/Logger role still needs correcting after the fact,
                       same reasoning as the Edit net and Roles toolbar actions. */}
                   {(net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
-                    const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+                    const userRole = findCheckInRole(netRoles, checkIn);
                     let selectValue = checkIn.status.toLowerCase();
                     // Role only takes over the value while checked in -- same rule as
                     // the desktop table and getStatusIcon (see checkInStatusHelpers.ts).

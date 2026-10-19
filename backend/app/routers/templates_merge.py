@@ -31,6 +31,13 @@ from app.routers.templates_core import is_active_co_manager
 router = APIRouter()
 
 
+def _person_key(user_id, callsign):
+    """Who a staff or rotation row names, for duplicate detection: an account
+    by id, a callsign-only operator by callsign. Keying on user_id alone made
+    every callsign-only row (user_id NULL) a "duplicate" of the first."""
+    return ("user", user_id) if user_id is not None else ("callsign", callsign)
+
+
 async def _check_merge_permission(template: NetTemplate, user: User, db: AsyncSession) -> bool:
     """Only admin, template owner, or active co-manager can merge."""
     if user.role == UserRole.ADMIN or template.owner_id == user.id:
@@ -127,14 +134,14 @@ async def preview_merge(
     target_sub_users = {row[0] for row in target_sub_result.fetchall()}
 
     target_staff_result = await db.execute(
-        select(TemplateStaff.user_id).where(TemplateStaff.template_id == target.id)
+        select(TemplateStaff.user_id, TemplateStaff.callsign).where(TemplateStaff.template_id == target.id)
     )
-    target_staff_users = {row[0] for row in target_staff_result.fetchall()}
+    target_staff_users = {_person_key(*row) for row in target_staff_result.fetchall()}
 
     target_rotation_result = await db.execute(
-        select(NCSRotationMember.user_id).where(NCSRotationMember.template_id == target.id)
+        select(NCSRotationMember.user_id, NCSRotationMember.callsign).where(NCSRotationMember.template_id == target.id)
     )
-    target_rotation_users = {row[0] for row in target_rotation_result.fetchall()}
+    target_rotation_users = {_person_key(*row) for row in target_rotation_result.fetchall()}
 
     for source in sources:
         # Count nets
@@ -155,18 +162,18 @@ async def preview_merge(
 
         # Count new staff
         staff_result = await db.execute(
-            select(TemplateStaff.user_id).where(TemplateStaff.template_id == source.id)
+            select(TemplateStaff.user_id, TemplateStaff.callsign).where(TemplateStaff.template_id == source.id)
         )
-        source_staff_users = {row[0] for row in staff_result.fetchall()}
+        source_staff_users = {_person_key(*row) for row in staff_result.fetchall()}
         new_staff = len(source_staff_users - target_staff_users)
         total_staff += new_staff
         target_staff_users |= source_staff_users
 
         # Count new rotation members
         rotation_result = await db.execute(
-            select(NCSRotationMember.user_id).where(NCSRotationMember.template_id == source.id)
+            select(NCSRotationMember.user_id, NCSRotationMember.callsign).where(NCSRotationMember.template_id == source.id)
         )
-        source_rotation_users = {row[0] for row in rotation_result.fetchall()}
+        source_rotation_users = {_person_key(*row) for row in rotation_result.fetchall()}
         new_rotation = len(source_rotation_users - target_rotation_users)
         total_rotation += new_rotation
         target_rotation_users |= source_rotation_users
@@ -284,9 +291,9 @@ async def merge_templates(
 
     # 3. Move staff (skip duplicates)
     target_staff_result = await db.execute(
-        select(TemplateStaff.user_id).where(TemplateStaff.template_id == target_id)
+        select(TemplateStaff.user_id, TemplateStaff.callsign).where(TemplateStaff.template_id == target_id)
     )
-    existing_staff_users = {row[0] for row in target_staff_result.fetchall()}
+    existing_staff_users = {_person_key(*row) for row in target_staff_result.fetchall()}
 
     source_staff_result = await db.execute(
         select(TemplateStaff).where(TemplateStaff.template_id.in_(source_ids))
@@ -294,9 +301,10 @@ async def merge_templates(
     source_staff = source_staff_result.scalars().all()
     staff_moved = 0
     for staff in source_staff:
-        if staff.user_id not in existing_staff_users:
+        key = _person_key(staff.user_id, staff.callsign)
+        if key not in existing_staff_users:
             staff.template_id = target_id
-            existing_staff_users.add(staff.user_id)
+            existing_staff_users.add(key)
             staff_moved += 1
         else:
             await db.delete(staff)
@@ -308,7 +316,7 @@ async def merge_templates(
                                  .order_by(NCSRotationMember.position.desc())
     )
     existing_rotation = target_rotation_result.scalars().all()
-    existing_rotation_users = {m.user_id for m in existing_rotation}
+    existing_rotation_users = {_person_key(m.user_id, m.callsign) for m in existing_rotation}
     max_position = max((m.position for m in existing_rotation), default=0)
 
     source_rotation_result = await db.execute(
@@ -318,11 +326,12 @@ async def merge_templates(
     source_rotation = source_rotation_result.scalars().all()
     rotation_moved = 0
     for member in source_rotation:
-        if member.user_id not in existing_rotation_users:
+        key = _person_key(member.user_id, member.callsign)
+        if key not in existing_rotation_users:
             max_position += 1
             member.template_id = target_id
             member.position = max_position
-            existing_rotation_users.add(member.user_id)
+            existing_rotation_users.add(key)
             rotation_moved += 1
         else:
             await db.delete(member)

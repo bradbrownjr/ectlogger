@@ -28,6 +28,7 @@ import {
   RotationMember,
   ScheduleConfig,
   FieldConfigEntry,
+  PendingStaff,
 } from '../contexts/CreateScheduleContext';
 import BasicInfoTab from '../components/create-schedule/BasicInfoTab';
 import ScheduleTab from '../components/create-schedule/ScheduleTab';
@@ -121,6 +122,7 @@ const CreateSchedule: React.FC = () => {
     time: '18:00',
   });
   const [fifthWeekUserId, setFifthWeekUserId] = useState<number | null>(null);
+  const [fifthWeekCallsign, setFifthWeekCallsign] = useState<string | null>(null);
 
   // ---- Frequency selection ----
   const [selectedFrequencyIds, setSelectedFrequencyIds] = useState<number[]>([]);
@@ -129,7 +131,7 @@ const CreateSchedule: React.FC = () => {
   const [fieldConfig, setFieldConfig] = useState<Record<string, FieldConfigEntry>>({});
 
   // ---- Pending NCS staff (new-schedule flow) ----
-  const [pendingNCSUsers, setPendingNCSUsers] = useState<User[]>([]);
+  const [pendingNCSUsers, setPendingNCSUsers] = useState<PendingStaff[]>([]);
 
   // ---- Reference data (fetched once) ----
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
@@ -252,6 +254,7 @@ const CreateSchedule: React.FC = () => {
       setScheduleType(schedule.schedule_type || 'ad_hoc');
       setScheduleConfig(schedule.schedule_config || { day_of_week: 1, week_of_month: [], time: '18:00' });
       setFifthWeekUserId(schedule.fifth_week_user_id ?? null);
+      setFifthWeekCallsign(schedule.fifth_week_user_id ? null : (schedule.fifth_week_callsign ?? null));
       setAnnouncements(schedule.announcements || '');
     } catch (error) {
       console.error('Failed to fetch schedule:', error);
@@ -298,6 +301,7 @@ const CreateSchedule: React.FC = () => {
       schedule_type: scheduleType,
       schedule_config: scheduleConfig,
       fifth_week_user_id: fifthWeekUserId,
+      fifth_week_callsign: fifthWeekUserId ? null : fifthWeekCallsign,
       ics309_enabled: ics309Enabled,
       ics309_hide_muted_stations: ics309HideMutedStations,
       propagation_logging_enabled: propagationLoggingEnabled,
@@ -333,11 +337,11 @@ const CreateSchedule: React.FC = () => {
         const response = await templateApi.create(scheduleData);
         const newScheduleId = response.data.id;
 
-        for (const user of pendingNCSUsers) {
+        for (const pending of pendingNCSUsers) {
           try {
-            await templateStaffApi.add(newScheduleId, { user_id: user.id });
+            await templateStaffApi.add(newScheduleId, pending.request);
           } catch (err) {
-            console.error(`Failed to add staff ${user.callsign}:`, err);
+            console.error(`Failed to add staff ${pending.callsign}:`, err);
           }
         }
 
@@ -402,6 +406,7 @@ const CreateSchedule: React.FC = () => {
     ownerId, setOwnerId, originalOwnerId, setOriginalOwnerId,
     scheduleType, setScheduleType, scheduleConfig, setScheduleConfig,
     fifthWeekUserId, setFifthWeekUserId,
+    fifthWeekCallsign, setFifthWeekCallsign,
     selectedFrequencyIds, setSelectedFrequencyIds,
     fieldConfig, setFieldConfig,
     pendingNCSUsers, setPendingNCSUsers,

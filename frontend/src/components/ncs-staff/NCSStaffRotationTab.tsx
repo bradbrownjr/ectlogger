@@ -19,10 +19,12 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import BlockIcon from '@mui/icons-material/Block';
+import { personKey, personLabel, samePerson, SchedulePerson } from '../../utils/staffPeople';
 
+// user_id is null for an operator added by callsign with no account yet.
 interface RotationMember {
   id: number;
-  user_id: number;
+  user_id: number | null;
   user_callsign: string;
   user_name: string | null;
   position: number;
@@ -31,19 +33,12 @@ interface RotationMember {
 
 interface StaffMember {
   id: number;
-  user_id: number;
+  user_id: number | null;
   user_callsign: string;
   user_name: string | null;
   avatar_url?: string | null;
   is_active: boolean;
   is_co_manager: boolean;
-}
-
-interface User {
-  id: number;
-  callsign: string;
-  name: string | null;
-  email: string;
 }
 
 interface TemplateSummary {
@@ -64,7 +59,7 @@ interface NCSStaffRotationTabProps {
   members: RotationMember[];
   staff: StaffMember[];
   templateSummary: TemplateSummary | null;
-  availableFifthWeekUsers: User[];
+  availableFifthWeekPeople: SchedulePerson[];
   fifthWeekSaving: boolean;
   handleClearAllMembers: () => void;
   handleCreateRotationFromStaff: () => void;
@@ -72,7 +67,7 @@ interface NCSStaffRotationTabProps {
   handleDragReorder: (fromIdx: number, toIdx: number) => void;
   handleToggleMemberActive: (member: RotationMember) => void;
   handleRemoveMember: (memberId: number) => void;
-  handleUpdateFifthWeekUser: (selected: User | null) => void;
+  handleUpdateFifthWeekUser: (selected: SchedulePerson | null) => void;
 }
 
 // ========== ROTATION TAB ==========
@@ -92,7 +87,7 @@ const NCSStaffRotationTab: React.FC<NCSStaffRotationTabProps> = ({
   members,
   staff,
   templateSummary,
-  availableFifthWeekUsers,
+  availableFifthWeekPeople,
   fifthWeekSaving,
   handleClearAllMembers,
   handleCreateRotationFromStaff,
@@ -133,7 +128,7 @@ const NCSStaffRotationTab: React.FC<NCSStaffRotationTabProps> = ({
         Optional: cycle NCS duty automatically across upcoming scheduled nets. If empty, nets default to the Manager.
       </Typography>
 
-      {canEdit && isScheduleContext && staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)).length > 0 && (
+      {canEdit && isScheduleContext && staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => samePerson(m, s))).length > 0 && (
         <Box sx={{ mb: 2 }}>
           <Button
             variant="contained"
@@ -188,6 +183,12 @@ const NCSStaffRotationTab: React.FC<NCSStaffRotationTabProps> = ({
                       {member.user_callsign}
                       {member.user_name && ` (${member.user_name})`}
                     </Typography>
+                    {/* On the rotation by callsign: credited as NCS on their nets, no reminder email */}
+                    {member.user_id == null && (
+                      <Tooltip title="No account yet. On their turn they're listed as the net's NCS, but they won't get a reminder email.">
+                        <Chip label="No account yet" size="small" variant="outlined" color="warning" />
+                      </Tooltip>
+                    )}
                   </Box>
                 }
               />
@@ -226,10 +227,16 @@ const NCSStaffRotationTab: React.FC<NCSStaffRotationTabProps> = ({
           {canEdit && isScheduleContext ? (
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
               <Autocomplete
-                options={availableFifthWeekUsers}
-                getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                value={availableFifthWeekUsers.find((u: User) => u.id === templateSummary.fifth_week_user_id) || null}
-                onChange={(_: any, value: User | null) => { void handleUpdateFifthWeekUser(value); }}
+                options={availableFifthWeekPeople}
+                getOptionLabel={(option: SchedulePerson) => personLabel(option)}
+                isOptionEqualToValue={(a: SchedulePerson, b: SchedulePerson) => a.key === b.key}
+                value={
+                  templateSummary.fifth_week_user_callsign
+                    ? availableFifthWeekPeople.find((p: SchedulePerson) =>
+                        p.key === personKey(templateSummary.fifth_week_user_id, templateSummary.fifth_week_user_callsign)) || null
+                    : null
+                }
+                onChange={(_: any, value: SchedulePerson | null) => { void handleUpdateFifthWeekUser(value); }}
                 renderInput={(params: any) => (
                   <TextField
                     {...params}
@@ -244,7 +251,7 @@ const NCSStaffRotationTab: React.FC<NCSStaffRotationTabProps> = ({
                 size="small"
                 variant="outlined"
                 onClick={() => { void handleUpdateFifthWeekUser(null); }}
-                disabled={fifthWeekSaving || !templateSummary.fifth_week_user_id}
+                disabled={fifthWeekSaving || !templateSummary.fifth_week_user_callsign}
               >
                 Clear
               </Button>

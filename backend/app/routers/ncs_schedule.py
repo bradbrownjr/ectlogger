@@ -283,11 +283,16 @@ def compute_ncs_schedule(
     member_count = len(active_members)
     normal_index = 0
     fifth_week_user = template.fifth_week_user
-    use_fifth_week_override = (
-        template.schedule_type == 'weekly'
-        and template.fifth_week_user_id is not None
-        and fifth_week_user is not None
-        and fifth_week_user.is_active
+    # The 5th-week operator is an account, or a callsign with no account yet
+    # (fifth_week_callsign), which has no is_active to check.
+    fifth_week_callsign = getattr(template, 'fifth_week_callsign', None)
+    use_fifth_week_override = template.schedule_type == 'weekly' and (
+        (
+            template.fifth_week_user_id is not None
+            and fifth_week_user is not None
+            and fifth_week_user.is_active
+        )
+        or bool(fifth_week_callsign)
     )
     
     for date in dates:
@@ -298,7 +303,8 @@ def compute_ncs_schedule(
         override = override_lookup.get(date_key)
         
         if override:
-            if override.replacement_user_id is None:
+            replacement_callsign = getattr(override, 'replacement_callsign', None)
+            if override.replacement_user_id is None and not replacement_callsign:
                 # Net is cancelled
                 entry = NCSScheduleEntry(
                     date=date,
@@ -317,7 +323,8 @@ def compute_ncs_schedule(
                     date=date,
                     user_id=override.replacement_user_id,
                     user_name=override.replacement_user.name if override.replacement_user else None,
-                    user_callsign=override.replacement_user.callsign if override.replacement_user else None,
+                    user_callsign=override.replacement_user.callsign if override.replacement_user else replacement_callsign,
+                    has_account=override.replacement_user_id is not None,
                     is_override=True,
                     is_fifth_week=False,
                     is_cancelled=False,
@@ -334,7 +341,8 @@ def compute_ncs_schedule(
                 date=date,
                 user_id=template.fifth_week_user_id,
                 user_name=fifth_week_user.name if fifth_week_user else None,
-                user_callsign=fifth_week_user.callsign if fifth_week_user else None,
+                user_callsign=fifth_week_user.callsign if fifth_week_user else fifth_week_callsign,
+                has_account=template.fifth_week_user_id is not None,
                 is_override=False,
                 is_fifth_week=True,
                 is_cancelled=False,
@@ -347,7 +355,8 @@ def compute_ncs_schedule(
                 date=date,
                 user_id=member.user_id,
                 user_name=member.user.name if member.user else None,
-                user_callsign=member.user.callsign if member.user else None,
+                user_callsign=member.user.callsign if member.user else member.callsign,
+                has_account=member.user_id is not None,
                 is_override=False,
                 is_fifth_week=False,
                 is_cancelled=False

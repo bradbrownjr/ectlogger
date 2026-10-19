@@ -338,19 +338,11 @@ async def get_template_statistics(
     # the app uses for NCS attribution (see utils.format_ncs_attribution and
     # the Feature Registry). Without the is_active filter this credited
     # operators who had since stepped back down to participant.
-    ncs_by_net: dict[int, list[str]] = {}
-    if net_ids:
-        ncs_rows = await db.execute(
-            select(NetRole.net_id, User.callsign)
-            .join(User, User.id == NetRole.user_id)
-            .where(NetRole.net_id.in_(net_ids))
-            .where(NetRole.role == "NCS")
-            .where(NetRole.is_active == True)  # noqa: E712
-            .order_by(NetRole.assigned_at.asc())
-        )
-        for net_id, callsign in ncs_rows.all():
-            if callsign:
-                ncs_by_net.setdefault(net_id, []).append(callsign)
+    from app.services.ncs_attribution import load_ncs_rows
+    ncs_by_net: dict[int, list[str]] = {
+        net_id: [callsign for callsign, _name in rows if callsign]
+        for net_id, rows in (await load_ncs_rows(db, net_ids)).items()
+    }
 
     instances_data = [
         {

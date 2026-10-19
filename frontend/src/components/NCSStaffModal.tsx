@@ -31,6 +31,8 @@ import NCSStaffScheduleTab from './ncs-staff/NCSStaffScheduleTab';
 import NCSStaffRotationTab from './ncs-staff/NCSStaffRotationTab';
 import NCSStaffSubscribersTab from './ncs-staff/NCSStaffSubscribersTab';
 import NCSStaffRosterTab from './ncs-staff/NCSStaffRosterTab';
+import { AddStaffRequest } from './ncs-staff/AddStaffField';
+import { personPayload, samePerson, SchedulePerson, toPerson, userToPerson, uniquePeople } from '../utils/staffPeople';
 
 interface NCSStaffModalProps {
   open: boolean;
@@ -59,23 +61,30 @@ interface NCSStaffModalProps {
   onUpdate?: () => void;
 }
 
+// user_id is null for an operator added by callsign who has no account yet;
+// compare rows with utils/staffPeople.ts, never by user_id alone.
 interface RotationMember {
   id: number;
-  user_id: number;
+  user_id: number | null;
   user_callsign: string;
   user_name: string | null;
   position: number;
   is_active: boolean;
+  has_account?: boolean;
+  account_available?: boolean;
 }
 
 interface StaffMember {
   id: number;
-  user_id: number;
+  user_id: number | null;
   user_callsign: string;
   user_name: string | null;
   avatar_url?: string | null;
   is_active: boolean;
   is_co_manager: boolean;
+  has_account?: boolean;
+  account_available?: boolean;
+  invited?: boolean;
 }
 
 interface ScheduleEntry {
@@ -118,6 +127,7 @@ interface TemplateSummary {
   fifth_week_user_id: number | null;
   fifth_week_user_callsign: string | null;
   fifth_week_user_name: string | null;
+  fifth_week_has_account?: boolean;
 }
 
 interface User {
@@ -142,6 +152,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  // What's typed in the Add box: lets a manager add a callsign that has no
+  // account yet, with an optional address to invite them at.
 
   // ========== MANAGER (OWNER) TRANSFER STATE ==========
   // Lets the current owner or an admin transfer schedule ownership from
@@ -296,6 +308,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
           fifth_week_user_id: tplRes.data.fifth_week_user_id ?? null,
           fifth_week_user_callsign: tplRes.data.fifth_week_user_callsign ?? null,
           fifth_week_user_name: tplRes.data.fifth_week_user_name ?? null,
+          fifth_week_has_account: tplRes.data.fifth_week_has_account ?? true,
         });
 
         if (canViewSubscribers) {
@@ -327,6 +340,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
             fifth_week_user_id: tplRes.data.fifth_week_user_id ?? null,
             fifth_week_user_callsign: tplRes.data.fifth_week_user_callsign ?? null,
             fifth_week_user_name: tplRes.data.fifth_week_user_name ?? null,
+            fifth_week_has_account: tplRes.data.fifth_week_has_account ?? true,
           });
           setStaff(tplStaffRes.data || []);
           setMembers(membersRes.data || []);
@@ -429,16 +443,47 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     }
   };
 
-  const handleAddStaff = async () => {
-    if (!schedule || !selectedUser) return;
-    
+  // Someone picked from the directory, or a callsign with no account yet
+  // (added as a callsign-only operator, optionally invited). The Add box is
+  // the shared AddStaffField; it clears itself when this returns true.
+  const handleAddStaff = async (data: AddStaffRequest): Promise<boolean> => {
+    if (!schedule) return false;
     try {
-      const response = await templateStaffApi.add(schedule.id, { user_id: selectedUser.id });
+      const response = await templateStaffApi.add(schedule.id, data);
       // Update local state instead of refetching
       setStaff(prev => [...prev, response.data]);
-      setSelectedUser(null);
+      return true;
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to add staff'));
+      return false;
+    }
+  };
+
+  // ===== CALLSIGN-ONLY STAFF (no account yet) =====
+  // Fix a mistyped callsign and/or send a sign-up invite. The backend renames
+  // the matching rotation entry and swaps too, and links straight away when
+  // the corrected callsign belongs to an account.
+  const handleEditPlaceholder = async (staffMember: StaffMember, changes: { callsign?: string; invite_email?: string }) => {
+    if (!schedule) return;
+    try {
+      await templateStaffApi.updatePlaceholder(schedule.id, staffMember.id, changes);
+      await fetchData();
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Failed to update operator'));
+      await fetchData();
+    }
+  };
+
+  // The callsign now has an account but wasn't taken over automatically (it
+  // was invited at a different address); the manager confirms it's them.
+  const handleLinkStaff = async (staffMember: StaffMember) => {
+    if (!schedule) return;
+    if (!confirm(`Link ${staffMember.user_callsign} to the account that now has that callsign? They become real staff, with the same access as anyone else on this list.`)) return;
+    try {
+      await templateStaffApi.updatePlaceholder(schedule.id, staffMember.id, { link: true });
+      await fetchData();
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Failed to link operator'));
     }
   };
 
@@ -455,7 +500,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       
       // Also remove from rotation if they're in it
       if (staffMember) {
-        const rotationMember = members.find((m: RotationMember) => m.user_id === staffMember.user_id);
+        const rotationMember = members.find((m: RotationMember) => samePerson(m, staffMember));
         if (rotationMember) {
           await ncsRotationApi.removeMember(schedule.id, rotationMember.id);
           setMembers(prev => prev.filter((m: RotationMember) => m.id !== rotationMember.id));
@@ -522,28 +567,24 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
 
   const handleCreateRotationFromStaff = async () => {
     if (!schedule) return;
-    
-    const userIdsToAdd = new Set<number>(
-      staff
-        .filter((s: StaffMember) => s.is_active)
-        .map((s: StaffMember) => s.user_id)
-    );
-    if (schedule.owner_id) {
-      userIdsToAdd.add(schedule.owner_id);
-    }
 
-    const missingUserIds = Array.from(userIdsToAdd).filter(
-      (userId) => !members.some((m: RotationMember) => m.user_id === userId)
+    // Active staff (accounts and callsign-only operators alike) plus the manager.
+    const peopleToAdd = uniquePeople([
+      ...staff.filter((s: StaffMember) => s.is_active).map((s: StaffMember) => toPerson(s)),
+      ...(schedule.owner_id ? [toPerson({ user_id: schedule.owner_id, user_callsign: schedule.owner_callsign })] : []),
+    ]);
+    const missing = peopleToAdd.filter(
+      (p: SchedulePerson) => !members.some((m: RotationMember) => samePerson(m, { user_id: p.user_id, user_callsign: p.callsign }))
     );
 
-    if (missingUserIds.length === 0) {
+    if (missing.length === 0) {
       setError('All active staff and the manager are already in the rotation');
       return;
     }
     
     try {
-      for (const userId of missingUserIds) {
-        await ncsRotationApi.addMember(schedule.id, { user_id: userId });
+      for (const person of missing) {
+        await ncsRotationApi.addMember(schedule.id, personPayload(person));
       }
       await fetchData();
     } catch (err: any) {
@@ -710,30 +751,44 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const availableStaffUsers = isScheduleContext
     ? users.filter((u: User) => u.id !== ownerId && !staff.some((s: StaffMember) => s.user_id === u.id))
     : users.filter((u: User) => u.id !== ownerId && !netRoles.some((r: NetRole) => r.user_id === u.id && r.role === 'NCS'));
-  const eligibleFifthWeekUserIds = new Set<number>([
-    ...(ownerId ? [ownerId] : []),
-    ...staff.filter((s: StaffMember) => s.is_active).map((s: StaffMember) => s.user_id),
-    ...(templateSummary?.fifth_week_user_id ? [templateSummary.fifth_week_user_id] : []),
+  // The 5th-week pick comes from the manager and active staff, including
+  // operators on the staff list by callsign only, plus whoever holds it now.
+  const directoryPerson = (id: number) => {
+    const u = users.find((x: User) => x.id === id);
+    return u ? userToPerson(u) : null;
+  };
+  const availableFifthWeekPeople: SchedulePerson[] = uniquePeople([
+    ...(ownerId && directoryPerson(ownerId) ? [directoryPerson(ownerId)!] : []),
+    ...staff.filter((s: StaffMember) => s.is_active).map((s: StaffMember) => {
+      const fromDirectory = s.user_id != null ? directoryPerson(s.user_id) : null;
+      return fromDirectory ?? toPerson(s);
+    }),
+    ...(templateSummary?.fifth_week_user_callsign
+      ? [toPerson({ user_id: templateSummary.fifth_week_user_id, user_callsign: templateSummary.fifth_week_user_callsign, user_name: templateSummary.fifth_week_user_name })]
+      : []),
   ]);
-  const availableFifthWeekUsers = users.filter((u: User) => eligibleFifthWeekUserIds.has(u.id));
 
   // Get NCS-only roles for display
   const ncsRoles = netRoles.filter((r: NetRole) => r.role === 'NCS');
 
   const hasTemplateContext = !!templateId;
 
-  const handleUpdateFifthWeekUser = async (selected: User | null) => {
+  const handleUpdateFifthWeekUser = async (selected: SchedulePerson | null) => {
     if (!schedule) return;
     setFifthWeekSaving(true);
     try {
-      await templateApi.update(schedule.id, { fifth_week_user_id: selected?.id ?? null });
+      await templateApi.update(schedule.id, {
+        fifth_week_user_id: selected?.user_id ?? null,
+        fifth_week_callsign: selected && selected.user_id == null ? selected.callsign : null,
+      });
       setTemplateSummary(prev => {
         if (!prev) return prev;
         return {
           ...prev,
-          fifth_week_user_id: selected?.id ?? null,
+          fifth_week_user_id: selected?.user_id ?? null,
           fifth_week_user_callsign: selected?.callsign ?? null,
           fifth_week_user_name: selected?.name ?? null,
+          fifth_week_has_account: selected ? selected.has_account : true,
         };
       });
     } catch (err: any) {
@@ -752,7 +807,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       members={members}
       staff={staff}
       templateSummary={templateSummary}
-      availableFifthWeekUsers={availableFifthWeekUsers}
+      availableFifthWeekPeople={availableFifthWeekPeople}
       fifthWeekSaving={fifthWeekSaving}
       handleClearAllMembers={handleClearAllMembers}
       handleCreateRotationFromStaff={handleCreateRotationFromStaff}
@@ -802,6 +857,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       setSelectedUser={setSelectedUser}
       users={users}
       handleAddStaff={handleAddStaff}
+      handleEditPlaceholder={handleEditPlaceholder}
+      handleLinkStaff={handleLinkStaff}
       localOwner={localOwner}
       schedule={schedule}
       net={net}

@@ -12,8 +12,10 @@ from sqlalchemy import select, and_, or_, func
 from sqlalchemy.orm import selectinload
 from app.database import AsyncSessionLocal
 from app.net_start import auto_open_lobby, lobby_open_due
-from app.utils import display_callsign, format_ncs_attribution
-from app.models import CheckIn, ChatMessage, NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus, TemplateStaff, NetRole
+from app.services.callsign_people import duty_ncs_role
+from app.services.ncs_attribution import net_ncs_attribution
+from app.utils import display_callsign
+from app.models import CheckIn, ChatMessage, NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus, TemplateStaff
 from app.email_service import EmailService
 from app.services.net_closure import close_net_and_notify, get_last_activity_at
 from app.config import settings
@@ -235,10 +237,12 @@ class NCSReminderService:
             tpl.rotation_members,
             tpl.schedule_overrides,
         )
-        if not schedule or not schedule[0].user_id or schedule[0].is_cancelled:
-            return
-
-        db.add(NetRole(net_id=net_id, user_id=schedule[0].user_id, role="NCS", auto_assigned=True))
+        # An operator on the rotation by callsign alone (no account yet) is
+        # credited as the net's NCS with a NetCallsignRole, which grants
+        # nothing; see services/callsign_people.py.
+        role = duty_ncs_role(net_id, schedule[0] if schedule else None)
+        if role is not None:
+            db.add(role)
 
     async def _check_and_auto_create_nets(self):
         """Ensure a SCHEDULED net instance exists ~24h before every recurring template.
@@ -328,7 +332,9 @@ class NCSReminderService:
         if not schedule:
             return True  # Occurrence isn't in the rotation's view; don't block on it
 
-        return bool(schedule[0].user_id) and not schedule[0].is_cancelled
+        # A callsign-only operator on duty counts: the net is run by whoever
+        # logs it (often a Logger checking that NCS in), not by the app.
+        return schedule[0].is_staffed
 
     async def _find_lobby_candidates(self, db):
         """Nets that might need their lobby auto-opened, before the offset/staffing checks.
@@ -487,15 +493,7 @@ class NCSReminderService:
                 ncs_name = None
                 ncs_callsign = None
                 if net_id:
-                    ncs_result = await db.execute(
-                        select(User.callsign, User.name)
-                        .join(NetRole, NetRole.user_id == User.id)
-                        .where(NetRole.net_id == net_id)
-                        .where(NetRole.role == "NCS")
-                        .where(NetRole.is_active == True)  # noqa: E712
-                        .order_by(NetRole.assigned_at.asc())
-                    )
-                    ncs_callsign, ncs_name = format_ncs_attribution(ncs_result.all())
+                    ncs_callsign, ncs_name = await net_ncs_attribution(db, net_id)
                     if ncs_callsign and not ncs_name:
                         # Several on duty (or no name on file): show the
                         # callsign list alone rather than "None (WO1J, NB1T)".

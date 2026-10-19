@@ -4,7 +4,7 @@ summary: Adding a station, editing a row in place, fixing a misheard callsign, a
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-18
+revised: 2026-10-19
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/logging-check-ins/
@@ -50,9 +50,13 @@ Each row has a delete action that asks you to confirm before it removes the row.
 
 Not every station on the air has ever touched ECTLogger, and that's fine; a check-in doesn't require one. Type the callsign as given; if it doesn't match any registered account, the row is created as a **guest** check-in. Everything about it works the same as any other row: it can be edited, statused, and shown up in exports and the map exactly like an account-linked check-in.
 
-The only things that are unavailable to a guest check-in are the things that genuinely depend on an account existing: they can't be given a role such as NCS or Logger, their profile popup has no account details such as a website link, and on an [authenticated net](/docs/net-control/authenticated-nets/) a guest check-in can never be identity-verified, because there's no TOTP secret behind it to check.
+A guest check-in can be marked NCS, Logger, or Relay from its status menu, the same way as any other row. This is how a Logger who runs the net in the app credits the net control operator on the air when that operator has no account: pick **NCS** on their row, and the report, the ICS-309, and the closing log name them as Net Control. The role is a credit only. It doesn't give anyone access to anything, because there's no account to give it to. The people who can do this are the same ones who can use the net's **Roles** button. Picking a plain status for that row again removes the role.
 
-If the same guest callsign later creates an account and checks in again, that new check-in links to the account the normal way. The earlier guest rows stay exactly as they were logged, under the callsign, with no retroactive relinking. Editing a row's callsign is the one thing that links it to an account after the fact.
+The things that are unavailable to a guest check-in are the ones that genuinely depend on an account existing: their profile popup has no account details such as a website link, and on an [authenticated net](/docs/net-control/authenticated-nets/) a guest check-in can never be identity-verified, because there's no TOTP secret behind it to check.
+
+If the same guest callsign later creates an account and checks in again, that new check-in links to the account the normal way. The earlier guest rows stay exactly as they were logged, under the callsign, with no retroactive relinking. Editing a row's callsign is the one thing that links it to an account after the fact. A role given to the guest row is the exception: if that station was on a schedule's team by callsign, the NCS credit moves to their account when they sign up (see [Net staff and the NCS rotation](/docs/net-managers/net-staff-and-rotation/)).
+
+If you fix a guest row's callsign, a role on it follows the correction.
 
 ## Rechecks
 

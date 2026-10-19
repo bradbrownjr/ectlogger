@@ -1,4 +1,5 @@
-import { checkInApi, netApi, netRoleApi, userApi } from '../../services/api';
+import { callsignRoleApi, checkInApi, netApi, netRoleApi, userApi } from '../../services/api';
+import { roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
 import api from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import { isFieldShown, withOnlyShownFields } from '../../utils/checkInFields';
@@ -23,7 +24,8 @@ export interface CheckInActionsDeps {
   netId: string | undefined;
   net: any;
   checkIns: any[];
-  netRoles: any[];
+  // Account and callsign-only roles merged (utils/stationRoles.ts).
+  netRoles: StationRole[];
   user: any;
   isOwner: boolean;
   isAdmin: boolean;
@@ -198,9 +200,12 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     let rollbackStatus: (() => void) | null = null;
 
     try {
+      // The role this station holds now, account or callsign-only. Matched by
+      // station, never user_id alone: a guest row and a callsign-only role
+      // both have user_id null.
+      const existingRole = netRoles.find((r) => roleMatchesCheckIn(r, checkIn));
       if ((newStatus === 'ncs' || newStatus === 'logger') && checkIn.user_id) {
         // Remove any existing role
-        const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
         if (existingRole) {
           await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
         }
@@ -216,8 +221,15 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         await fetchNetRoles();
         await fetchCheckIns();
       } else if (newStatus === 'ncs' || newStatus === 'logger') {
-        setToastMessage('Cannot assign roles to stations without user accounts');
-        return;
+        // ========== ROLE FOR A STATION WITH NO ACCOUNT ==========
+        // Credited by callsign (NetCallsignRole): the report and the closing
+        // log name them, but it grants no net controls. The server replaces
+        // any role the callsign already holds, refuses a callsign that has an
+        // account, and applies the same who-may rule as the Roles dialog.
+        await callsignRoleApi.assign(Number(netId), checkIn.callsign, newStatus.toUpperCase());
+        await checkInApi.update(checkInId, { status: 'checked_in' });
+        await fetchNetRoles();
+        await fetchCheckIns();
       } else {
         // ========== OPTIMISTIC STATUS UPDATE ==========
         // Paint the new status immediately instead of waiting on the write.
@@ -246,12 +258,15 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         // check-in row keeps showing the old role icon forever (reported on the
         // ME Dirigo Net, 2026-09-06). The backend's own remove_net_role guard
         // already blocks removing the last active NCS from an active net.
-        if (checkIn.user_id && (isOwner || isAdmin)) {
-          const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-          if (existingRole) {
-            await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
-            await fetchNetRoles();
-          }
+        if (checkIn.user_id && existingRole && (isOwner || isAdmin)) {
+          await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
+          await fetchNetRoles();
+        }
+        // A callsign-only role grants nothing, so whoever may give one may
+        // take it back (the server checks the same rule as assigning it).
+        if (!checkIn.user_id && existingRole?.callsign_only && net?.actions?.manage_roles) {
+          await callsignRoleApi.remove(Number(netId), existingRole.id);
+          await fetchNetRoles();
         }
         // Patch the one row from the write's own response instead of re-reading
         // the whole list. PUT /check-ins/{id} returns the authoritative

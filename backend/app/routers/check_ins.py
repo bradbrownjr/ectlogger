@@ -7,6 +7,7 @@ from datetime import datetime, UTC
 import json
 import logging
 from app.database import get_db
+from app.services.callsign_people import find_user_by_callsign, follow_callsign_correction
 from app.models import CheckIn, FieldDefinition, Net, NetStatus, User, UserRole, StationStatus, NetRole, Contact, Frequency
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse, ExpectedCodeResponse, VerifyIdentityRequest
 from app.dependencies import get_current_user, get_current_user_optional
@@ -60,16 +61,10 @@ async def _enforce_spam_guard(db: AsyncSession, field_values: dict) -> None:
 # Contact row stays in sync no matter which path recorded the location.
 
 async def _find_user_by_callsign(db: AsyncSession, callsign: str) -> Optional[User]:
-    """Find the registered user who owns a callsign (amateur, GMRS, or one of
-    the extra callsigns stored in the User.callsigns JSON list)."""
-    result = await db.execute(
-        select(User).where(
-            (User.callsign == callsign) |
-            (User.gmrs_callsign == callsign) |
-            (User.callsigns.like(f'%"{callsign}"%'))
-        )
-    )
-    return result.scalar_one_or_none()
+    """The registered user who owns a callsign. One rule for the whole app,
+    shared with staff/rotation entries and sign-up claims (see
+    services/callsign_people.py::find_user_by_callsign)."""
+    return await find_user_by_callsign(db, callsign)
 
 
 async def _sync_contact_location(
@@ -595,8 +590,15 @@ async def update_check_in(
     # could not be assigned from it (net 124, 2026-10-12: KB1JCZ corrected to
     # KB1JCX). Staff edits only: an operator editing their own row (a
     # portable suffix, say) must not detach it from their own account.
+    roles_followed = False
     if check_in.callsign != old_callsign and not is_own_check_in:
         check_in.user = await _find_user_by_callsign(db, check_in.callsign)
+        # A credit-only role (a station with no account marked NCS, say)
+        # belongs to the corrected callsign too.
+        await db.flush()
+        roles_followed = await follow_callsign_correction(
+            db, check_in.net_id, old_callsign, check_in.callsign, check_in.user,
+        )
 
     # An edited location keeps its grid square only if it is still the
     # station's live town; a hand-corrected location drops it, so hovering
@@ -670,6 +672,14 @@ async def update_check_in(
         },
         "timestamp": datetime.now(UTC).isoformat()
     }, check_in.net_id)
+
+    if roles_followed:
+        # Every viewer refetches its role lists on role_change.
+        await manager.broadcast({
+            "type": "role_change",
+            "data": {"net_id": check_in.net_id, "callsign": check_in.callsign},
+            "timestamp": datetime.now(UTC).isoformat(),
+        }, check_in.net_id)
 
     if 'status' in check_in_update.dict(exclude_unset=True):
         from app.net_pause import sync_net_pause_state

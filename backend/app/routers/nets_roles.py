@@ -10,7 +10,9 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
-from app.models import Net, NetRole, NetStatus, NetTemplateSubscription, TemplateStaff, User
+from pydantic import BaseModel, Field
+
+from app.models import Net, NetCallsignRole, NetRole, NetStatus, NetTemplateSubscription, TemplateStaff, User
 from app.permissions import (
     can_manage_net_roles,
     is_admin,
@@ -189,6 +191,118 @@ async def remove_net_role(
         from app.net_pause import sync_net_pause_state
         await sync_net_pause_state(db, net_id)
 
+    return None
+
+
+# ========== CREDIT-ONLY ROLES FOR STATIONS WITH NO ACCOUNT ==========
+# A Logger running a net often checks the NCS in by callsign, and that NCS
+# may have no account (Brian's UFB New England pattern; N1KWG's Greater
+# Manchester nets). These rows credit the station on the report, the ICS-309
+# and the net card, and nothing else: they live in net_callsign_roles, which
+# no permission check reads (see models.NetCallsignRole). Same who-may rule
+# as assigning an account's role (can_manage_net_roles).
+
+class CallsignRoleRequest(BaseModel):
+    callsign: str = Field(..., max_length=20)
+    role: str
+
+
+def _callsign_role_dict(role: NetCallsignRole) -> dict:
+    return {
+        "id": role.id,
+        "callsign": role.callsign,
+        "role": role.role,
+        "assigned_at": role.assigned_at,
+        "auto_assigned": bool(role.auto_assigned),
+    }
+
+
+@router.get("/{net_id}/callsign-roles")
+async def list_callsign_roles(net_id: int, db: AsyncSession = Depends(get_db)):
+    """Roles held by stations with no account. Public, like the roles list:
+    a callsign and a role are what any listener hears on the air."""
+    result = await db.execute(
+        select(NetCallsignRole).where(NetCallsignRole.net_id == net_id).order_by(NetCallsignRole.assigned_at)
+    )
+    return [_callsign_role_dict(r) for r in result.scalars().all()]
+
+
+@router.post("/{net_id}/callsign-roles")
+async def assign_callsign_role(
+    net_id: int,
+    body: CallsignRoleRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Credit a station with no account as NCS, Logger or Relay on a net.
+
+    Replaces any role that callsign already holds on the net (a station has
+    one role at a time, as the check-in list shows). A callsign that has an
+    account is refused: that station gets a real role (POST /roles)."""
+    from app.services.callsign_people import find_user_by_callsign, normalize_callsign
+
+    role_name = (body.role or "").strip().upper()
+    if role_name not in VALID_NET_ROLES:
+        raise HTTPException(status_code=400, detail=f"Role must be one of: {', '.join(sorted(VALID_NET_ROLES))}")
+    callsign = normalize_callsign(body.callsign)
+
+    net = (await db.execute(select(Net).where(Net.id == net_id))).scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    if not await can_manage_net_roles(db, net, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to assign roles")
+    if await find_user_by_callsign(db, callsign) is not None:
+        raise HTTPException(status_code=400, detail=f"{callsign} has an account; give them the role from their check-in")
+
+    existing = (await db.execute(
+        select(NetCallsignRole).where(NetCallsignRole.net_id == net_id, NetCallsignRole.callsign == callsign)
+    )).scalars().all()
+    for row in existing:
+        await db.delete(row)
+    role = NetCallsignRole(net_id=net_id, callsign=callsign, role=role_name, assigned_by_id=current_user.id)
+    db.add(role)
+    await db.commit()
+    await db.refresh(role)
+
+    from app.main import manager, post_system_message
+    await manager.broadcast({
+        "type": "role_change",
+        "data": {"net_id": net_id, "callsign": callsign, "role": role_name},
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+    }, net_id)
+    await post_system_message(net_id, f"{callsign} assigned as {role_name}", db)
+    return _callsign_role_dict(role)
+
+
+@router.delete("/{net_id}/callsign-roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_callsign_role(
+    net_id: int,
+    role_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove a credit-only role (same who-may rule as assigning one)."""
+    net = (await db.execute(select(Net).where(Net.id == net_id))).scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    if not await can_manage_net_roles(db, net, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to remove roles")
+    role = (await db.execute(
+        select(NetCallsignRole).where(NetCallsignRole.id == role_id, NetCallsignRole.net_id == net_id)
+    )).scalar_one_or_none()
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    callsign, role_name = role.callsign, role.role
+    await db.delete(role)
+    await db.commit()
+
+    from app.main import manager, post_system_message
+    await manager.broadcast({
+        "type": "role_change",
+        "data": {"net_id": net_id, "callsign": callsign, "role": role_name, "removed": True},
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+    }, net_id)
+    await post_system_message(net_id, f"{callsign} removed from {role_name} role", db)
     return None
 
 

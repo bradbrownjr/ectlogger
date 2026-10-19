@@ -196,6 +196,10 @@ async def invite_contact(
     contact.user_id = new_user.id
     
     await db.commit()
+    # The new account takes over any staff/rotation entries that named its
+    # callsign before it existed (services/callsign_people.py).
+    from app.services.callsign_people import claim_and_queue_notices
+    await claim_and_queue_notices(db, new_user)
     await db.refresh(contact)
     
     # Send magic link email for first login

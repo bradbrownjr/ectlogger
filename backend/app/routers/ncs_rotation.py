@@ -5,12 +5,23 @@ from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from datetime import datetime
 import json
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 from app.database import get_db
 from app.models import (
-    Net, NetRole, NetStatus, NetTemplate, NCSRotationMember, NCSScheduleOverride, User,
+    Contact, Net, NetCallsignRole, NetRole, NetStatus, NetTemplate, NCSRotationMember, NCSScheduleOverride, User,
     NetTemplateSubscription, TemplateStaff
+)
+from app.services.callsign_people import (
+    Person,
+    callsigns_with_accounts,
+    check_invite_budget,
+    claim_and_queue_notices,
+    duty_ncs_role,
+    normalize_callsign,
+    record_invite,
+    rename_placeholder,
+    resolve_person,
 )
 from app.schemas import (
     NCSRotationMemberCreate, NCSRotationMemberResponse, NCSRotationMemberReorder,
@@ -48,9 +59,91 @@ def _entries_for_viewer(entries: List[NCSScheduleEntry], signed_in: bool) -> Lis
 
 
 class TemplateStaffUpdateRequest(BaseModel):
-    """PATCH payload for template staff updates."""
+    """PATCH payload for template staff updates.
+
+    The last three apply to a callsign-only entry: ``callsign`` corrects a
+    typo, ``link`` gives the entry to the account that now holds its
+    callsign, and ``invite_email`` (re)sends a sign-up invite."""
     is_active: Optional[bool] = None
     is_co_manager: Optional[bool] = None
+    callsign: Optional[str] = None
+    link: Optional[bool] = None
+    invite_email: Optional[EmailStr] = None
+
+
+# ========== CALLSIGN-ONLY ENTRIES ==========
+# Staff and rotation entries may name an operator who has no account yet;
+# services/callsign_people.py holds the rules. These helpers are the router's
+# side of it: the extra fields a signed-in viewer sees, the invite, and the
+# typo/link edits a manager makes.
+
+async def _placeholder_flags(db: AsyncSession, rows) -> tuple:
+    """(callsigns that now have an account, callsigns that were invited) for
+    the callsign-only rows in `rows`."""
+    callsigns = {r.callsign for r in rows if r.user_id is None and r.callsign}
+    if not callsigns:
+        return set(), set()
+    available = await callsigns_with_accounts(db, callsigns)
+    invited_result = await db.execute(
+        select(Contact.callsign).where(Contact.callsign.in_(callsigns), Contact.invited_at.isnot(None))
+    )
+    return available, set(invited_result.scalars().all())
+
+
+async def _queue_invite(
+    db: AsyncSession,
+    background_tasks: BackgroundTasks,
+    template: NetTemplate,
+    callsign: str,
+    email: str,
+    inviter: User,
+) -> None:
+    """Record and send a sign-up invite for a callsign-only entry. Commits."""
+    from app.utils import display_callsign
+
+    await check_invite_budget(db, inviter)
+    await record_invite(db, callsign, email, inviter)
+    await db.commit()
+    background_tasks.add_task(
+        EmailService.send_team_invite,
+        to_email=email,
+        callsign=callsign,
+        schedule_name=template.name,
+        inviter_display=display_callsign(inviter) or "A net manager",
+        login_url=f"{settings.frontend_url}/login",
+    )
+    logger.info("NCS_ROTATION", f"Queued team invite for {callsign} on template {template.id} by user {inviter.id}")
+
+
+async def _edit_placeholder(
+    db: AsyncSession,
+    background_tasks: BackgroundTasks,
+    template: NetTemplate,
+    callsign: str,
+    current_user: User,
+    new_callsign: Optional[str] = None,
+    link: Optional[bool] = None,
+) -> None:
+    """Apply a manager's typo fix or link to every entry for `callsign` on
+    this schedule. A corrected callsign that belongs to an account is linked
+    to it straight away, the same as `link`. Commits."""
+    target = callsign
+    if new_callsign is not None:
+        target = normalize_callsign(new_callsign)
+        await rename_placeholder(db, template.id, callsign, target)
+        await db.commit()
+    if new_callsign is not None or link:
+        from app.services.callsign_people import find_user_by_callsign
+        account = await find_user_by_callsign(db, target)
+        if account is None:
+            if link:
+                raise HTTPException(status_code=400, detail=f"{target} doesn't have an account yet")
+            return
+        if not account.is_active:
+            raise HTTPException(status_code=400, detail=f"{target}'s account is closed")
+        await claim_and_queue_notices(
+            db, account, background_tasks, template_id=template.id, callsigns=[target], linked_by=current_user,
+        )
 
 
 async def get_template_or_404(template_id: int, db: AsyncSession) -> NetTemplate:
@@ -137,34 +230,42 @@ async def resync_pending_duty_ncs(
         schedule = compute_anchored_ncs_schedule(
             template, [local_dt], template.rotation_members, template.schedule_overrides,
         )
-        new_user_id = schedule[0].user_id if schedule and not schedule[0].is_cancelled else None
+        entry = schedule[0] if schedule else None
+        new_role = duty_ncs_role(net.id, entry)
+        new_user_id = new_role.user_id if isinstance(new_role, NetRole) else None
+        new_identity = (new_user_id, new_role.callsign if isinstance(new_role, NetCallsignRole) else None)
 
-        existing_result = await db.execute(
+        # The duty NCS is a NetRole for an account, or a credit-only
+        # NetCallsignRole for a callsign with no account; either may be the
+        # one to replace.
+        existing_roles = (await db.execute(
             select(NetRole).where(NetRole.net_id == net.id, NetRole.role == "NCS")
-        )
-        existing_roles = existing_result.scalars().all()
+        )).scalars().all()
+        existing_callsign_roles = (await db.execute(
+            select(NetCallsignRole).where(NetCallsignRole.net_id == net.id, NetCallsignRole.role == "NCS")
+        )).scalars().all()
 
         # A human already made an explicit choice for this net (assigned a
         # role, started it, or self-checked in) -- never overwrite that with
         # a roster edit, and never add a second NCS alongside it.
-        if any(not r.auto_assigned for r in existing_roles):
+        if any(not r.auto_assigned for r in [*existing_roles, *existing_callsign_roles]):
             continue
 
-        existing = existing_roles[0] if existing_roles else None
-        old_user_id = existing.user_id if existing else None
+        old_user_id = existing_roles[0].user_id if existing_roles else None
+        old_identity = (old_user_id, existing_callsign_roles[0].callsign if existing_callsign_roles else None)
 
-        if old_user_id == new_user_id:
+        if old_identity == new_identity:
             continue
 
-        if existing:
+        for existing in [*existing_roles, *existing_callsign_roles]:
             await db.delete(existing)
-        if new_user_id is not None:
-            db.add(NetRole(net_id=net.id, user_id=new_user_id, role="NCS", auto_assigned=True))
+        if new_role is not None:
+            db.add(new_role)
         await db.commit()
 
         logger.info(
             "NCS_ROTATION",
-            f"Resynced duty NCS for net {net.id} ({template.name}): {old_user_id} -> {new_user_id}",
+            f"Resynced duty NCS for net {net.id} ({template.name}): {old_identity} -> {new_identity}",
         )
 
         if background_tasks is None:
@@ -201,9 +302,12 @@ async def list_rotation_members(
 ):
     """List all NCS rotation members for a template"""
     template = await get_template_or_404(template_id, db)
-    
+    available, _invited = await _placeholder_flags(db, template.rotation_members)
+
     return [
-        NCSRotationMemberResponse.from_orm_with_user(member, current_user is not None)
+        NCSRotationMemberResponse.from_orm_with_user(
+            member, current_user is not None, account_available=member.callsign in available,
+        )
         for member in sorted(template.rotation_members, key=lambda m: m.position)
     ]
 
@@ -216,29 +320,29 @@ async def add_rotation_member(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Add a user to the NCS rotation"""
+    """Add an operator to the NCS rotation: an account, or a callsign with
+    no account yet (see services/callsign_people.py)."""
     template = await get_template_or_404(template_id, db)
     
     if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Permission denied")
-    
-    # Check user exists
-    result = await db.execute(select(User).where(User.id == member_data.user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
+
+    person = await resolve_person(db, member_data.user_id, member_data.callsign)
+
     # Check if already in rotation
     for existing in template.rotation_members:
-        if existing.user_id == member_data.user_id:
-            raise HTTPException(status_code=400, detail="User already in rotation")
+        if (person.user_id is not None and existing.user_id == person.user_id) or (
+            person.callsign is not None and existing.user_id is None and existing.callsign == person.callsign
+        ):
+            raise HTTPException(status_code=400, detail="Already in the rotation")
     
     # Get next position
     max_position = max([m.position for m in template.rotation_members], default=0)
     
     member = NCSRotationMember(
         template_id=template_id,
-        user_id=member_data.user_id,
+        user_id=person.user_id,
+        callsign=person.callsign,
         position=max_position + 1
     )
     db.add(member)
@@ -246,6 +350,8 @@ async def add_rotation_member(
     stamp_rotation_anchor(template)
     await db.commit()
     await resync_pending_duty_ncs(db, template_id, background_tasks)
+    if person.callsign and member_data.invite_email:
+        await _queue_invite(db, background_tasks, template, person.callsign, member_data.invite_email, current_user)
 
     # Reload with user relationship
     result = await db.execute(
@@ -282,12 +388,23 @@ async def remove_rotation_member(
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     
-    # Clean up any overrides that reference this user (as original or replacement)
+    # Clean up any overrides that reference this operator (as original or
+    # replacement). Matched by callsign for a callsign-only entry: comparing
+    # a NULL user_id would match every callsign-only swap instead.
+    if member.user_id is not None:
+        refers_to_member = (
+            (NCSScheduleOverride.original_user_id == member.user_id) |
+            (NCSScheduleOverride.replacement_user_id == member.user_id)
+        )
+    else:
+        refers_to_member = (
+            (NCSScheduleOverride.original_callsign == member.callsign) |
+            (NCSScheduleOverride.replacement_callsign == member.callsign)
+        )
     await db.execute(
         delete(NCSScheduleOverride).where(
             NCSScheduleOverride.template_id == template_id,
-            (NCSScheduleOverride.original_user_id == member.user_id) | 
-            (NCSScheduleOverride.replacement_user_id == member.user_id)
+            refers_to_member,
         )
     )
     
@@ -333,6 +450,9 @@ async def clear_all_rotation_members(
 
 class NCSRotationMemberUpdateRequest(BaseModel):
     is_active: Optional[bool] = None
+    # Callsign-only entries (see TemplateStaffUpdateRequest).
+    callsign: Optional[str] = None
+    link: Optional[bool] = None
 
 
 @router.patch("/members/{member_id}", response_model=NCSRotationMemberResponse)
@@ -363,13 +483,21 @@ async def update_rotation_member(
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    if update.is_active is None:
+    if update.is_active is None and update.callsign is None and not update.link:
         raise HTTPException(status_code=400, detail="No update fields provided")
+    if (update.callsign is not None or update.link) and member.user_id is not None:
+        raise HTTPException(status_code=400, detail="Only an operator without an account can be relinked")
 
-    member.is_active = update.is_active
-    # Roster composition (who's actually cycling) changed -- restart from here.
-    stamp_rotation_anchor(template)
-    await db.commit()
+    if update.callsign is not None or update.link:
+        await _edit_placeholder(
+            db, background_tasks, template, member.callsign, current_user,
+            new_callsign=update.callsign, link=update.link,
+        )
+    if update.is_active is not None:
+        member.is_active = update.is_active
+        # Roster composition (who's actually cycling) changed -- restart from here.
+        stamp_rotation_anchor(template)
+        await db.commit()
     await resync_pending_duty_ncs(db, template_id, background_tasks)
 
     result = await db.execute(
@@ -447,11 +575,14 @@ async def get_ncs_schedule(
     return NCSScheduleResponse(
         template_id=template_id,
         fifth_week_user_id=template.fifth_week_user_id,
-        fifth_week_user_callsign=template.fifth_week_user.callsign if template.fifth_week_user else None,
+        fifth_week_user_callsign=(
+            template.fifth_week_user.callsign if template.fifth_week_user else template.fifth_week_callsign
+        ),
         fifth_week_user_name=public_display_name(
             template.fifth_week_user.name if template.fifth_week_user else None,
             current_user is not None,
         ),
+        fifth_week_has_account=template.fifth_week_callsign is None,
         schedule=_entries_for_viewer(schedule, current_user is not None),
         rotation_members=[
             NCSRotationMemberResponse.from_orm_with_user(m, current_user is not None)
@@ -512,6 +643,16 @@ async def create_schedule_override(
         template, dates, template.rotation_members, []  # No overrides for original calc
     )
     original_user_id = schedule[0].user_id if schedule else None
+    original_callsign = (
+        schedule[0].user_callsign if schedule and schedule[0].user_id is None else None
+    )
+    # No replacement at all cancels the net; otherwise the replacement is an
+    # account or a callsign with no account yet.
+    is_cancellation = override_data.replacement_user_id is None and not override_data.replacement_callsign
+    replacement = (
+        Person(None, None) if is_cancellation
+        else await resolve_person(db, override_data.replacement_user_id, override_data.replacement_callsign)
+    )
     
     # Check if override already exists for this date
     result = await db.execute(
@@ -523,9 +664,11 @@ async def create_schedule_override(
     existing = result.scalar_one_or_none()
     if existing:
         # Update existing override
-        existing.replacement_user_id = override_data.replacement_user_id
+        existing.replacement_user_id = replacement.user_id
+        existing.replacement_callsign = replacement.callsign
         existing.reason = override_data.reason
         existing.original_user_id = original_user_id
+        existing.original_callsign = original_callsign
         override = existing
     else:
         # Create new override
@@ -533,7 +676,9 @@ async def create_schedule_override(
             template_id=template_id,
             scheduled_date=override_data.scheduled_date,
             original_user_id=original_user_id,
-            replacement_user_id=override_data.replacement_user_id,
+            original_callsign=original_callsign,
+            replacement_user_id=replacement.user_id,
+            replacement_callsign=replacement.callsign,
             reason=override_data.reason,
             created_by_id=current_user.id
         )
@@ -553,7 +698,7 @@ async def create_schedule_override(
     override = result.scalar_one()
     
     # Send cancellation notifications if this is a cancellation (no replacement)
-    if override_data.replacement_user_id is None:
+    if is_cancellation:
         # Get original NCS user if exists
         original_user = None
         if original_user_id:
@@ -671,9 +816,13 @@ async def list_template_staff(
 ):
     """List all staff members who can run nets from this template"""
     template = await get_template_or_404(template_id, db)
-    
+    available, invited = await _placeholder_flags(db, template.staff)
+
     return [
-        TemplateStaffResponse.from_orm_with_user(staff, current_user is not None)
+        TemplateStaffResponse.from_orm_with_user(
+            staff, current_user is not None,
+            account_available=staff.callsign in available, invited=staff.callsign in invited,
+        )
         for staff in template.staff
     ]
 
@@ -682,32 +831,39 @@ async def list_template_staff(
 async def add_template_staff(
     template_id: int,
     staff_data: TemplateStaffCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Add a user to the template staff (people who can run nets)"""
+    """Add an operator to the template staff (people who can run nets): an
+    account, or a callsign with no account yet, optionally with an address
+    to invite them at. A callsign-only entry grants nothing until that
+    operator signs up (services/callsign_people.py)."""
     template = await get_template_or_404(template_id, db)
     
     if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Permission denied")
-    
-    # Check user exists
-    result = await db.execute(select(User).where(User.id == staff_data.user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
+
+    person = await resolve_person(db, staff_data.user_id, staff_data.callsign)
+
     # Check if already staff
     for existing in template.staff:
-        if existing.user_id == staff_data.user_id:
-            raise HTTPException(status_code=400, detail="User is already staff")
+        if (person.user_id is not None and existing.user_id == person.user_id) or (
+            person.callsign is not None and existing.user_id is None and existing.callsign == person.callsign
+        ):
+            raise HTTPException(status_code=400, detail="Already on the staff list")
     
     staff = TemplateStaff(
         template_id=template_id,
-        user_id=staff_data.user_id
+        user_id=person.user_id,
+        callsign=person.callsign,
     )
     db.add(staff)
     await db.commit()
+    invited = False
+    if person.callsign and staff_data.invite_email:
+        await _queue_invite(db, background_tasks, template, person.callsign, staff_data.invite_email, current_user)
+        invited = True
     
     # Reload with user relationship
     result = await db.execute(
@@ -717,7 +873,7 @@ async def add_template_staff(
     )
     staff = result.scalar_one()
     
-    return TemplateStaffResponse.from_orm_with_user(staff, True)
+    return TemplateStaffResponse.from_orm_with_user(staff, True, invited=invited)
 
 
 @router.delete("/staff/{staff_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -751,6 +907,7 @@ async def remove_template_staff(
 async def update_template_staff(
     template_id: int,
     staff_id: int,
+    background_tasks: BackgroundTasks,
     update: Optional[TemplateStaffUpdateRequest] = Body(None),
     is_active: Optional[bool] = Query(None),
     is_co_manager: Optional[bool] = Query(None),
@@ -780,14 +937,45 @@ async def update_template_staff(
     next_is_active = update.is_active if (update is not None and update.is_active is not None) else is_active
     next_is_co_manager = update.is_co_manager if (update is not None and update.is_co_manager is not None) else is_co_manager
 
-    if next_is_active is None and next_is_co_manager is None:
-        raise HTTPException(status_code=400, detail="No update fields provided")
+    new_callsign = update.callsign if update is not None else None
+    link = bool(update.link) if update is not None else False
+    invite_email = update.invite_email if update is not None else None
 
+    if next_is_active is None and next_is_co_manager is None and new_callsign is None and not link and not invite_email:
+        raise HTTPException(status_code=400, detail="No update fields provided")
+    if (new_callsign is not None or link or invite_email) and staff.user_id is not None:
+        raise HTTPException(status_code=400, detail="Only an operator without an account can be relinked or invited")
+
+    # Co-manager is a schedule-ownership tier, and a callsign-only entry
+    # carries its flags to whoever takes the callsign over. Making one a
+    # co-manager would hand that tier to anyone who signs up with the
+    # callsign, so it waits until the operator has an account.
+    if next_is_co_manager and staff.user_id is None:
+        raise HTTPException(status_code=400, detail="An operator needs an account before they can be a co-manager")
+
+    staff_row_id = staff.id
     if next_is_active is not None:
         staff.is_active = next_is_active
     if next_is_co_manager is not None:
         staff.is_co_manager = next_is_co_manager
     await db.commit()
-    await db.refresh(staff)
-    
-    return TemplateStaffResponse.from_orm_with_user(staff, True)
+
+    if new_callsign is not None or link:
+        await _edit_placeholder(db, background_tasks, template, staff.callsign, current_user,
+                                new_callsign=new_callsign, link=link)
+        await resync_pending_duty_ncs(db, template_id, background_tasks)
+
+    result = await db.execute(
+        select(TemplateStaff).options(selectinload(TemplateStaff.user)).where(TemplateStaff.id == staff_row_id)
+    )
+    staff = result.scalar_one_or_none()
+    if staff is None:
+        # A typo fix onto a callsign already on the list merges the two.
+        raise HTTPException(status_code=409, detail="That callsign is already on the staff list; the entries were merged")
+    if invite_email and staff.user_id is None:
+        await _queue_invite(db, background_tasks, template, staff.callsign, invite_email, current_user)
+    available, invited = await _placeholder_flags(db, [staff])
+
+    return TemplateStaffResponse.from_orm_with_user(
+        staff, True, account_available=staff.callsign in available, invited=staff.callsign in invited,
+    )

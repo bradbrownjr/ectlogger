@@ -118,6 +118,10 @@ export const authApi = {
 
 // User API
 export const userApi = {
+  // Admin: schedule entries an account took over by callsign, and undoing one.
+  listCallsignClaims: (userId: number) => api.get(`/users/${userId}/callsign-claims`),
+  revertCallsignClaim: (userId: number, claimId: number) =>
+    api.post(`/users/${userId}/callsign-claims/${claimId}/revert`),
   getProfile: () => api.get('/users/me'),
   updateProfile: (data: any) => api.put('/users/me', data),
   // lat/lon are sent rounded to ~1 km (see LocationContext) so the server can
@@ -273,7 +277,8 @@ export const ncsRotationApi = {
   // Rotation members
   listMembers: (templateId: number) => 
     api.get(`/templates/${templateId}/ncs-rotation/members`),
-  addMember: (templateId: number, data: { user_id: number; position?: number }) => 
+  // An account (user_id) or a callsign with no account yet; see utils/staffPeople.ts.
+  addMember: (templateId: number, data: { user_id?: number; callsign?: string; invite_email?: string }) =>
     api.post(`/templates/${templateId}/ncs-rotation/members`, data),
   removeMember: (templateId: number, memberId: number) => 
     api.delete(`/templates/${templateId}/ncs-rotation/members/${memberId}`),
@@ -281,7 +286,8 @@ export const ncsRotationApi = {
     api.delete(`/templates/${templateId}/ncs-rotation/members`),
   reorderMembers: (templateId: number, memberIds: number[]) => 
     api.put(`/templates/${templateId}/ncs-rotation/members/reorder`, { member_ids: memberIds }),
-  updateMember: (templateId: number, memberId: number, data: { is_active?: boolean }) =>
+  // callsign corrects a callsign-only member's typo; link gives it to the account that now has it.
+  updateMember: (templateId: number, memberId: number, data: { is_active?: boolean; callsign?: string; link?: boolean }) =>
     api.patch(`/templates/${templateId}/ncs-rotation/members/${memberId}`, data),
   
   // Schedule
@@ -293,7 +299,8 @@ export const ncsRotationApi = {
   // Overrides
   listOverrides: (templateId: number) => 
     api.get(`/templates/${templateId}/ncs-rotation/overrides`),
-  createOverride: (templateId: number, data: { scheduled_date: string; replacement_user_id: number | null; reason?: string }) => 
+  // Neither replacement field = cancel the net.
+  createOverride: (templateId: number, data: { scheduled_date: string; replacement_user_id?: number | null; replacement_callsign?: string | null; reason?: string }) =>
     api.post(`/templates/${templateId}/ncs-rotation/overrides`, data),
   deleteOverride: (templateId: number, overrideId: number) => 
     api.delete(`/templates/${templateId}/ncs-rotation/overrides/${overrideId}`),
@@ -303,8 +310,12 @@ export const ncsRotationApi = {
 export const templateStaffApi = {
   list: (templateId: number) =>
     api.get(`/templates/${templateId}/ncs-rotation/staff`),
-  add: (templateId: number, data: { user_id: number }) =>
+  add: (templateId: number, data: { user_id?: number; callsign?: string; invite_email?: string }) =>
     api.post(`/templates/${templateId}/ncs-rotation/staff`, data),
+  // Callsign-only entries: fix a typo, link to the account that now has the
+  // callsign, or (re)send a sign-up invite.
+  updatePlaceholder: (templateId: number, staffId: number, data: { callsign?: string; link?: boolean; invite_email?: string }) =>
+    api.patch(`/templates/${templateId}/ncs-rotation/staff/${staffId}`, data),
   remove: (templateId: number, staffId: number) =>
     api.delete(`/templates/${templateId}/ncs-rotation/staff/${staffId}`),
   updateActive: (templateId: number, staffId: number, isActive: boolean) =>
@@ -324,6 +335,17 @@ export const statisticsApi = {
   getUserStats: () => api.get('/statistics/users/me'),
   getUserStatsById: (userId: number) => api.get(`/statistics/users/${userId}`),
   getCheckinMap: (days: number = 0) => api.get('/statistics/checkin-map', { params: { days } }),
+};
+
+// Credit-only roles for stations with no account (backend
+// routers/nets_roles.py). Kept apart from netRoleApi.list on purpose: that
+// list is matched to check-ins by user_id, and a guest row's null would match
+// one of these. Match these by callsign (utils/stationRole.ts).
+export const callsignRoleApi = {
+  list: (netId: number) => api.get(`/nets/${netId}/callsign-roles`),
+  assign: (netId: number, callsign: string, role: string) =>
+    api.post(`/nets/${netId}/callsign-roles`, { callsign, role }),
+  remove: (netId: number, roleId: number) => api.delete(`/nets/${netId}/callsign-roles/${roleId}`),
 };
 
 // Net Role API (for NCS frequency claiming)

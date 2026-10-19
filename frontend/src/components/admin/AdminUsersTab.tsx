@@ -32,6 +32,7 @@ import {
 } from '@mui/material';
 import AdminFilterBar from './AdminFilterBar';
 import UserProfileDialog from '../UserProfileDialog';
+import CallsignClaimsSection from './CallsignClaimsSection';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -946,6 +947,8 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
                 <MenuItem value="admin">Admin</MenuItem>
               </Select>
             </FormControl>
+            {/* Shows only when this account took over a callsign-only team spot */}
+            {selectedUser && <CallsignClaimsSection userId={selectedUser.id} />}
           </Box>
         </DialogContent>
         <DialogActions>

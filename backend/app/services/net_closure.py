@@ -30,7 +30,7 @@ from app.traffic.ics309 import (
     traffic_to_station,
 )
 from app.traffic.log import compute_net_traffic_counts
-from app.utils import display_callsign, format_ncs_attribution, format_time_for_net, resolve_display_tz, to_display_tz
+from app.utils import display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
 
 
 async def get_last_activity_at(db: AsyncSession, net_id: int, started_at: Optional[datetime]) -> Optional[datetime]:
@@ -364,14 +364,8 @@ async def close_net_and_notify(
     # owner when the net recorded none. This email and its ICS-309 attachment go
     # to every participant, so crediting the wrong operator here is the most
     # visible form of the 2026-08-30 net 79 misattribution.
-    ncs_role_result = await db.execute(
-        select(User.callsign, User.name)
-        .join(NetRole, NetRole.user_id == User.id)
-        .where(NetRole.net_id == net_id, NetRole.role == "NCS")
-        .where(NetRole.is_active == True)  # noqa: E712
-        .order_by(NetRole.assigned_at.asc())
-    )
-    ncs_callsign, ncs_name = format_ncs_attribution(ncs_role_result.all())
+    from app.services.ncs_attribution import net_ncs_attribution
+    ncs_callsign, ncs_name = await net_ncs_attribution(db, net_id)
     if not ncs_callsign:
         ncs_callsign = display_callsign(owner) if owner else "Unknown"
         ncs_name = (owner.name or display_callsign(owner)) if owner else "Unknown"

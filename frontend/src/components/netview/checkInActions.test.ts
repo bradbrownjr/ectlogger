@@ -7,11 +7,12 @@ vi.mock('../../services/api', () => ({
   checkInApi: { update: vi.fn(), create: vi.fn(), delete: vi.fn(), toggleHand: vi.fn(), list: vi.fn() },
   netApi: { setActiveFrequency: vi.fn() },
   netRoleApi: { claimFrequency: vi.fn() },
+  callsignRoleApi: { assign: vi.fn(), remove: vi.fn(), list: vi.fn() },
   userApi: { lookupByCallsign: vi.fn() },
 }));
 
 import { getCheckInActions } from './checkInActions';
-import { checkInApi, userApi } from '../../services/api';
+import { callsignRoleApi, checkInApi, userApi } from '../../services/api';
 
 // ========== TEST HARNESS ==========
 // Mirrors NetView's state wiring closely enough to observe what the operator
@@ -127,12 +128,39 @@ describe('handleStatusChange — optimistic update', () => {
     await pending;
   });
 
-  it('reports that a station without an account cannot take a role', async () => {
+  it('credits a station without an account by callsign', async () => {
+    (callsignRoleApi.assign as any).mockResolvedValue({ data: {} });
+    (checkInApi.update as any).mockResolvedValue({ data: { ...ROW } });
     const h = harness([{ ...ROW, user_id: null }]);
     await h.actions.handleStatusChange(7, 'ncs');
 
-    expect(checkInApi.update).not.toHaveBeenCalled();
-    expect(h.toasts.join(' ')).toContain('without user accounts');
+    expect(callsignRoleApi.assign).toHaveBeenCalledWith(1, 'N1KWG', 'NCS');
+    expect(checkInApi.update).toHaveBeenCalledWith(7, { status: 'checked_in' });
+    expect(h.toasts).toEqual([]);
+  });
+
+  it("never treats one guest's callsign role as another guest's", async () => {
+    (checkInApi.update as any).mockResolvedValue({ data: { ...ROW, status: 'away' } });
+    const otherGuestsRole = { id: 3, role: 'NCS', callsign: 'W1OTHER', callsign_only: true, user_id: null, assigned_at: '' };
+    const h = harness([{ ...ROW, user_id: null }], {
+      netRoles: [otherGuestsRole],
+      net: { status: 'active', frequencies: [], actions: { manage_roles: true } },
+    });
+    await h.actions.handleStatusChange(7, 'away');
+
+    expect(callsignRoleApi.remove).not.toHaveBeenCalled();
+  });
+
+  it("removes a guest's own callsign role when staff pick a plain status", async () => {
+    (checkInApi.update as any).mockResolvedValue({ data: { ...ROW, status: 'away' } });
+    const ownRole = { id: 4, role: 'NCS', callsign: 'N1KWG', callsign_only: true, user_id: null, assigned_at: '' };
+    const h = harness([{ ...ROW, user_id: null }], {
+      netRoles: [ownRole],
+      net: { status: 'active', frequencies: [], actions: { manage_roles: true } },
+    });
+    await h.actions.handleStatusChange(7, 'away');
+
+    expect(callsignRoleApi.remove).toHaveBeenCalledWith(1, 4);
   });
 });
 

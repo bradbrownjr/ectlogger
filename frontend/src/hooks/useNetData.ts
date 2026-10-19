@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { netApi, checkInApi, userApi, BACKGROUND_REQUEST_CONFIG } from '../services/api';
 import api from '../services/api';
 import useVisibilityAwareInterval from './useVisibilityAwareInterval';
+import type { CallsignRole } from '../utils/stationRoles';
 import {
   distinctPollResponses, summarizePollResults, summarizeTopicResponses,
   type PollResults, type TopicResponses,
@@ -27,6 +28,9 @@ export interface UseNetDataResult {
   setCheckIns: Dispatch<SetStateAction<any[]>>;
   netRoles: any[];
   setNetRoles: Dispatch<SetStateAction<any[]>>;
+  // Roles held by stations with no account (credit only, grants nothing).
+  // Fetched with netRoles; merge them for display via utils/stationRoles.ts.
+  callsignRoles: CallsignRole[];
   netStats: any | null;
   onlineUserIds: number[];
   setOnlineUserIds: Dispatch<SetStateAction<number[]>>;
@@ -50,6 +54,7 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
   const [net, setNet] = useState<any | null>(null);
   const [checkIns, setCheckIns] = useState<any[]>([]);
   const [netRoles, setNetRoles] = useState<any[]>([]);
+  const [callsignRoles, setCallsignRoles] = useState<CallsignRole[]>([]);
   const [netStats, setNetStats] = useState<any | null>(null);
   const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
   const [fieldDefinitions, setFieldDefinitions] = useState<any[]>([]);
@@ -109,8 +114,12 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
 
   const fetchNetRoles = async () => {
     try {
-      const response = await api.get(`/nets/${netId}/roles`);
+      const [response, callsignResponse] = await Promise.all([
+        api.get(`/nets/${netId}/roles`),
+        api.get(`/nets/${netId}/callsign-roles`),
+      ]);
       setNetRoles(response.data);
+      setCallsignRoles(callsignResponse.data);
     } catch (error) {
       console.error('Failed to fetch net roles:', error);
     }
@@ -175,6 +184,7 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
     setCheckIns,
     netRoles,
     setNetRoles,
+    callsignRoles,
     netStats,
     onlineUserIds,
     setOnlineUserIds,

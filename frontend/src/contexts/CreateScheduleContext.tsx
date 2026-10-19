@@ -9,9 +9,11 @@ export interface User {
   email: string;
 }
 
+// user_id is null for an operator added by callsign with no account yet
+// (compare with utils/staffPeople.ts, never by user_id alone).
 export interface RotationMember {
   id: number;
-  user_id: number;
+  user_id: number | null;
   user_callsign: string;
   user_name: string | null;
   position: number;
@@ -20,11 +22,23 @@ export interface RotationMember {
 
 export interface StaffMember {
   id: number;
-  user_id: number;
+  user_id: number | null;
   user_callsign: string;
   user_name: string | null;
   is_active: boolean;
   is_co_manager: boolean;
+  has_account?: boolean;
+  account_available?: boolean;
+  invited?: boolean;
+}
+
+// A staff member picked on a new schedule: an account, or a callsign with no
+// account yet (optionally with an address to invite).
+export interface PendingStaff {
+  key: string;
+  callsign: string;
+  name: string | null;
+  request: { user_id: number } | { callsign: string; invite_email?: string };
 }
 
 export interface TemplateSubscriber {
@@ -128,6 +142,8 @@ export interface CreateScheduleContextValue {
   scheduleType: string; setScheduleType: Dispatch<SetStateAction<string>>;
   scheduleConfig: ScheduleConfig; setScheduleConfig: Dispatch<SetStateAction<ScheduleConfig>>;
   fifthWeekUserId: number | null; setFifthWeekUserId: Dispatch<SetStateAction<number | null>>;
+  // Set instead of fifthWeekUserId when the 5th-week operator has no account yet.
+  fifthWeekCallsign: string | null; setFifthWeekCallsign: Dispatch<SetStateAction<string | null>>;
 
   // Frequency selection (Communication Plan tab + submit)
   selectedFrequencyIds: number[]; setSelectedFrequencyIds: Dispatch<SetStateAction<number[]>>;
@@ -137,7 +153,8 @@ export interface CreateScheduleContextValue {
   setFieldConfig: Dispatch<SetStateAction<Record<string, FieldConfigEntry>>>;
 
   // Pending NCS staff for new-schedule submit (added before the schedule exists)
-  pendingNCSUsers: User[]; setPendingNCSUsers: Dispatch<SetStateAction<User[]>>;
+  // Staff picked before a new schedule is saved; added once it has an id.
+  pendingNCSUsers: PendingStaff[]; setPendingNCSUsers: Dispatch<SetStateAction<PendingStaff[]>>;
 
   // Reference data fetched once by the parent shell
   frequencies: Frequency[]; setFrequencies: Dispatch<SetStateAction<Frequency[]>>;

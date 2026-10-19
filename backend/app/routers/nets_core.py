@@ -45,8 +45,8 @@ from app.schemas import (
     public_display_name,
 )
 from app.services.net_closure import close_net_and_notify, compute_auto_close_at
-from app.utils import NET_LOGO_DIR, display_callsign, format_ncs_attribution, save_resized_logo
-from app.services.ncs_attribution import load_ncs_attribution
+from app.utils import NET_LOGO_DIR, display_callsign, save_resized_logo
+from app.services.ncs_attribution import load_ncs_attribution, net_ncs_attribution
 
 # Same limits as the profile avatar upload (routers/users.py) -- square,
 # cropped client-side, re-validated and re-resized here as a safety net.
@@ -337,15 +337,7 @@ async def get_net(
     # NCS/Standard toggle (nets_roles.py::toggle_self_net_role) flips that
     # flag rather than deleting the row -- an operator who stepped down is
     # not the NCS any more.
-    current_ncs_result = await db.execute(
-        select(User.callsign, User.name)
-        .join(NetRole, NetRole.user_id == User.id)
-        .where(NetRole.net_id == net_id)
-        .where(NetRole.role == "NCS")
-        .where(NetRole.is_active == True)  # noqa: E712
-        .order_by(NetRole.assigned_at.asc())
-    )
-    ncs_callsign, ncs_name = format_ncs_attribution(current_ncs_result.all())
+    ncs_callsign, ncs_name = await net_ncs_attribution(db, net_id)
 
     auto_close_at = await compute_auto_close_at(db, net)
 

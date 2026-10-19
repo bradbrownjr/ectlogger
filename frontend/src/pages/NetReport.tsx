@@ -132,7 +132,8 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { netApi, statisticsApi, checkInApi, netRoleApi, canHearApi } from '../services/api';
+import { netApi, statisticsApi, checkInApi, netRoleApi, canHearApi, callsignRoleApi } from '../services/api';
+import { activeNcsRoles, CallsignRole, mergeStationRoles } from '../utils/stationRoles';
 import { chatApi, ChatMessage, formatChatMessageText } from '../api/chat';
 import { formatDateTime, formatTimeWithDate, formatReportSpan, formatReportShortDate } from '../utils/dateUtils';
 import { getErrorMessage } from '../utils/apiErrors';
@@ -250,6 +251,8 @@ const NetReport: React.FC = () => {
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [netRoles, setNetRoles] = useState<NetRole[]>([]);
+  // Roles held by stations with no account, credited by callsign.
+  const [callsignRoles, setCallsignRoles] = useState<CallsignRole[]>([]);
   const [topicPrompt, setTopicPrompt] = useState<string | null>(null);
   const [topicResponses, setTopicResponses] = useState<TopicResponse[]>([]);
   const [pollQuestion, setPollQuestion] = useState<string | null>(null);
@@ -318,12 +321,13 @@ const NetReport: React.FC = () => {
         setError(null);
 
         // Fetch all data in parallel
-        const [netRes, statsRes, checkInsRes, chatRes, rolesRes, topicRes, pollRes, canHearRes, ics309Res] = await Promise.all([
+        const [netRes, statsRes, checkInsRes, chatRes, rolesRes, callsignRolesRes, topicRes, pollRes, canHearRes, ics309Res] = await Promise.all([
           netApi.get(parseInt(netId)),
           statisticsApi.getNetStats(parseInt(netId)),
           checkInApi.list(parseInt(netId)),
           chatApi.list(parseInt(netId)),
           netRoleApi.list(parseInt(netId)),
+          callsignRoleApi.list(parseInt(netId)),
           netApi.getTopicResponses(parseInt(netId)),
           netApi.getPollResults(parseInt(netId)),
           canHearApi.list(parseInt(netId)),
@@ -335,6 +339,7 @@ const NetReport: React.FC = () => {
         setCheckIns(checkInsRes.data);
         setChatMessages(chatRes.data);
         setNetRoles(rolesRes.data);
+        setCallsignRoles(callsignRolesRes.data);
         setTopicPrompt(topicRes.data.prompt || null);
         setTopicResponses(topicRes.data.responses || []);
         setPollQuestion(pollRes.data.question || null);
@@ -673,7 +678,10 @@ const NetReport: React.FC = () => {
   // NCSStaffModal.tsx) matches on 'NCS'. This one compared against 'ncs'
   // instead, so the "Net Control Station(s)" section below silently
   // rendered nothing on every net report, for every net, until this fix.
-  const ncsOperators = netRoles.filter(r => r.role === 'NCS');
+  //
+  // Stations with no account that held NCS are named too (by callsign). Like
+  // the backend's format_ncs_attribution: active NCS, first assigned first.
+  const ncsOperators = activeNcsRoles(mergeStationRoles(netRoles, callsignRoles));
 
   // Masthead date line, e.g. "Monday, September 21, 2026 · 5:52 – 6:23 PM EDT".
   // Single-series graphs (activity, frequencies) take the logo's accent
@@ -789,7 +797,7 @@ const NetReport: React.FC = () => {
               Net Control Station(s):
             </Typography>
             <Typography variant="body2">
-              {ncsOperators.map(r => displayCallsign(r) || r.email).join(', ')}
+              {ncsOperators.map(r => (r.callsign_only ? r.callsign : displayCallsign(r as any)) || r.email).join(', ')}
             </Typography>
           </Box>
         )}

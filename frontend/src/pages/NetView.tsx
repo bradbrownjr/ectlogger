@@ -13,7 +13,8 @@ import EarlyStartDialog from '../components/EarlyStartDialog';
 import NetViewHeader from '../components/netview/NetViewHeader';
 import AutoCloseWarningBanner from '../components/netview/AutoCloseWarningBanner';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
-import { buildStaffRoleRankByUserId, compareCheckInsByRole } from '../components/netview/checkInSort';
+import { buildStaffRoleRank, compareCheckInsByRole } from '../components/netview/checkInSort';
+import { activeNcsRoles, mergeStationRoles, roleMatchesCheckIn } from '../utils/stationRoles';
 import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
 import { STATUS_SELECT_MENU_PROPS } from '../components/netview/statusSelectMenuProps';
 import { getCheckInActions, type LookupFilled } from '../components/netview/checkInActions';
@@ -173,6 +174,7 @@ const NetView: React.FC = () => {
     net, setNet,
     checkIns, setCheckIns,
     netRoles,
+    callsignRoles,
     netStats,
     onlineUserIds,
     fieldDefinitions,
@@ -1425,22 +1427,26 @@ const NetView: React.FC = () => {
   // Must filter is_active: a stepped-down NCS's role row persists as inactive
   // rather than being deleted, so without this filter they'd keep the crown
   // icon and stay pinned to the top of the check-in list after stepping down.
-  const ncsRoles = netRoles
-    .filter((role: any) => role.role === 'NCS' && role.is_active !== false)
-    .sort((a, b) => new Date(a.assigned_at).getTime() - new Date(b.assigned_at).getTime());
+  // Every station's role, account or callsign-only, for display. Permission
+  // checks about the signed-in user keep using netRoles (accounts only).
+  const stationRoles = mergeStationRoles(netRoles, callsignRoles);
+
+  // Includes stations with no account that hold NCS (credit only; see
+  // utils/stationRoles.ts), so they get the crown and sort with the staff.
+  const ncsRoles = activeNcsRoles(stationRoles);
 
   // Rank by staffed role (NCS -> Logger -> Relay -> unstaffed), used to order
   // the check-in list. See checkInSort.ts.
-  const staffRoleRankByUserId = buildStaffRoleRankByUserId(netRoles);
+  const staffRoleRank = buildStaffRoleRank(stationRoles);
 
   // Status display helpers (icon/tooltip/label/NCS crown) shared by all three
   // check-in tables. Depends on ncsRoles, so it's constructed here.
   const { getStatusIcon, getStatusTooltip, getStatusLabel, getNcsIcon } =
-    getCheckInStatusHelpers({ netRoles, checkIns, ncsRoles });
+    getCheckInStatusHelpers({ netRoles: stationRoles, checkIns, ncsRoles });
 
-  // Helper to get NCS color by user_id
-  const getNcsColor = (userId: number) => {
-    const index = ncsRoles.findIndex((r: any) => r.user_id === userId);
+  // Helper to get NCS color for a station (account or callsign-only)
+  const getNcsColor = (station: { user_id?: number | null; callsign?: string | null }) => {
+    const index = ncsRoles.findIndex((r) => roleMatchesCheckIn(r, station));
     return index >= 0 ? NCS_COLORS[index % NCS_COLORS.length] : null;
   };
 
@@ -1448,7 +1454,7 @@ const NetView: React.FC = () => {
   const getNcsColorForFrequency = (frequencyId: number) => {
     const role = ncsRoles.find((r: any) => r.active_frequency_id === frequencyId);
     if (role) {
-      const index = ncsRoles.findIndex((r: any) => r.user_id === role.user_id);
+      const index = ncsRoles.indexOf(role);
       return index >= 0 ? NCS_COLORS[index % NCS_COLORS.length] : null;
     }
     return null;
@@ -1478,7 +1484,7 @@ const NetView: React.FC = () => {
     handleToggleHand,
     handleFrequencyChipClick,
   } = getCheckInActions({
-    netId, net, checkIns, netRoles, user, isOwner, isAdmin, owner,
+    netId, net, checkIns, netRoles: stationRoles, user, isOwner, isAdmin, owner,
     canManageCheckIns, userNetRole, ws,
     checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef, lookupFilledRef,
     setCheckInForm, setToastMessage, setInlineEditingId, setInlineEditFocusField,
@@ -1502,7 +1508,7 @@ const NetView: React.FC = () => {
     // Then apply frequency filter (if any frequencies are selected)
     if (filteredFrequencyIds.length > 0) {
       // Always show NCS operators regardless of frequency filter
-      const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
+      const isNcsUser = ncsRoles.some((r) => roleMatchesCheckIn(r, checkIn));
       if (isNcsUser) return true;
       
       // Check if the check-in has any of the filtered frequencies in available_frequencies
@@ -1519,7 +1525,7 @@ const NetView: React.FC = () => {
     
     return true;
   }).sort((a: CheckIn, b: CheckIn) =>
-    compareCheckInsByRole(a, b, staffRoleRankByUserId, net?.mobile_priority_sort !== false)
+    compareCheckInsByRole(a, b, staffRoleRank, net?.mobile_priority_sort !== false)
   );
 
   // Shared by the floating and docked CheckInMap instances below. The split
@@ -1813,7 +1819,7 @@ const NetView: React.FC = () => {
               <CheckInTable
                 net={net}
                 filteredCheckIns={filteredCheckIns}
-                netRoles={netRoles}
+                netRoles={stationRoles}
                 ncsRoles={ncsRoles}
                 user={user}
                 onlineUserIds={onlineUserIds}
@@ -1860,7 +1866,7 @@ const NetView: React.FC = () => {
             <CheckInMobileList
               net={net}
               filteredCheckIns={filteredCheckIns}
-              netRoles={netRoles}
+              netRoles={stationRoles}
               ncsRoles={ncsRoles}
               user={user}
               onlineUserIds={onlineUserIds}
@@ -2679,7 +2685,7 @@ const NetView: React.FC = () => {
                 detached
                 net={net}
                 filteredCheckIns={filteredCheckIns}
-                netRoles={netRoles}
+                netRoles={stationRoles}
                 ncsRoles={ncsRoles}
                 user={user}
                 onlineUserIds={onlineUserIds}

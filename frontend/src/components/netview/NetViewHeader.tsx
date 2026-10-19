@@ -207,7 +207,7 @@ interface NetViewHeaderProps {
   highlightCheckIn: boolean;
   needsTopicPollConfig: () => boolean | undefined;
 
-  getNcsColor: (userId: number) => NcsColor;
+  getNcsColor: (station: { user_id?: number | null; callsign?: string | null }) => NcsColor;
   getNcsColorForFrequency: (frequencyId: number) => NcsColor;
   getNcsForFrequency: (frequencyId: number) => string | null;
   onFrequencyChipClick: (frequencyId: number, event: React.MouseEvent) => void;
@@ -1012,7 +1012,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
                 const isFiltered = filteredFrequencyIds.includes(freq.id);
                 const isActive = freq.id === net.active_frequency_id;
                 const isMyFrequency = userNetRole?.role === 'NCS' && userNetRole?.active_frequency_id === freq.id;
-                const myNcsColor = isMyFrequency && user?.id ? getNcsColor(user.id) : null;
+                const myNcsColor = isMyFrequency && user?.id ? getNcsColor({ user_id: user.id }) : null;
                 const isInactiveNet = net.status === 'closed' || net.status === 'archived';
 
                 let tooltipText = '';

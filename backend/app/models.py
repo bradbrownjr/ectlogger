@@ -302,6 +302,9 @@ class NetTemplate(Base):
     announcements = Column(Text)  # Default announcements/traffic carried forward to nets created from this schedule
     owner_id = Column(Integer, ForeignKey("users.id"))
     fifth_week_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    # The 5th-week operator when they have no account yet; never set together
+    # with fifth_week_user_id. See services/callsign_people.py.
+    fifth_week_callsign = Column(String(50), nullable=True)
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')
     is_active = Column(Boolean, default=True)
     ics309_enabled = Column(Boolean, default=False)  # Enable ICS-309 format for net close emails
@@ -902,12 +905,21 @@ class FieldDefinition(Base):
 
 
 class TemplateStaff(Base):
-    """NCS staff who can run nets from a template (separate from rotation)"""
+    """NCS staff who can run nets from a template (separate from rotation).
+
+    A row names either an account (user_id) or, for an operator who has not
+    signed up yet, a callsign alone (user_id NULL, callsign set). A
+    callsign-only row grants nothing: every permission check compares
+    user_id to the signed-in account, and NULL never matches. It becomes an
+    ordinary row when that callsign's operator signs up (see
+    services/callsign_people.py::claim_callsign_placeholders).
+    """
     __tablename__ = "template_staff"
 
     id = Column(Integer, primary_key=True, index=True)
     template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    callsign = Column(String(50), nullable=True)  # Set only while user_id is NULL
     is_active = Column(Boolean, default=True)  # Can be temporarily disabled
     is_co_manager = Column(Boolean, default=False)  # Elevated role within staff
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -923,12 +935,16 @@ class TemplateStaff(Base):
 
 
 class NCSRotationMember(Base):
-    """Members in an NCS rotation for a net template"""
+    """Members in an NCS rotation for a net template.
+
+    Names an account or, like TemplateStaff, a callsign with no account yet.
+    """
     __tablename__ = "ncs_rotation_members"
 
     id = Column(Integer, primary_key=True, index=True)
     template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    callsign = Column(String(50), nullable=True)  # Set only while user_id is NULL
     position = Column(Integer, nullable=False)  # Order in rotation (1, 2, 3, etc.)
     is_active = Column(Boolean, default=True)  # Can be temporarily disabled
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -946,7 +962,10 @@ class NCSScheduleOverride(Base):
     template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"), nullable=False)
     scheduled_date = Column(DateTime(timezone=True), nullable=False)  # The date being overridden
     original_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Who was originally scheduled
-    replacement_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Who is taking over (NULL = cancelled)
+    replacement_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Who is taking over (NULL with no replacement_callsign = cancelled)
+    # The same two people when they have no account yet (callsign only).
+    original_callsign = Column(String(50), nullable=True)
+    replacement_callsign = Column(String(50), nullable=True)
     reason = Column(String(500))  # Optional reason for the swap
     created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -956,6 +975,63 @@ class NCSScheduleOverride(Base):
     original_user = relationship("User", foreign_keys=[original_user_id])
     replacement_user = relationship("User", foreign_keys=[replacement_user_id])
     created_by = relationship("User", foreign_keys=[created_by_id])
+
+
+class NetCallsignRole(Base):
+    """An NCS, Logger or Relay credit on a net for a station with no account.
+
+    Kept out of net_roles on purpose. Some 160 lines of code read NetRole to
+    decide who may do what, and the frontend matches a role to a check-in by
+    user_id, where a guest row's NULL would equal a NULL role's. A separate
+    table means no existing permission check or role lookup can ever see one
+    of these: they only credit the station (the report, ICS-309, net cards)
+    and show its badge. When the callsign's operator signs up, the row becomes
+    a real NetRole (services/callsign_people.py).
+    """
+    __tablename__ = "net_callsign_roles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False, index=True)
+    callsign = Column(String(50), nullable=False)
+    role = Column(String(50), nullable=False)  # NCS, LOGGER, RELAY
+    assigned_at = Column(DateTime(timezone=True), server_default=func.now())
+    # Same meaning as NetRole.auto_assigned: stamped from the rotation at
+    # auto-create time, so a roster edit may replace it.
+    auto_assigned = Column(Boolean, default=False, nullable=False)
+    assigned_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    net = relationship("Net")
+
+    __table_args__ = (
+        UniqueConstraint('net_id', 'callsign', 'role', name='uq_net_callsign_role'),
+    )
+
+
+class CallsignClaim(Base):
+    """One account taking over the callsign-only entries for its callsign.
+
+    Records every row the claim converted so it can be undone exactly: an
+    admin who finds someone signed up with a callsign that is not theirs
+    reverts the claim (banning reverts it too), and every entry goes back to
+    being callsign-only. `rows` is a JSON list of
+    {"table", "id", "action"} where action is "linked" (user_id set on the
+    row) or "merged" (the account already had an equivalent row, so the
+    callsign-only one was deleted; "data" then holds what to recreate).
+    """
+    __tablename__ = "callsign_claims"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    callsign = Column(String(50), nullable=False, index=True)
+    rows = Column(Text, nullable=False, default='[]')
+    # True when the account signed in with the address a manager invited.
+    via_invite = Column(Boolean, nullable=False, default=False)
+    claimed_at = Column(DateTime(timezone=True), server_default=func.now())
+    reverted_at = Column(DateTime(timezone=True), nullable=True)
+    reverted_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    user = relationship("User", foreign_keys=[user_id])
+    reverted_by = relationship("User", foreign_keys=[reverted_by_id])
 
 
 class NCSReminderLog(Base):
@@ -1010,6 +1086,10 @@ class Contact(Base):
     name = Column(String(255))  # Operator name (may be corrected by admin)
     location = Column(String(255))  # Home QTH / default location
     email = Column(String(255))  # For sending invites
+    # Last time a schedule manager sent this callsign a sign-up invite from
+    # the Staff dialog, and who did (services/callsign_people.py).
+    invited_at = Column(DateTime(timezone=True), nullable=True)
+    invited_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     skywarn_number = Column(String(50))
     notes = Column(Text)  # Admin notes about this contact
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Linked user account
@@ -1017,7 +1097,7 @@ class Contact(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    user = relationship("User")
+    user = relationship("User", foreign_keys=[user_id])
 
 
 class AdminAuditLog(Base):

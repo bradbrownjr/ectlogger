@@ -4,7 +4,7 @@ summary: Every message ECTLogger sends, what triggers it, who gets it, and how t
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-10-19
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/emails/
@@ -22,6 +22,9 @@ Every one of these is read directly from the sending code, not from memory. Most
 |---|---|---|---|
 | Magic link | You request one on the sign-in page | The address you entered | Nothing to turn off — it's how you sign in. |
 | Password changed | You change your own password, or an admin resets it for you | The account's email | Nothing to turn off — a security notice, sent regardless of your email preferences. |
+| Team invitation | A schedule's manager adds you to its staff by callsign and gives your email address, or sends the invitation later | The address the manager entered | Nothing to turn off, since you have no account yet. A manager can send at most 25 invitations a day. |
+| Callsign joined the team | Someone signs up with, or changes their profile to, a callsign that was on your schedule's team without an account, and takes over that spot | The schedule's manager | Sent regardless of your email preferences, so you always know who took a spot |
+| Check this sign-up | The same, except the callsign was invited at a different address, so the spot is held until you link it | The schedule's manager | Sent regardless of your email preferences, as above |
 
 </div>
 

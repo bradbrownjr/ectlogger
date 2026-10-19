@@ -727,6 +727,50 @@ generic site preview, not the net's own name and logo.
 
 Tests: `backend/tests/test_subscribe_link.py`, `frontend/src/utils/redirectPath.test.ts`.
 
+## Operators without an account (callsign-only entries)
+
+A schedule's staff list (`TemplateStaff`), rotation (`NCSRotationMember`), swaps
+(`NCSScheduleOverride.original_callsign`/`replacement_callsign`) and fifth-week pick
+(`NetTemplate.fifth_week_callsign`) can name a callsign that has no account yet:
+`user_id` is NULL and `callsign` holds the normalized callsign (migration 081, which
+rebuilds the two tables because SQLite cannot drop NOT NULL in place). A guest
+check-in's NCS/Logger/Relay credit lives in its own table, `NetCallsignRole`. Everything
+that names a person goes through `services/callsign_people.py`; the frontend's
+counterparts are `utils/staffPeople.ts` (schedule people) and `utils/stationRoles.ts`
+(net roles on the check-in list).
+
+Rules to keep:
+
+- **A callsign-only entry grants nothing.** Permission checks compare `user_id` with the
+  signed-in account, and NULL never equals an id. The trap is the other direction:
+  SQLAlchemy turns `col == None` into `IS NULL`, which matches *every* callsign-only row,
+  so `permissions.py::is_active_template_staff` returns False for a None user id before
+  querying. Never compare one of these columns to a value that can be None.
+- **`NetCallsignRole` is never mixed into `GET /nets/{id}/roles`.** That list is what the
+  frontend and about 160 backend call sites use to decide what someone may do. Callsign
+  roles have their own endpoints (`/nets/{id}/callsign-roles`) and are merged only for
+  display (`stationRoles.ts::mergeStationRoles`) and attribution
+  (`services/ncs_attribution.py`, the one place that answers "who was NCS").
+- **Never match two people on `user_id` alone**, on either side. Two callsign-only rows
+  both have `user_id: null`. Use `samePerson` / `personKey` (`staffPeople.ts`) or
+  `roleMatchesCheckIn` (`stationRoles.ts`).
+- **Taking over is recorded and reversible.** `claim_callsign_placeholders` runs on
+  sign-up (`auth.py::get_or_create_user`, `contacts.py` invite, admin create) and on a
+  callsign change (`PUT /users/me`, admin update). Each callsign taken over writes a
+  `CallsignClaim` whose `rows` JSON lists every row converted, so
+  `revert_callsign_claim` can replay it backwards. Banning reverts all of an account's
+  claims; a reverted claim blocks that account from taking the same callsign again by
+  editing its profile; banned or inactive accounts never claim.
+- **The invite gate.** If the callsign was invited (`Contact.email`) at a different
+  address than the claimant's, the claim is held: the row reports `account_available`
+  and the manager links it by hand (`PATCH .../staff/{id}` with `link: true`). The
+  manager is emailed about every claim and every held one (`email/team_invites.py`).
+- Invitations are capped at `INVITES_PER_DAY` (25) per inviter, counted from
+  `Contact.invited_at`. Public responses never carry an email address or `invited`.
+
+Tests: `backend/tests/test_callsign_placeholders.py`, `frontend/src/utils/staffPeople.test.ts`,
+`frontend/src/utils/stationRoles.test.ts`, `frontend/src/components/netview/checkInSort.test.ts`.
+
 ## Backups
 
 Encrypted backups of the database, `backend/data/` and both `.env` files.

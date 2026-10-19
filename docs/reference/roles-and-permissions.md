@@ -4,7 +4,7 @@ summary: Every role ECTLogger has, at every level, and a grid of who can do what
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-18
+revised: 2026-10-19
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/roles-and-permissions/
@@ -43,6 +43,8 @@ While a net exists, an operator can hold one or more of these roles on that spec
 
 A net can have more than one active NCS at once (a multi-desk exercise is a normal pattern, not an error; see [Station statuses](/docs/reference/station-statuses/) for how the check-in list marks a second simultaneous NCS with the "2nd NCS" badge). A role can be temporarily stepped down without removing it: **only an *active* per-net role counts for anything.** An operator who steps down to Standard (the "Acting as NCS" toggle) genuinely loses NCS access to that net, not just the crown icon next to their name. The backend checks the same active flag the screen does. An NCS who is the *only* active NCS on an active net cannot step down until someone else is assigned, so a net is never accidentally left with nobody in charge.
 
+A guest check-in (a station with no account) can also be marked NCS, Logger, or Relay. That is a **credit only**: the net card, report, ICS-309, and closing log name the station, but it grants nothing, because there is no account to grant it to. Whoever may use the net's Roles dialog may give or remove one.
+
 ## Schedule-level tiers
 
 These are set on a net's schedule (a `NetTemplate`). Every net has one, including a one-time net, whose schedule simply runs once; they apply only to nets from that schedule.
@@ -57,6 +59,8 @@ These are set on a net's schedule (a `NetTemplate`). Every net has one, includin
 | Rotation member | Listed in the schedule's NCS rotation, whether or not they're also on the staff list | Everything plain net staff can do; rotation membership and staff membership grant the identical trust level for self-grant and day-to-day running of nets |
 
 </div>
+
+A staff or rotation entry can also name a **callsign with no account yet**. It grants nothing at all until someone signs up with that callsign and takes it over; until then it only decides who the net credits as NCS on that operator's week. It can't be made co-manager. See [Net staff and the NCS rotation](/docs/net-managers/net-staff-and-rotation/).
 
 "Net staff" and "rotation member" grant the same practical access; a person can be one, the other, or both. This was tightened on 2026-09-18 for three specific actions: self-granting NCS or Logger by checking in (below), starting a net, and opening the Manage Net Control Staff dialog once you hold a role there. Before that date, plain staff with no co-manager flag and no rotation slot could be shown those controls in the interface but were quietly refused by the backend the moment they tried to use one, because the underlying check only ever recognized co-managers and rotation members. A schedule with active staff but no rotation and no co-manager (a real, unremarkable setup) produced nets that nobody among its own staff could actually run, and an admin had to intervene by hand every single time.
 
