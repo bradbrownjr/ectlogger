@@ -21,6 +21,8 @@ All notable changes to ECTLogger are documented here.
 ## Bug Fixes
 
 * **Net View: Floating windows on phones** — The close, minimize and other title-bar buttons on floating windows now respond to a tap, and the Script, Announcements and Net Notes windows now open sized to your screen and stay visible when you rotate your phone.
+* **Check-in: Fixing a misspelled callsign** — When you correct a callsign, the check-in now connects to that station's account, so you can make them NCS or Logger.
+* **Schedules: Running your own nets** — If someone on your staff creates a net from your schedule, you can still run and manage it.
 
 ---
 
