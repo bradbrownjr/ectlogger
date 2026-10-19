@@ -969,7 +969,7 @@ async def test_held_and_invited_flags_are_for_team_managers(client, db, owner, o
 
     manager_view = (await client.get(_staff_url(template.id), headers=auth_headers(owner))).json()[0]
     assert manager_view["account_available"] and manager_view["invited"]
-    assert (manager_view["available_account_name"], manager_view["available_account_email"]) == ("Not Ken", "n***@example.com")
+    assert (manager_view["available_account_name"], manager_view["available_account_email"]) == ("Not Ken", "n•••••@example.com")
     for viewer in (other, claimant):
         row = (await client.get(_staff_url(template.id), headers=auth_headers(viewer))).json()[0]
         assert not row["account_available"] and not row["invited"]

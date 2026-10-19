@@ -31,6 +31,7 @@ from app.email_service import EmailService
 from app.config import settings
 from app.logger import logger
 from app.security import get_client_ip
+from app.utils import mask_email
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 import secrets
@@ -80,7 +81,7 @@ if settings.github_client_id:
     )
 
 
-async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: str, provider_id: str) -> User:
+async def get_or_create_user(db: AsyncSession, email: str, name: Optional[str], provider: str, provider_id: str) -> User:
     """Get existing user or create new one"""
     # Check if user exists by OAuth ID
     result = await db.execute(
@@ -250,12 +251,6 @@ def _mfa_qr_data_uri(otpauth_url: str) -> str:
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
-def mask_email(email: str) -> str:
-    """b••••••@gmail.com: enough to recognise your own inbox, not to learn someone else's."""
-    local, _, domain = email.partition('@')
-    return f"{local[:1]}{'•' * max(len(local) - 1, 3)}@{domain}"
-
-
 async def _send_magic_link(db: AsyncSession, email: str, client_ip: str, redirect: Optional[str] = None) -> dict:
     """Email a fresh magic link, shared by a new request and a resend for an
     expired link. Refuses a deactivated account. `redirect` is the in-app
@@ -368,7 +363,10 @@ async def verify_magic_link(
     logger.debug("API", f"Token valid for email: {email}", ip=client_ip)
 
     # Get or create user
-    user = await get_or_create_user(db, email, email, "email", email)
+    # No name: a magic link carries none, and the address used to go in
+    # here instead, where public lists showed it as the operator's first name
+    # (migration 082 cleared those). Profile setup asks for a name.
+    user = await get_or_create_user(db, email, None, "email", email)
 
     # Check if user is banned (is_active = False)
     if not user.is_active:

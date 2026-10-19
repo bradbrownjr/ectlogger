@@ -79,6 +79,16 @@ def save_resized_logo(pil_image: Image.Image, dest_dir: Path, base_name: str, ma
     return dest
 
 
+def mask_email(email: Optional[str]) -> Optional[str]:
+    """b••••••@gmail.com: enough to recognise your own inbox (the expired-link
+    page), or for a schedule manager to recognise an operator's before
+    linking them, without handing the address out."""
+    if not email or "@" not in email:
+        return None
+    local, _, domain = email.partition('@')
+    return f"{local[:1]}{'•' * max(len(local) - 1, 3)}@{domain}"
+
+
 def normalize_email(email: str) -> str:
     """Single source of truth for email normalization: strip + lowercase.
 

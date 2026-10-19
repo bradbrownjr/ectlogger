@@ -28,7 +28,10 @@ def public_display_name(name: Optional[str], is_authenticated: bool) -> Optional
     if not name or is_authenticated:
         return name
     first = name.strip().split()
-    return first[0] if first else None
+    # Never an email address, whatever ended up in the name.
+    if not first or "@" in first[0]:
+        return None
+    return first[0]
 
 
 # User Schemas
@@ -1882,7 +1885,7 @@ class TemplateStaffResponse(BaseModel):
         """A guest gets only the first name (public_display_name).
         `available_account` is set by the router only for a team manager."""
         from app.utils import get_avatar_url
-        from app.services.callsign_people import mask_email
+        from app.utils import mask_email
         show_account = available_account is not None and account_available and signed_in
         return cls(
             id=staff.id,

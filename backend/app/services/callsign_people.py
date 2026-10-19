@@ -190,14 +190,6 @@ async def callsigns_with_accounts(db: AsyncSession, callsigns: Iterable[str]) ->
     return found
 
 
-def mask_email(email: Optional[str]) -> Optional[str]:
-    """k***@example.com: enough for a manager to recognize an operator's
-    address before linking them, without handing the address out."""
-    if not email or "@" not in email:
-        return None
-    local, _, domain = email.partition("@")
-    return f"{local[:1]}***@{domain}"
-
 
 def duty_ncs_role(net_id: int, entry):
     """The auto-assigned NCS role for a computed schedule entry (an
