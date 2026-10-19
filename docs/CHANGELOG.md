@@ -22,9 +22,14 @@ All notable changes to ECTLogger are documented here.
 
 * **Schedules: Build your team before everyone signs up** — Add net control operators to your staff and NCS rotation by callsign before they have an account, and optionally email them an invitation to sign up. Swaps and the fifth week work for them too. When they're on duty, the net card, report and ICS-309 credit them as NCS, and a Logger can mark any station without an account as NCS. An invited operator takes over their spot as soon as they sign in with that address; for anyone else, you confirm it's really them with one click.
 
+## Improvements
+
+* **Schedules Simplified: One place to manage your staff** — An opened net’s Staff button and Edit Net now just show who’s running that net. Open the net's schedule template to edit its staff and rotation, so it’s always clear a change applies to the schedule. A swap on the schedule now also updates a net that’s already been created for that night.
+
 ## Bug Fixes
 
 * **Profile: Your name, not your email** — New accounts no longer start out with their email address filled in as their name, and anyone whose account did will be asked for their name the next time they sign in.
+* **Schedules: Rotation changes reach tonight's net** — Removing someone from the rotation now takes them off a net that was already created for their turn, and Edit Net shows the net's real manager.
 
 ---
 

@@ -1,8 +1,8 @@
 {
-  "version": "2026.10.19b",
+  "version": "2026.10.19c",
   "entries": [
     {
-      "version": "2026.10.19b",
+      "version": "2026.10.19c",
       "date": "2026-10-19",
       "sections": [
         {
@@ -16,11 +16,25 @@
           ]
         },
         {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Schedules Simplified: One place to manage your staff — An opened net’s Staff button and Edit Net now just show who’s running that net. Open the net's schedule template to edit its staff and rotation, so it’s always clear a change applies to the schedule. A swap on the schedule now also updates a net that’s already been created for that night.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
           "title": "Bug Fixes",
           "type": "bugfix",
           "items": [
             {
               "text": "Profile: Your name, not your email — New accounts no longer start out with their email address filled in as their name, and anyone whose account did will be asked for their name the next time they sign in.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedules: Rotation changes reach tonight's net — Removing someone from the rotation now takes them off a net that was already created for their turn, and Edit Net shows the net's real manager.",
               "userImpact": true
             }
           ]
