@@ -48,7 +48,11 @@ If you link someone and later find the callsign isn't theirs, an admin can undo 
 
 The rotation is a separate, ordered list. Reorder it with the up/down arrows, or build it in one step from the **Build rotation from staff** button, which adds every active staff member (and the manager) who isn't already in it, including anyone on the staff list by callsign. Being in the rotation carries the same starting and self-grant access as being on Authorized Net Staff, even for someone added only to the rotation and never to the staff list. On top of that, it's what decides who gets **pre-assigned** NCS automatically, ahead of time, on each occurrence a recurring schedule creates. If the rotation is empty, nobody is pre-assigned (see below). Deactivate a rotation member the same way as a staff row, to skip them without losing their place in line.
 
-A single date can be overridden from the schedule's **Schedule** tab in the Net Staff dialog: swap a specific night to someone else, or mark it as no coverage, without touching the rotation's permanent order.
+A single date can be overridden from the schedule's **Schedule** tab in the Net Staff dialog: swap a specific night to someone else, or mark it as no coverage, without touching the rotation's permanent order. A swap also reaches a net that has already been created for that date, as long as it hasn't started and nobody picked its NCS by hand; the operators coming off and going on get an email saying so.
+
+## From a net
+
+A net's **Staff** button and the **Net Staff** tab of **Edit Net** show who runs that net, but staff are always changed on its schedule, so a change never looks like it applies to one night when it applies to them all. Click **Open the schedule's staff** there: the schedule's Staff dialog opens on top, and closing it brings you back to the net you were looking at. To change who runs one particular night, swap it on the schedule's **Schedule** tab. Once a net is running, NCS and Loggers assign roles from its **Roles** button and the check-in list, as described below.
 
 ## Why an auto-created net can start with nobody assigned
 

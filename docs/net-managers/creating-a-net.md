@@ -4,7 +4,7 @@ summary: The net form field by field: frequencies, check-in fields, self check-i
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-27
+revised: 2026-10-19
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/creating-a-net/
@@ -44,7 +44,7 @@ Once the net exists, a **Net Logo** uploader appears here too. It's shown on net
 
 ### Net staff
 
-Add operators here who should be assigned NCS the moment the net is created. This is a shortcut for a single net; for a schedule that runs every week, staffing lives on the schedule instead; see [Net staff and the NCS rotation](/docs/net-managers/net-staff-and-rotation/).
+A net's staff come from its schedule, so this tab shows who is NCS for this net but doesn't change it. Click **Open the schedule's staff** to add or remove staff, change the rotation, or swap this night to someone else. The schedule's Staff dialog opens on top of this page; close it and you're back where you were, with anything you changed on the other tabs still there. See [Net staff and the NCS rotation](/docs/net-managers/net-staff-and-rotation/).
 
 ### Communication plan
 

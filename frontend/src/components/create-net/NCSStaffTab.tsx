@@ -16,7 +16,8 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import PersonIcon from '@mui/icons-material/Person';
 import DeleteIcon from '@mui/icons-material/Delete';
-import api from '../../services/api';
+import api, { callsignRoleApi } from '../../services/api';
+import { ScheduleStaffButton } from '../NCSStaffModal';
 import { useCreateNetContext, NetUser } from '../../contexts/CreateNetContext';
 import { getErrorMessage } from '../../utils/apiErrors';
 
@@ -24,10 +25,13 @@ import { getErrorMessage } from '../../utils/apiErrors';
 // Manages NCS role assignments.
 // Create mode: builds a pendingNCSUsers list that is submitted with the form.
 // Edit mode: issues API calls immediately (roles are persisted per-change).
+// Edit mode on a net created from a schedule: read-only. Who runs it comes
+// from the schedule (staff, rotation, swaps), managed in the schedule's
+// Staff dialog, which opens on top of this page (ScheduleStaffButton).
 
 interface ExistingNCSRole {
-  id: number;
-  user_id: number;
+  id: number;  // negative for a callsign-only credit (no account)
+  user_id: number | null;
   callsign: string;
   name: string | null;
 }
@@ -40,7 +44,9 @@ const NCSStaffTab: React.FC = () => {
     netId,
     isEditMode,
     isInfoMode,
+    templateId,
   } = useCreateNetContext();
+  const scheduleManaged = isEditMode && !!templateId;
 
   // Edit-mode: roles loaded from API and managed per-change
   const [existingNCSRoles, setExistingNCSRoles] = useState<ExistingNCSRole[]>([]);
@@ -65,7 +71,13 @@ const NCSStaffTab: React.FC = () => {
           callsign: r.callsign,
           name: r.name,
         }));
-      setExistingNCSRoles(ncsRoles);
+      // Operators with no account are credited by callsign (a rotation or
+      // swap pick); shown alongside, never editable here.
+      const callsignRes = await callsignRoleApi.list(Number(netId));
+      const callsignNcs = (callsignRes.data || [])
+        .filter((r: any) => r.role === 'NCS')
+        .map((r: any) => ({ id: -r.id, user_id: null, callsign: r.callsign, name: null }));
+      setExistingNCSRoles([...ncsRoles, ...callsignNcs]);
     } catch {
       // silently ignore — non-fatal; table shows empty
     }
@@ -118,7 +130,9 @@ const NCSStaffTab: React.FC = () => {
     <>
       <Typography variant="h6" gutterBottom>Net Staff</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        {isEditMode
+        {scheduleManaged
+          ? "Who runs this net comes from its schedule. To change it, open the schedule's staff; a swap on the schedule's Schedule tab changes who runs this night."
+          : isEditMode
           ? 'Assign additional Net Control Stations who can manage check-ins and control this net.'
           : 'Pre-assign Net Control Stations who will be able to manage check-ins and control this net. You (as the manager) always have full access.'
         }
@@ -145,8 +159,15 @@ const NCSStaffTab: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Add NCS autocomplete */}
-      {!isInfoMode && (
+      {/* Net from a schedule: open its Staff dialog instead of editing here */}
+      {scheduleManaged && !isInfoMode && (
+        <Box sx={{ mb: 2 }}>
+          <ScheduleStaffButton templateId={templateId!} onClosed={fetchNetRoles} />
+        </Box>
+      )}
+
+      {/* Add NCS autocomplete (ad hoc nets, and new nets) */}
+      {!isInfoMode && !scheduleManaged && (
         <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
           <Autocomplete
             options={availableUsers}
@@ -173,7 +194,7 @@ const NCSStaffTab: React.FC = () => {
       {isEditMode ? (
         existingNCSRoles.length === 0 ? (
           <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-            No additional NCS assigned yet.
+            {scheduleManaged ? 'Nobody is assigned as NCS for this net yet.' : 'No additional NCS assigned yet.'}
           </Typography>
         ) : (
           <List>
@@ -190,7 +211,7 @@ const NCSStaffTab: React.FC = () => {
                     </Typography>
                   }
                 />
-                {!isInfoMode && (
+                {!isInfoMode && !scheduleManaged && role.id > 0 && (
                   <ListItemSecondaryAction>
                     <IconButton size="small" color="error" onClick={() => handleRemoveExistingNCS(role.id)}>
                       <DeleteIcon fontSize="small" />

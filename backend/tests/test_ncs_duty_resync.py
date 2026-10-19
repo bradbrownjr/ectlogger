@@ -160,3 +160,59 @@ async def test_resync_leaves_a_manually_assigned_ncs_alone(db, owner, other):
     assert len(roles) == 1, "must not add a second NCS alongside a manual assignment"
     assert roles[0].user_id == owner.id
     assert roles[0].auto_assigned is False
+
+
+@pytest.mark.asyncio
+async def test_a_swap_reaches_a_net_already_created(client, db, owner, other):
+    """Nets from a schedule are managed on the schedule, so a swap made after
+    tonight's net was auto-created must change that net's NCS, and removing
+    the swap must give it back to the rotation's pick."""
+    from app.models import NetCallsignRole
+    from tests.conftest import auth_headers
+
+    headers = auth_headers(owner)
+    template = await _template_with_two_members(db, owner.id, other.id)
+    scheduled_dt = _next_sunday_1400()
+    net_id = await NCSReminderService()._get_or_create_scheduled_net(db, template, scheduled_dt)
+    original = (await db.execute(select(NetRole).where(NetRole.net_id == net_id))).scalar_one().user_id
+    replacement = other.id if original == owner.id else owner.id
+    url = f"/api/templates/{template.id}/ncs-rotation/overrides"
+
+    resp = await client.post(url, json={"scheduled_date": scheduled_dt.isoformat(), "replacement_user_id": replacement},
+                             headers=headers)
+    assert resp.status_code == 201, resp.text
+    db.expunge_all()
+    assert [r.user_id for r in (await db.execute(select(NetRole).where(NetRole.net_id == net_id))).scalars().all()] == [replacement]
+
+    await client.delete(f"{url}/{resp.json()['id']}", headers=headers)
+    resp = await client.post(url, json={"scheduled_date": scheduled_dt.isoformat(), "replacement_callsign": "KB1JCX"},
+                             headers=headers)
+    db.expunge_all()
+    assert (await db.execute(select(NetRole).where(NetRole.net_id == net_id))).scalars().all() == []
+    assert [r.callsign for r in (await db.execute(select(NetCallsignRole).where(NetCallsignRole.net_id == net_id))).scalars().all()] == ["KB1JCX"]
+
+    await client.delete(f"{url}/{resp.json()['id']}", headers=headers)
+    db.expunge_all()
+    assert [r.user_id for r in (await db.execute(select(NetRole).where(NetRole.net_id == net_id))).scalars().all()] == [original]
+    assert (await db.execute(select(NetCallsignRole).where(NetCallsignRole.net_id == net_id))).scalars().all() == []
+
+
+@pytest.mark.asyncio
+async def test_removing_the_duty_member_through_the_api_reaches_the_net(client, db, owner, other):
+    """The route had loaded the template before the edit, and the resync used
+    to read its stale rotation list, so the removed member stayed on duty."""
+    from tests.conftest import auth_headers
+
+    headers = auth_headers(owner)
+    template = await _template_with_two_members(db, owner.id, other.id)
+    net_id = await NCSReminderService()._get_or_create_scheduled_net(db, template, _next_sunday_1400())
+    on_duty = (await db.execute(select(NetRole).where(NetRole.net_id == net_id))).scalar_one().user_id
+    member = (await db.execute(select(NCSRotationMember).where(
+        NCSRotationMember.template_id == template.id, NCSRotationMember.user_id == on_duty))).scalar_one()
+    template_id, member_id = template.id, member.id
+    expected = other.id if on_duty == owner.id else owner.id
+
+    resp = await client.delete(f"/api/templates/{template_id}/ncs-rotation/members/{member_id}", headers=headers)
+    assert resp.status_code in (200, 204), resp.text
+    db.expunge_all()
+    assert [r.user_id for r in (await db.execute(select(NetRole).where(NetRole.net_id == net_id))).scalars().all()] == [expected]

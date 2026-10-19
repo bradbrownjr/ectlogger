@@ -13,14 +13,13 @@ import {
   Tab,
   useMediaQuery,
   useTheme,
-  Tooltip,
   Select,
   MenuItem,
   FormControl,
   InputLabel,
   Snackbar,
 } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import EmailIcon from '@mui/icons-material/Email';
 import { ncsRotationApi, userApi, templateStaffApi, templateApi } from '../services/api';
 import api from '../services/api';
@@ -54,8 +53,8 @@ interface NCSStaffModalProps {
     owner_name?: string;
     status?: string;
     // ID of the parent schedule (NetTemplate) this net was created from.
-    // When present, the modal exposes a "Push staff to schedule" action so
-    // changes made on the net can be promoted into the schedule's staff pool.
+    // When present, the net's staff are shown read-only and managed on the
+    // schedule (ScheduleStaffButton).
     template_id?: number | null;
   } | null;
   onUpdate?: () => void;
@@ -171,14 +170,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const [localOwner, setLocalOwner] = useState<{ id: number; callsign?: string; name?: string } | null>(null);
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
 
-  // ========== PUSH-STAFF-TO-SCHEDULE STATE ==========
-  // When viewing a net created from a schedule (template), the modal exposes
-  // a one-shot button that copies the net's NCS NetRole users into the
-  // schedule's TemplateStaff pool (skipping anyone already on it). This lets
-  // ad-hoc NCS additions made for a single net be promoted to the schedule
-  // so future nets opened from the schedule see them too.
-  const [pushingStaff, setPushingStaff] = useState(false);
-  const [pushStaffResult, setPushStaffResult] = useState<{ severity: 'success' | 'info' | 'error'; message: string } | null>(null);
+  // Result line in the dialog footer (the Email action's sent/failed count).
+  const [footerNotice, setFooterNotice] = useState<{ severity: 'success' | 'info' | 'error'; message: string } | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [reorderError, setReorderError] = useState<string | null>(null);
   const [subscribers, setSubscribers] = useState<TemplateSubscriber[]>([]);
@@ -199,6 +192,10 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const isScheduleContext = !!schedule && !net;
   const isNetContext = !!net;
   const templateId = isScheduleContext ? schedule?.id : (net?.template_id || null);
+  // A net created from a schedule shows its staff read-only: who runs it
+  // comes from the schedule (staff, rotation, swaps), so changes are made
+  // there and never on one net, where they'd look like schedule changes.
+  const netFromSchedule = isNetContext && !!net?.template_id;
   
   // Permissions
   // The schedule "owner" is the Net Manager (ham-radio term) — the person
@@ -252,7 +249,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       setEditingManager(false);
       setPendingManager(null);
       setLocalOwner(null);
-      setPushStaffResult(null);
+      setFooterNotice(null);
       setActiveTab(0);
       setSubscribers([]);
       setTemplateSummary(null);
@@ -399,13 +396,13 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
         message: emailForm.message,
       });
 
-      setPushStaffResult({
+      setFooterNotice({
         severity: 'success',
         message: `Email sent to ${response.data.sent} recipient(s) (${response.data.failed} failed).`,
       });
       setEmailDialogOpen(false);
     } catch (err: any) {
-      setPushStaffResult({
+      setFooterNotice({
         severity: 'error',
         message: getErrorMessage(err, 'Failed to send email'),
       });
@@ -675,81 +672,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     }
   };
 
-  // Push the net's NCS roster into the parent schedule's TemplateStaff pool.
-  // Idempotent: anyone already on the schedule's staff list is skipped, so
-  // clicking twice is harmless. Backend enforces edit permission on the
-  // schedule (owner / admin / active staff / rotation member).
-  const handlePushStaffToSchedule = async () => {
-    if (!net?.template_id) return;
-    setPushStaffResult(null);
-    setPushingStaff(true);
-    try {
-      // Snapshot the schedule's current staff to avoid duplicate adds.
-      const existingRes = await templateStaffApi.list(net.template_id);
-      const existingUserIds = new Set<number>(existingRes.data.map((s: StaffMember) => s.user_id));
-      const ncsUsers = netRoles.filter((r: NetRole) => r.role === 'NCS');
-      const toAdd = ncsUsers.filter((r: NetRole) => !existingUserIds.has(r.user_id));
-
-      if (ncsUsers.length === 0) {
-        setPushStaffResult({ severity: 'info', message: 'This net has no NCS operators to push to the schedule.' });
-        return;
-      }
-      if (toAdd.length === 0) {
-        setPushStaffResult({ severity: 'info', message: 'All NCS operators on this net are already on the schedule\u2019s staff list.' });
-        return;
-      }
-
-      let added = 0;
-      const failures: string[] = [];
-      for (const role of toAdd) {
-        try {
-          await templateStaffApi.add(net.template_id, { user_id: role.user_id });
-          added += 1;
-        } catch (err: any) {
-          // Permission failure on the very first add is the common case
-          // (backend rejects all subsequent adds the same way), so bail
-          // early with a clean message rather than spamming N errors.
-          if (err?.response?.status === 403) {
-            setPushStaffResult({
-              severity: 'error',
-              message: getErrorMessage(err, "You don\u2019t have permission to edit this schedule\u2019s staff."),
-            });
-            return;
-          }
-          failures.push(role.callsign);
-        }
-      }
-
-      if (failures.length > 0) {
-        setPushStaffResult({
-          severity: 'error',
-          message: `Added ${added} operator(s). Failed to add: ${failures.join(', ')}.`,
-        });
-      } else {
-        setPushStaffResult({
-          severity: 'success',
-          message: `Added ${added} NCS operator(s) to the schedule\u2019s staff list.`,
-        });
-      }
-      onUpdate?.();
-    } catch (err: any) {
-      const status = err?.response?.status;
-      if (status === 403) {
-        setPushStaffResult({
-          severity: 'error',
-          message: getErrorMessage(err, "You don\u2019t have permission to edit this schedule\u2019s staff."),
-        });
-      } else {
-        setPushStaffResult({
-          severity: 'error',
-          message: getErrorMessage(err, 'Failed to push staff to the schedule.'),
-        });
-      }
-    } finally {
-      setPushingStaff(false);
-    }
-  };
-
   // Filter out users already assigned (staff, not rotation) AND the owner
   const ownerId = isScheduleContext ? schedule?.owner_id : net?.owner_id;
   const availableStaffUsers = isScheduleContext
@@ -854,7 +776,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     <NCSStaffRosterTab
       isScheduleContext={isScheduleContext}
       isNetContext={isNetContext}
-      canEdit={canEdit}
+      canEdit={canEdit && !netFromSchedule}
       isMobile={isMobile}
       availableStaffUsers={availableStaffUsers}
       selectedUser={selectedUser}
@@ -898,6 +820,13 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
         <DialogTitle>{getTitle()}</DialogTitle>
         
         <DialogContent>
+          {/* Shows on a net created from a schedule */}
+          {netFromSchedule && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              This net's staff and NCS come from its schedule. To change them, open the schedule's staff below.
+              A swap on the schedule's Schedule tab changes who runs this net.
+            </Alert>
+          )}
           {error && (
             <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
               {error}
@@ -931,41 +860,21 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
         </DialogContent>
         
         <DialogActions sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 1, p: 2 }}>
-          {/* Inline result for the Push-to-Schedule action. Lives in the
-              footer (not the toast layer) so it stays visible alongside the
-              button that triggered it. */}
-          {pushStaffResult && (
-            <Alert
-              severity={pushStaffResult.severity}
-              onClose={() => setPushStaffResult(null)}
-              sx={{ width: '100%' }}
-            >
-              {pushStaffResult.message}
+          {footerNotice && (
+            <Alert severity={footerNotice.severity} onClose={() => setFooterNotice(null)} sx={{ width: '100%' }}>
+              {footerNotice.message}
             </Alert>
           )}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
-            {/* Push staff to schedule: net-context only, requires that the
-                net was created from a schedule. Hidden otherwise so the
-                action area stays uncluttered for one-off (ad-hoc) nets. */}
+            {/* Net from a schedule: its staff are managed on the schedule.
+                Opens the schedule's own Staff dialog on top of this one, so
+                closing it comes straight back here. */}
             <Box>
-              {isNetContext && net?.template_id && canEdit && (
-                <Tooltip title="Copy this net's NCS operators into the parent schedule's staff list. Anyone already on the schedule is skipped.">
-                  <span>
-                    <Button
-                      onClick={handlePushStaffToSchedule}
-                      disabled={pushingStaff || netRoles.filter((r: NetRole) => r.role === 'NCS').length === 0}
-                      startIcon={<SaveIcon />}
-                      color="secondary"
-                      variant="outlined"
-                    >
-                      {/* Says what it does. It was labelled "Create schedule",
-                          which reads as the way to make a one-off net
-                          recurring -- it is not, and it only ever appears when
-                          the net already came from a schedule. */}
-                      {pushingStaff ? 'Copying…' : 'Copy NCS to schedule'}
-                    </Button>
-                  </span>
-                </Tooltip>
+              {netFromSchedule && isAuthenticated && (
+                <ScheduleStaffButton
+                  templateId={net!.template_id!}
+                  onClosed={() => { fetchData(); onUpdate?.(); }}
+                />
               )}
             </Box>
 
@@ -1063,6 +972,52 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
           {reorderError}
         </Alert>
       </Snackbar>
+    </>
+  );
+};
+
+// ========== OPEN THE SCHEDULE'S STAFF ==========
+// For a net created from a schedule (the net's Staff dialog and Edit Net's
+// Net Staff tab): opens that schedule's own Staff dialog on top of the
+// current view, where staff, the rotation and swaps are managed. Closing it
+// returns to exactly where the user was, and onClosed refreshes that view.
+export const ScheduleStaffButton: React.FC<{ templateId: number; onClosed?: () => void }> = ({ templateId, onClosed }) => {
+  const [schedule, setSchedule] = useState<NCSStaffModalProps['schedule']>(null);
+  const [opening, setOpening] = useState(false);
+  const [openError, setOpenError] = useState<string | null>(null);
+
+  const handleOpen = async () => {
+    setOpening(true);
+    setOpenError(null);
+    try {
+      const { data } = await templateApi.get(templateId);
+      setSchedule({
+        id: data.id,
+        name: data.name,
+        owner_id: data.owner_id,
+        owner_callsign: data.owner_callsign || undefined,
+        owner_name: data.owner_name || undefined,
+      });
+    } catch (err: any) {
+      setOpenError(getErrorMessage(err, "Couldn't open the schedule"));
+    } finally {
+      setOpening(false);
+    }
+  };
+
+  return (
+    <>
+      <Button variant="outlined" startIcon={<EventRepeatIcon />} onClick={handleOpen} disabled={opening}>
+        Open the schedule's staff
+      </Button>
+      {openError && <Alert severity="error" sx={{ mt: 1 }}>{openError}</Alert>}
+      {schedule && (
+        <NCSStaffModal
+          open
+          schedule={schedule}
+          onClose={() => { setSchedule(null); onClosed?.(); }}
+        />
+      )}
     </>
   );
 };

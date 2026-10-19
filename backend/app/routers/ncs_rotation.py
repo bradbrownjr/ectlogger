@@ -214,20 +214,28 @@ async def resync_pending_duty_ncs(
     NCS NetRole present is itself auto_assigned does this replace it with
     the freshly computed pick.
 
-    Reloads the template fresh, like _assign_duty_ncs, so this is safe to
-    call regardless of what the caller has eager-loaded.
+    Reads the rotation and swaps fresh from the database, so this is safe to
+    call regardless of what the caller has already loaded.
     """
     tpl_result = await db.execute(
-        select(NetTemplate)
-        .options(
-            selectinload(NetTemplate.rotation_members),
-            selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.replacement_user),
-            selectinload(NetTemplate.fifth_week_user),
-        )
-        .where(NetTemplate.id == template_id)
+        select(NetTemplate).options(*ncs_schedule_load_options()).where(NetTemplate.id == template_id)
     )
     template = tpl_result.scalar_one_or_none()
-    if not template or template.schedule_type == 'ad_hoc' or not template.rotation_members:
+    if not template or template.schedule_type == 'ad_hoc':
+        return
+    # The rotation and swaps are queried directly rather than read off
+    # `template`: the calling route usually loaded this template already, and
+    # the session keeps objects across commits (expire_on_commit=False), so
+    # its lists would still be the ones from before the edit that called us.
+    members = (await db.execute(
+        select(NCSRotationMember).options(selectinload(NCSRotationMember.user))
+        .where(NCSRotationMember.template_id == template_id).order_by(NCSRotationMember.position)
+    )).scalars().all()
+    overrides = (await db.execute(
+        select(NCSScheduleOverride).options(selectinload(NCSScheduleOverride.replacement_user))
+        .where(NCSScheduleOverride.template_id == template_id)
+    )).scalars().all()
+    if not members:
         return
 
     now = datetime.utcnow()
@@ -249,9 +257,7 @@ async def resync_pending_duty_ncs(
 
     for net in pending_nets:
         local_dt = template_utc_to_local(template, net.scheduled_start_time)
-        schedule = compute_anchored_ncs_schedule(
-            template, [local_dt], template.rotation_members, template.schedule_overrides,
-        )
+        schedule = compute_anchored_ncs_schedule(template, [local_dt], members, overrides)
         entry = schedule[0] if schedule else None
         new_role = duty_ncs_role(net.id, entry)
         new_user_id = new_role.user_id if isinstance(new_role, NetRole) else None
@@ -784,14 +790,20 @@ async def create_schedule_override(
         subscriber_count = len([s for s in subscriptions if s.user_id != original_user_id])
         if subscriber_count > 0:
             logger.info("NCS_ROTATION", f"Queued cancellation notice to {subscriber_count} subscribers")
-    
-    return NCSScheduleOverrideResponse.from_orm_with_users(override, True)
+
+    # A net already created for that date (auto-create runs ~24h ahead) picks
+    # up the swap too; nets are managed from the schedule, so this is the
+    # only way a swap reaches tonight's net.
+    response = NCSScheduleOverrideResponse.from_orm_with_users(override, True)
+    await resync_pending_duty_ncs(db, template_id, background_tasks)
+    return response
 
 
 @router.delete("/overrides/{override_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_schedule_override(
     template_id: int,
     override_id: int,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -813,6 +825,8 @@ async def delete_schedule_override(
     
     await db.delete(override)
     await db.commit()
+    # The net for that date goes back to the rotation's pick.
+    await resync_pending_duty_ncs(db, template_id, background_tasks)
 
 
 @router.get("/overrides", response_model=List[NCSScheduleOverrideResponse])
