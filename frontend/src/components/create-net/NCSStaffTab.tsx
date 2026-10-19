@@ -52,6 +52,9 @@ const NCSStaffTab: React.FC = () => {
   const [existingNCSRoles, setExistingNCSRoles] = useState<ExistingNCSRole[]>([]);
   const [selectedUser, setSelectedUser] = useState<NetUser | null>(null);
   const [ncsError, setNcsError] = useState<string | null>(null);
+  // Edit mode: the net's own manager, not whoever is editing (an admin or a
+  // staff member can open Edit Net too).
+  const [netOwner, setNetOwner] = useState<{ callsign?: string; name?: string | null } | null>(null);
 
   // Load existing NCS roles in edit mode
   useEffect(() => {
@@ -61,6 +64,12 @@ const NCSStaffTab: React.FC = () => {
 
   const fetchNetRoles = async () => {
     if (!netId) return;
+    try {
+      const netRes = await api.get(`/nets/${netId}`);
+      setNetOwner({ callsign: netRes.data.owner_callsign, name: netRes.data.owner_name });
+    } catch {
+      // non-fatal; falls back to the current user below
+    }
     try {
       const response = await api.get(`/nets/${netId}/roles`);
       const ncsRoles = response.data
@@ -124,7 +133,7 @@ const NCSStaffTab: React.FC = () => {
     return true;
   });
 
-  const user = currentUser;
+  const user = isEditMode && netOwner ? netOwner : currentUser;
 
   return (
     <>
