@@ -22,6 +22,10 @@ All notable changes to ECTLogger are documented here.
 
 * **Schedules: Build your team before everyone signs up** — Add net control operators to your staff and NCS rotation by callsign before they have an account, and optionally email them an invitation to sign up. Swaps and the fifth week work for them too. When they're on duty, the net card, report and ICS-309 credit them as NCS, and a Logger can mark any station without an account as NCS. An invited operator takes over their spot as soon as they sign in with that address; for anyone else, you confirm it's really them with one click.
 
+## Bug Fixes
+
+* **Profile: Your name, not your email** — New accounts no longer start out with their email address filled in as their name, and anyone whose account did will be asked for their name the next time they sign in.
+
 ---
 
 # October 18, 2026
