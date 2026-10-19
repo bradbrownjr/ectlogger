@@ -10,9 +10,11 @@ const PlaceholderChips: React.FC<{ invited?: boolean; accountAvailable?: boolean
     <Tooltip title="On the list by callsign. They can't use the app's net controls until they sign up with this callsign.">
       <Chip label={invited ? 'Invited' : 'No account yet'} size="small" variant="outlined" color="warning" />
     </Tooltip>
-    {/* The callsign now has an account that wasn't linked automatically */}
+    {/* Someone signed up with this callsign; a manager confirms it's them with Link */}
     {accountAvailable && (
-      <Chip label="Signed up with another address" size="small" color="info" variant="outlined" />
+      <Tooltip title="Someone signed up with this callsign. Click Link if it's really them; until then they get nothing.">
+        <Chip label="Signed up, confirm it's them" size="small" color="info" variant="outlined" />
+      </Tooltip>
     )}
   </>
 );

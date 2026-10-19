@@ -66,11 +66,11 @@ Changing someone's primary callsign, whether from their own Profile or from this
 
 ## Undoing a callsign that isn't theirs
 
-A schedule's manager can put an operator on the team by callsign before that operator has an account (see [Net staff and the NCS rotation](/docs/net-managers/net-staff-and-rotation/)). Whoever signs up with that callsign takes over those spots. If someone signs up with a callsign that isn't theirs to get onto a team, you can hand the spots back.
+A schedule's manager can put an operator on the team by callsign before that operator has an account (see [Net staff and the NCS rotation](/docs/net-managers/net-staff-and-rotation/)). The operator takes over that spot when they sign in with the address the manager invited, or when the manager links their account by hand. If a spot ends up with someone whose callsign isn't really theirs, you can hand it back.
 
-Open the account with **Edit User**. When the account has taken over any spots this way, the dialog lists them under **Teams joined by callsign**, with the date and how many entries each one covered. Click **Revert** to give them back to the callsign. The staff row, rotation position, swaps, and NCS credit go back to how they were, and the account can't take them again just by editing its profile. A reverted entry stays in the list, marked **Reverted**, for the record.
+Open the account with **Edit User**. When the account holds any spots this way, or is waiting for a manager to confirm one, the dialog lists them under **Teams joined by callsign**, with the schedule, the date, and whether it came from an invite or a manager's link. Click **Revert** to give a spot back to the callsign, or **Dismiss** on one still waiting. The staff row, rotation position, swaps, and NCS credit go back to how they were, co-manager is taken away, and upcoming nets that had made the account NCS are given back to the callsign. The account can't take the spot again just by editing its profile. A reverted entry stays in the list, marked **Reverted**, for the record.
 
-**Banning the account reverts all of them at once**, so for an account you're banning anyway you don't need to revert each one first. The schedule's manager can still link the real operator by hand once they sign up.
+**Banning or deleting the account reverts all of them at once**, so for an account you're banning anyway you don't need to revert each one first. A banned account keeps its callsign, though, so before the real operator can use it, edit the banned account's callsign to something else or delete the account.
 
 ## Early access to schedule creation
 

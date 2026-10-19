@@ -118,16 +118,20 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
     user_count = len(result.scalars().all())
     
     # Check if a contact with this email exists — auto-populate name, callsign, location
+    # Contact.email isn't unique (a family can share an address), so take one
+    # deterministically rather than raise MultipleResultsFound on every
+    # sign-in for that address.
     contact_result = await db.execute(
-        select(Contact).where(func.lower(Contact.email) == email)
+        select(Contact).where(func.lower(Contact.email) == email).order_by(Contact.id).limit(1)
     )
     contact = contact_result.scalar_one_or_none()
 
-    # The contact's callsign is only a prefill: if another account already
-    # holds it, leave it off rather than fail the sign-in on the unique
-    # constraint. A schedule manager inviting a callsign at this address
-    # (Staff dialog) made that far likelier than it used to be.
-    prefill_callsign = contact.callsign if contact else None
+    # The callsign is only a prefill: the contact's, else the one callsign a
+    # schedule manager invited this address under (TeamInvite). If another
+    # account already holds it, leave it off rather than fail the sign-in on
+    # the unique constraint.
+    from app.services.callsign_people import invited_callsign_for
+    prefill_callsign = contact.callsign if contact else await invited_callsign_for(db, email)
     if prefill_callsign:
         taken = await db.execute(select(User.id).where(User.callsign == prefill_callsign).limit(1))
         if taken.scalar_one_or_none() is not None:
@@ -161,8 +165,9 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
         logger.info("API", f"First user created as admin: {email}")
 
     # Someone invited from a schedule's Staff dialog arrives with their
-    # callsign filled in from the Contact above, and takes their place on
-    # that schedule here (services/callsign_people.py).
+    # callsign filled in above, and takes their place on that schedule here
+    # (services/callsign_people.py); any other schedule naming the callsign
+    # is held for its manager.
     if user.callsign:
         from app.services.callsign_people import claim_and_queue_notices
         await claim_and_queue_notices(db, user)

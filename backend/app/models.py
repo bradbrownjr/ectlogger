@@ -1008,30 +1008,62 @@ class NetCallsignRole(Base):
 
 
 class CallsignClaim(Base):
-    """One account taking over the callsign-only entries for its callsign.
+    """An account and one schedule's callsign-only entries for its callsign.
 
-    Records every row the claim converted so it can be undone exactly: an
-    admin who finds someone signed up with a callsign that is not theirs
-    reverts the claim (banning reverts it too), and every entry goes back to
-    being callsign-only. `rows` is a JSON list of
+    Per schedule, because a claim is only trusted per schedule: an account
+    takes the entries over by itself only when it signed in with the address
+    that schedule's manager invited the callsign at (TeamInvite). Otherwise
+    the claim is "held" (rows empty) until a manager of that schedule links
+    it, and the held row is what keeps the manager from being emailed about
+    it again on every profile save.
+
+    A "linked" claim records every row it converted so it can be undone
+    exactly: an admin who finds someone signed up with a callsign that is not
+    theirs reverts it (banning reverts all of them). `rows` is a JSON list of
     {"table", "id", "action"} where action is "linked" (user_id set on the
     row) or "merged" (the account already had an equivalent row, so the
     callsign-only one was deleted; "data" then holds what to recreate).
+    See services/callsign_people.py.
     """
     __tablename__ = "callsign_claims"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     callsign = Column(String(50), nullable=False, index=True)
+    template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"), nullable=True, index=True)
+    # "linked" (entries converted) or "held" (waiting for a manager).
+    status = Column(String(20), nullable=False, default="linked")
     rows = Column(Text, nullable=False, default='[]')
-    # True when the account signed in with the address a manager invited.
+    # True when the account signed in with the address this schedule invited.
     via_invite = Column(Boolean, nullable=False, default=False)
+    # The manager or admin who linked a held claim by hand, if one did.
+    linked_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     claimed_at = Column(DateTime(timezone=True), server_default=func.now())
     reverted_at = Column(DateTime(timezone=True), nullable=True)
     reverted_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     user = relationship("User", foreign_keys=[user_id])
     reverted_by = relationship("User", foreign_keys=[reverted_by_id])
+
+
+class TeamInvite(Base):
+    """One sign-up invite a schedule manager sent for a callsign-only entry.
+
+    The send log, and the only proof a claim is the invited operator: an
+    account signed in with `email` takes over `callsign`'s entries on
+    `template_id` by itself, and only there (the latest invite for that
+    schedule and callsign wins). Every send is a row, so a re-send counts
+    toward the inviter's and the recipient's daily limits.
+    """
+    __tablename__ = "team_invites"
+
+    id = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"), nullable=False, index=True)
+    callsign = Column(String(50), nullable=False, index=True)
+    email = Column(String(255), nullable=False, index=True)
+    invited_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    sent_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
 
 
 class NCSReminderLog(Base):
@@ -1086,10 +1118,6 @@ class Contact(Base):
     name = Column(String(255))  # Operator name (may be corrected by admin)
     location = Column(String(255))  # Home QTH / default location
     email = Column(String(255))  # For sending invites
-    # Last time a schedule manager sent this callsign a sign-up invite from
-    # the Staff dialog, and who did (services/callsign_people.py).
-    invited_at = Column(DateTime(timezone=True), nullable=True)
-    invited_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     skywarn_number = Column(String(50))
     notes = Column(Text)  # Admin notes about this contact
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Linked user account

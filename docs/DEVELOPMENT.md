@@ -754,19 +754,33 @@ Rules to keep:
 - **Never match two people on `user_id` alone**, on either side. Two callsign-only rows
   both have `user_id: null`. Use `samePerson` / `personKey` (`staffPeople.ts`) or
   `roleMatchesCheckIn` (`stationRoles.ts`).
-- **Taking over is recorded and reversible.** `claim_callsign_placeholders` runs on
-  sign-up (`auth.py::get_or_create_user`, `contacts.py` invite, admin create) and on a
-  callsign change (`PUT /users/me`, admin update). Each callsign taken over writes a
-  `CallsignClaim` whose `rows` JSON lists every row converted, so
-  `revert_callsign_claim` can replay it backwards. Banning reverts all of an account's
-  claims; a reverted claim blocks that account from taking the same callsign again by
-  editing its profile; banned or inactive accounts never claim.
-- **The invite gate.** If the callsign was invited (`Contact.email`) at a different
-  address than the claimant's, the claim is held: the row reports `account_available`
-  and the manager links it by hand (`PATCH .../staff/{id}` with `link: true`). The
-  manager is emailed about every claim and every held one (`email/team_invites.py`).
-- Invitations are capped at `INVITES_PER_DAY` (25) per inviter, counted from
-  `Contact.invited_at`. Public responses never carry an email address or `invited`.
+- **A typed callsign proves nothing, so taking over is per schedule and gated.**
+  `claim_callsign_placeholders` runs on sign-up (`auth.py::get_or_create_user`,
+  `contacts.py` invite, admin create) and when an account's *primary* callsign actually
+  changes (`PUT /users/me`, admin update); extra and GMRS callsigns are never matched.
+  For each schedule naming the callsign, the entries are taken over only if the account
+  signed in with the address *that schedule* invited it at (`TeamInvite`, latest per
+  schedule and callsign), or a manager links it (`PATCH .../staff/{id}` with
+  `link: true`). Otherwise a `held` `CallsignClaim` is written once (which is also what
+  stops the manager being emailed again) and the row reports `account_available`.
+  Before 2026-10-19 any profile edit took the entries over, which made a stranger
+  schedule staff, and so able to make themselves co-manager, in one step.
+- **Trust-level team changes need a manager.** Linking (including a typo fix onto an
+  account's callsign), sending invites and changing co-manager go through
+  `permissions.py::can_manage_schedule_team` (admin, schedule manager, active
+  co-manager); plain staff pass `check_template_permission` for everything else.
+- **Reversible.** A `linked` claim's `rows` JSON lists every row converted, so
+  `revert_callsign_claim` replays it backwards and clears co-manager; callers then run
+  `resync_pending_duty_ncs` so duty roles assigned in the window go back to the
+  callsign. Ban and delete revert all of an account's claims; a reverted claim is never
+  re-taken automatically by that account; inactive accounts never claim, resolve or
+  show as available.
+- **Correcting a check-in's callsign onto an account** turns its credit into a real
+  `NetRole` only when the editor passes `can_manage_net_roles`; otherwise the credit is
+  dropped. A callsign role can only be given to a callsign checked in to that net.
+- Invitations are one `TeamInvite` row per send: `INVITES_PER_DAY` (25) per inviter and
+  `INVITES_PER_ADDRESS_PER_DAY` (3) per recipient. Public responses never carry an email
+  address or `invited`.
 
 Tests: `backend/tests/test_callsign_placeholders.py`, `frontend/src/utils/staffPeople.test.ts`,
 `frontend/src/utils/stationRoles.test.ts`, `frontend/src/components/netview/checkInSort.test.ts`.

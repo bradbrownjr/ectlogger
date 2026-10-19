@@ -68,7 +68,6 @@ async def get_my_profile(current_user: User = Depends(get_current_user)):
 # The profile fields find_user_by_callsign matches a station on; changing any
 # of them can make an account the owner of a callsign-only staff or rotation
 # entry (services/callsign_people.py).
-CALLSIGN_FIELDS = {'callsign', 'gmrs_callsign', 'callsigns'}
 
 
 @router.put("/me", response_model=UserResponse)
@@ -106,6 +105,7 @@ async def update_my_profile(
                 prev.append(old_callsign.upper())
                 current_user.previous_callsigns = json.dumps(prev)
 
+    primary_before = (current_user.callsign or '').upper()
     for field, value in update_data.items():
         # Handle callsigns JSON field
         if field == 'callsigns' and value is not None:
@@ -121,9 +121,12 @@ async def update_my_profile(
             status_code=status.HTTP_409_CONFLICT,
             detail="That callsign is already in use by another account."
         )
-    # A callsign the account just gained may name it on a schedule's staff
-    # or rotation already (added before it signed up): take those over.
-    if CALLSIGN_FIELDS & update_data.keys():
+    # A new primary callsign may already be on a schedule's staff or rotation
+    # (added before this operator signed up): take over what that schedule
+    # invited this address for, and hold the rest for its manager. Only on a
+    # real change: the profile form sends every field on every save, and a
+    # held claim must not email the manager again each time.
+    if (current_user.callsign or '').upper() != primary_before and current_user.callsign:
         await claim_and_queue_notices(db, current_user, background_tasks)
     await db.refresh(current_user)
     return UserResponse.from_orm(current_user)
@@ -735,7 +738,7 @@ async def admin_update_user(
 
     if 'email' in changed_fields and old_email and user.email:
         await EmailService.send_admin_email_change_notice(old_email, user.email)
-    if CALLSIGN_FIELDS & set(changed_fields):
+    if 'callsign' in changed_fields and user.callsign:
         await claim_and_queue_notices(db, user, background_tasks)
         await db.refresh(user)
 
@@ -782,12 +785,22 @@ async def ban_user(
     # A banned account gives back every staff, rotation and role entry it
     # took over by callsign; they become callsign-only again, waiting for
     # the real operator (services/callsign_people.py).
-    restored = await revert_all_claims(db, user, current_user)
-    if restored:
-        logger.warning("CALLSIGN_CLAIM", f"Ban of user {user.id} returned {restored} callsign entries")
+    template_ids = await revert_all_claims(db, user, current_user)
     await db.commit()
+    await _resync_after_revert(db, template_ids)
+    if template_ids:
+        logger.warning("CALLSIGN_CLAIM", f"Ban of user {user.id} reverted its claims on schedules {sorted(template_ids)}")
     await db.refresh(user)
     return UserResponse.from_orm(user)
+
+
+async def _resync_after_revert(db: AsyncSession, template_ids) -> None:
+    """Re-pick the duty NCS on each schedule's upcoming nets after claims were
+    reverted, so a role the account was auto-assigned while it held a
+    rotation slot goes back to the callsign as well."""
+    from app.routers.ncs_rotation import resync_pending_duty_ncs
+    for template_id in template_ids:
+        await resync_pending_duty_ncs(db, template_id)
 
 
 @router.get("/{user_id}/callsign-claims")
@@ -796,25 +809,32 @@ async def list_callsign_claims(
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """The callsign entries this account took over when it signed up or
-    gained a callsign (admin only): what to check when a schedule manager
-    reports someone signed up with a callsign that isn't theirs."""
+    """The schedules where this account took over (or is waiting to take
+    over) entries for its callsign (admin only): what to check when a
+    schedule manager reports someone signed up with a callsign that isn't
+    theirs."""
     import json
-    from app.models import CallsignClaim
+    from app.models import CallsignClaim, NetTemplate
 
-    claims = (await db.execute(
-        select(CallsignClaim).where(CallsignClaim.user_id == user_id).order_by(CallsignClaim.claimed_at.desc())
-    )).scalars().all()
+    rows = (await db.execute(
+        select(CallsignClaim, NetTemplate.name)
+        .outerjoin(NetTemplate, NetTemplate.id == CallsignClaim.template_id)
+        .where(CallsignClaim.user_id == user_id)
+        .order_by(CallsignClaim.claimed_at.desc())
+    )).all()
     return [
         {
             "id": c.id,
             "callsign": c.callsign,
+            "schedule_name": name,
+            "status": c.status,
             "claimed_at": c.claimed_at,
             "via_invite": c.via_invite,
+            "linked_by_manager": c.linked_by_id is not None,
             "reverted_at": c.reverted_at,
             "entries": len(json.loads(c.rows or "[]")),
         }
-        for c in claims
+        for c, name in rows
     ]
 
 
@@ -839,6 +859,8 @@ async def revert_user_callsign_claim(
         raise HTTPException(status_code=400, detail="Already reverted")
     restored = await revert_callsign_claim(db, claim, current_user)
     await db.commit()
+    if claim.template_id:
+        await _resync_after_revert(db, [claim.template_id])
     return {"restored": restored}
 
 
@@ -1022,9 +1044,15 @@ async def delete_user(
     
     if user.id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
-    
+
+    # Give back any team entries it took over by callsign first: SQLite
+    # doesn't enforce the foreign keys, so they would otherwise keep pointing
+    # at a user id that no longer exists.
+    template_ids = await revert_all_claims(db, user, current_user)
+    await db.flush()
     await db.delete(user)
     await db.commit()
+    await _resync_after_revert(db, template_ids)
     return None
 
 

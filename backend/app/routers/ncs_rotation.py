@@ -9,7 +9,7 @@ from pydantic import BaseModel, EmailStr
 
 from app.database import get_db
 from app.models import (
-    Contact, Net, NetCallsignRole, NetRole, NetStatus, NetTemplate, NCSRotationMember, NCSScheduleOverride, User,
+    Net, NetCallsignRole, NetRole, NetStatus, NetTemplate, NCSRotationMember, NCSScheduleOverride, TeamInvite, User,
     NetTemplateSubscription, TemplateStaff
 )
 from app.services.callsign_people import (
@@ -34,7 +34,7 @@ from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
 from app.config import settings
 from app.logger import logger
-from app.permissions import check_template_permission
+from app.permissions import can_manage_schedule_team, check_template_permission
 from app.routers.ncs_schedule import (
     calculate_schedule_dates,
     compute_anchored_ncs_schedule,
@@ -77,17 +77,27 @@ class TemplateStaffUpdateRequest(BaseModel):
 # side of it: the extra fields a signed-in viewer sees, the invite, and the
 # typo/link edits a manager makes.
 
-async def _placeholder_flags(db: AsyncSession, rows) -> tuple:
-    """(callsigns that now have an account, callsigns that were invited) for
-    the callsign-only rows in `rows`."""
+async def _placeholder_flags(db: AsyncSession, template_id: int, rows) -> tuple:
+    """(callsigns that now have an account, callsigns this schedule invited)
+    for the callsign-only rows in `rows`."""
     callsigns = {r.callsign for r in rows if r.user_id is None and r.callsign}
     if not callsigns:
         return set(), set()
     available = await callsigns_with_accounts(db, callsigns)
     invited_result = await db.execute(
-        select(Contact.callsign).where(Contact.callsign.in_(callsigns), Contact.invited_at.isnot(None))
+        select(TeamInvite.callsign).where(TeamInvite.template_id == template_id, TeamInvite.callsign.in_(callsigns))
     )
     return available, set(invited_result.scalars().all())
+
+
+async def _require_team_manager(db: AsyncSession, template: NetTemplate, user: User, action: str) -> None:
+    """403 unless the user is the schedule's manager, a co-manager or an
+    admin (permissions.can_manage_schedule_team)."""
+    if not await can_manage_schedule_team(db, template, user):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Only the schedule's manager or a co-manager can {action}",
+        )
 
 
 async def _queue_invite(
@@ -98,11 +108,14 @@ async def _queue_invite(
     email: str,
     inviter: User,
 ) -> None:
-    """Record and send a sign-up invite for a callsign-only entry. Commits."""
+    """Record and send a sign-up invite for a callsign-only entry. Commits.
+    Managers only: an invite is what lets an account take over the entry by
+    itself, so it carries the same trust as linking by hand."""
     from app.utils import display_callsign
 
-    await check_invite_budget(db, inviter)
-    await record_invite(db, callsign, email, inviter)
+    await _require_team_manager(db, template, inviter, "send invites")
+    await check_invite_budget(db, inviter, email)
+    await record_invite(db, template.id, callsign, email, inviter)
     await db.commit()
     background_tasks.add_task(
         EmailService.send_team_invite,
@@ -124,25 +137,25 @@ async def _edit_placeholder(
     new_callsign: Optional[str] = None,
     link: Optional[bool] = None,
 ) -> None:
-    """Apply a manager's typo fix or link to every entry for `callsign` on
-    this schedule. A corrected callsign that belongs to an account is linked
-    to it straight away, the same as `link`. Commits."""
-    target = callsign
+    """Apply a typo fix or link to every entry for `callsign` on this
+    schedule. A corrected callsign that belongs to an account is linked to it
+    straight away, the same as `link`. Linking (either way) is for the
+    schedule's manager, a co-manager or an admin: it gives an account the
+    entries' place on the team and their NCS credit. Commits."""
+    from app.services.callsign_people import find_active_user_by_callsign
+
+    target = normalize_callsign(new_callsign) if new_callsign is not None else callsign
+    account = await find_active_user_by_callsign(db, target)
+    if link and account is None:
+        raise HTTPException(status_code=400, detail=f"{target} doesn't have an account yet")
+    if account is not None:
+        await _require_team_manager(db, template, current_user, "link an operator to an account")
     if new_callsign is not None:
-        target = normalize_callsign(new_callsign)
         await rename_placeholder(db, template.id, callsign, target)
         await db.commit()
-    if new_callsign is not None or link:
-        from app.services.callsign_people import find_user_by_callsign
-        account = await find_user_by_callsign(db, target)
-        if account is None:
-            if link:
-                raise HTTPException(status_code=400, detail=f"{target} doesn't have an account yet")
-            return
-        if not account.is_active:
-            raise HTTPException(status_code=400, detail=f"{target}'s account is closed")
+    if account is not None:
         await claim_and_queue_notices(
-            db, account, background_tasks, template_id=template.id, callsigns=[target], linked_by=current_user,
+            db, account, background_tasks, template_id=template.id, callsign=target, linked_by=current_user,
         )
 
 
@@ -302,7 +315,7 @@ async def list_rotation_members(
 ):
     """List all NCS rotation members for a template"""
     template = await get_template_or_404(template_id, db)
-    available, _invited = await _placeholder_flags(db, template.rotation_members)
+    available, _invited = await _placeholder_flags(db, template_id, template.rotation_members)
 
     return [
         NCSRotationMemberResponse.from_orm_with_user(
@@ -816,7 +829,7 @@ async def list_template_staff(
 ):
     """List all staff members who can run nets from this template"""
     template = await get_template_or_404(template_id, db)
-    available, invited = await _placeholder_flags(db, template.staff)
+    available, invited = await _placeholder_flags(db, template_id, template.staff)
 
     return [
         TemplateStaffResponse.from_orm_with_user(
@@ -845,6 +858,8 @@ async def add_template_staff(
         raise HTTPException(status_code=403, detail="Permission denied")
 
     person = await resolve_person(db, staff_data.user_id, staff_data.callsign)
+    if person.callsign and staff_data.invite_email:
+        await _require_team_manager(db, template, current_user, "send invites")
 
     # Check if already staff
     for existing in template.staff:
@@ -952,6 +967,10 @@ async def update_template_staff(
     # callsign, so it waits until the operator has an account.
     if next_is_co_manager and staff.user_id is None:
         raise HTTPException(status_code=400, detail="An operator needs an account before they can be a co-manager")
+    # Co-manager is the ownership tier; plain staff could grant it (to
+    # themselves, too) until 2026-10-19.
+    if next_is_co_manager is not None and bool(next_is_co_manager) != bool(staff.is_co_manager):
+        await _require_team_manager(db, template, current_user, "change who is a co-manager")
 
     staff_row_id = staff.id
     if next_is_active is not None:
@@ -960,7 +979,9 @@ async def update_template_staff(
         staff.is_co_manager = next_is_co_manager
     await db.commit()
 
+    edit_target = None
     if new_callsign is not None or link:
+        edit_target = normalize_callsign(new_callsign) if new_callsign is not None else staff.callsign
         await _edit_placeholder(db, background_tasks, template, staff.callsign, current_user,
                                 new_callsign=new_callsign, link=link)
         await resync_pending_duty_ncs(db, template_id, background_tasks)
@@ -969,12 +990,23 @@ async def update_template_staff(
         select(TemplateStaff).options(selectinload(TemplateStaff.user)).where(TemplateStaff.id == staff_row_id)
     )
     staff = result.scalar_one_or_none()
+    if staff is None and edit_target is not None:
+        # The entry merged into one already on the list: the account's own
+        # row when it was linked to an account already on staff, else the
+        # callsign-only row a typo fix landed on. Answer with that one.
+        from app.services.callsign_people import find_active_user_by_callsign
+        account = await find_active_user_by_callsign(db, edit_target)
+        survivor = select(TemplateStaff).options(selectinload(TemplateStaff.user)).where(
+            TemplateStaff.template_id == template_id,
+            (TemplateStaff.user_id == account.id) if account is not None
+            else ((TemplateStaff.user_id.is_(None)) & (TemplateStaff.callsign == edit_target)),
+        )
+        staff = (await db.execute(survivor.limit(1))).scalar_one_or_none()
     if staff is None:
-        # A typo fix onto a callsign already on the list merges the two.
-        raise HTTPException(status_code=409, detail="That callsign is already on the staff list; the entries were merged")
+        raise HTTPException(status_code=409, detail="That entry was merged into one already on the staff list")
     if invite_email and staff.user_id is None:
         await _queue_invite(db, background_tasks, template, staff.callsign, invite_email, current_user)
-    available, invited = await _placeholder_flags(db, [staff])
+    available, invited = await _placeholder_flags(db, template_id, [staff])
 
     return TemplateStaffResponse.from_orm_with_user(
         staff, True, account_available=staff.callsign in available, invited=staff.callsign in invited,

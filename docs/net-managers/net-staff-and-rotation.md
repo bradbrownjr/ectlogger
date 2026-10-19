@@ -36,13 +36,13 @@ You don't have to wait for every net control operator to make an account before 
 
 An operator on the list by callsign can go in the rotation, take the fifth week, and be swapped in for a single night, just like anyone else. When their week comes up, the net names them as its NCS, so the net card, the report, the ICS-309, and the closing log all credit the right person. What they can't do is use ECTLogger's net controls, because there's no account to sign in with yet. Someone else, usually the Logger, runs the net in the app and checks them in. They also can't be made a co-manager until they have an account.
 
-**When they sign up with that callsign, they take over their spot on the team.** Their staff row, their rotation position, any swaps naming them, and any nets where they were credited as NCS all move to their new account. You get an email saying they joined. Nothing is lost, and nobody has to re-add them.
+**If you invited them, they take over their spot as soon as they sign in with that address.** Their callsign is filled in for them, and their staff row, their rotation position, any swaps naming them, and any nets from this schedule where they were credited as NCS all move to their new account. You get an email saying they joined. Nothing is lost, and nobody has to re-add them.
 
-If you invited them at one address and they sign up with a different one, ECTLogger doesn't hand over the spot automatically. You get an email instead, and their row shows **Signed up with another address** and a link button. Click it once you're sure the new account is really them. This protects your team from someone signing up with a callsign that isn't theirs.
+**Anyone else waits for you.** Anybody can type a callsign into a profile, so a sign-up with that callsign and no invite to that address gets nothing by itself. You get an email, and their row shows **Signed up, confirm it's them** and a link button. Click it once you're sure the new account is really them. Only the schedule manager and co-managers can link someone, send invitations, or make someone a co-manager.
 
 **To fix a typo** in a callsign, or to send an invitation you skipped, click the pencil on that row. A corrected callsign also changes in the rotation and on any swaps. If the corrected callsign already belongs to an account, the row joins that account straight away.
 
-If someone ever does sign up with a callsign that isn't theirs and takes a spot, an admin can undo it from the user's account in the admin panel, and banning that account undoes all of them at once. See [Users and roles](/docs/admins/users-and-roles/) for the admin side.
+If you link someone and later find the callsign isn't theirs, an admin can undo it from the user's account in the admin panel, and banning that account undoes all of them at once. See [Users and roles](/docs/admins/users-and-roles/) for the admin side.
 
 ## The NCS rotation (optional)
 

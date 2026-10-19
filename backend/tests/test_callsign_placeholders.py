@@ -28,6 +28,7 @@ from app.models import (
     NetTemplate,
     NCSRotationMember,
     NCSScheduleOverride,
+    TeamInvite,
     TemplateStaff,
     User,
     UserRole,
@@ -209,9 +210,8 @@ async def test_invite_address_never_appears_in_any_list(client, db, owner):
     guest_staff = (await client.get(_staff_url(template.id))).json()
     assert guest_staff[0]["invited"] is False, "whether an invite went out is for signed-in viewers"
 
-    contact = (await db.execute(select(Contact).where(Contact.callsign == "KB1JCX"))).scalar_one()
-    assert contact.email == "ken.real@example.com"
-    assert contact.invited_by_id == owner.id
+    invite = (await db.execute(select(TeamInvite).where(TeamInvite.callsign == "KB1JCX"))).scalar_one()
+    assert (invite.template_id, invite.email, invite.invited_by_id) == (template.id, "ken.real@example.com", owner.id)
 
 
 @pytest.mark.asyncio
@@ -405,6 +405,29 @@ async def test_corrected_to_an_account_becomes_a_real_role(client, db, owner, ot
     assert [(r["user_id"], r["role"]) for r in roles if r["user_id"] == other.id] == [(other.id, "NCS")]
 
 
+@pytest.mark.asyncio
+async def test_correction_onto_an_account_drops_credit_for_an_editor_who_cannot_assign_roles(client, db, owner, other):
+    """T6: a Logger who couldn't assign NCS directly can't do it by editing a
+    credited guest row's callsign to an account's callsign."""
+    net_id, check_in_id = await _active_net_with_guest(client, db, owner, callsign="KC1OTZ")
+    await client.post(f"/api/nets/{net_id}/callsign-roles", json={"callsign": "KC1OTZ", "role": "NCS"}, headers=auth_headers(owner))
+    logger_user = await _user(db, "lg@example.com", callsign="KC1LOG")
+    db.add(NetRole(net_id=net_id, user_id=logger_user.id, role="LOGGER", is_active=True))
+    await db.commit()
+    resp = await client.put(f"/api/check-ins/check-ins/{check_in_id}", json={"callsign": other.callsign}, headers=auth_headers(logger_user))
+    assert resp.status_code == 200, resp.text
+    roles = (await client.get(f"/api/nets/{net_id}/roles")).json()
+    assert not [r for r in roles if r["user_id"] == other.id]
+    assert (await client.get(f"/api/nets/{net_id}/callsign-roles")).json() == []
+
+
+@pytest.mark.asyncio
+async def test_callsign_role_needs_a_check_in_on_the_net(client, db, owner):
+    net_id, _ = await _active_net_with_guest(client, db, owner)
+    resp = await client.post(f"/api/nets/{net_id}/callsign-roles", json={"callsign": "KB1ZZZ", "role": "NCS"}, headers=auth_headers(owner))
+    assert resp.status_code == 400
+
+
 # ========== SIGNING UP TAKES OVER THE ENTRIES ==========
 
 async def _placeholders_everywhere(client, db, owner, callsign="KB1JCX"):
@@ -421,12 +444,61 @@ async def _placeholders_everywhere(client, db, owner, callsign="KB1JCX"):
     return template, net_id, past.id
 
 
+async def _link(client, template_id, manager, callsign="KB1JCX"):
+    """The schedule's manager confirms the account with this callsign is the
+    operator on their staff list (the Link button)."""
+    staff = [s for s in (await client.get(_staff_url(template_id), headers=auth_headers(manager))).json()
+             if s["user_callsign"] == callsign and s["user_id"] is None][0]
+    resp = await client.patch(f"{_staff_url(template_id)}/{staff['id']}", json={"link": True}, headers=auth_headers(manager))
+    assert resp.status_code == 200, resp.text
+    return resp.json()
+
+
 @pytest.mark.asyncio
-async def test_profile_callsign_takes_over_every_entry(client, db, owner):
+async def test_a_profile_callsign_alone_takes_over_nothing(client, db, owner):
+    """The troll case: typing someone's callsign into a profile is not proof.
+    It is held for the manager, who is told once, and grants nothing."""
+    template, net_id, past_id = await _placeholders_everywhere(client, db, owner)
+    troll = await _user(db, "troll@example.com", callsign=None)
+    resp = await client.put("/api/users/me", json={"callsign": "KB1JCX"}, headers=auth_headers(troll))
+    assert resp.status_code == 200, resp.text
+
+    db.expunge_all()
+    staff = (await db.execute(select(TemplateStaff).where(TemplateStaff.template_id == template.id))).scalar_one()
+    assert (staff.user_id, staff.callsign) == (None, "KB1JCX")
+    for nid in (net_id, past_id):
+        assert (await db.execute(select(NetRole).where(NetRole.net_id == nid))).scalars().all() == []
+    held = (await db.execute(select(CallsignClaim).where(CallsignClaim.user_id == troll.id))).scalars().all()
+    assert [(c.status, c.template_id) for c in held] == [("held", template.id)]
+    detail = (await client.get(f"/api/nets/{net_id}", headers=auth_headers(troll))).json()
+    assert not any(detail["actions"].values())
+    assert (await client.put(f"/api/templates/{template.id}", json={"name": "pwned"}, headers=auth_headers(troll))).status_code == 403
+    listed = (await client.get(_staff_url(template.id), headers=auth_headers(owner))).json()[0]
+    assert listed["account_available"] is True
+
+    # Saving the profile again (the form sends every field) adds nothing.
+    await client.put("/api/users/me", json={"callsign": "KB1JCX", "name": "Ken"}, headers=auth_headers(troll))
+    await client.put("/api/users/me", json={"callsign": "KB1JCQ"}, headers=auth_headers(troll))
+    await client.put("/api/users/me", json={"callsign": "KB1JCX"}, headers=auth_headers(troll))
+    db.expunge_all()
+    assert len((await db.execute(select(CallsignClaim).where(CallsignClaim.user_id == troll.id))).scalars().all()) == 1
+
+
+@pytest.mark.asyncio
+async def test_an_extra_or_gmrs_callsign_is_never_matched(client, db, owner):
+    template = await _weekly_schedule(db, owner.id)
+    await client.post(_staff_url(template.id), json={"callsign": "KB1JCX"}, headers=auth_headers(owner))
+    troll = await _user(db, "troll@example.com", callsign="KC1TRL")
+    await client.put("/api/users/me", json={"callsigns": ["KB1JCX"], "gmrs_callsign": "KB1JCX"}, headers=auth_headers(troll))
+    assert (await db.execute(select(CallsignClaim))).scalars().all() == []
+
+
+@pytest.mark.asyncio
+async def test_manager_link_takes_over_every_entry(client, db, owner):
     template, net_id, past_id = await _placeholders_everywhere(client, db, owner)
     newcomer = await _user(db, "ken@example.com", callsign=None)
-    resp = await client.put("/api/users/me", json={"callsign": "KB1JCX"}, headers=auth_headers(newcomer))
-    assert resp.status_code == 200, resp.text
+    await client.put("/api/users/me", json={"callsign": "KB1JCX"}, headers=auth_headers(newcomer))
+    await _link(client, template.id, owner)
 
     db.expunge_all()
     staff = (await db.execute(select(TemplateStaff).where(TemplateStaff.template_id == template.id))).scalar_one()
@@ -438,9 +510,7 @@ async def test_profile_callsign_takes_over_every_entry(client, db, owner):
         role = (await db.execute(select(NetRole).where(NetRole.net_id == nid))).scalar_one()
         assert role.user_id == newcomer.id and role.role == "NCS"
     claim = (await db.execute(select(CallsignClaim).where(CallsignClaim.user_id == newcomer.id))).scalar_one()
-    assert claim.callsign == "KB1JCX" and claim.via_invite is False
-
-    # They are now real net staff for the upcoming net.
+    assert (claim.status, claim.linked_by_id, claim.via_invite) == ("linked", owner.id, False)
     detail = (await client.get(f"/api/nets/{net_id}", headers=auth_headers(newcomer))).json()
     assert detail["actions"]["start"] is True
 
@@ -461,10 +531,28 @@ async def test_invited_sign_in_prefills_and_takes_over(client, db, owner):
 
 
 @pytest.mark.asyncio
+async def test_an_invite_only_vouches_on_its_own_schedule(client, db, owner, other):
+    """T2: another schedule's staff can't invite someone else's placeholder
+    at their own address and have it handed over everywhere."""
+    from app.routers.auth import get_or_create_user
+
+    ken_net = await _weekly_schedule(db, owner.id)
+    await client.post(_staff_url(ken_net.id), json={"callsign": "KB1JCX", "invite_email": "ken@example.com"}, headers=auth_headers(owner))
+    evil_net = await _weekly_schedule(db, other.id)
+    await client.post(_staff_url(evil_net.id), json={"callsign": "KB1JCX", "invite_email": "troll@example.com"}, headers=auth_headers(other))
+    troll = await get_or_create_user(db, "troll@example.com", "troll@example.com", "email", "troll@example.com")
+    db.expunge_all()
+    ken_staff = (await db.execute(select(TemplateStaff).where(TemplateStaff.template_id == ken_net.id))).scalar_one()
+    assert ken_staff.user_id is None, "an invite on another schedule must not hand over this one"
+    evil_staff = (await db.execute(select(TemplateStaff).where(TemplateStaff.template_id == evil_net.id))).scalar_one()
+    assert evil_staff.user_id == troll.id
+
+
+@pytest.mark.asyncio
 async def test_different_address_than_the_invite_is_held_for_the_manager(client, db, owner):
     template = await _weekly_schedule(db, owner.id)
     headers = auth_headers(owner)
-    added = (await client.post(_staff_url(template.id), json={"callsign": "KB1JCX", "invite_email": "ken@example.com"}, headers=headers)).json()
+    await client.post(_staff_url(template.id), json={"callsign": "KB1JCX", "invite_email": "ken@example.com"}, headers=headers)
     troll = await _user(db, "troll@example.com", callsign=None)
     await client.put("/api/users/me", json={"callsign": "KB1JCX"}, headers=auth_headers(troll))
 
@@ -476,9 +564,57 @@ async def test_different_address_than_the_invite_is_held_for_the_manager(client,
     assert (await client.get(_staff_url(template.id))).json()[0]["account_available"] is False
 
     # The manager confirms it is them after all.
-    linked = await client.patch(f"{_staff_url(template.id)}/{added['id']}", json={"link": True}, headers=headers)
-    assert linked.status_code == 200, linked.text
-    assert linked.json()["user_id"] == troll.id
+    linked = await _link(client, template.id, owner)
+    assert linked["user_id"] == troll.id
+    claim = (await db.execute(select(CallsignClaim).where(CallsignClaim.user_id == troll.id))).scalar_one()
+    assert claim.status == "linked", "the held claim becomes the link, not a second row"
+
+
+@pytest.mark.asyncio
+async def test_plain_staff_cannot_link_invite_or_make_co_managers(client, db, owner, other):
+    template = await _weekly_schedule(db, owner.id)
+    plain = (await client.post(_staff_url(template.id), json={"user_id": other.id}, headers=auth_headers(owner))).json()
+    await client.post(_staff_url(template.id), json={"callsign": "KB1JCX"}, headers=auth_headers(owner))
+    sock = await _user(db, "sock@example.com", callsign="KB1JCX")
+    staff = {s["user_callsign"]: s for s in (await client.get(_staff_url(template.id), headers=auth_headers(owner))).json()}
+    h = auth_headers(other)
+    assert (await client.patch(f"{_staff_url(template.id)}/{staff['KB1JCX']['id']}", json={"link": True}, headers=h)).status_code == 403
+    assert (await client.patch(f"{_staff_url(template.id)}/{plain['id']}", json={"is_co_manager": True}, headers=h)).status_code == 403
+    invite = await client.post(_staff_url(template.id), json={"callsign": "KB1NEW", "invite_email": "x@example.com"}, headers=h)
+    assert invite.status_code == 403
+    # Renaming a placeholder onto an account is a link too.
+    await client.post(_staff_url(template.id), json={"callsign": "KB1JCZ"}, headers=auth_headers(owner))
+    typo = [s for s in (await client.get(_staff_url(template.id), headers=h)).json() if s["user_callsign"] == "KB1JCZ"][0]
+    assert (await client.patch(f"{_staff_url(template.id)}/{typo['id']}", json={"callsign": "KB1JCX"}, headers=h)).status_code == 403
+    db.expunge_all()
+    assert all(r.user_id != sock.id for r in (await db.execute(select(TemplateStaff))).scalars().all())
+
+
+@pytest.mark.asyncio
+async def test_resent_invites_count_and_one_address_is_capped(client, db, owner, monkeypatch):
+    """T1: re-sending used to overwrite the row and never count."""
+    from app.services import callsign_people
+    monkeypatch.setattr(callsign_people, "INVITES_PER_DAY", 3)
+    template = await _weekly_schedule(db, owner.id)
+    headers = auth_headers(owner)
+    staff = (await client.post(_staff_url(template.id), json={"callsign": "KB1JCX"}, headers=headers)).json()
+    codes = [(await client.patch(f"{_staff_url(template.id)}/{staff['id']}", json={"invite_email": f"v{i}@example.com"},
+                                 headers=headers)).status_code for i in range(5)]
+    assert codes == [200, 200, 200, 429, 429]
+    monkeypatch.setattr(callsign_people, "INVITES_PER_DAY", 100)
+    codes = [(await client.patch(f"{_staff_url(template.id)}/{staff['id']}", json={"invite_email": "victim@example.com"},
+                                 headers=headers)).status_code for _ in range(5)]
+    assert codes == [200, 200, 200, 429, 429]
+
+
+@pytest.mark.asyncio
+async def test_sign_in_survives_two_contacts_with_one_address(db, owner):
+    """T3: Contact.email is not unique; a shared address must not break sign-in."""
+    from app.routers.auth import get_or_create_user
+    db.add_all([Contact(callsign="KB1AAA", email="family@example.com"), Contact(callsign="KB1AAB", email="family@example.com")])
+    await db.commit()
+    user = await get_or_create_user(db, "family@example.com", "family@example.com", "email", "family@example.com")
+    assert user.callsign == "KB1AAA"
 
 
 @pytest.mark.asyncio
@@ -489,7 +625,7 @@ async def test_banned_account_takes_over_nothing(db, owner):
     banned.is_active = False
     await db.commit()
     outcome = await claim_callsign_placeholders(db, banned)
-    assert outcome.claims == []
+    assert outcome.claims == [] and outcome.held == []
 
 
 @pytest.mark.asyncio
@@ -500,20 +636,39 @@ async def test_an_account_already_on_staff_merges_rather_than_duplicates(client,
     db.add(TemplateStaff(template_id=template.id, callsign="KB1JCX", is_active=True))
     await db.commit()
     await client.put("/api/users/me", json={"callsign": "KB1JCX"}, headers=auth_headers(newcomer))
+    await _link(client, template.id, owner)
+    db.expunge_all()
     rows = (await db.execute(select(TemplateStaff).where(TemplateStaff.template_id == template.id))).scalars().all()
     assert [(r.user_id, r.callsign) for r in rows] == [(newcomer.id, None)]
 
 
+@pytest.mark.asyncio
+async def test_duplicate_rotation_rows_do_not_break_schedule_reads(client, db, owner, other):
+    """T9/T7: a rotation may list one operator twice; reads must not 500."""
+    template = await _weekly_schedule(db, owner.id)
+    db.add_all([NCSRotationMember(template_id=template.id, user_id=other.id, position=1, is_active=True),
+                NCSRotationMember(template_id=template.id, user_id=other.id, position=2, is_active=True)])
+    await db.commit()
+    resp = await client.get(f"/api/templates/{template.id}", headers=auth_headers(other))
+    assert resp.status_code == 200, resp.text
+
+
 # ========== UNDOING A CLAIM ==========
 
-@pytest.mark.asyncio
-async def test_admin_revert_restores_every_entry_and_blocks_retaking(client, db, owner, admin):
+async def _troll_linked(client, db, owner):
+    """A manager is fooled into linking a troll who signed up with KB1JCX."""
     template, net_id, past_id = await _placeholders_everywhere(client, db, owner)
     troll = await _user(db, "troll@example.com", callsign=None)
     await client.put("/api/users/me", json={"callsign": "KB1JCX"}, headers=auth_headers(troll))
+    await _link(client, template.id, owner)
+    return template, net_id, past_id, troll
 
+
+@pytest.mark.asyncio
+async def test_admin_revert_restores_every_entry_and_blocks_retaking(client, db, owner, admin):
+    template, net_id, past_id, troll = await _troll_linked(client, db, owner)
     claims = (await client.get(f"/api/users/{troll.id}/callsign-claims", headers=auth_headers(admin))).json()
-    assert len(claims) == 1 and claims[0]["entries"] >= 4
+    assert len(claims) == 1 and claims[0]["entries"] >= 4 and claims[0]["status"] == "linked"
     assert (await client.get(f"/api/users/{troll.id}/callsign-claims", headers=auth_headers(owner))).status_code == 403
 
     reverted = await client.post(f"/api/users/{troll.id}/callsign-claims/{claims[0]['id']}/revert", headers=auth_headers(admin))
@@ -521,7 +676,7 @@ async def test_admin_revert_restores_every_entry_and_blocks_retaking(client, db,
 
     db.expunge_all()
     staff = (await db.execute(select(TemplateStaff).where(TemplateStaff.template_id == template.id))).scalar_one()
-    assert (staff.user_id, staff.callsign) == (None, "KB1JCX")
+    assert (staff.user_id, staff.callsign, staff.is_co_manager) == (None, "KB1JCX", False)
     member = (await db.execute(select(NCSRotationMember).where(NCSRotationMember.template_id == template.id))).scalar_one()
     assert (member.user_id, member.callsign) == (None, "KB1JCX")
     for nid in (net_id, past_id):
@@ -530,22 +685,42 @@ async def test_admin_revert_restores_every_entry_and_blocks_retaking(client, db,
     detail = (await client.get(f"/api/nets/{net_id}", headers=auth_headers(troll))).json()
     assert not any(detail["actions"].values())
 
-    # Editing the profile again does not take it all back.
-    await client.put("/api/users/me", json={"callsign": "KB1JCX", "name": "again"}, headers=auth_headers(troll))
+    # Neither this account nor a second one gets it back by editing a profile.
+    await client.put("/api/users/me", json={"callsign": "KB1JCQ"}, headers=auth_headers(troll))
+    await client.put("/api/users/me", json={"callsign": "KB1JCX"}, headers=auth_headers(troll))
+    sock = await _user(db, "sock@example.com", callsign=None)
+    await client.put("/api/users/me", json={"callsigns": ["KB1JCX"]}, headers=auth_headers(sock))
     db.expunge_all()
     staff = (await db.execute(select(TemplateStaff).where(TemplateStaff.template_id == template.id))).scalar_one()
     assert staff.user_id is None
 
-    # But the real operator can still get it from the manager or by signing up.
     again = await client.post(f"/api/users/{troll.id}/callsign-claims/{claims[0]['id']}/revert", headers=auth_headers(admin))
     assert again.status_code == 400
 
 
 @pytest.mark.asyncio
+async def test_revert_clears_co_manager_and_duty_roles_from_the_window(client, db, owner, admin):
+    """T4 + T9: what the troll got while linked doesn't survive the revert."""
+    template, net_id, _past, troll = await _troll_linked(client, db, owner)
+    staff = (await client.get(_staff_url(template.id), headers=auth_headers(owner))).json()[0]
+    await client.patch(f"{_staff_url(template.id)}/{staff['id']}", json={"is_co_manager": True}, headers=auth_headers(owner))
+    # A net auto-created while the troll held the rotation slot.
+    db.expunge_all()
+    tpl = (await db.execute(select(NetTemplate).options(selectinload(NetTemplate.frequencies)).where(NetTemplate.id == template.id))).scalar_one()
+    later_net = await NCSReminderService()._get_or_create_scheduled_net(db, tpl, _next_sunday_1400() + timedelta(days=7))
+    assert (await db.execute(select(NetRole).where(NetRole.net_id == later_net))).scalar_one().user_id == troll.id
+
+    await client.put(f"/api/users/{troll.id}/ban", headers=auth_headers(admin))
+    db.expunge_all()
+    staff_row = (await db.execute(select(TemplateStaff).where(TemplateStaff.template_id == template.id))).scalar_one()
+    assert (staff_row.user_id, staff_row.is_co_manager) == (None, False)
+    assert (await db.execute(select(NetRole).where(NetRole.net_id == later_net, NetRole.user_id == troll.id))).scalars().all() == []
+    assert [r.callsign for r in (await db.execute(select(NetCallsignRole).where(NetCallsignRole.net_id == later_net))).scalars().all()] == ["KB1JCX"]
+
+
+@pytest.mark.asyncio
 async def test_ban_reverts_all_claims(client, db, owner, admin):
-    template, net_id, _ = await _placeholders_everywhere(client, db, owner)
-    troll = await _user(db, "troll@example.com", callsign=None)
-    await client.put("/api/users/me", json={"callsign": "KB1JCX"}, headers=auth_headers(troll))
+    template, net_id, _past, troll = await _troll_linked(client, db, owner)
     ban = await client.put(f"/api/users/{troll.id}/ban", headers=auth_headers(admin))
     assert ban.status_code == 200, ban.text
     db.expunge_all()
@@ -553,6 +728,19 @@ async def test_ban_reverts_all_claims(client, db, owner, admin):
     assert staff.user_id is None and staff.callsign == "KB1JCX"
     claim = (await db.execute(select(CallsignClaim).where(CallsignClaim.user_id == troll.id))).scalar_one()
     assert claim.reverted_at is not None and claim.reverted_by_id == admin.id
+    # And a banned account is never offered for linking again.
+    listed = (await client.get(_staff_url(template.id), headers=auth_headers(owner))).json()[0]
+    assert listed["account_available"] is False
+
+
+@pytest.mark.asyncio
+async def test_deleting_an_account_reverts_its_claims(client, db, owner, admin):
+    template, _net, _past, troll = await _troll_linked(client, db, owner)
+    resp = await client.delete(f"/api/users/{troll.id}", headers=auth_headers(admin))
+    assert resp.status_code == 204, resp.text
+    db.expunge_all()
+    staff = (await db.execute(select(TemplateStaff).where(TemplateStaff.template_id == template.id))).scalar_one()
+    assert (staff.user_id, staff.callsign) == (None, "KB1JCX")
 
 
 @pytest.mark.asyncio
@@ -562,7 +750,7 @@ async def test_revert_leaves_entries_the_manager_changed_since(client, db, owner
     await client.post(_staff_url(template.id), json={"callsign": "KB1JCX"}, headers=headers)
     troll = await _user(db, "troll@example.com", callsign=None)
     await client.put("/api/users/me", json={"callsign": "KB1JCX"}, headers=auth_headers(troll))
-    staff = (await client.get(_staff_url(template.id), headers=headers)).json()[0]
+    staff = await _link(client, template.id, owner)
     await client.delete(f"{_staff_url(template.id)}/{staff['id']}", headers=headers)
     claim = (await db.execute(select(CallsignClaim).where(CallsignClaim.user_id == troll.id))).scalar_one()
     resp = await client.post(f"/api/users/{troll.id}/callsign-claims/{claim.id}/revert", headers=auth_headers(admin))

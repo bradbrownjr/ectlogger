@@ -253,6 +253,14 @@ async def assign_callsign_role(
         raise HTTPException(status_code=403, detail="Not authorized to assign roles")
     if await find_user_by_callsign(db, callsign) is not None:
         raise HTTPException(status_code=400, detail=f"{callsign} has an account; give them the role from their check-in")
+    # Only a station actually logged on this net: credit is for who was on
+    # the air, not a way to put an arbitrary callsign on a net's record.
+    from app.models import CheckIn
+    logged = (await db.execute(
+        select(CheckIn.id).where(CheckIn.net_id == net_id, CheckIn.callsign == callsign).limit(1)
+    )).scalar_one_or_none()
+    if logged is None:
+        raise HTTPException(status_code=400, detail=f"{callsign} isn't checked in to this net")
 
     existing = (await db.execute(
         select(NetCallsignRole).where(NetCallsignRole.net_id == net_id, NetCallsignRole.callsign == callsign)

@@ -596,8 +596,12 @@ async def update_check_in(
         # A credit-only role (a station with no account marked NCS, say)
         # belongs to the corrected callsign too.
         await db.flush()
+        # Onto an account, the credit becomes a real role only for an editor
+        # who could give that role directly; anyone else's edit drops it.
+        from app.permissions import can_manage_net_roles
+        may_assign = check_in.user is not None and await can_manage_net_roles(db, net, current_user)
         roles_followed = await follow_callsign_correction(
-            db, check_in.net_id, old_callsign, check_in.callsign, check_in.user,
+            db, check_in.net_id, old_callsign, check_in.callsign, check_in.user, may_assign_roles=may_assign,
         )
 
     # An edited location keeps its grid square only if it is still the

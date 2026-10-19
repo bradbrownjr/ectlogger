@@ -551,28 +551,55 @@ async def check_template_staff_access(
         return True
 
     # Active staff members (includes co-managers)
+    # .limit(1) existence checks: a rotation may list one operator twice on
+    # purpose, and scalar_one_or_none() then raised MultipleResultsFound for
+    # them on every schedule read (same class as the 2026-09-03 outage).
     staff_result = await db.execute(
-        select(TemplateStaff).where(
+        select(TemplateStaff.id).where(
             TemplateStaff.template_id == template.id,
             TemplateStaff.user_id == user.id,
             TemplateStaff.is_active == True,
-        )
+        ).limit(1)
     )
     if staff_result.scalar_one_or_none():
         return True
 
     # Active NCS rotation members
     rotation_result = await db.execute(
-        select(NCSRotationMember).where(
+        select(NCSRotationMember.id).where(
             NCSRotationMember.template_id == template.id,
             NCSRotationMember.user_id == user.id,
             NCSRotationMember.is_active == True,
-        )
+        ).limit(1)
     )
     if rotation_result.scalar_one_or_none():
         return True
 
     return False
+
+
+async def can_manage_schedule_team(db: AsyncSession, template: NetTemplate, user: User) -> bool:
+    """Admin, the schedule's manager, or an active co-manager: who may change
+    who is on a schedule's team at the trust level, as opposed to editing it
+    day to day (check_template_permission, which plain staff pass).
+
+    Gates making someone co-manager, linking a callsign-only entry to an
+    account, and sending sign-up invites. Plain staff could do all three
+    until 2026-10-19, and through a callsign claim a stranger who typed a
+    callsign into their profile could have become plain staff: together
+    that made co-manager, the ownership tier, one profile edit away.
+    """
+    if is_admin(user) or template.owner_id == user.id:
+        return True
+    result = await db.execute(
+        select(TemplateStaff.id).where(
+            TemplateStaff.template_id == template.id,
+            TemplateStaff.user_id == user.id,
+            TemplateStaff.is_active == True,  # noqa: E712
+            TemplateStaff.is_co_manager == True,  # noqa: E712
+        ).limit(1)
+    )
+    return result.scalar_one_or_none() is not None
 
 
 async def check_template_permission(

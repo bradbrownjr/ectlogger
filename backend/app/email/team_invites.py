@@ -3,10 +3,11 @@
 - send_team_invite: a manager added a callsign to their staff or rotation and
   gave an address to invite it at.
 - send_callsign_claimed: an account took over a callsign's entries on a
-  schedule; its manager is told, since nothing proves a callsign belongs to
-  whoever typed it into their profile.
-- send_callsign_claim_held: an account has the callsign, but the manager had
-  invited it at a different address, so nothing was taken over.
+  schedule, by signing in with the invited address or because another
+  manager linked it; the schedule's manager is told.
+- send_callsign_claim_held: an account has the callsign but nothing proves
+  it's the operator (no invite to its address), so nothing was taken over
+  until a manager links it.
 
 See app/services/callsign_people.py for when each is sent.
 """
@@ -92,12 +93,10 @@ async def send_callsign_claimed(
         <div class="meta">
             <p><strong>Account:</strong> {{ account_display }}</p>
             {% if account_email %}<p><strong>Email:</strong> {{ account_email }}</p>{% endif %}
-            <p><strong>How:</strong> {% if via_invite %}signed in with the address you invited{% else %}added the callsign to their profile{% endif %}</p>
+            <p><strong>How:</strong> {% if via_invite %}signed in with the address you invited{% else %}a manager of this schedule linked the account{% endif %}</p>
         </div>
-        {% if not via_invite %}
-        <div class="warn">If this isn't the operator you meant, remove them from the staff list
-        and tell an administrator, who can undo this and close the account.</div>
-        {% endif %}
+        <div class="warn">If this isn't the operator you meant, tell an administrator, who can
+        undo this and close the account.</div>
         <p><a class="button" href="{{ scheduler_url }}">Open your schedules</a></p>
         <div class="footer"><p>You're receiving this because you manage {{ schedule_name }}.</p></div>
     </div></body></html>
@@ -127,15 +126,15 @@ async def send_callsign_claim_held(
     schedule_name: str,
     scheduler_url: str,
 ):
-    """Tell a manager an account has the callsign they invited elsewhere."""
+    """Tell a manager an account has a callsign on their team, waiting for them to confirm it."""
     html_content = JinjaTemplate("""
     <!DOCTYPE html>
     <html><head><style>{{ style }}</style></head>
     <body><div class="container">
         <h2>Check this sign-up for {{ callsign }}</h2>
-        <p>An account now has the callsign <strong>{{ callsign }}</strong>, but it signed in with a
-        different address from the one you invited for <strong>{{ schedule_name }}</strong>.
-        It has not been given their place on your team.</p>
+        <p>Someone signed up with the callsign <strong>{{ callsign }}</strong>, which is on your team for
+        <strong>{{ schedule_name }}</strong>. They haven't been given that place yet, because they didn't
+        sign in with an address you invited.</p>
         <div class="meta">
             <p><strong>Account:</strong> {{ account_display }}</p>
             {% if account_email %}<p><strong>Email:</strong> {{ account_email }}</p>{% endif %}
