@@ -875,3 +875,120 @@ async def test_callsign_only_entry_cannot_be_made_co_manager(client, db, owner):
     staff = (await client.post(_staff_url(template.id), json={"callsign": "KB1JCX"}, headers=auth_headers(owner))).json()
     resp = await client.patch(f"{_staff_url(template.id)}/{staff['id']}", json={"is_co_manager": True}, headers=auth_headers(owner))
     assert resp.status_code == 400
+
+
+# ========== SECOND REVIEW (2026-10-19) ==========
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("field", ["callsigns", "gmrs_callsign"])
+async def test_an_extra_or_gmrs_callsign_never_resolves_a_schedule_entry(client, db, owner, field):
+    """Extra and GMRS callsigns are typed into a profile with no check: listing
+    a real operator's callsign there must not make you staff in their place."""
+    template = await _weekly_schedule(db, owner.id)
+    mallory = await _user(db, "mallory@example.com", callsign="KB1MAL")
+    value = ["KB1VIC"] if field == "callsigns" else "KB1VIC"
+    resp = await client.put("/api/users/me", json={field: value}, headers=auth_headers(mallory))
+    assert resp.status_code == 200, resp.text
+
+    added = await client.post(_staff_url(template.id), json={"callsign": "KB1VIC", "invite_email": "vic@example.com"},
+                              headers=auth_headers(owner))
+    assert added.status_code == 201, added.text
+    assert added.json()["user_id"] is None and added.json()["invited"] is True
+    member = (await client.post(_members_url(template.id), json={"callsign": "KB1VIC"}, headers=auth_headers(owner))).json()
+    assert member["user_id"] is None
+    listed = (await client.get(_staff_url(template.id), headers=auth_headers(owner))).json()[0]
+    assert listed["account_available"] is False
+    resp = await client.patch(f"{_staff_url(template.id)}/{listed['id']}", json={"link": True}, headers=auth_headers(owner))
+    assert resp.status_code == 400
+    # A typo fix onto the extra callsign doesn't link it either.
+    typo = (await client.post(_staff_url(template.id), json={"callsign": "KB1VOC"}, headers=auth_headers(owner))).json()
+    fixed = await client.patch(f"{_staff_url(template.id)}/{typo['id']}", json={"callsign": "KB1VIC"}, headers=auth_headers(owner))
+    assert fixed.json()["user_id"] is None
+    assert not await is_active_template_staff(db, template.id, mallory.id)
+
+
+@pytest.mark.asyncio
+async def test_correction_onto_an_extra_callsign_keeps_the_credit_callsign_only(client, db, owner):
+    net_id, check_in_id = await _active_net_with_guest(client, db, owner, callsign="KB1VOC")
+    await client.post(f"/api/nets/{net_id}/callsign-roles", json={"callsign": "KB1VOC", "role": "NCS"}, headers=auth_headers(owner))
+    mallory = await _user(db, "mallory@example.com", callsign="KB1MAL", callsigns=json.dumps(["KB1VIC"]))
+    resp = await client.put(f"/api/check-ins/check-ins/{check_in_id}", json={"callsign": "KB1VIC"}, headers=auth_headers(owner))
+    assert resp.status_code == 200, resp.text
+    db.expunge_all()
+    assert (await db.execute(select(NetRole).where(NetRole.net_id == net_id, NetRole.user_id == mallory.id))).scalars().all() == []
+    assert [r.callsign for r in (await db.execute(select(NetCallsignRole).where(NetCallsignRole.net_id == net_id))).scalars().all()] == ["KB1VIC"]
+
+
+@pytest.mark.asyncio
+async def test_an_invite_is_used_up_by_the_link(client, db, owner, admin):
+    """Delete the invited account and sign up again at the same address: the
+    old invite must not take the entries back (or prefill the callsign)."""
+    from app.routers.auth import get_or_create_user
+
+    template = await _weekly_schedule(db, owner.id)
+    await client.post(_staff_url(template.id), json={"callsign": "KB1JCX", "invite_email": "p@example.com"}, headers=auth_headers(owner))
+    first = await get_or_create_user(db, "p@example.com", "p@example.com", "email", "p@example.com")
+    assert (await db.execute(select(TeamInvite))).scalar_one().used_at is not None
+    resp = await client.delete(f"/api/users/{first.id}", headers=auth_headers(admin))
+    assert resp.status_code == 204, resp.text
+    db.expunge_all()
+    assert (await db.execute(select(CallsignClaim))).scalars().all() == []
+
+    again = await get_or_create_user(db, "p@example.com", "p@example.com", "email", "p@example.com")
+    assert again.callsign is None
+    db.expunge_all()
+    staff = (await db.execute(select(TemplateStaff).where(TemplateStaff.template_id == template.id))).scalar_one()
+    assert (staff.user_id, staff.callsign) == (None, "KB1JCX")
+    # A fresh invite from the manager still works.
+    listed = (await client.get(_staff_url(template.id), headers=auth_headers(owner))).json()[0]
+    assert listed["invited"] is False
+    resp = await client.patch(f"{_staff_url(template.id)}/{listed['id']}", json={"invite_email": "p@example.com"}, headers=auth_headers(owner))
+    assert resp.status_code == 200 and resp.json()["invited"] is True
+
+
+@pytest.mark.asyncio
+async def test_plus_addresses_count_as_one_mailbox(client, db, owner):
+    template = await _weekly_schedule(db, owner.id)
+    headers = auth_headers(owner)
+    staff = (await client.post(_staff_url(template.id), json={"callsign": "KB1JCX"}, headers=headers)).json()
+    codes = [(await client.patch(f"{_staff_url(template.id)}/{staff['id']}", json={"invite_email": address},
+                                 headers=headers)).status_code
+             for address in ["victim+1@example.com", "victim+2@example.com", "victim@example.com", "victim+3@example.com"]]
+    assert codes == [200, 200, 200, 429]
+    # An underscore is literal, not a wildcard.
+    other = await client.patch(f"{_staff_url(template.id)}/{staff['id']}", json={"invite_email": "v_ctim@example.com"}, headers=headers)
+    assert other.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_held_and_invited_flags_are_for_team_managers(client, db, owner, other):
+    template = await _weekly_schedule(db, owner.id)
+    await client.post(_staff_url(template.id), json={"callsign": "KB1JCX", "invite_email": "ken@example.com"}, headers=auth_headers(owner))
+    claimant = await _user(db, "notken@example.com", callsign=None, name="Not Ken")
+    await client.put("/api/users/me", json={"callsign": "KB1JCX"}, headers=auth_headers(claimant))
+
+    manager_view = (await client.get(_staff_url(template.id), headers=auth_headers(owner))).json()[0]
+    assert manager_view["account_available"] and manager_view["invited"]
+    assert (manager_view["available_account_name"], manager_view["available_account_email"]) == ("Not Ken", "n***@example.com")
+    for viewer in (other, claimant):
+        row = (await client.get(_staff_url(template.id), headers=auth_headers(viewer))).json()[0]
+        assert not row["account_available"] and not row["invited"]
+        assert row["available_account_name"] is None and row["available_account_email"] is None
+
+
+@pytest.mark.asyncio
+async def test_a_refused_invite_adds_nothing(client, db, owner, other, monkeypatch):
+    from app.services import callsign_people
+    monkeypatch.setattr(callsign_people, "INVITES_PER_DAY", 0)
+    template = await _weekly_schedule(db, owner.id)
+    for url in (_staff_url(template.id), _members_url(template.id)):
+        resp = await client.post(url, json={"callsign": "KB1JCX", "invite_email": "ken@example.com"}, headers=auth_headers(owner))
+        assert resp.status_code == 429
+    db.add(TemplateStaff(template_id=template.id, user_id=other.id))
+    await db.commit()
+    resp = await client.post(_members_url(template.id), json={"callsign": "KB1JCX", "invite_email": "ken@example.com"},
+                             headers=auth_headers(other))
+    assert resp.status_code == 403
+    db.expunge_all()
+    assert (await db.execute(select(TemplateStaff).where(TemplateStaff.callsign == "KB1JCX"))).scalars().all() == []
+    assert (await db.execute(select(NCSRotationMember).where(NCSRotationMember.template_id == template.id))).scalars().all() == []

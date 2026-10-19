@@ -61,9 +61,10 @@ async def _enforce_spam_guard(db: AsyncSession, field_values: dict) -> None:
 # Contact row stays in sync no matter which path recorded the location.
 
 async def _find_user_by_callsign(db: AsyncSession, callsign: str) -> Optional[User]:
-    """The registered user who owns a callsign. One rule for the whole app,
-    shared with staff/rotation entries and sign-up claims (see
-    services/callsign_people.py::find_user_by_callsign)."""
+    """The registered user who owns a callsign, extra and GMRS callsigns
+    included (services/callsign_people.py::find_user_by_callsign). Schedule
+    entries and credit roles match primary callsigns only
+    (find_account_by_primary_callsign)."""
     return await find_user_by_callsign(db, callsign)
 
 

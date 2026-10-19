@@ -758,6 +758,14 @@ Rules to keep:
   reads are public; for a guest `has_account` / `fifth_week_has_account` are always
   true and `invited` / `account_available` false, and the Staff dialog hides the
   chips. `user_id` is still null on those rows, so this is presentation, not a secret.
+  `invited`, `account_available` and `available_account_name`/`_email` (masked) go
+  only to team managers (`can_manage_schedule_team`), who are the ones who act on them.
+- **Schedule entries match primary callsigns only**
+  (`callsign_people.py::find_account_by_primary_callsign`), never extra or GMRS
+  callsigns: those aren't unique and anyone can type one, so matching them let a
+  stranger list a real operator's callsign as an extra and be resolved as staff on
+  add, offered for Link, or linked by a typo fix. Check-ins still link on any callsign
+  (`find_user_by_callsign`), but their credit roles are promoted only onto a primary.
 - **A typed callsign proves nothing, so taking over is per schedule and gated.**
   `claim_callsign_placeholders` runs on sign-up (`auth.py::get_or_create_user`,
   `contacts.py` invite, admin create) and when an account's *primary* callsign actually
@@ -785,7 +793,11 @@ Rules to keep:
   `NetRole` only when the editor passes `can_manage_net_roles`; otherwise the credit is
   dropped. A callsign role can only be given to a callsign checked in to that net.
 - Invitations are one `TeamInvite` row per send: `INVITES_PER_DAY` (25) per inviter and
-  `INVITES_PER_ADDRESS_PER_DAY` (3) per recipient. Public responses never carry an email
+  `INVITES_PER_ADDRESS_PER_DAY` (3) per mailbox (`name+tag@` counts as `name@`), both
+  checked before the entry is added. An invite is used up (`used_at`) once its
+  entries are linked, so it never vouches for a later account at the same address
+  (an admin deleting the first one, say). Deleting an account also deletes its
+  `CallsignClaim` rows: SQLite reuses the id. Public responses never carry an email
   address or `invited`.
 
 Tests: `backend/tests/test_callsign_placeholders.py`, `frontend/src/utils/staffPeople.test.ts`,

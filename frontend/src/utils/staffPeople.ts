@@ -60,6 +60,19 @@ export function uniquePeople(people: SchedulePerson[]): SchedulePerson[] {
   return people.filter(p => (seen.has(p.key) ? false : (seen.add(p.key), true)));
 }
 
+/** The confirm text before a manager links a callsign-only entry to the
+ * account that now has its callsign, naming that account so they can check
+ * it's really the operator. Shared by the Staff dialog and the schedule editor. */
+export function linkConfirmText(row: {
+  user_callsign?: string | null;
+  available_account_name?: string | null;
+  available_account_email?: string | null;
+}): string {
+  const who = [row.available_account_name, row.available_account_email].filter(Boolean).join(', ');
+  return `Link ${row.user_callsign} to the account that now has that callsign${who ? ` (${who})` : ''}? `
+    + 'They become real staff, with the same access as anyone else on this list.';
+}
+
 export function personLabel(person: SchedulePerson): string {
   const base = person.name ? `${person.callsign} (${person.name})` : person.callsign;
   return person.has_account ? base : `${base} - no account yet`;

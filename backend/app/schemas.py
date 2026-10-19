@@ -1862,6 +1862,10 @@ class TemplateStaffResponse(BaseModel):
     # Callsign-only entries: whether a sign-up invite went out. Signed-in
     # viewers only; the address itself is never returned.
     invited: bool = False
+    # With account_available: who a Link would connect, so the manager can
+    # check it's really them (name and a masked address). Team managers only.
+    available_account_name: Optional[str] = None
+    available_account_email: Optional[str] = None
     created_at: datetime
     # User info for display. No email address: this list is public (guests
     # can open a schedule's Staff view); the avatar URL is resolved server-side.
@@ -1873,9 +1877,13 @@ class TemplateStaffResponse(BaseModel):
         from_attributes = True
 
     @classmethod
-    def from_orm_with_user(cls, staff, signed_in: bool, account_available: bool = False, invited: bool = False):
-        """A guest gets only the first name (public_display_name)."""
+    def from_orm_with_user(cls, staff, signed_in: bool, account_available: bool = False, invited: bool = False,
+                           available_account=None):
+        """A guest gets only the first name (public_display_name).
+        `available_account` is set by the router only for a team manager."""
         from app.utils import get_avatar_url
+        from app.services.callsign_people import mask_email
+        show_account = available_account is not None and account_available and signed_in
         return cls(
             id=staff.id,
             template_id=staff.template_id,
@@ -1888,6 +1896,8 @@ class TemplateStaffResponse(BaseModel):
             has_account=staff.user_id is not None or not signed_in,
             account_available=account_available and signed_in,
             invited=invited and signed_in,
+            available_account_name=available_account.name if show_account else None,
+            available_account_email=mask_email(available_account.email) if show_account else None,
             avatar_url=get_avatar_url(
                 staff.user.email if staff.user else None,
                 getattr(staff.user, 'avatar_url', None) if staff.user else None,

@@ -1063,6 +1063,11 @@ async def delete_user(
     # doesn't enforce the foreign keys, so they would otherwise keep pointing
     # at a user id that no longer exists.
     template_ids = await revert_all_claims(db, user, current_user)
+    # And drop its claim records: SQLite reuses the id, and a later account
+    # given it would inherit them (a reverted claim blocks taking over).
+    from sqlalchemy import delete as sql_delete
+    from app.models import CallsignClaim
+    await db.execute(sql_delete(CallsignClaim).where(CallsignClaim.user_id == user.id))
     await db.flush()
     await db.delete(user)
     await db.commit()

@@ -36,7 +36,7 @@ from datetime import datetime, timezone
 from typing import Iterable, List, Optional
 
 from fastapi import HTTPException
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.logger import logger
@@ -117,12 +117,24 @@ async def find_user_by_callsign(db: AsyncSession, callsign: str) -> Optional[Use
     return None
 
 
-async def find_active_user_by_callsign(db: AsyncSession, callsign: str) -> Optional[User]:
-    """find_user_by_callsign, but never a banned or deactivated account: a
-    schedule entry is never resolved to, linked to, or flagged as available
+async def find_account_by_primary_callsign(
+    db: AsyncSession, callsign: str, active_only: bool = True
+) -> Optional[User]:
+    """The account whose *primary* callsign this is, for schedule entries.
+
+    Never an extra or GMRS callsign: those are typed into a profile with no
+    check (they aren't unique), so matching them would let anyone list a real
+    operator's callsign as an extra and be resolved, offered for linking, or
+    promoted in their place. The primary column is unique, and a ban frees
+    it. With active_only (the default) never a banned or deactivated account
+    either: an entry is never resolved to, linked to, or flagged as available
     for an account that can't sign in."""
-    user = await find_user_by_callsign(db, callsign)
-    return user if user is not None and user.is_active else None
+    if not callsign:
+        return None
+    query = select(User).where(func.upper(User.callsign) == callsign.strip().upper())
+    if active_only:
+        query = query.where(User.is_active == True)  # noqa: E712
+    return (await db.execute(query.order_by(User.id).limit(1))).scalar_one_or_none()
 
 
 @dataclass(frozen=True)
@@ -152,7 +164,7 @@ async def resolve_person(
     if not has_callsign:
         raise HTTPException(status_code=400, detail="An account or a callsign is required")
     normalized = normalize_callsign(callsign)
-    user = await find_active_user_by_callsign(db, normalized)
+    user = await find_account_by_primary_callsign(db, normalized)
     if user is not None:
         return Person(user_id=user.id, callsign=None)
     return Person(user_id=None, callsign=normalized)
@@ -165,15 +177,26 @@ def row_callsign(user: Optional[User], callsign: Optional[str]) -> Optional[str]
     return callsign
 
 
-async def callsigns_with_accounts(db: AsyncSession, callsigns: Iterable[str]) -> set:
-    """Which of these callsign-only entries' callsigns now belong to an account
-    (a claim that was held back for the manager). One lookup per distinct
-    callsign; these lists are a handful of rows."""
-    found = set()
+async def callsigns_with_accounts(db: AsyncSession, callsigns: Iterable[str]) -> dict:
+    """{callsign: account} for those of these callsign-only entries' callsigns
+    that now belong to an account (a claim that was held back for the
+    manager). One lookup per distinct callsign; these lists are a handful of
+    rows."""
+    found = {}
     for callsign in {c for c in callsigns if c}:
-        if await find_active_user_by_callsign(db, callsign) is not None:
-            found.add(callsign)
+        account = await find_account_by_primary_callsign(db, callsign)
+        if account is not None:
+            found[callsign] = account
     return found
+
+
+def mask_email(email: Optional[str]) -> Optional[str]:
+    """k***@example.com: enough for a manager to recognize an operator's
+    address before linking them, without handing the address out."""
+    if not email or "@" not in email:
+        return None
+    local, _, domain = email.partition("@")
+    return f"{local[:1]}***@{domain}"
 
 
 def duty_ncs_role(net_id: int, entry):
@@ -248,6 +271,13 @@ async def follow_callsign_correction(
     directly. Returns whether anything moved. Does not commit."""
     if not old or old == new:
         return False
+    # Promote only onto the account whose primary callsign this is, and that
+    # can sign in: an extra callsign is anybody's to type. Otherwise the
+    # credit just follows the callsign.
+    if new_user is not None and (
+        not new_user.is_active or (new_user.callsign or "").strip().upper() != (new or "").strip().upper()
+    ):
+        new_user = None
     from app.models import CheckIn
     still_used = (await db.execute(select(CheckIn.id).where(
         CheckIn.net_id == net_id, CheckIn.callsign == old).limit(1))).scalar_one_or_none()
@@ -291,7 +321,7 @@ async def record_invite(
     not commit."""
     from app.utils import normalize_email
 
-    if await find_active_user_by_callsign(db, callsign) is not None:
+    if await find_account_by_primary_callsign(db, callsign) is not None:
         raise HTTPException(status_code=400, detail=f"{callsign} already has an account")
     invite = TeamInvite(template_id=template_id, callsign=callsign, email=normalize_email(email),
                         invited_by_id=invited_by.id)
@@ -318,21 +348,31 @@ async def check_invite_budget(db: AsyncSession, inviter: User, email: str) -> No
     )).scalar_one()
     if sent >= INVITES_PER_DAY:
         raise HTTPException(status_code=429, detail="You've sent a lot of invites today. Try again tomorrow.")
+    # One mailbox however it's spelled: name+anything@ delivers to name@.
+    local, _, domain = normalize_email(email).partition("@")
+    local = local.split("+", 1)[0]
+    escaped = local.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     to_address = (await db.execute(
-        select(func.count(TeamInvite.id)).where(TeamInvite.email == normalize_email(email), TeamInvite.sent_at >= since)
+        select(func.count(TeamInvite.id)).where(
+            or_(TeamInvite.email == f"{local}@{domain}",
+                TeamInvite.email.like(f"{escaped}+%@{domain}", escape="\\")),
+            TeamInvite.sent_at >= since,
+        )
     )).scalar_one()
     if to_address >= INVITES_PER_ADDRESS_PER_DAY:
         raise HTTPException(status_code=429, detail="That address has had several invites today. Try again tomorrow.")
 
 
 async def invited_email(db: AsyncSession, template_id: int, callsign: str) -> Optional[str]:
-    """The address this schedule most recently invited this callsign at."""
-    return (await db.execute(
-        select(TeamInvite.email)
+    """The address this schedule most recently invited this callsign at, if
+    that invite hasn't been used up by a link yet."""
+    latest = (await db.execute(
+        select(TeamInvite)
         .where(TeamInvite.template_id == template_id, TeamInvite.callsign == callsign)
         .order_by(TeamInvite.sent_at.desc(), TeamInvite.id.desc())
         .limit(1)
     )).scalar_one_or_none()
+    return latest.email if latest is not None and latest.used_at is None else None
 
 
 async def invited_callsign_for(db: AsyncSession, email: str) -> Optional[str]:
@@ -342,12 +382,13 @@ async def invited_callsign_for(db: AsyncSession, email: str) -> Optional[str]:
     from app.utils import normalize_email
 
     callsigns = set((await db.execute(
-        select(TeamInvite.callsign).where(TeamInvite.email == normalize_email(email))
+        select(TeamInvite.callsign).where(TeamInvite.email == normalize_email(email), TeamInvite.used_at.is_(None))
     )).scalars().all())
     if len(callsigns) != 1:
         return None
     callsign = callsigns.pop()
-    if await find_user_by_callsign(db, callsign) is not None:
+    # Any account, banned included: the prefill goes into the unique column.
+    if await find_account_by_primary_callsign(db, callsign, active_only=False) is not None:
         return None
     return callsign
 
@@ -514,7 +555,9 @@ async def claim_callsign_placeholders(
     if not user.is_active:
         return outcome
     if linked_by is not None:
-        if not callsign or callsign.strip().upper() not in account_callsigns(user):
+        # A manager links an account by its primary callsign only, the one
+        # entries are resolved by (find_account_by_primary_callsign).
+        if not callsign or callsign.strip().upper() != (user.callsign or "").strip().upper():
             return outcome
         callsign = callsign.strip().upper()
     else:
@@ -558,6 +601,7 @@ async def claim_callsign_placeholders(
         claim.linked_by_id = linked_by.id if linked_by else None
         if held is None:
             db.add(claim)
+        await _use_up_invites(db, tid, callsign)
         outcome.claims.append(claim)
         logger.info(
             "CALLSIGN_CLAIM",
@@ -569,6 +613,15 @@ async def claim_callsign_placeholders(
     if outcome.claims or outcome.held:
         await db.commit()
     return outcome
+
+
+async def _use_up_invites(db: AsyncSession, template_id: int, callsign: str) -> None:
+    """The entries are linked: this schedule's invites for the callsign have
+    done their job and never vouch for another account."""
+    for invite in (await db.execute(select(TeamInvite).where(
+        TeamInvite.template_id == template_id, TeamInvite.callsign == callsign, TeamInvite.used_at.is_(None),
+    ))).scalars().all():
+        invite.used_at = datetime.now(timezone.utc)
 
 
 async def _has_entries(db: AsyncSession, template_id: int, callsign: str) -> bool:

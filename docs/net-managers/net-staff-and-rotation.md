@@ -38,7 +38,7 @@ An operator on the list by callsign can go in the rotation, take the fifth week,
 
 **If you invited them, they take over their spot as soon as they sign in with that address.** Their callsign is filled in for them, and their staff row, their rotation position, any swaps naming them, and any nets from this schedule where they were credited as NCS all move to their new account. You get an email saying they joined. Nothing is lost, and nobody has to re-add them.
 
-**Anyone else waits for you.** Anybody can type a callsign into a profile, so a sign-up with that callsign and no invite to that address gets nothing by itself. You get an email, and their row shows **Signed up, confirm it's them** and a link button. Click it once you're sure the new account is really them. Only the schedule manager and co-managers can link someone, send invitations, or make someone a co-manager.
+**Anyone else waits for you.** Anybody can type a callsign into a profile, so a sign-up with that callsign and no invite to that address gets nothing by itself. You get an email, and their row shows **Signed up, confirm it's them** and a link button. Clicking it shows the account's name and part of its email address; link it once you're sure the new account is really them. Only an account's main callsign counts here, not the extra or GMRS callsigns on a profile. Only the schedule manager and co-managers can link someone, send invitations, or make someone a co-manager.
 
 **To fix a typo** in a callsign, or to send an invitation you skipped, click the pencil on that row. A corrected callsign also changes in the rotation and on any swaps. If the corrected callsign already belongs to an account, the row joins that account straight away.
 

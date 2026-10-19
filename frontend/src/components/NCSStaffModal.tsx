@@ -32,7 +32,7 @@ import NCSStaffRotationTab from './ncs-staff/NCSStaffRotationTab';
 import NCSStaffSubscribersTab from './ncs-staff/NCSStaffSubscribersTab';
 import NCSStaffRosterTab from './ncs-staff/NCSStaffRosterTab';
 import { AddStaffRequest } from './ncs-staff/AddStaffField';
-import { personPayload, samePerson, SchedulePerson, toPerson, userToPerson, uniquePeople } from '../utils/staffPeople';
+import { linkConfirmText, personPayload, samePerson, SchedulePerson, toPerson, userToPerson, uniquePeople } from '../utils/staffPeople';
 
 interface NCSStaffModalProps {
   open: boolean;
@@ -72,6 +72,8 @@ interface RotationMember {
   is_active: boolean;
   has_account?: boolean;
   account_available?: boolean;
+  available_account_name?: string | null;
+  available_account_email?: string | null;
 }
 
 interface StaffMember {
@@ -84,6 +86,8 @@ interface StaffMember {
   is_co_manager: boolean;
   has_account?: boolean;
   account_available?: boolean;
+  available_account_name?: string | null;
+  available_account_email?: string | null;
   invited?: boolean;
 }
 
@@ -478,7 +482,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   // was invited at a different address); the manager confirms it's them.
   const handleLinkStaff = async (staffMember: StaffMember) => {
     if (!schedule) return;
-    if (!confirm(`Link ${staffMember.user_callsign} to the account that now has that callsign? They become real staff, with the same access as anyone else on this list.`)) return;
+    if (!confirm(linkConfirmText(staffMember))) return;
     try {
       await templateStaffApi.updatePlaceholder(schedule.id, staffMember.id, { link: true });
       await fetchData();

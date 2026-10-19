@@ -49,6 +49,8 @@ interface StaffMember {
   is_co_manager: boolean;
   has_account?: boolean;
   account_available?: boolean;
+  available_account_name?: string | null;
+  available_account_email?: string | null;
   invited?: boolean;
 }
 

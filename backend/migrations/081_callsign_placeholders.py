@@ -35,6 +35,9 @@ ADDED_COLUMNS = [
     ("ncs_schedule_overrides", "replacement_callsign", "VARCHAR(50)"),
     ("net_templates", "fifth_week_callsign", "VARCHAR(50)"),
     ("users", "banned_callsign", "VARCHAR(50)"),
+    # Only when team_invites already exists (beta, from an earlier 081);
+    # otherwise the CREATE below includes it.
+    ("team_invites", "used_at", "DATETIME"),
 ]
 
 NEW_TABLES = {
@@ -79,6 +82,7 @@ CREATE TABLE team_invites (
     email VARCHAR(255) NOT NULL,
     invited_by_id INTEGER,
     sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    used_at DATETIME,
     PRIMARY KEY (id),
     FOREIGN KEY(template_id) REFERENCES net_templates (id) ON DELETE CASCADE,
     FOREIGN KEY(invited_by_id) REFERENCES users (id) ON DELETE SET NULL

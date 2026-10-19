@@ -239,7 +239,7 @@ async def assign_callsign_role(
     Replaces any role that callsign already holds on the net (a station has
     one role at a time, as the check-in list shows). A callsign that has an
     account is refused: that station gets a real role (POST /roles)."""
-    from app.services.callsign_people import find_user_by_callsign, normalize_callsign
+    from app.services.callsign_people import find_account_by_primary_callsign, normalize_callsign
 
     role_name = (body.role or "").strip().upper()
     if role_name not in VALID_NET_ROLES:
@@ -251,7 +251,7 @@ async def assign_callsign_role(
         raise HTTPException(status_code=404, detail="Net not found")
     if not await can_manage_net_roles(db, net, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to assign roles")
-    if await find_user_by_callsign(db, callsign) is not None:
+    if await find_account_by_primary_callsign(db, callsign) is not None:
         raise HTTPException(status_code=400, detail=f"{callsign} has an account; give them the role from their check-in")
     # Only a station actually logged on this net: credit is for who was on
     # the air, not a way to put an arbitrary callsign on a net's record.

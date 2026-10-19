@@ -1054,7 +1054,10 @@ class TeamInvite(Base):
     account signed in with `email` takes over `callsign`'s entries on
     `template_id` by itself, and only there (the latest invite for that
     schedule and callsign wins). Every send is a row, so a re-send counts
-    toward the inviter's and the recipient's daily limits.
+    toward the inviter's and the recipient's daily limits. An invite is used
+    up (`used_at`) once that schedule's entries for the callsign are linked
+    to an account, so it can't vouch for a later account at the same address
+    (say, after an admin deletes the first one).
     """
     __tablename__ = "team_invites"
 
@@ -1064,7 +1067,7 @@ class TeamInvite(Base):
     email = Column(String(255), nullable=False, index=True)
     invited_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     sent_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-
+    used_at = Column(DateTime(timezone=True), nullable=True)
 
 
 class NCSReminderLog(Base):

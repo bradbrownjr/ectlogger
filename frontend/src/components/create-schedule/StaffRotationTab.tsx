@@ -30,7 +30,7 @@ import SubscribeLinkField from '../scheduler/SubscribeLinkField';
 import AddStaffField, { AddStaffRequest } from '../ncs-staff/AddStaffField';
 import PlaceholderChips from '../ncs-staff/PlaceholderChips';
 import PlaceholderEditDialog from '../ncs-staff/PlaceholderEditDialog';
-import { personKey, personLabel, personPayload, samePerson, SchedulePerson, toPerson, userToPerson, uniquePeople } from '../../utils/staffPeople';
+import { linkConfirmText, personKey, personLabel, personPayload, samePerson, SchedulePerson, toPerson, userToPerson, uniquePeople } from '../../utils/staffPeople';
 import {
   useCreateScheduleContext,
   User,
@@ -168,7 +168,7 @@ const StaffRotationTab: React.FC = () => {
   // invited at a different address); the manager confirms it's them.
   const handleLinkStaff = async (s: StaffMember) => {
     if (!scheduleId) return;
-    if (!confirm(`Link ${s.user_callsign} to the account that now has that callsign? They become real staff, with the same access as anyone else on this list.`)) return;
+    if (!confirm(linkConfirmText(s))) return;
     try {
       await templateStaffApi.updatePlaceholder(Number(scheduleId), s.id, { link: true });
     } catch (error: any) {
