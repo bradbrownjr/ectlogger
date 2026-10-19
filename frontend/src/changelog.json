@@ -1,6 +1,22 @@
 {
-  "version": "2026.10.18b",
+  "version": "2026.10.19",
   "entries": [
+    {
+      "version": "2026.10.19",
+      "date": "2026-10-19",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Schedules: Build your team before everyone signs up — Add net control operators to your staff and NCS rotation by callsign before they have an account, and optionally email them an invitation to sign up. Swaps and the fifth week work for them too. When they're on duty, the net card, report and ICS-309 credit them as NCS, and a Logger can mark any station without an account as NCS. An invited operator takes over their spot as soon as they sign in with that address; for anyone else, you confirm it's really them with one click.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.10.18b",
       "date": "2026-10-18",
