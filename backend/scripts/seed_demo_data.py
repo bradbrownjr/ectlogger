@@ -103,7 +103,7 @@ async def _build(db_path: Path, out_path: Path):
         User, UserRole, Net, NetStatus, StationStatus, NetTemplate, Frequency,
         NetRole, CheckIn, ChatMessage, ChatReaction, TemplateStaff,
         NCSRotationMember, FormDefinition, Form, TrafficAction, AppSettings,
-        FieldDefinition,
+        FieldDefinition, CanHearReport,
     )
     from app.auth import (
         hash_password, generate_totp_secret, encrypt_mfa_secret, current_totp_codes,
@@ -643,6 +643,120 @@ async def _build(db_path: Path, out_path: Path):
         await db.refresh(net_authenticated)
 
         # =================================================================
+        # NET F -- ACTIVE, ad hoc, station-to-station coverage logging on,
+        # on one simplex frequency. The coverage figures (the "I hear"
+        # button, the dialog, the Station Coverage panel, the map overlay,
+        # the Profile coverage map) all come from here, so coverage is never
+        # switched on for the main active net and none of its figures move.
+        # Reports are a deliberate mix: four confirmed two-way pairs, several
+        # one-way, one station heard before it checked out, and two stations
+        # (W1PORT, K1CAMP) with nothing reported yet so a figure can open a
+        # fresh dialog. KC1HILL's reports were entered by the Logger, which
+        # is the case the Profile map used to drop (fixed 2026-10-20).
+        # =================================================================
+        drill_started = now - timedelta(minutes=30)
+        net_coverage = Net(
+            name="Example County ARES Simplex Drill",
+            description="Monthly simplex drill: who can hear whom without the repeater.",
+            owner_id=users["W1PINE"].id,
+            status=NetStatus.ACTIVE,
+            field_config=_field_config(),
+            ics309_enabled=True,
+            propagation_logging_enabled=True,
+            self_can_hear_enabled=True,
+            started_at=drill_started,
+            frequencies=[f_simplex],
+        )
+        db.add(net_coverage)
+        await db.flush()
+        net_coverage.active_frequency_id = f_simplex.id
+        db.add_all([
+            NetRole(net_id=net_coverage.id, user_id=users["W1PINE"].id, role="NCS",
+                    active_frequency_id=f_simplex.id, assigned_at=drill_started, is_active=True),
+            NetRole(net_id=net_coverage.id, user_id=users["K1COVE"].id, role="LOGGER",
+                    assigned_at=drill_started, is_active=True),
+        ])
+        drill_check_ins = {}
+        for callsign, minutes_after in (
+            ("W1PINE", 0), ("K1COVE", 1), ("N1LAKE", 3), ("KC1HILL", 4), ("W1PORT", 6),
+            ("K1CAMP", 7), ("W2FERN", 9), ("N2OAKS", 10), ("W1MILL", 12),
+        ):
+            user = users[callsign]
+            ci = CheckIn(
+                net_id=net_coverage.id, user_id=user.id, callsign=callsign, name=user.name,
+                location=user.location, status=StationStatus.CHECKED_IN, frequency_id=f_simplex.id,
+                checked_in_at=drill_started + timedelta(minutes=minutes_after),
+                checked_in_by_id=user.id,
+            )
+            db.add(ci)
+            drill_check_ins[callsign] = ci
+        drill_check_ins["W1MILL"].status = StationStatus.CHECKED_OUT
+        drill_check_ins["W1MILL"].checked_out_at = now - timedelta(minutes=8)
+        await db.flush()
+
+        def add_can_hear(net, cis, reporter, heard_list, reported_by, minutes_ago, frequency_id=None, position="Home"):
+            cis[reporter].operating_position = position
+            for heard in heard_list:
+                db.add(CanHearReport(
+                    net_id=net.id, reporter_check_in_id=cis[reporter].id,
+                    heard_check_in_id=cis[heard].id, frequency_id=frequency_id,
+                    reported_by_user_id=users[reported_by].id,
+                    reported_at=now - timedelta(minutes=minutes_ago),
+                ))
+
+        add_can_hear(net_coverage, drill_check_ins, "KC1HILL", ["K1COVE", "N1LAKE", "W1PORT", "K1CAMP", "W1MILL"],
+                     "K1COVE", 18, f_simplex.id)
+        add_can_hear(net_coverage, drill_check_ins, "W1PINE", ["K1COVE", "W2FERN", "N2OAKS"], "W1PINE", 16, f_simplex.id)
+        add_can_hear(net_coverage, drill_check_ins, "N1LAKE", ["KC1HILL", "W1PORT", "K1COVE"], "N1LAKE", 14, f_simplex.id)
+        add_can_hear(net_coverage, drill_check_ins, "K1COVE", ["W1PINE", "N1LAKE", "W2FERN", "KC1HILL"], "K1COVE", 12,
+                     f_simplex.id)
+        await db.commit()
+        await db.refresh(net_coverage)
+
+        # =================================================================
+        # NET G -- ACTIVE, ad hoc, coverage logging on two bands (2m simplex
+        # and 80m). Exists only for the per-frequency grid the "who can
+        # hear" dialog switches to when a net has two or more frequencies.
+        # N1LAKE has a partial report, so one column's All stations box shows
+        # partly checked.
+        # =================================================================
+        twoband_started = now - timedelta(minutes=20)
+        net_twoband = Net(
+            name="Example County ARES Two-Band Drill",
+            description="Coverage comparison between 2m simplex and the 80m HF net.",
+            owner_id=users["W1PINE"].id,
+            status=NetStatus.ACTIVE,
+            field_config=_field_config(),
+            ics309_enabled=True,
+            propagation_logging_enabled=True,
+            self_can_hear_enabled=True,
+            started_at=twoband_started,
+            frequencies=[f_simplex, f_hf],
+        )
+        db.add(net_twoband)
+        await db.flush()
+        net_twoband.active_frequency_id = f_simplex.id
+        db.add(NetRole(net_id=net_twoband.id, user_id=users["W1PINE"].id, role="NCS",
+                       active_frequency_id=f_simplex.id, assigned_at=twoband_started, is_active=True))
+        twoband_check_ins = {}
+        for callsign, minutes_after in (("W1PINE", 0), ("N1LAKE", 2), ("K1COVE", 3), ("KC1HILL", 5), ("N1ROVE", 6)):
+            user = users[callsign]
+            ci = CheckIn(
+                net_id=net_twoband.id, user_id=user.id, callsign=callsign, name=user.name,
+                location=user.location, status=StationStatus.CHECKED_IN, frequency_id=f_simplex.id,
+                checked_in_at=twoband_started + timedelta(minutes=minutes_after),
+                checked_in_by_id=users["W1PINE"].id,
+            )
+            db.add(ci)
+            twoband_check_ins[callsign] = ci
+        await db.flush()
+        add_can_hear(net_twoband, twoband_check_ins, "N1LAKE", ["K1COVE"], "W1PINE", 8, f_simplex.id)
+        add_can_hear(net_twoband, twoband_check_ins, "N1LAKE", ["W1PINE", "K1COVE", "KC1HILL", "N1ROVE"], "W1PINE", 8,
+                     f_hf.id)
+        await db.commit()
+        await db.refresh(net_twoband)
+
+        # =================================================================
         # A truly custom (non-builtin) check-in field, so the admin Fields
         # tab shows more than just the shipped builtins.
         # =================================================================
@@ -657,7 +771,7 @@ async def _build(db_path: Path, out_path: Path):
 
         # "key" is what scripts/docs-screenshots/capture.mjs matches a
         # {{net:...}} placeholder against first, so every net has an explicit
-        # one. Two nets are ACTIVE now, and matching on status alone would
+        # one. Several nets are ACTIVE, and matching on status alone would
         # make {{net:active}} depend on seeding order.
         manifest["nets"] = [
             {"key": "active", "id": net_active.id, "name": net_active.name, "status": net_active.status.value, "template_id": net_active.template_id},
@@ -665,6 +779,8 @@ async def _build(db_path: Path, out_path: Path):
             {"key": "closed", "id": net_closed.id, "name": net_closed.name, "status": net_closed.status.value, "template_id": net_closed.template_id},
             {"key": "unstaffed", "id": net_unstaffed.id, "name": net_unstaffed.name, "status": net_unstaffed.status.value, "template_id": net_unstaffed.template_id},
             {"key": "authenticated", "id": net_authenticated.id, "name": net_authenticated.name, "status": net_authenticated.status.value, "template_id": net_authenticated.template_id},
+            {"key": "coverage", "id": net_coverage.id, "name": net_coverage.name, "status": net_coverage.status.value, "template_id": net_coverage.template_id},
+            {"key": "twoband", "id": net_twoband.id, "name": net_twoband.name, "status": net_twoband.status.value, "template_id": net_twoband.template_id},
         ]
         manifest["mfa_secrets"] = mfa_secrets
 

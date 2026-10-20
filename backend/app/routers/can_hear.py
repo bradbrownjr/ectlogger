@@ -25,7 +25,7 @@ from app.database import get_db
 from app.models import CanHearReport, CheckIn, Frequency, Net, User, net_frequencies
 from app.schemas import CanHearReportResponse, CanHearReportSave, CanHearReportFrequencyUpdate
 from app.dependencies import get_current_user, get_current_user_optional
-from app.permissions import check_net_permission
+from app.permissions import may_record_coverage, net_access
 from app.band_utils import band_from_frequency_string
 
 router = APIRouter(prefix="/nets", tags=["can-hear"])
@@ -130,7 +130,7 @@ async def save_can_hear_report(
     # turned off for this net; staff can always report on behalf of any station.
     is_own_check_in = reporter_check_in.user_id == current_user.id
     self_report_allowed = is_own_check_in and net.self_can_hear_enabled is not False
-    if not self_report_allowed and not await check_net_permission(db, net, current_user, ["NCS", "LOGGER", "RELAY"]):
+    if not self_report_allowed and not may_record_coverage(await net_access(db, net, current_user)):
         raise HTTPException(status_code=403, detail="Not authorized to record coverage reports")
 
     if payload.reporter_check_in_id in payload.heard_check_in_ids:
@@ -265,7 +265,7 @@ async def update_can_hear_report_frequency(
     # its behalf) can correct its own past entry.
     is_own_check_in = bool(reporter_check_in) and reporter_check_in.user_id == current_user.id
     self_report_allowed = is_own_check_in and net.self_can_hear_enabled is not False
-    if not self_report_allowed and not await check_net_permission(db, net, current_user, ["NCS", "LOGGER", "RELAY"]):
+    if not self_report_allowed and not may_record_coverage(await net_access(db, net, current_user)):
         raise HTTPException(status_code=403, detail="Not authorized to edit this coverage report")
 
     if payload.frequency_id is not None:

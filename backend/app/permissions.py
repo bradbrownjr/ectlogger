@@ -306,6 +306,17 @@ def may_email_net_subscribers(a: NetAccess) -> bool:
     return _manager(a) or a.is_template_co_manager
 
 
+def may_record_coverage(a: NetAccess) -> bool:
+    """save_can_hear_report / update_can_hear_report_frequency, for any
+    station's report. A station recording its own report needs no rule: the
+    endpoints allow that separately unless the net turned self-reporting off.
+    Schedule staff are deliberately not here; they take NCS or Logger by
+    checking in first. Until 2026-10-20 the app showed every row's "who can
+    this station hear?" button on the broad canManage, which includes plain
+    staff, so they were offered a save this rule refused."""
+    return _manager(a) or bool(a.active_roles & {"NCS", "LOGGER", "RELAY"})
+
+
 def net_actions(a: NetAccess) -> Dict[str, bool]:
     """Every per-action rule for one NetAccess, keyed as NetResponse.actions
     (schemas.NetActions) sends them to the app."""
@@ -318,6 +329,7 @@ def net_actions(a: NetAccess) -> Dict[str, bool]:
         "claim_ncs": may_claim_ncs(a),
         "manage_roles": may_manage_net_roles(a),
         "email_subscribers": may_email_net_subscribers(a),
+        "record_coverage": may_record_coverage(a),
     }
 
 

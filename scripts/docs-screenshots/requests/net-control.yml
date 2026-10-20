@@ -439,3 +439,106 @@ shots:
       The toolbar on a closed net, as seen by a station with no staff role:
       Export, ICS-309, ICS-309 PDF, and Report.
     caption: Once a net is closed, its exports are open to anyone who can see the net -- only Archive and Delete stay staff-only.
+
+  # ========== Station coverage ==========
+  # From the seeded Example County ARES Simplex Drill ({{net:coverage}}) and,
+  # for the per-frequency grid only, the Two-Band Drill ({{net:twoband}}).
+  # Coverage logging is never turned on for {{net:active}}, so none of the
+  # figures above change when this seed data does.
+  - id: can-hear-row-button
+    section: net-control
+    page: /docs/net-control/station-coverage/
+    route: /nets/{{net:coverage}}
+    as: W1PINE
+    viewport:
+      width: 1440
+      height: 800
+    wait_for: 'table:visible tbody tr'
+    element: 'table:visible'
+    pad: 8
+    annotate:
+      - selector: 'tr:has-text("W1PORT") button[title="Who can this station hear?"]'
+        style: box
+    alt: >
+      The check-in list of a simplex drill. Each row ends in an ear icon,
+      shown solid blue for stations that already have a report and faded for
+      those that don't. W1PORT's faded ear icon is outlined in red.
+    caption: >
+      A solid ear means that station's report has been taken. Faded means
+      it's still to do.
+
+  - id: can-hear-grid
+    section: net-control
+    page: /docs/net-control/station-coverage/
+    route: /nets/{{net:twoband}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'tr:has-text("N1LAKE") button[title="Who can this station hear?"]'
+      - wait_for: '.MuiDialog-paper:visible'
+    element: '.MuiDialog-paper'
+    pad: 16
+    annotate:
+      - selector: '.MuiDialog-paper th:has-text("3.930") .MuiCheckbox-root'
+        style: box
+    alt: >
+      The Who can N1LAKE hear? dialog on a two-band net: one column of
+      checkboxes for 3.930 SSB (80m) and one for 146.520 FM (2m), each with
+      its own all-stations checkbox under the heading. On 80m every station
+      is ticked, and that column's checkbox, outlined in red, is ticked too.
+      On 2m only K1COVE is ticked and the column's checkbox shows a dash.
+    caption: >
+      With more than one frequency, each frequency gets its own column and
+      its own select-all box.
+
+  - id: coverage-panel
+    section: net-control
+    page: /docs/net-control/station-coverage/
+    route: /nets/{{net:coverage}}
+    as: W1PINE
+    viewport:
+      width: 1440
+      height: 1100
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="View station-to-station coverage reports"]'
+      - wait_for: 'text=Station Coverage'
+      - hover: 'h1:visible'
+      - wait: 500
+    alt: >
+      The simplex drill's net page with the Station Coverage panel open on
+      the right. Each row lists a reporting station, a Two-way or One-way
+      chip, the station it heard, and when. Two-way rows have a green chip
+      with a double arrow; one-way rows have a grey chip with a single arrow.
+    caption: >
+      Two-way means both stations reported hearing each other. One-way means
+      only one of them has said so.
+
+  - id: coverage-map-overlay
+    section: net-control
+    page: /docs/net-control/station-coverage/
+    route: /nets/{{net:coverage}}
+    as: W1PINE
+    viewport:
+      width: 1440
+      height: 900
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="View check-in locations on map"]'
+      - wait_for: '.leaflet-container:visible'
+      - click: 'button[aria-label="Show station coverage overlay"]'
+      - hover: 'h1:visible'
+      - wait: 1500
+    element: '.leaflet-container'
+    pad: 0
+    annotate:
+      - selector: 'button[aria-label="Hide station coverage overlay"]'
+        style: box
+    alt: >
+      The live check-in map of the simplex drill with the coverage overlay
+      on, its ear button outlined in red at the top right. Solid amber lines
+      join stations that heard each other; dashed grey lines show a station
+      heard in one direction only.
+    caption: >
+      The overlay draws every report as a line, so a gap in coverage shows up
+      as a town with no lines to it.

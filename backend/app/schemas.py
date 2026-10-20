@@ -653,6 +653,7 @@ class NetActions(BaseModel):
     claim_ncs: bool = False          # Claim NCS
     manage_roles: bool = False       # Roles dialog
     email_subscribers: bool = False  # Email subscribers
+    record_coverage: bool = False    # "Who can this station hear?" on any row
 
 
 class NetResponse(NetBase):

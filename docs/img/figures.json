@@ -107,6 +107,18 @@
     "caption": "The box accepts one check-in per line-segment, separated by semicolons -- see Speed entry syntax for the exact grammar.",
     "page": "/docs/net-control/speed-entry/"
   },
+  "net-control/can-hear-grid": {
+    "path": "/docs/img/net-control/can-hear-grid.png",
+    "alt": "The Who can N1LAKE hear? dialog on a two-band net: one column of checkboxes for 3.930 SSB (80m) and one for 146.520 FM (2m), each with its own all-stations checkbox under the heading. On 80m every station is ticked, and that column's checkbox, outlined in red, is ticked too. On 2m only K1COVE is ticked and the column's checkbox shows a dash.\n",
+    "caption": "With more than one frequency, each frequency gets its own column and its own select-all box.\n",
+    "page": "/docs/net-control/station-coverage/"
+  },
+  "net-control/can-hear-row-button": {
+    "path": "/docs/img/net-control/can-hear-row-button.png",
+    "alt": "The check-in list of a simplex drill. Each row ends in an ear icon, shown solid blue for stations that already have a report and faded for those that don't. W1PORT's faded ear icon is outlined in red.\n",
+    "caption": "A solid ear means that station's report has been taken. Faded means it's still to do.\n",
+    "page": "/docs/net-control/station-coverage/"
+  },
   "net-control/chat-mute-hover": {
     "path": "/docs/img/net-control/chat-mute-hover.png",
     "alt": "A chat message from KC1HILL with a hover toolbar showing reaction, reply, and mute icons; the mute icon is outlined in red.\n",
@@ -130,6 +142,18 @@
     "alt": "The net control command bar as Net Control Station sees it on an active net, reading left to right: Bulk add, Search, Map, Traffic, Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS, Step away, Just listening, Check out, Close net.\n",
     "caption": "Every button here is gated by who you are and what state the net is in -- a Standard participant, a Logger, and a Relay operator each see a different subset of this same row.\n",
     "page": "/docs/net-control/the-net-control-desk/"
+  },
+  "net-control/coverage-map-overlay": {
+    "path": "/docs/img/net-control/coverage-map-overlay.png",
+    "alt": "The live check-in map of the simplex drill with the coverage overlay on, its ear button outlined in red at the top right. Solid amber lines join stations that heard each other; dashed grey lines show a station heard in one direction only.\n",
+    "caption": "The overlay draws every report as a line, so a gap in coverage shows up as a town with no lines to it.\n",
+    "page": "/docs/net-control/station-coverage/"
+  },
+  "net-control/coverage-panel": {
+    "path": "/docs/img/net-control/coverage-panel.png",
+    "alt": "The simplex drill's net page with the Station Coverage panel open on the right. Each row lists a reporting station, a Two-way or One-way chip, the station it heard, and when. Two-way rows have a green chip with a double arrow; one-way rows have a grey chip with a single arrow.\n",
+    "caption": "Two-way means both stations reported hearing each other. One-way means only one of them has said so.\n",
+    "page": "/docs/net-control/station-coverage/"
   },
   "net-control/detached-panel": {
     "path": "/docs/img/net-control/detached-panel.png",
@@ -341,6 +365,18 @@
     "caption": "Nets you can still take part in sort ahead of ones that are over.",
     "page": "/docs/operators/finding-a-net/"
   },
+  "operators/i-hear-button": {
+    "path": "/docs/img/operators/i-hear-button.png",
+    "alt": "The right-hand end of the net toolbar once you are checked in: Just listening, then I hear outlined in red, then Check out.\n",
+    "caption": "I hear only appears on a net that has coverage logging turned on.",
+    "page": "/docs/operators/reporting-what-you-hear/"
+  },
+  "operators/i-hear-select-all": {
+    "path": "/docs/img/operators/i-hear-select-all.png",
+    "alt": "The Who can KC1HILL hear? dialog. All stations, outlined in red at the top, shows a dash because most stations are ticked. Below it every station is ticked except W2FERN and N2OAKS. W1MILL is ticked and greyed out, marked checked out. The Operating Position field reads Home, above Cancel and Save.\n",
+    "caption": "\"Everybody but W2FERN and N2OAKS\" is three clicks: All stations, then the two you didn't hear.\n",
+    "page": "/docs/operators/reporting-what-you-hear/"
+  },
   "operators/leaderboard-table": {
     "path": "/docs/img/operators/leaderboard-table.png",
     "alt": "A schedule statistics page's check-in leaderboard, listing callsigns with their appearance count and participation percentage, medal icons next to the top three rows.\n",
@@ -364,6 +400,12 @@
     "alt": "The check-in list on a phone-width screen: a simplified, read-only table with each station's status shown by icon.\n",
     "caption": "Other stations' rows are read-only on a phone; your own status is still yours to change.",
     "page": "/docs/operators/in-the-field/"
+  },
+  "operators/profile-coverage-map": {
+    "path": "/docs/img/operators/profile-coverage-map.png",
+    "alt": "The Coverage tab of the Profile page, headed Your Home Station Coverage, with a map of the lakes region and coast of southern Maine showing a marker for each station KC1HILL has heard from home, and a note below that the map only shows stations they heard.\n",
+    "caption": "Every station you've heard from home, across every net, on one map.",
+    "page": "/docs/operators/reporting-what-you-hear/"
   },
   "operators/schedule-calendar": {
     "path": "/docs/img/operators/schedule-calendar.png",

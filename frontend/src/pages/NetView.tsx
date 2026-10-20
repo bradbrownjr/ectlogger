@@ -1390,10 +1390,6 @@ const NetView: React.FC = () => {
   const canManage = isOwner || isAdmin || isNCS || !!net?.is_owner_or_ncs;
   const canManageCheckIns = canManage || isNCSOrLogger;
 
-  // Relay staff can't manage check-ins generally, but can record "can hear"
-  // reports (see propagation logging permission gate on the backend).
-  const isRelay = userNetRole?.role?.toUpperCase() === 'RELAY';
-  const canReportCanHear = canManageCheckIns || isRelay;
 
   // The check-in the "Who can this station hear?" dialog is currently open
   // for, resolved from the full (unfiltered) check-in list. Null when the
@@ -1411,6 +1407,10 @@ const NetView: React.FC = () => {
   // management button is gated on the flag for its own action.
   const actions = getNetActions(net, simulateRegularUser);
   const canStartNet = actions.start;
+  // Recording "who can this station hear?" for any row: NCS, Logger, Relay
+  // and the net's managers, not the broad canManage, which also includes
+  // schedule staff who hold no role here and would be refused.
+  const canReportCanHear = actions.record_coverage;
   
   // Check if net has any actively-serving NCS (a stepped-down NCS's role row
   // stays in netRoles with is_active=false, not deleted -- see toggle_self_net_role).

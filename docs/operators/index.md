@@ -18,7 +18,7 @@ Everything here is about taking part. Nothing in this path requires any role, an
 
 ## What you will be able to do
 
-By the end of this path you will be able to find a net that is running, check in from wherever you are, keep your status accurate so Net Control knows whether you are still there, put your location on the map in whatever format you actually think in, take part in the chat without stepping on the net, file formal traffic, and see your own participation history.
+By the end of this path you will be able to find a net that is running, check in from wherever you are, keep your status accurate so Net Control knows whether you are still there, put your location on the map in whatever format you actually think in, take part in the chat without stepping on the net, report which stations you can hear, file formal traffic, and see your own participation history.
 
 ## The one thing worth knowing up front
 
@@ -41,6 +41,8 @@ So the app is not the net. It is a log of the net, and it is also a second chann
 **[Chat, polls, and topics](/docs/operators/chat-and-polls/)** — Talking alongside the net without talking over it. Editing a message, replying to one, tagging a station, and muting one that is bothering you.
 
 **[Your location and the map](/docs/operators/location-and-the-map/)** — Town and state, GPS coordinates, Maidenhead, UTM, MGRS: what each looks like, which to use, and what the map does with it.
+
+**[Reporting what you hear](/docs/operators/reporting-what-you-hear/)** — On nets that log station-to-station coverage: telling net control which stations you can hear directly, and the map of everyone you've heard from home.
 
 **[Filing traffic](/docs/operators/filing-traffic/)** — Radiograms, ICS-213s, and RRI weather strips filed from inside a net, and what happens to a message after you hand it off.
 

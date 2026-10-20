@@ -121,8 +121,9 @@ both: write the upper-case spelling.
 
 **Net actions have one rule each, shared by the endpoint and its button.**
 `permissions.py` holds a pure `may_*` function per net action (edit, start,
-close, import, lifecycle, claim NCS, manage roles, email subscribers) over a
-`NetAccess` loaded by `net_access()` / `load_net_access()`. The endpoint calls
+close, import, lifecycle, claim NCS, manage roles, email subscribers, record
+coverage) over a `NetAccess` loaded by `net_access()` / `load_net_access()`.
+The endpoint calls
 the rule, and `NetResponse.actions` (plus `actions_as_regular_user` for an
 admin's "View as Regular User" preview) sends the same answers to the app,
 where `utils/netActions.ts::getNetActions` gates each toolbar and card button.

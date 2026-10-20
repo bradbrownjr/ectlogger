@@ -33,7 +33,7 @@ Here's what each one does, grouped the way the toolbar groups them.
 - **Bulk add** — opens a box for entering one or many check-ins at once, fast. Also known as speed entry. Covered in full on [Speed entry](/docs/net-control/speed-entry/). Only NCS and Logger see it, and only once the net has at least one check-in.
 - **Search** — filters the check-in list by callsign, name, or location as you type. Doesn't touch the underlying data, just what's shown.
 - **Map** — plots every checked-in station with a location ECTLogger could parse, including ones already checked out. See [Location formats](/docs/reference/location-formats/) for what it can and can't read.
-- **Coverage** — station-to-station "who can hear whom" reports, if the net has propagation logging turned on. Not every net does.
+- **Coverage** — station-to-station "who can hear whom" reports, if the net has coverage logging turned on. Not every net does. See [Station coverage](/docs/net-control/station-coverage/).
 - **Traffic** — opens the traffic panel for this net, if the net has formal traffic handling enabled and you're the net's manager, an admin, or hold an active NCS or Logger role. A Standard participant never sees this button, even on a traffic-enabled net. See [Handling traffic](/docs/net-control/handling-traffic/).
 - **Announcements** / **Notes** / **Topics** / **Stats** — read-only views of the schedule's announcements, this net's own notes, prior weeks' topic-of-the-week answers, and this net's statistics page.
 - **Audio** and **Website**, when the net has a stream URL or an info URL set, open those in a new tab.
@@ -47,7 +47,7 @@ Here's what each one does, grouped the way the toolbar groups them.
 - **Claim NCS** — a recovery button, shown to the net's manager or an admin only when a net has no assigned NCS at all.
 - **Raise hand** — a participant-side signal to get NCS's attention; NCS doesn't see this on their own row, since they run the queue rather than joining it.
 - **Step away** / **Just listening** / **Check out** — self-service status changes for your own check-in. Stepping away as the net's only active NCS asks you to confirm first, since it pauses the net until someone returns. See [Roles and stepping away](/docs/net-control/roles-and-stepping-away/).
-- **I hear** — records which stations you can hear, if the net has propagation logging on and allows self-reporting.
+- **I hear** — records which stations you can hear, if the net has coverage logging on and allows self-reporting. See [Reporting what you hear](/docs/operators/reporting-what-you-hear/).
 - **Close net** — ends the session. See [Closing the net](/docs/net-control/closing-the-net/) for exactly what that does and doesn't undo.
 
 Once a net is closed or archived, the management group swaps to **Export**, **ICS-309**, **ICS-309 PDF**, **Report**, and (staff only) **Archive** or **Delete**. These are covered in [Closing the net](/docs/net-control/closing-the-net/).

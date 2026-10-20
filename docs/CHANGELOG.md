@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-19
+revised: 2026-10-20
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,19 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# October 20, 2026
+
+## Improvements
+
+* **Coverage: Select all stations** — The "who can hear" dialog now has an All stations checkbox (one per frequency on multi-frequency nets), so when a station reports hearing everyone but a few, you tick everyone in one click and untick the ones they missed.
+
+## Bug Fixes
+
+* **Profile: Coverage map includes reports logged for you** — Your Coverage tab only counted reports you entered yourself, so a station whose reception Net Control or a Logger logged never saw it on their map. Those reports now appear there too.
+* **Coverage: The ear button only shows when it will save** — Schedule staff who hadn't taken a role on a net saw the "who can this station hear?" button on every station's row, and saving it failed. It now shows for Net Control, the Logger, a Relay, and the net's manager, and staff take NCS or Logger first, the same as for the net's other controls.
 
 ---
 

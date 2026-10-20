@@ -441,3 +441,81 @@ shots:
     caption: >
       The page names the net before asking for anything, so you know what
       you're subscribing to.
+
+  # ========== Reporting what you hear ==========
+  # All from the seeded Example County ARES Simplex Drill ({{net:coverage}}),
+  # the only net with station-to-station coverage logging on. KC1HILL's
+  # earlier reports were entered for them by the Logger, which is what the
+  # profile map figure below depends on.
+  - id: i-hear-button
+    section: operators
+    page: /docs/operators/reporting-what-you-hear/
+    route: /nets/{{net:coverage}}
+    as: KC1HILL
+    wait_for: 'table:visible tbody tr'
+    element:
+      - 'span[aria-label="Mark yourself as just listening (not transmitting)"]'
+      - 'span[aria-label="Check out of net"]'
+    pad: 6
+    annotate:
+      - selector: 'span[aria-label="Record which stations you can hear"]'
+        style: box
+    alt: >
+      The right-hand end of the net toolbar once you are checked in: Just
+      listening, then I hear outlined in red, then Check out.
+    caption: I hear only appears on a net that has coverage logging turned on.
+
+  - id: i-hear-select-all
+    section: operators
+    page: /docs/operators/reporting-what-you-hear/
+    route: /nets/{{net:coverage}}
+    as: KC1HILL
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="Record which stations you can hear"]'
+      - wait_for: '.MuiDialog-paper:visible'
+      - click: '.MuiDialog-paper label:has-text("All stations")'
+      - click: '.MuiDialog-paper label:has-text("W2FERN")'
+      - click: '.MuiDialog-paper label:has-text("N2OAKS")'
+    element: '.MuiDialog-paper'
+    pad: 16
+    annotate:
+      - selector: '.MuiDialog-paper label:has-text("All stations")'
+        style: box
+    alt: >
+      The Who can KC1HILL hear? dialog. All stations, outlined in red at the
+      top, shows a dash because most stations are ticked. Below it every
+      station is ticked except W2FERN and N2OAKS. W1MILL is ticked and greyed
+      out, marked checked out. The Operating Position field reads Home, above
+      Cancel and Save.
+    caption: >
+      "Everybody but W2FERN and N2OAKS" is three clicks: All stations, then
+      the two you didn't hear.
+
+  - id: profile-coverage-map
+    section: operators
+    page: /docs/operators/reporting-what-you-hear/
+    route: /profile?tab=coverage
+    as: KC1HILL
+    viewport:
+      width: 1440
+      height: 900
+    wait_for: '.leaflet-marker-icon:visible'
+    # The tab opens at a fixed regional zoom that fits all of New England;
+    # two steps in makes the stations themselves readable.
+    steps:
+      - click: '.leaflet-control-zoom-in'
+      - wait: 600
+      - click: '.leaflet-control-zoom-in'
+      - wait: 1500
+      - hover: 'h6:has-text("Your Home Station Coverage")'
+    element:
+      - 'h6:has-text("Your Home Station Coverage")'
+      - 'text=This map shows only stations'
+    pad: 16
+    alt: >
+      The Coverage tab of the Profile page, headed Your Home Station
+      Coverage, with a map of the lakes region and coast of southern Maine
+      showing a marker for each station KC1HILL has heard from home, and a
+      note below that the map only shows stations they heard.
+    caption: Every station you've heard from home, across every net, on one map.

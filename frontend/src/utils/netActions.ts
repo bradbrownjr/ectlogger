@@ -15,6 +15,7 @@ export interface NetActions {
   claim_ncs: boolean;         // Claim NCS
   manage_roles: boolean;      // Roles dialog
   email_subscribers: boolean; // Email subscribers
+  record_coverage: boolean;   // "Who can this station hear?" on any row
 }
 
 const NO_ACTIONS: NetActions = {
@@ -26,6 +27,7 @@ const NO_ACTIONS: NetActions = {
   claim_ncs: false,
   manage_roles: false,
   email_subscribers: false,
+  record_coverage: false,
 };
 
 interface WithActions {

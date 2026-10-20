@@ -967,6 +967,29 @@ groups must report the same `left`; when sharing a row, the standard group's
 
 ---
 
+## Select-All Checkboxes
+
+Any checkbox list long enough that "everything but these two" is a real
+answer gets a select-all control. The first one is the "Who can this station
+hear?" dialog (`CanHearDialog.tsx`, GitHub issue #7), and new lists follow it
+so the control looks and behaves the same everywhere.
+
+- **One tri-state checkbox, not two buttons.** Checked when every item is
+  checked, `indeterminate` (the dash) when some are, empty when none are.
+  Clicking it from empty or partial selects everything; clicking it when
+  everything is checked clears everything. Never "Select all" and "Clear all"
+  as separate buttons.
+- **A flat list:** the checkbox sits above the list in a `FormControlLabel`,
+  labelled **All stations** (or the list's own noun), at medium weight so it
+  reads as a heading for the list rather than one more item.
+- **A grid with one checkbox column per category** (per frequency, in the
+  coverage dialog): one tri-state checkbox in each column's header, under the
+  header text, covering that column only. Give it an `aria-label` naming the
+  column, since it has no visible label of its own.
+- **"All" means every item the list shows**, including greyed-out ones such
+  as checked-out stations. If an item shouldn't be selectable at all, leave
+  it out of the list, not out of select-all.
+
 ## Mobile / Responsive
 
 ### Touch targets

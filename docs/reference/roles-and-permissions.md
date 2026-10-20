@@ -107,6 +107,7 @@ Read this as: given the row's action, which of the columns can do it. "Net manag
 | Assign or remove net roles (Manage Net Control Staff dialog) | No | No⁵ | No⁵ | Yes⁵ | Yes⁵ | No | Yes | Yes |
 | Step down your own active NCS role | — | — | — | Yes⁶ | — | — | — | — |
 | Mute a station net-wide in chat | No | No | No | Yes | Yes | No | Yes | Yes |
+| Record which stations another station can hear (coverage logging nets only) | No⁸ | No⁸ | No⁸ | Yes | Yes | Yes | Yes | Yes |
 | Edit the schedule, rotation, or staff list | No | Yes | Yes | — | — | — | Yes | Yes |
 | Transfer schedule ownership | No | No | Yes | — | — | — | Yes | Yes |
 | Merge one schedule into another | No | No | Yes | — | — | — | Yes | Yes |
@@ -120,4 +121,5 @@ Read this as: given the row's action, which of the columns can do it. "Net manag
 5. Being net staff, a rotation member, or a co-manager is not enough by itself for this one: you also need to currently hold an active NCS or Logger role on this specific net. An NCS or Logger handed the role directly, with no staff or rotation membership on that schedule, cannot reassign roles either, even though they're actively running the net. Both halves have to be true at once.
 6. Blocked if you are the only active NCS on a net that is currently active; assign someone else first.
 7. These are the two rows where being an admin genuinely does not help. Eligibility to self-grant on check-in is drawn from the schedule's own staff and rotation, and being an admin is not membership of either. It costs an admin nothing: they can assign themselves the role outright in the Manage Net Control Staff dialog, which is the same result in one more click.
+8. Anyone checked in can record what their own station hears, unless the net's manager turned off **Allow stations to self-report**. Recording it for somebody else needs an active NCS, Logger, or Relay role on this net; schedule staff and co-managers take one by checking in as NCS or Logger first. See [Station coverage](/docs/net-control/station-coverage/).
 For the underlying permission checks this grid is drawn from, see `backend/app/permissions.py`. For who gets emailed about a role or a net's lifecycle, see [Emails we send](/docs/reference/emails/).

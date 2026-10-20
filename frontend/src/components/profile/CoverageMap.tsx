@@ -23,7 +23,7 @@ import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
 // at full precision (NOT the coarsened privacy-aggregation approach in
 // statistics_geo.py/GlobalCheckInMap.tsx) - that coarsening exists for
 // cross-user privacy on a different (global) feature, and doesn't apply
-// here since every station shown was personally reported by the viewer.
+// here since every station shown is one the viewer's own station heard.
 
 // Leaflet's default marker icon path breaks under bundlers unless the image
 // URLs are re-pointed explicitly - same fix CheckInMap.tsx applies.
@@ -287,7 +287,7 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ stations }) => {
         </Typography>
       </Box>
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-        This map shows only stations you personally reported hearing from a Home operating position — it never includes reports from other participants or nets you did not attend.
+        This map shows only stations you heard from a Home operating position, whether you recorded it yourself or Net Control, a Logger, or a Relay did it for you. It never includes what other stations heard, or nets you did not attend.
       </Typography>
     </Box>
   );

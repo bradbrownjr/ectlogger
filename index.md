@@ -46,6 +46,10 @@ A net is not a form. It is one person with a microphone, a list that will not ho
     <p>Locations go in however the operator says them: a town and state, GPS coordinates, a Maidenhead grid square, UTM, or MGRS. They land on one map, which is what situational awareness looks like during severe weather.</p>
   </div>
   <div class="feature">
+    <h3>Who can hear whom when the repeater is down</h3>
+    <p>Each station reports which others it can hear directly, or Net Control ticks them off as they say it on the air. The map draws every confirmed two-way path, so the town that needs a relay is the one with no lines to it. Every operator builds up a map of everyone they have heard from home.</p>
+  </div>
+  <div class="feature">
     <h3>Nobody has to remember to close it</h3>
     <p>A net can open its own lobby before the scheduled start so stations arrive early, and close itself after a quiet period so a net left open overnight is not next week's problem.</p>
   </div>

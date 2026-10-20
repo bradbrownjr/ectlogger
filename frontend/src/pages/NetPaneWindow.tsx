@@ -359,10 +359,8 @@ const NetPaneWindow: React.FC = () => {
     );
   }
 
-  // Relay staff can't manage check-ins generally, but can report "can hear" -
-  // see NetView.tsx's identical derivation.
-  const isRelay = userNetRole?.role?.toUpperCase() === 'RELAY';
-  const canReportCanHear = canManageCheckIns || isRelay;
+  // Same per-action rule NetView.tsx uses (utils/netActions.ts).
+  const canReportCanHear = getNetActions(net, simulateRegularUser).record_coverage;
   const canHearDialogCheckIn = canHearDialogCheckInId !== null
     ? checkIns.find((ci: any) => ci.id === canHearDialogCheckInId) || null
     : null;

@@ -242,16 +242,21 @@ async def get_my_can_hear_coverage(
     heard on 2m and on 40m is two different propagation data points (see
     band_utils.py) - a station worked on both bands appears as two rows.
 
-    Privacy: this is scoped, by construction, to
-    CanHearReport.reported_by_user_id == current_user.id AND the reporter
-    check-in's user_id == current_user.id - i.e. only reports the caller
-    personally entered, about their own check-in. Because the query is
-    inherently scoped this way, no separate access-control layer is needed;
-    auth via get_current_user is the only gate. Do NOT widen this query to
-    "all reports for nets the user attended" - that would surface other
-    stations' can-hear reports the viewer did not personally make, which is
-    exactly the cross-station privacy leak the roadmap's Phase 5 "privacy
-    line" warns against.
+    Privacy: this is scoped, by construction, to reports whose reporter
+    check-in belongs to current_user - i.e. what the caller's own station
+    heard, whoever typed it in. Because the query is inherently scoped this
+    way, no separate access-control layer is needed; auth via
+    get_current_user is the only gate. Do NOT widen this query to "all
+    reports for nets the user attended" - that would surface what other
+    stations heard, which is exactly the cross-station privacy leak the
+    roadmap's Phase 5 "privacy line" warns against.
+
+    Who entered the report is deliberately NOT a filter. Until 2026-10-20
+    this also required reported_by_user_id == current_user.id, so a station
+    whose reception NCS/Logger/Relay logged by voice (the common case, and
+    what the Coverage tab's own empty-state text promises) never got a map
+    at all. The roadmap's rule was "reports where the viewer was the
+    reporting station", which the reporter check-in clause already is.
     """
     ReporterCheckIn = aliased(CheckIn)
     HeardCheckIn = aliased(CheckIn)
@@ -270,7 +275,6 @@ async def get_my_can_hear_coverage(
         .join(HeardCheckIn, CanHearReport.heard_check_in_id == HeardCheckIn.id)
         .outerjoin(Frequency, CanHearReport.frequency_id == Frequency.id)
         .where(
-            CanHearReport.reported_by_user_id == current_user.id,
             ReporterCheckIn.user_id == current_user.id,
             # operating_position is freeSolo text seeded with "Home" /
             # "Field Deployed" (see CanHearDialog.tsx's

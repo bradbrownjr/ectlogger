@@ -12,7 +12,7 @@ check_net_lifecycle_permission, the power to cancel, archive and delete).
 """
 import pytest
 
-from app.models import Net, NetRole, NetStatus, NetTemplate, TemplateStaff
+from app.models import CheckIn, Net, NetRole, NetStatus, NetTemplate, StationStatus, TemplateStaff
 from tests.conftest import auth_headers
 
 
@@ -152,3 +152,59 @@ async def test_list_carries_the_same_actions_as_the_single_net(client, db, owner
     single = await _actions(client, net, other)
     listed = (await client.get("/api/nets/", headers=auth_headers(other))).json()
     assert next(n for n in listed if n["id"] == net.id)["actions"] == single
+
+
+# ========== Recording coverage for another station ==========
+# Until 2026-10-20 every row's "who can this station hear?" button was gated
+# on the broad canManage, so schedule staff with no role on the occurrence
+# were offered a save that can_hear.py refused.
+
+async def _coverage_net(db, owner, template=None) -> tuple:
+    net = Net(name="Coverage Net", owner_id=owner.id, status=NetStatus.ACTIVE,
+              template_id=template.id if template else None, propagation_logging_enabled=True)
+    db.add(net)
+    await db.flush()
+    a = CheckIn(net_id=net.id, callsign="KC1AAAA", name="", location="", status=StationStatus.CHECKED_IN)
+    b = CheckIn(net_id=net.id, callsign="KC1BBBB", name="", location="", status=StationStatus.CHECKED_IN)
+    db.add_all([a, b])
+    await db.flush()
+    return net, a, b
+
+
+async def _save_coverage(client, net, user, reporter, heard):
+    return await client.put(
+        f"/api/nets/{net.id}/can-hear-reports",
+        json={"reporter_check_in_id": reporter.id, "heard_check_in_ids": [heard.id]},
+        headers=auth_headers(user),
+    )
+
+
+@pytest.mark.asyncio
+async def test_staff_with_no_role_are_not_offered_coverage_for_others(client, db, owner, other):
+    template = await _template(db, owner)
+    db.add(TemplateStaff(template_id=template.id, user_id=other.id, is_active=True, is_co_manager=False))
+    net, a, b = await _coverage_net(db, owner, template)
+    await db.commit()
+
+    assert (await _actions(client, net, other))["record_coverage"] is False
+    assert (await _save_coverage(client, net, other, a, b)).status_code == 403
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("role", ["NCS", "LOGGER", "RELAY"])
+async def test_net_control_roles_record_coverage_for_others(client, db, owner, other, role):
+    net, a, b = await _coverage_net(db, owner)
+    db.add(NetRole(net_id=net.id, user_id=other.id, role=role, is_active=True))
+    await db.commit()
+
+    assert (await _actions(client, net, other))["record_coverage"] is True
+    assert (await _save_coverage(client, net, other, a, b)).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_net_manager_records_coverage_for_others(client, db, owner):
+    net, a, b = await _coverage_net(db, owner)
+    await db.commit()
+
+    assert (await _actions(client, net, owner))["record_coverage"] is True
+    assert (await _save_coverage(client, net, owner, a, b)).status_code == 200

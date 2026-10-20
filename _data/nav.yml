@@ -40,6 +40,8 @@
       url: /docs/operators/chat-and-polls/
     - title: Your location and the map
       url: /docs/operators/location-and-the-map/
+    - title: Reporting what you hear
+      url: /docs/operators/reporting-what-you-hear/
     - title: Filing traffic
       url: /docs/operators/filing-traffic/
     - title: Your statistics
@@ -66,6 +68,8 @@
       url: /docs/net-control/chat-moderation/
     - title: Authenticated nets
       url: /docs/net-control/authenticated-nets/
+    - title: Station coverage
+      url: /docs/net-control/station-coverage/
     - title: Handling traffic
       url: /docs/net-control/handling-traffic/
     - title: Multiple monitors and wide screens

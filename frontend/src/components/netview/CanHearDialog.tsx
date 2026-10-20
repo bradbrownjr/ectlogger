@@ -172,6 +172,28 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
       return aOut - bOut;
     });
 
+  // ========== SELECT ALL ==========
+  // "I heard everybody but WA1XYZ" is a common simplex report (GitHub issue
+  // #7), so each checkbox set has a select-all toggle. It deliberately
+  // includes checked-out stations: one heard earlier in the net and since
+  // checked out was still genuinely heard. Partly checked shows the box as
+  // indeterminate; clicking it from either partial or empty selects all.
+  const selectAllState = (checked: Set<number> | undefined) => {
+    const count = otherStations.filter((s: any) => checked?.has(s.id)).length;
+    return {
+      all: otherStations.length > 0 && count === otherStations.length,
+      some: count > 0 && count < otherStations.length,
+    };
+  };
+  const nextSelection = (checked: Set<number> | undefined) =>
+    selectAllState(checked).all ? new Set<number>() : new Set<number>(otherStations.map((s: any) => s.id));
+
+  const toggleAll = () => setCheckedIds((prev) => nextSelection(prev));
+
+  const toggleAllInColumn = (frequencyId: number) => {
+    setCheckedByFrequency((prev) => ({ ...prev, [frequencyId]: nextSelection(prev[frequencyId]) }));
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -263,6 +285,15 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
                   {netFrequencies.map((freq) => (
                     <TableCell key={freq.id} align="center" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                       {frequencyLabel(freq)}
+                      {/* Select-all for this frequency's column only */}
+                      <Box>
+                        <Checkbox
+                          checked={selectAllState(checkedByFrequency[freq.id]).all}
+                          indeterminate={selectAllState(checkedByFrequency[freq.id]).some}
+                          onChange={() => toggleAllInColumn(freq.id)}
+                          inputProps={{ 'aria-label': `All stations on ${frequencyLabel(freq)}` }}
+                        />
+                      </Box>
                     </TableCell>
                   ))}
                 </TableRow>
@@ -288,6 +319,18 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
           </TableContainer>
         ) : (
           /* Responsive 2-3 column checkbox grid - a 25-station net fits without scrolling */
+          <>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={selectAllState(checkedIds).all}
+                indeterminate={selectAllState(checkedIds).some}
+                onChange={toggleAll}
+              />
+            }
+            label="All stations"
+            sx={{ mb: 1, '& .MuiFormControlLabel-label': { fontWeight: 'medium' } }}
+          />
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 1, mb: 2 }}>
             {otherStations.map((station: any) => (
               <FormControlLabel
@@ -303,6 +346,7 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
               />
             ))}
           </Box>
+          </>
         )}
 
         {/* Operating position describes the reporting station, not the pair -

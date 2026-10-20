@@ -22,7 +22,7 @@ These are not the same as your account's global role. A per-net role applies to 
 
 ## What you will be able to do
 
-Take a net from lobby to closed without touching anything else: log stations as fast as they call, correct a row without losing your place, work several frequencies at once alongside other net controls, keep the chat civil, confirm a station is who it says it is, handle formal traffic, spread the desk across as many screens as you have, and close out with the log already written.
+Take a net from lobby to closed without touching anything else: log stations as fast as they call, correct a row without losing your place, work several frequencies at once alongside other net controls, keep the chat civil, confirm a station is who it says it is, record who can hear whom, handle formal traffic, spread the desk across as many screens as you have, and close out with the log already written.
 
 ## Before your first net
 
@@ -46,6 +46,8 @@ Two things are worth doing once, in advance, rather than discovering mid-net:
 **[Chat moderation and mutes](/docs/net-control/chat-moderation/)** — Muting a station for yourself, muting one for everyone, and what the muted station sees.
 
 **[Authenticated nets](/docs/net-control/authenticated-nets/)** — Confirming a checked-in station is the account it claims to be, using the code from their authenticator app. What it proves and what it does not.
+
+**[Station coverage](/docs/net-control/station-coverage/)** — Recording which stations can hear each other, reading the two-way and one-way table and the map overlay, and what reaches the report afterward.
 
 **[Handling traffic](/docs/net-control/handling-traffic/)** — The traffic panel, receiving and relaying formal messages, and what the chain of custody records.
 
