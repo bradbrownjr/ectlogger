@@ -214,6 +214,13 @@ class Net(Base):
     ics309_hide_muted_stations = Column(Boolean, nullable=False, default=True)
     propagation_logging_enabled = Column(Boolean, default=False)  # Enable "can hear" station-to-station coverage logging
     self_can_hear_enabled = Column(Boolean, default=True)  # If False, only NCS/logger/relay may record "can hear" reports; regular stations can't self-report
+    # JSON array of this net's frequency ids that do NOT collect coverage
+    # reports (a drill's repeater or DMR talkgroup: everyone hears everyone
+    # through it, so a station-to-station report says nothing). Null/empty =
+    # every frequency collects them, which is what every net did before
+    # 2026-10-21. An exclusion list rather than an inclusion list so a
+    # frequency added to the net later collects reports by default.
+    coverage_excluded_frequency_ids = Column(Text, nullable=True)
     # Opt-in like ics309_enabled/propagation_logging_enabled above. The default
     # only applies to newly inserted rows, so nets created before the settings
     # toggle existed keep their stored True and don't lose the panel.
@@ -287,6 +294,8 @@ class Net(Base):
     net_roles = relationship("NetRole", back_populates="net", cascade="all, delete-orphan")
     custom_field_values = relationship("CustomFieldValue", back_populates="net", cascade="all, delete-orphan")
     can_hear_reports = relationship("CanHearReport", back_populates="net", cascade="all, delete-orphan")
+    coverage_sites = relationship("CoverageSite", back_populates="net", cascade="all, delete-orphan", order_by="CoverageSite.sort_order")
+    coverage_contacts = relationship("CoverageContact", back_populates="net", cascade="all, delete-orphan")
     forms = relationship("Form", back_populates="net")   # no cascade: traffic outlives the net
 
 
@@ -312,6 +321,7 @@ class NetTemplate(Base):
     ics309_hide_muted_stations = Column(Boolean, nullable=False, default=True)  # Seeds Net.ics309_hide_muted_stations for nets created from this template
     propagation_logging_enabled = Column(Boolean, default=False)  # Seeds Net.propagation_logging_enabled for nets created from this template
     self_can_hear_enabled = Column(Boolean, default=True)  # Seeds Net.self_can_hear_enabled for nets created from this template
+    coverage_excluded_frequency_ids = Column(Text, nullable=True)  # Seeds Net.coverage_excluded_frequency_ids (same JSON shape)
     traffic_enabled = Column(Boolean, default=False)  # Seeds Net.traffic_enabled for nets created from this template
     # Seed the three per-net traffic settings above; same null semantics.
     traffic_form_types = Column(Text, nullable=True)
@@ -470,6 +480,12 @@ class CheckIn(Base):
     checked_in_by_id = Column(Integer, ForeignKey("users.id"))  # Who logged this check-in
     hand_raised = Column(Boolean, default=False)  # Hand raised to indicate comments/questions
     operating_position = Column(String(50), nullable=True)  # Classifier for the reporting station, e.g. "Home"/"Field Deployed" (freeSolo, not an enum)
+    # The net's coverage site this station is operating from (a shelter, an
+    # EMA office). Per check-in ROW, not per callsign: an operator who checks
+    # out at one shelter and rechecks from another gets a new row at the new
+    # site, and the reports made from the first visit stay with the first
+    # site. See services/site_coverage.py.
+    coverage_site_id = Column(Integer, ForeignKey("coverage_sites.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # Authenticated nets: set once NCS/Logger has compared the station's live
     # TOTP code to the server-computed expected code and confirmed a match.
@@ -490,6 +506,15 @@ class CheckIn(Base):
     frequency = relationship("Frequency")
     parent_check_in = relationship("CheckIn", remote_side="CheckIn.id", foreign_keys=[parent_check_in_id])
     custom_values = relationship("CustomFieldValue", back_populates="check_in", cascade="all, delete-orphan")
+    coverage_site = relationship("CoverageSite")
+    coverage_contacts = relationship(
+        "CoverageContact", foreign_keys="CoverageContact.reporter_check_in_id",
+        back_populates="reporter_check_in", cascade="all, delete-orphan"
+    )
+    coverage_access = relationship(
+        "CoverageAccess", foreign_keys="CoverageAccess.reporter_check_in_id",
+        back_populates="reporter_check_in", cascade="all, delete-orphan"
+    )
     can_hear_reports_as_reporter = relationship(
         "CanHearReport", foreign_keys="CanHearReport.reporter_check_in_id",
         back_populates="reporter_check_in", cascade="all, delete-orphan"
@@ -498,6 +523,87 @@ class CheckIn(Base):
         "CanHearReport", foreign_keys="CanHearReport.heard_check_in_id",
         back_populates="heard_check_in", cascade="all, delete-orphan"
     )
+
+
+class CoverageSite(Base):
+    """A place a coverage drill is testing from, such as a shelter or an EMA
+    office, listed on one net by its manager. Coverage between sites is a
+    read-time rollup over CanHearReport rows grouped by each check-in's
+    coverage_site_id (services/site_coverage.py), never a stored matrix.
+
+    Net-scoped on purpose: this is the short-term form of the team's
+    supported locations (docs/concepts/TEAM-MANAGEMENT-NOTES.md section 5.6,
+    TeamLocation), and its fields match that design so the list can move to
+    team settings later.
+    """
+    __tablename__ = "coverage_sites"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    # Town and state, or a grid square: anything the check-in map can place.
+    location = Column(String(255), nullable=True)
+    site_type = Column(String(20), nullable=False, default="shelter")  # see COVERAGE_SITE_TYPES
+    # Infrastructure only: the net frequency it's on, when it's one of them.
+    frequency_id = Column(Integer, ForeignKey("frequencies.id"), nullable=True)
+    # A site every other site is graded against ("can it reach the EMA?").
+    is_primary = Column(Boolean, nullable=False, default=False)
+    sort_order = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    net = relationship("Net", back_populates="coverage_sites")
+    access_reports = relationship("CoverageAccess", foreign_keys="CoverageAccess.target_site_id", cascade="all, delete-orphan")
+
+
+# "infrastructure" is a repeater, packet node or Winlink gateway: a target a
+# site tries to get into (CoverageAccess), not a place operators report from.
+COVERAGE_SITE_TYPES = ("office", "shelter", "infrastructure")
+
+
+class CoverageAccess(Base):
+    """Whether a check-in got into one of the net's repeaters or nodes (a
+    CoverageSite of type "infrastructure"). Unlike CanHearReport, a failure
+    is recorded too: "couldn't reach the UHF repeater from the hospital" is
+    a finding, not missing data. No row means nobody tried."""
+    __tablename__ = "coverage_access"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False, index=True)
+    reporter_check_in_id = Column(Integer, ForeignKey("check_ins.id", ondelete="CASCADE"), nullable=False, index=True)
+    target_site_id = Column(Integer, ForeignKey("coverage_sites.id", ondelete="CASCADE"), nullable=False, index=True)
+    reached = Column(Boolean, nullable=False)
+    note = Column(String(500), nullable=True)
+    reported_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reported_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('reporter_check_in_id', 'target_site_id', name='uq_coverage_access'),
+    )
+
+    reporter_check_in = relationship("CheckIn", foreign_keys=[reporter_check_in_id], back_populates="coverage_access")
+
+
+class CoverageContact(Base):
+    """A station reached that never checked into the net, such as a
+    neighboring county's EOC, recorded by the station that reached it. Kept
+    apart from CanHearReport because there is no check-in on the far end to
+    point at, and so no reciprocal report: direction is recorded instead."""
+    __tablename__ = "coverage_contacts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False, index=True)
+    reporter_check_in_id = Column(Integer, ForeignKey("check_ins.id", ondelete="CASCADE"), nullable=False, index=True)
+    frequency_id = Column(Integer, ForeignKey("frequencies.id"), nullable=True)
+    callsign = Column(String(20), nullable=True)
+    station = Column(String(100), nullable=True)  # "York County EOC"
+    county = Column(String(100), nullable=True)
+    state = Column(String(50), nullable=True)
+    two_way = Column(Boolean, nullable=False, default=True)  # False = heard them only
+    reported_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reported_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    net = relationship("Net", back_populates="coverage_contacts")
+    reporter_check_in = relationship("CheckIn", foreign_keys=[reporter_check_in_id], back_populates="coverage_contacts")
 
 
 class CanHearReport(Base):

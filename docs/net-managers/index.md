@@ -4,7 +4,7 @@ summary: Owning a net or a schedule. Recurrence, staffing, rotation, and everyth
 kind: Explanation
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-10-21
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/
@@ -47,6 +47,8 @@ Create a net or a recurring schedule, decide who is allowed to run it and in wha
 **[Reports, ICS-309, and exports](/docs/net-managers/reports-and-exports/)** — The net report, the PDF, the ICS-309 Communications Log, the individual images, and who automatically receives what.
 
 **[Importing check-ins](/docs/net-managers/importing-check-ins/)** — Bringing a net that ran on paper or in another program into ECTLogger, row by row, with its real times, so it counts toward everyone's attendance.
+
+**[Coverage drills by site](/docs/net-managers/coverage-drills/)** — Setting up an exercise such as the ARES Simulated Emergency Test, which tests where you can reach rather than who: sites, primary offices, repeaters and nodes, and the results afterward.
 
 **[Schedule statistics and leaderboards](/docs/net-managers/schedule-statistics/)** — Participation over time, the four leaderboards, the net history, and the schedule report.
 

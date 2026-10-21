@@ -4,8 +4,8 @@ summary: Recording who can hear whom during a net, reading the coverage table an
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-20
-review_by: 2027-10-20
+revised: 2026-10-21
+review_by: 2027-10-21
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/station-coverage/
 ---
@@ -34,14 +34,14 @@ It's off unless the net's manager turned on **Enable Station-to-Station Coverage
    </figure>
 
 3. Tick each station they name. For "everybody but W2FERN and N2OAKS", tick **All stations** at the top, then untick those two. **All stations** includes checked-out stations, because a station heard before it left was still heard; untick any that weren't.
-4. Set **Operating Position** if they aren't at home. It starts at **Home**, and only Home reports reach the station's personal coverage map.
+4. Set **Operating Position** if they aren't at home. It starts at **Home**, and only Home reports reach the station's personal coverage map. On a drill with sites it starts at the station's site instead, and offers the sites first; see [Coverage drills by site](/docs/net-managers/coverage-drills/).
 5. Click **Save**.
 
 Saving replaces that station's previous report for that frequency. To correct one, open it again: the dialog shows what's already recorded. A checked-out station's row has no ear icon, since there's nobody left on the air to ask.
 
 ### On a net with more than one frequency
 
-The dialog turns into a grid with one column per frequency, so a combined repeater and simplex drill, or a 2m and 80m comparison, is recorded in one pass. Each column has its own select-all box under its heading, and saving records every column, including any you left empty.
+The dialog turns into a grid with one column per frequency, so a 2m and 80m comparison is recorded in one pass. Only the frequencies the net's manager left ticked under **Coverage reports** appear; repeaters and talkgroups are usually unticked, since everyone hears everyone through them. Each column has its own select-all box under its heading, and saving records every column, including any you left empty.
 
 <figure>
   <img src="/docs/img/net-control/can-hear-grid.png"
@@ -58,6 +58,8 @@ Click **Coverage** in the toolbar to open the **Station Coverage** panel. Anyone
        alt="The simplex drill's net page with the Station Coverage panel open on the right. Each row lists a reporting station, a Two-way or One-way chip, the station it heard, and when. Two-way rows have a green chip with a double arrow; one-way rows have a grey chip with a single arrow.">
   <figcaption>Two-way means both stations reported hearing each other. One-way means only one of them has said so.</figcaption>
 </figure>
+
+On a drill with sites, the panel opens on **By site** instead, which rolls the reports up by place; **Reports** switches to the table described here. The by-site view is covered in [Coverage drills by site](/docs/net-managers/coverage-drills/#reading-the-results).
 
 Each row is one report: the **Reporter**, a **Two-way** or **One-way** chip, the **Heard Station**, and when it was reported. On a net with more than one frequency there's a **Frequency** column too.
 
@@ -87,10 +89,10 @@ On a net with more than one frequency, a dropdown beside the ear button limits t
 
 ## After the net
 
-- **The closing email** includes a Station Coverage section listing each pair of stations, with two-way pairs shown once rather than twice.
+- **The closing email** includes a Station Coverage section listing each pair of stations, with two-way pairs shown once rather than twice. A drill with sites also gets a Coverage by Site section.
 - **The net report** has a Station Coverage section with the same table, and a switch, **Include per-station coverage maps**, that adds one small map per reporting station to the report and its PDF. See [Reports and exports](/docs/net-managers/reports-and-exports/).
 - **Each station's Profile > Coverage map** picks up every Home report about what that station heard, including the ones you entered for them.
 
 ## Next
 
-The operator's side of this, including the personal map, is [Reporting what you hear](/docs/operators/reporting-what-you-hear/). Turning it on for a net or a schedule is [Creating a net](/docs/net-managers/creating-a-net/).
+The operator's side of this, including the personal map, is [Reporting what you hear](/docs/operators/reporting-what-you-hear/). For an exercise that tests places rather than operators, see [Coverage drills by site](/docs/net-managers/coverage-drills/). Turning it on for a net or a schedule is [Creating a net](/docs/net-managers/creating-a-net/).

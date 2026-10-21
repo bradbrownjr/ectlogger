@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-20
+revised: 2026-10-21
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,22 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# October 21, 2026
+
+## New Features
+
+* **Coverage: Drills by site** — For exercises such as the SET, list a net's shelters, offices, repeaters and nodes, and star the primary offices. Stations pick their site at check-in. Coverage then shows whether each site reached each primary office, which repeaters and nodes it got into, and the counties and outside stations it reached. The net report and closing email include the same summary.
+
+## Improvements
+
+* **Coverage: Limit reports to simplex** — A net or schedule can untick its repeaters and talkgroups under Coverage reports, so "Who can hear" only asks about simplex frequencies.
+
+## Bug Fixes
+
+* **Mobile: One asterisk on required check-in fields** — On a phone, the New Check-in form showed two asterisks beside each required field, such as "Callsign * *". It now shows one.
 
 ---
 

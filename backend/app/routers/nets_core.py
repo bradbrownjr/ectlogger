@@ -76,6 +76,7 @@ async def create_net(
         ics309_hide_muted_stations=net_data.ics309_hide_muted_stations if net_data.ics309_hide_muted_stations is not None else True,
         propagation_logging_enabled=net_data.propagation_logging_enabled or False,
         self_can_hear_enabled=net_data.self_can_hear_enabled if net_data.self_can_hear_enabled is not None else True,
+        coverage_excluded_frequency_ids=json.dumps(net_data.coverage_excluded_frequency_ids) if net_data.coverage_excluded_frequency_ids else None,
         traffic_enabled=net_data.traffic_enabled or False,
         traffic_form_types=json.dumps(net_data.traffic_form_types) if net_data.traffic_form_types else None,
         traffic_strip_form_type=net_data.traffic_strip_form_type,
@@ -448,7 +449,7 @@ async def update_net(
         # codes) but live in TEXT columns -- see schemas._parse_traffic_form_types
         # for the read side. An explicit empty list means "no restriction",
         # which is the same as null, so it's stored as null.
-        if field in ('field_config', 'traffic_form_types') and value is not None:
+        if field in ('field_config', 'traffic_form_types', 'coverage_excluded_frequency_ids') and value is not None:
             setattr(net, field, json.dumps(value) if value else None)
         else:
             setattr(net, field, value)

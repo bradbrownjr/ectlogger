@@ -9,6 +9,8 @@ import {
   TableHead,
   TableRow,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -25,6 +27,8 @@ import { formatDateTime } from '../../utils/dateUtils';
 import { canHearApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import CoverageReport, { CanHearReportEntry, buildCoverageRows, formatFrequencyCell } from './CoverageReport';
+import SiteCoverageView, { siteCoverageCsv } from './SiteCoverageView';
+import { SiteCoverageSummary } from '../../utils/coverageSites';
 
 // ========== STATION COVERAGE SIDE PANEL ==========
 // Header-chrome wrapper around CoverageReport (Phase 3 of the "can hear"
@@ -67,6 +71,9 @@ interface CoveragePanelProps {
   canManage?: boolean;
   currentUserId?: number;
   onToast?: (message: string) => void;
+  // Coverage by site (useSiteCoverage). The "By site" view is offered only
+  // when the net has sites, repeaters/nodes or outside contacts.
+  siteCoverage?: SiteCoverageSummary;
 }
 
 const CoveragePanel: React.FC<CoveragePanelProps> = ({
@@ -87,7 +94,16 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
   canManage,
   currentUserId,
   onToast,
+  siteCoverage,
 }) => {
+  const hasSiteView = !!siteCoverage && (
+    siteCoverage.nodes.some((n) => n.kind === 'site') || siteCoverage.targets.length > 0 || siteCoverage.contacts.length > 0
+  );
+  // Which view: the station-by-station report list, or coverage by site. A
+  // net set up with sites opens on the site view, since that's the drill's
+  // question; the choice is per panel, not saved.
+  const [view, setView] = useState<'reports' | 'sites'>('sites');
+  const showSites = hasSiteView && view === 'sites';
   // Local UI toggle only - whether the title is replaced by the filter
   // TextField.
   const [filterOpen, setFilterOpen] = useState(false);
@@ -125,7 +141,23 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
   // Exports exactly what's currently visible in the table (same two-way
   // detection and callsign filter as CoverageReport itself, via the shared
   // buildCoverageRows helper) rather than the raw unfiltered report list.
+  const downloadCsv = (text: string, name: string) => {
+    const blob = new Blob([text], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${name}-net-${netId}-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleExportCsv = () => {
+    if (showSites && siteCoverage) {
+      downloadCsv(siteCoverageCsv(siteCoverage, frequencyLabels || {}), 'coverage-by-site');
+      return;
+    }
     const rows = buildCoverageRows(reports, searchText || undefined);
     const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
     const header = ['Reporter', 'Link Type', 'Heard Station', 'Frequency', 'Reported'];
@@ -143,15 +175,7 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
           .join(',')
       );
     });
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `station-coverage-net-${netId}-${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+    downloadCsv(lines.join('\n'), 'station-coverage');
   };
 
   return (
@@ -219,7 +243,7 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
                         <HighlightOffIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     )}
-                    {reports.length > 0 && (
+                    {(reports.length > 0 || showSites) && (
                       <IconButton
                         size="small"
                         onClick={handleExportCsv}
@@ -295,6 +319,23 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
 
       {!minimized && (
         <Box sx={{ flex: '1 1 auto', overflow: 'auto', p: 1 }}>
+          {/* ========== VIEW SWITCH: BY SITE / REPORTS ========== */}
+          {/* Shown only on a net with sites, repeaters/nodes or outside contacts */}
+          {hasSiteView && (
+            <ToggleButtonGroup
+              size="small"
+              exclusive
+              value={view}
+              onChange={(_, v) => v && setView(v)}
+              sx={{ mb: 1 }}
+            >
+              <ToggleButton value="sites">By site</ToggleButton>
+              <ToggleButton value="reports">Reports</ToggleButton>
+            </ToggleButtonGroup>
+          )}
+          {showSites && siteCoverage ? (
+            <SiteCoverageView summary={siteCoverage} frequencyLabels={frequencyLabels || {}} />
+          ) : (
           <CoverageReport
             netId={netId}
             reports={reports}
@@ -307,6 +348,7 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
             canEditFrequency={canEditFrequency}
             onFrequencyChange={handleFrequencyChange}
           />
+          )}
         </Box>
       )}
     </Paper>

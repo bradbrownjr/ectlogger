@@ -60,8 +60,8 @@ L.Marker.prototype.options.icon = DefaultIcon;
 // every marker color in utils/checkInMarkers.ts (blue, deep purple,
 // teal, green, purple, orange, red, cyan, blue-gray, grey) so a line is never
 // mistaken for a marker's status - keep them distinct if that palette grows.
-const COVERAGE_TWO_WAY_COLOR = '#ffab00'; // amber - confirmed both directions
-const COVERAGE_ONE_WAY_COLOR = '#616161'; // neutral gray - reported one direction only
+export const COVERAGE_TWO_WAY_COLOR = '#ffab00'; // amber - confirmed both directions
+export const COVERAGE_ONE_WAY_COLOR = '#616161'; // neutral gray - reported one direction only
 
 // Mirrors CoverageReport.tsx's edgeKey exactly (same Set-membership approach
 // for detecting a confirmed two-way pair) rather than reinventing it.
@@ -154,7 +154,7 @@ interface CheckInMapProps {
 // Uses hasFitRef to ensure that after the user zooms/pans, the map does NOT snap back
 // on every re-render or check-in update. The ref naturally resets when the MapContainer
 // is remounted (e.g., on resize/maximize via key change), allowing a fresh auto-fit.
-const FitBounds: React.FC<{ positions: [number, number][]; disabled?: boolean }> = ({ positions, disabled }) => {
+export const FitBounds: React.FC<{ positions: [number, number][]; disabled?: boolean }> = ({ positions, disabled }) => {
   const map = useMap();
   const hasFitRef = useRef(false);
 

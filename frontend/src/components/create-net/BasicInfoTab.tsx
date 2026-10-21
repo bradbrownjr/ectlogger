@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { useCreateNetContext } from '../../contexts/CreateNetContext';
 import TrafficSettingsPanel from '../forms/TrafficSettingsPanel';
+import CoverageSitesEditor from '../forms/CoverageSitesEditor';
 import NetLogoSection from '../NetLogoSection';
 
 // ========== TAB 0: BASIC INFO ==========
@@ -30,6 +31,8 @@ const BasicInfoTab: React.FC = () => {
     ics309HideMutedStations, setIcs309HideMutedStations,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
     selfCanHearEnabled, setSelfCanHearEnabled,
+    coverageSites, setCoverageSites,
+    frequencies, selectedFrequencyIds,
     authenticated, setAuthenticated,
     trafficEnabled, setTrafficEnabled,
     trafficFormTypes, setTrafficFormTypes,
@@ -363,6 +366,15 @@ const BasicInfoTab: React.FC = () => {
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
                   When disabled, only Net Control, Logger, and Relay can record 'can hear' reports; regular stations won't see the action.
                 </Typography>
+                {/* Coverage drill sites: shelters, offices, repeaters and nodes */}
+                <Box sx={{ mt: 2 }}>
+                  <CoverageSitesEditor
+                    sites={coverageSites}
+                    setSites={setCoverageSites}
+                    frequencies={frequencies.filter((f) => f.id != null && selectedFrequencyIds.includes(f.id))}
+                    disabled={isInfoMode}
+                  />
+                </Box>
               </Box>
             )}
           </Box>

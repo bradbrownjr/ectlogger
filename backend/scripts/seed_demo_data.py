@@ -103,7 +103,7 @@ async def _build(db_path: Path, out_path: Path):
         User, UserRole, Net, NetStatus, StationStatus, NetTemplate, Frequency,
         NetRole, CheckIn, ChatMessage, ChatReaction, TemplateStaff,
         NCSRotationMember, FormDefinition, Form, TrafficAction, AppSettings,
-        FieldDefinition, CanHearReport,
+        FieldDefinition, CanHearReport, CoverageSite, CoverageAccess, CoverageContact,
     )
     from app.auth import (
         hash_password, generate_totp_secret, encrypt_mfa_secret, current_totp_codes,
@@ -757,6 +757,124 @@ async def _build(db_path: Path, out_path: Path):
         await db.refresh(net_twoband)
 
         # =================================================================
+        # NET H -- ACTIVE, ad hoc, a Simulated Emergency Test: coverage by
+        # site. Teams at two primary offices, two shelters and a weather
+        # office, plus one home station, on 2m simplex and 80m, with the
+        # county repeater and DMR talkgroup left out of coverage reports.
+        # The reports give one of each result: direct two-way (Gray to the
+        # EOC), a relay through another site (Naples to the EOC), a relay
+        # through a home station (Freeport to the EOC), and no path
+        # (Freeport to the North Office). Three repeaters and nodes have
+        # reached and couldn't-reach results with notes, and two contacts
+        # outside the net give a Counties reached list. Facility names are
+        # invented; the towns are the roster's own.
+        # =================================================================
+        set_started = now - timedelta(minutes=90)
+        net_set = Net(
+            name="Example County ARES Simulated Emergency Test",
+            description="Annual SET: which shelters and offices can reach the EOC, and how.",
+            owner_id=users["W1PINE"].id,
+            status=NetStatus.ACTIVE,
+            field_config=_field_config(),
+            ics309_enabled=True,
+            propagation_logging_enabled=True,
+            self_can_hear_enabled=True,
+            started_at=set_started,
+            frequencies=[f_simplex, f_hf, f_repeater, f_dmr],
+            coverage_excluded_frequency_ids=json.dumps([f_repeater.id, f_dmr.id]),
+        )
+        db.add(net_set)
+        await db.flush()
+        net_set.active_frequency_id = f_simplex.id
+        site_specs = [
+            ("Example County EOC", "Windham, ME", "office", True, None),
+            ("North Office", "Bridgton, ME", "office", True, None),
+            ("Naples Shelter", "Naples, ME", "shelter", False, None),
+            ("Freeport Shelter", "Freeport, ME", "shelter", False, None),
+            ("Gray Weather Office", "FN43rv", "office", False, None),
+            ("County VHF repeater", "Windham, ME", "infrastructure", False, f_repeater.id),
+            ("County UHF repeater", "Windham, ME", "infrastructure", False, None),
+            ("EOC packet node", "Windham, ME", "infrastructure", False, None),
+        ]
+        set_sites = {}
+        for order, (name, location, site_type, primary, freq_id) in enumerate(site_specs):
+            site = CoverageSite(net_id=net_set.id, name=name, location=location, site_type=site_type,
+                                is_primary=primary, frequency_id=freq_id, sort_order=order)
+            db.add(site)
+            set_sites[name] = site
+        await db.flush()
+        db.add_all([
+            NetRole(net_id=net_set.id, user_id=users["W1PINE"].id, role="NCS",
+                    active_frequency_id=f_simplex.id, assigned_at=set_started, is_active=True),
+            NetRole(net_id=net_set.id, user_id=users["N1LAKE"].id, role="LOGGER",
+                    assigned_at=set_started, is_active=True),
+        ])
+        set_check_ins = {}
+        for callsign, site_name, minutes_after in (
+            ("W1PINE", "North Office", 0), ("N1LAKE", "Example County EOC", 1), ("N2OAKS", "North Office", 2),
+            ("W1MILL", "Example County EOC", 3), ("K1COVE", "Naples Shelter", 6), ("K1CAMP", "Freeport Shelter", 9),
+            ("KC1HILL", "Gray Weather Office", 11), ("W2FERN", None, 14),
+        ):
+            user = users[callsign]
+            site = set_sites.get(site_name) if site_name else None
+            ci = CheckIn(
+                net_id=net_set.id, user_id=user.id, callsign=callsign, name=user.name,
+                location=f"{site.name} {site.location}" if site and site.location.startswith("FN")
+                else (f"{site.name}, {site.location}" if site else user.location),
+                status=StationStatus.CHECKED_IN, frequency_id=f_simplex.id,
+                checked_in_at=set_started + timedelta(minutes=minutes_after),
+                checked_in_by_id=users["N1LAKE"].id,
+                coverage_site_id=site.id if site else None,
+                operating_position=site.name[:50] if site else "Home",
+            )
+            db.add(ci)
+            set_check_ins[callsign] = ci
+        await db.flush()
+
+        def set_heard(reporter, heard_list, frequency_id, minutes_ago):
+            for heard in heard_list:
+                db.add(CanHearReport(
+                    net_id=net_set.id, reporter_check_in_id=set_check_ins[reporter].id,
+                    heard_check_in_id=set_check_ins[heard].id, frequency_id=frequency_id,
+                    reported_by_user_id=users["N1LAKE"].id, reported_at=now - timedelta(minutes=minutes_ago),
+                ))
+
+        set_heard("N1LAKE", ["W1PINE", "KC1HILL", "W2FERN"], f_hf.id, 60)       # EOC on 80m
+        set_heard("N1LAKE", ["KC1HILL", "W2FERN"], f_simplex.id, 58)
+        set_heard("W1PINE", ["N1LAKE"], f_hf.id, 57)                             # North <-> EOC on 80m
+        set_heard("W1PINE", ["K1COVE"], f_simplex.id, 55)
+        set_heard("W1MILL", ["N2OAKS"], f_simplex.id, 50)                         # EOC heard North one way on 2m
+        set_heard("K1COVE", ["W1PINE"], f_simplex.id, 45)                         # Naples <-> North
+        set_heard("K1CAMP", ["N1LAKE", "W2FERN"], f_simplex.id, 40)               # Freeport heard the EOC one way
+        set_heard("W2FERN", ["K1CAMP", "N1LAKE"], f_simplex.id, 38)               # home station relays Freeport
+        set_heard("KC1HILL", ["N1LAKE"], f_simplex.id, 30)                        # Gray <-> EOC on 2m
+
+        def set_access(callsign, target, reached, note=None, minutes_ago=35):
+            db.add(CoverageAccess(
+                net_id=net_set.id, reporter_check_in_id=set_check_ins[callsign].id,
+                target_site_id=set_sites[target].id, reached=reached, note=note,
+                reported_by_user_id=users["N1LAKE"].id, reported_at=now - timedelta(minutes=minutes_ago),
+            ))
+
+        set_access("K1COVE", "County VHF repeater", True)
+        set_access("K1COVE", "County UHF repeater", False, "No signal from the shelter's basement radio room")
+        set_access("K1COVE", "EOC packet node", False, "Node antenna sits lower on the tower than the repeater's")
+        set_access("K1CAMP", "County VHF repeater", True, "Full quieting at 50 W")
+        set_access("KC1HILL", "County VHF repeater", True)
+        set_access("KC1HILL", "County UHF repeater", True)
+        set_access("KC1HILL", "EOC packet node", True)
+        db.add_all([
+            CoverageContact(net_id=net_set.id, reporter_check_in_id=set_check_ins["KC1HILL"].id,
+                            frequency_id=f_hf.id, callsign="K1YRKE", station="York County EOC",
+                            county="York", state="ME", two_way=True, reported_by_user_id=users["N1LAKE"].id),
+            CoverageContact(net_id=net_set.id, reporter_check_in_id=set_check_ins["K1COVE"].id,
+                            frequency_id=f_simplex.id, callsign="W1ANDY", station="Androscoggin County EOC",
+                            county="Androscoggin", state="ME", two_way=False, reported_by_user_id=users["N1LAKE"].id),
+        ])
+        await db.commit()
+        await db.refresh(net_set)
+
+        # =================================================================
         # A truly custom (non-builtin) check-in field, so the admin Fields
         # tab shows more than just the shipped builtins.
         # =================================================================
@@ -781,6 +899,7 @@ async def _build(db_path: Path, out_path: Path):
             {"key": "authenticated", "id": net_authenticated.id, "name": net_authenticated.name, "status": net_authenticated.status.value, "template_id": net_authenticated.template_id},
             {"key": "coverage", "id": net_coverage.id, "name": net_coverage.name, "status": net_coverage.status.value, "template_id": net_coverage.template_id},
             {"key": "twoband", "id": net_twoband.id, "name": net_twoband.name, "status": net_twoband.status.value, "template_id": net_twoband.template_id},
+            {"key": "set", "id": net_set.id, "name": net_set.name, "status": net_set.status.value, "template_id": net_set.template_id},
         ]
         manifest["mfa_secrets"] = mfa_secrets
 

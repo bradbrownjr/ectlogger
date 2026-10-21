@@ -22,13 +22,42 @@ from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from datetime import datetime
 from app.database import get_db
-from app.models import CanHearReport, CheckIn, Frequency, Net, User, net_frequencies
+from app.models import CanHearReport, CheckIn, CoverageSite, Frequency, Net, User, net_frequencies
 from app.schemas import CanHearReportResponse, CanHearReportSave, CanHearReportFrequencyUpdate
 from app.dependencies import get_current_user, get_current_user_optional
 from app.permissions import may_record_coverage, net_access
 from app.band_utils import band_from_frequency_string
+from app.services.site_coverage import parse_excluded_frequency_ids
 
 router = APIRouter(prefix="/nets", tags=["can-hear"])
+
+
+async def may_report_coverage_for(db: AsyncSession, net: Net, reporter_check_in: Optional[CheckIn], user: User) -> bool:
+    """Who may record or correct what a station reached: the station itself
+    (unless the net turned self-reporting off), or net staff
+    (permissions.may_record_coverage). Shared by "can hear" reports and
+    contacts outside the net, so the two can't disagree."""
+    is_own_check_in = reporter_check_in is not None and reporter_check_in.user_id == user.id
+    if is_own_check_in and net.self_can_hear_enabled is not False:
+        return True
+    return may_record_coverage(await net_access(db, net, user))
+
+
+async def validate_coverage_frequency(db: AsyncSession, net: Net, frequency_id: Optional[int]) -> None:
+    """400 unless frequency_id is null or one of this net's frequencies that
+    collects coverage reports (not a repeater or talkgroup it excluded)."""
+    if frequency_id is None:
+        return
+    result = await db.execute(
+        select(net_frequencies.c.frequency_id).where(
+            net_frequencies.c.net_id == net.id,
+            net_frequencies.c.frequency_id == frequency_id,
+        )
+    )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=400, detail="Frequency does not belong to this net")
+    if frequency_id in parse_excluded_frequency_ids(net.coverage_excluded_frequency_ids):
+        raise HTTPException(status_code=400, detail="This net doesn't collect coverage reports on that frequency")
 
 
 async def _build_report_responses(db: AsyncSession, net: Net, reports: List[CanHearReport]) -> List[CanHearReportResponse]:
@@ -128,9 +157,7 @@ async def save_can_hear_report(
 
     # A station can report what it itself can hear, unless self-reporting is
     # turned off for this net; staff can always report on behalf of any station.
-    is_own_check_in = reporter_check_in.user_id == current_user.id
-    self_report_allowed = is_own_check_in and net.self_can_hear_enabled is not False
-    if not self_report_allowed and not may_record_coverage(await net_access(db, net, current_user)):
+    if not await may_report_coverage_for(db, net, reporter_check_in, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to record coverage reports")
 
     if payload.reporter_check_in_id in payload.heard_check_in_ids:
@@ -147,15 +174,14 @@ async def save_can_hear_report(
         if valid_heard_ids != set(payload.heard_check_in_ids):
             raise HTTPException(status_code=400, detail="One or more heard check-ins do not belong to this net")
 
-    if payload.frequency_id is not None:
-        result = await db.execute(
-            select(net_frequencies.c.frequency_id).where(
-                net_frequencies.c.net_id == net_id,
-                net_frequencies.c.frequency_id == payload.frequency_id,
-            )
-        )
-        if result.scalar_one_or_none() is None:
-            raise HTTPException(status_code=400, detail="Frequency does not belong to this net")
+    await validate_coverage_frequency(db, net, payload.frequency_id)
+
+    if payload.operating_position is not None and payload.coverage_site_id is not None:
+        site = (await db.execute(
+            select(CoverageSite).where(CoverageSite.id == payload.coverage_site_id, CoverageSite.net_id == net_id)
+        )).scalar_one_or_none()
+        if site is None or site.site_type == 'infrastructure':
+            raise HTTPException(status_code=400, detail="That site isn't one of this net's sites")
 
     # Load existing edges for this (reporter, frequency) pair
     freq_filter = (
@@ -198,6 +224,7 @@ async def save_can_hear_report(
 
     if payload.operating_position is not None:
         reporter_check_in.operating_position = payload.operating_position
+        reporter_check_in.coverage_site_id = payload.coverage_site_id
 
     try:
         await db.commit()
@@ -263,20 +290,10 @@ async def update_can_hear_report_frequency(
     # Same self-report-or-staff rule as saving a report in the first place -
     # the reporting station (or whoever is currently allowed to report on
     # its behalf) can correct its own past entry.
-    is_own_check_in = bool(reporter_check_in) and reporter_check_in.user_id == current_user.id
-    self_report_allowed = is_own_check_in and net.self_can_hear_enabled is not False
-    if not self_report_allowed and not may_record_coverage(await net_access(db, net, current_user)):
+    if not await may_report_coverage_for(db, net, reporter_check_in, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to edit this coverage report")
 
-    if payload.frequency_id is not None:
-        result = await db.execute(
-            select(net_frequencies.c.frequency_id).where(
-                net_frequencies.c.net_id == net_id,
-                net_frequencies.c.frequency_id == payload.frequency_id,
-            )
-        )
-        if result.scalar_one_or_none() is None:
-            raise HTTPException(status_code=400, detail="Frequency does not belong to this net")
+    await validate_coverage_frequency(db, net, payload.frequency_id)
 
     report.frequency_id = payload.frequency_id
 

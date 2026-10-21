@@ -83,6 +83,7 @@ const CreateSchedule: React.FC = () => {
   const [ics309HideMutedStations, setIcs309HideMutedStations] = useState(true);
   const [propagationLoggingEnabled, setPropagationLoggingEnabled] = useState(false);
   const [selfCanHearEnabled, setSelfCanHearEnabled] = useState(true);
+  const [coverageExcludedFrequencyIds, setCoverageExcludedFrequencyIds] = useState<number[]>([]);
   const [authenticated, setAuthenticated] = useState(false);
   // Assisted Traffic Handling. Seeds the same four settings on every net
   // opened from this schedule -- see components/forms/TrafficSettingsPanel.tsx.
@@ -218,6 +219,7 @@ const CreateSchedule: React.FC = () => {
       setAuthenticated(schedule.authenticated || false);
       setPropagationLoggingEnabled(schedule.propagation_logging_enabled || false);
       setSelfCanHearEnabled(schedule.self_can_hear_enabled !== false);
+      setCoverageExcludedFrequencyIds(schedule.coverage_excluded_frequency_ids || []);
       setTrafficEnabled(schedule.traffic_enabled || false);
       setTrafficFormTypes(schedule.traffic_form_types || []);
       setTrafficStripFormType(schedule.traffic_strip_form_type || '');
@@ -306,6 +308,8 @@ const CreateSchedule: React.FC = () => {
       ics309_hide_muted_stations: ics309HideMutedStations,
       propagation_logging_enabled: propagationLoggingEnabled,
       self_can_hear_enabled: selfCanHearEnabled,
+      // Only exclusions among the frequencies still on the schedule.
+      coverage_excluded_frequency_ids: coverageExcludedFrequencyIds.filter((id) => selectedFrequencyIds.includes(id)),
       authenticated,
       traffic_enabled: trafficEnabled,
       traffic_form_types: trafficFormTypes,
@@ -387,6 +391,7 @@ const CreateSchedule: React.FC = () => {
     mobilePrioritySort, setMobilePrioritySort,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
     selfCanHearEnabled, setSelfCanHearEnabled,
+    coverageExcludedFrequencyIds, setCoverageExcludedFrequencyIds,
     authenticated, setAuthenticated,
     trafficEnabled, setTrafficEnabled,
     trafficFormTypes, setTrafficFormTypes,

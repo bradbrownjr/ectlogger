@@ -269,6 +269,7 @@ async def create_template(
         ics309_hide_muted_stations=template_data.ics309_hide_muted_stations if template_data.ics309_hide_muted_stations is not None else True,
         propagation_logging_enabled=template_data.propagation_logging_enabled or False,
         self_can_hear_enabled=template_data.self_can_hear_enabled if template_data.self_can_hear_enabled is not None else True,
+        coverage_excluded_frequency_ids=json.dumps(template_data.coverage_excluded_frequency_ids) if template_data.coverage_excluded_frequency_ids else None,
         traffic_enabled=template_data.traffic_enabled or False,
         traffic_form_types=json.dumps(template_data.traffic_form_types) if template_data.traffic_form_types else None,
         traffic_strip_form_type=template_data.traffic_strip_form_type,
@@ -498,6 +499,10 @@ async def update_template(
         template.traffic_enabled = template_data.traffic_enabled
     # model_fields_set for all three: clearing a restriction (null/empty list)
     # or clearing a stored strip template are meaningful edits, not "unset".
+    if 'coverage_excluded_frequency_ids' in template_data.model_fields_set:
+        template.coverage_excluded_frequency_ids = (
+            json.dumps(template_data.coverage_excluded_frequency_ids) if template_data.coverage_excluded_frequency_ids else None
+        )
     if 'traffic_form_types' in template_data.model_fields_set:
         template.traffic_form_types = (
             json.dumps(template_data.traffic_form_types) if template_data.traffic_form_types else None

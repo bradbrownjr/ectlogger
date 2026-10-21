@@ -17,7 +17,7 @@ import {
   DialogActions,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
-import { netApi, frequencyApi, userApi, templateApi } from '../services/api';
+import { netApi, frequencyApi, userApi, templateApi , coverageSiteApi } from '../services/api';
 import api from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
@@ -26,6 +26,7 @@ import { FrequencyItem } from '../components/forms/CommunicationPlanPanel';
 import { FieldDefinitionItem, FieldConfigEntry } from '../components/forms/CheckInFieldsPanel';
 import BasicInfoTab from '../components/create-net/BasicInfoTab';
 import NCSStaffTab from '../components/create-net/NCSStaffTab';
+import { SiteDraft, draftsToPayload, siteToDraft } from '../components/forms/CoverageSitesEditor';
 import CommunicationPlanPanel from '../components/forms/CommunicationPlanPanel';
 import NetScriptPanel from '../components/forms/NetScriptPanel';
 import AnnouncementsPanel from '../components/forms/AnnouncementsPanel';
@@ -87,6 +88,11 @@ const CreateNet: React.FC = () => {
   const [ics309HideMutedStations, setIcs309HideMutedStations] = useState(true);
   const [propagationLoggingEnabled, setPropagationLoggingEnabled] = useState(false);
   const [selfCanHearEnabled, setSelfCanHearEnabled] = useState(true);
+  const [coverageExcludedFrequencyIds, setCoverageExcludedFrequencyIds] = useState<number[]>([]);
+  // Coverage drill sites (net only), and the list as loaded, so saving only
+  // touches them when they changed.
+  const [coverageSites, setCoverageSites] = useState<SiteDraft[]>([]);
+  const [loadedCoverageSites, setLoadedCoverageSites] = useState<string>('[]');
   const [authenticated, setAuthenticated] = useState(false);
   // Assisted Traffic Handling. Opt-in like the two above; an empty
   // trafficFormTypes means "offer every form type", not "none".
@@ -223,6 +229,17 @@ const CreateNet: React.FC = () => {
       setPropagationLoggingEnabled(net.propagation_logging_enabled || false);
       setAuthenticated(net.authenticated || false);
       setSelfCanHearEnabled(net.self_can_hear_enabled !== false);
+      setCoverageExcludedFrequencyIds(net.coverage_excluded_frequency_ids || []);
+      if (net.propagation_logging_enabled) {
+        try {
+          const sitesRes = await coverageSiteApi.listSites(parseInt(netId));
+          const drafts = sitesRes.data.map(siteToDraft);
+          setCoverageSites(drafts);
+          setLoadedCoverageSites(JSON.stringify(draftsToPayload(drafts)));
+        } catch (error) {
+          console.error('Failed to load coverage sites:', error);
+        }
+      }
       setTrafficEnabled(net.traffic_enabled || false);
       setTrafficFormTypes(net.traffic_form_types || []);
       setTrafficStripFormType(net.traffic_strip_form_type || '');
@@ -338,6 +355,8 @@ const CreateNet: React.FC = () => {
     ics309_hide_muted_stations: ics309HideMutedStations,
     propagation_logging_enabled: propagationLoggingEnabled,
     self_can_hear_enabled: selfCanHearEnabled,
+    // Only exclusions among the frequencies still on the net.
+    coverage_excluded_frequency_ids: coverageExcludedFrequencyIds.filter((id) => selectedFrequencyIds.includes(id)),
     authenticated,
     traffic_enabled: trafficEnabled,
     traffic_form_types: trafficFormTypes,
@@ -353,6 +372,16 @@ const CreateNet: React.FC = () => {
     poll_enabled: pollEnabled,
     poll_question: pollQuestion || null,
   });
+
+  // Sites save separately from the net (PUT /nets/{id}/coverage-sites),
+  // after it, since a new net has no id until it's created. Skipped when
+  // nothing changed, so an edit never rewrites them needlessly.
+  const saveCoverageSites = async (id: number) => {
+    if (!propagationLoggingEnabled) return;
+    const payload = draftsToPayload(coverageSites);
+    if (JSON.stringify(payload) === loadedCoverageSites) return;
+    await coverageSiteApi.saveSites(id, payload);
+  };
 
   const handleCreateNet = async () => {
     try {
@@ -372,10 +401,12 @@ const CreateNet: React.FC = () => {
           setSavedScheduleAnnouncements(scheduleAnnouncements);
         }
         const response = await netApi.update(parseInt(netId!), payload);
+        await saveCoverageSites(response.data.id);
         navigate(`/nets/${response.data.id}`);
       } else {
         const response = await netApi.create(payload);
         const newNetId = response.data.id;
+        await saveCoverageSites(newNetId);
         for (const ncsUser of pendingNCSUsers) {
           try {
             await api.post(`/nets/${newNetId}/roles?user_id=${ncsUser.id}&role=NCS`);
@@ -449,6 +480,7 @@ const CreateNet: React.FC = () => {
     ics309HideMutedStations, setIcs309HideMutedStations,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
     selfCanHearEnabled, setSelfCanHearEnabled,
+    coverageSites, setCoverageSites,
     authenticated, setAuthenticated,
     trafficEnabled, setTrafficEnabled,
     trafficFormTypes, setTrafficFormTypes,
@@ -537,6 +569,8 @@ const CreateNet: React.FC = () => {
               setFrequencies={setFrequencies as React.Dispatch<React.SetStateAction<FrequencyItem[]>>}
               selectedFrequencyIds={selectedFrequencyIds}
               setSelectedFrequencyIds={setSelectedFrequencyIds}
+              coverageExcludedFrequencyIds={propagationLoggingEnabled ? coverageExcludedFrequencyIds : undefined}
+              setCoverageExcludedFrequencyIds={propagationLoggingEnabled ? setCoverageExcludedFrequencyIds : undefined}
             />
           </TabPanel>
 

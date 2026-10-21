@@ -542,3 +542,112 @@ shots:
     caption: >
       The overlay draws every report as a line, so a gap in coverage shows up
       as a town with no lines to it.
+
+  # ---------- Coverage drills (docs/net-managers/coverage-drills.md) ----------
+  - id: check-in-at-a-site
+    section: net-control
+    page: /docs/net-managers/coverage-drills/
+    route: /nets/{{net:set}}
+    as: W1PINE
+    mobile: true
+    viewport:
+      width: 390
+      height: 844
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'h6:has-text("New Check-in")'
+      - wait_for: 'input[placeholder="Location or site"]:visible'
+      - click: 'input[placeholder="Location or site"]:visible'
+      - wait_for: '.MuiAutocomplete-popper'
+    element:
+      - 'div.MuiPaper-root:has(> div > h6:has-text("New Check-in"))'
+      - '.MuiAutocomplete-popper'
+    pad: 12
+    annotate:
+      - selector: 'input[placeholder="Location or site"]:visible'
+        style: box
+    alt: >
+      The New Check-in form on a phone, with its Location box outlined in
+      red and open on a list of the net's sites: Example County EOC,
+      Windham, ME; North Office, Bridgton, ME; Naples Shelter, Naples, ME;
+      Freeport Shelter, Freeport, ME; and Gray Weather Office FN43rv.
+    caption: On a net with sites, Location offers them. Picking one puts the station at that site.
+
+  - id: can-hear-dialog-site
+    section: net-control
+    page: /docs/net-managers/coverage-drills/
+    route: /nets/{{net:set}}
+    as: W1PINE
+    viewport:
+      width: 1440
+      height: 1600
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'tr:has-text("K1COVE") button[title="Who can this station hear?"]'
+      - wait_for: '.MuiDialog-paper:visible'
+      - hover: '.MuiDialogTitle-root'
+    element: '.MuiDialog-paper'
+    pad: 16
+    annotate:
+      - selector: '.MuiDialog-paper div:has(> h6:has-text("Repeaters and nodes"))'
+        style: box
+    alt: >
+      The Who can K1COVE hear? dialog on the SET net. A grid of stations
+      against 146.520 FM and 3.930 SSB, each station's site shown under its
+      callsign, such as North Office under W1PINE. Operating Position reads Naples
+      Shelter. In the Repeaters and nodes section, outlined in red, the County VHF
+      repeater is Reached, and the County UHF repeater and the EOC packet
+      node are Couldn't reach, each with a note. Outside the net lists
+      W1ANDY, Androscoggin County EOC, heard only.
+    caption: >
+      One dialog records who a station heard, which repeaters and nodes it
+      got into, and stations it reached outside the net.
+
+  - id: site-coverage-reach
+    section: net-control
+    page: /docs/net-managers/coverage-drills/
+    route: /nets/{{net:set}}/pane/coverage
+    as: W1PINE
+    viewport:
+      width: 1280
+      height: 1800
+    wait_for: 'text=Reaching the primary sites'
+    element:
+      - 'h6:has-text("Reaching the primary sites")'
+      - 'h6:has-text("Between sites") ~ div'
+    pad: 16
+    alt: >
+      Coverage by site. A table checks every site against the two starred
+      offices: Gray Weather Office reaches the Example County EOC two-way on
+      146.520 FM; Naples Shelter reaches it through a relay, the North
+      Office; Freeport Shelter reaches it through W2FERN, a home station,
+      and has no path to the North Office. Below it, a grid of sites lists
+      the frequencies each row heard each column on, two-way ones marked
+      with a double arrow.
+    caption: >
+      Every site against the primary offices: two-way, through a relay,
+      one-way only, or no path.
+
+  - id: site-coverage-access
+    section: net-control
+    page: /docs/net-managers/coverage-drills/
+    route: /nets/{{net:set}}/pane/coverage
+    as: W1PINE
+    viewport:
+      width: 1280
+      height: 2400
+    wait_for: '.leaflet-marker-icon:visible'
+    steps:
+      - wait: 2500
+    element:
+      - 'h6:has-text("Repeaters and nodes")'
+      - 'h6:has-text("Contacts outside the net") ~ div'
+    pad: 16
+    alt: >
+      The rest of Coverage by site. Repeaters and nodes: Naples Shelter
+      reached the County VHF repeater but not the County UHF repeater or the
+      EOC packet node, each with a note saying why; Freeport reached the VHF
+      repeater at 50 W; Gray Weather Office reached all three. A map of the
+      sites follows, with lines for each path. Counties reached lists York
+      and Androscoggin, and the contacts outside the net are listed last.
+    caption: Repeater and node results keep their notes, which is what explains a failure afterward.

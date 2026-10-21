@@ -219,10 +219,25 @@ export const checkInApi = {
 export const canHearApi = {
   list: (netId: number) =>
     api.get(`/nets/${netId}/can-hear-reports`),
-  save: (netId: number, payload: { reporter_check_in_id: number; heard_check_in_ids: number[]; frequency_id?: number | null; operating_position?: string | null }) =>
+  save: (netId: number, payload: { reporter_check_in_id: number; heard_check_in_ids: number[]; frequency_id?: number | null; operating_position?: string | null; coverage_site_id?: number | null }) =>
     api.put(`/nets/${netId}/can-hear-reports`, payload),
   updateFrequency: (netId: number, reportId: number, frequencyId: number | null) =>
     api.patch(`/nets/${netId}/can-hear-reports/${reportId}`, { frequency_id: frequencyId }),
+};
+
+// Coverage sites, contacts outside the net, and the by-site rollup
+// (backend routers/coverage_sites.py). Reads are open to guests.
+export const coverageSiteApi = {
+  listSites: (netId: number) => api.get(`/nets/${netId}/coverage-sites`),
+  saveSites: (netId: number, sites: { id?: number; name: string; location: string | null; site_type: 'office' | 'shelter' | 'infrastructure'; is_primary: boolean; frequency_id: number | null }[]) =>
+    api.put(`/nets/${netId}/coverage-sites`, sites),
+  listContacts: (netId: number) => api.get(`/nets/${netId}/coverage-contacts`),
+  saveContacts: (netId: number, reporterCheckInId: number, contacts: { frequency_id: number | null; callsign: string | null; station: string | null; county: string | null; state: string | null; two_way: boolean }[]) =>
+    api.put(`/nets/${netId}/coverage-contacts`, { reporter_check_in_id: reporterCheckInId, contacts }),
+  listAccess: (netId: number) => api.get(`/nets/${netId}/coverage-access`),
+  saveAccess: (netId: number, reporterCheckInId: number, results: { target_site_id: number; reached: boolean; note: string | null }[]) =>
+    api.put(`/nets/${netId}/coverage-access`, { reporter_check_in_id: reporterCheckInId, results }),
+  summary: (netId: number) => api.get(`/nets/${netId}/site-coverage`),
 };
 
 // Template API

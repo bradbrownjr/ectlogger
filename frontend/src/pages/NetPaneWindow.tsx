@@ -26,6 +26,9 @@ import Announcements from '../components/Announcements';
 import ScheduleAnnouncements from '../components/ScheduleAnnouncements';
 import CheckInTable from '../components/netview/CheckInTable';
 import CanHearDialog from '../components/netview/CanHearDialog';
+import SiteCoverageView from '../components/netview/SiteCoverageView';
+import { useSiteCoverage } from '../hooks/useSiteCoverage';
+import SiteLocationField from '../components/netview/SiteLocationField';
 import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
 import { getCheckInActions, type LookupFilled } from '../components/netview/checkInActions';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
@@ -119,6 +122,7 @@ const NetPaneWindow: React.FC = () => {
     pollResponses, topicResponses,
     fetchNet, fetchCheckIns, fetchNetRoles, fetchNetStats,
   } = useNetData(netId);
+  const siteCoverage = useSiteCoverage(netId ? Number(netId) : null, !!net?.propagation_logging_enabled);
 
   // Which check-ins are currently mid-flash for having self-checked-in
   // without staff aid -- see sneakInHighlight.ts. Called unconditionally,
@@ -138,6 +142,7 @@ const NetPaneWindow: React.FC = () => {
   // fetchCanHearReports for why this is always a full refetch, never a patch.
   const fetchCanHearReports = async () => {
     if (!netId) return;
+    siteCoverage.refresh();
     try {
       const response = await canHearApi.list(parseInt(netId));
       setCanHearReports(response.data);
@@ -262,15 +267,24 @@ const NetPaneWindow: React.FC = () => {
   }
 
   if (paneType === 'coverage') {
+    const paneFrequencyLabels = Object.fromEntries(
+      (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
+    );
+    const summary = siteCoverage.summary;
+    const hasSiteView = summary.nodes.some((n) => n.kind === 'site') || summary.targets.length > 0 || summary.contacts.length > 0;
     return (
       <Box sx={{ height: '100vh', width: '100vw', p: 0.5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
+        {/* Coverage by site first on a drill with sites, then every report */}
+        {hasSiteView && (
+          <Box sx={{ mb: 2 }}>
+            <SiteCoverageView summary={summary} frequencyLabels={paneFrequencyLabels} />
+          </Box>
+        )}
         <CoverageReport
           netId={Number(netId)}
           reports={canHearReports}
           showFrequencyColumn={(net.frequencies || []).length > 1}
-          frequencyLabels={Object.fromEntries(
-            (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
-          )}
+          frequencyLabels={paneFrequencyLabels}
         />
       </Box>
     );
@@ -514,6 +528,9 @@ const NetPaneWindow: React.FC = () => {
           reporterCheckIn={canHearDialogCheckIn}
           allCheckIns={checkIns}
           existingReports={canHearReports}
+          sites={siteCoverage.sites}
+          existingContacts={siteCoverage.contacts}
+          existingAccess={siteCoverage.access}
           onSaved={() => setCanHearDialogCheckInId(null)}
           onToast={setToastMessage}
         />
@@ -580,7 +597,14 @@ const NetPaneWindow: React.FC = () => {
               <TextField size="small" value={checkInForm.name} onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })} placeholder="Name" autoComplete="off" sx={{ width: 120 }} />
             )}
             {net?.field_config?.location?.enabled && (
-              <TextField size="small" value={checkInForm.location} onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })} placeholder="Location" sx={{ width: 150 }} />
+              <Box sx={{ width: 150 }}>
+                <SiteLocationField
+                  sites={siteCoverage.sites}
+                  value={checkInForm.location}
+                  onChange={(location, coverageSiteId) => setCheckInForm((prev: any) => ({ ...prev, location, coverage_site_id: coverageSiteId }))}
+                  textFieldProps={{ size: 'small', placeholder: siteCoverage.sites.length > 0 ? 'Location or site' : 'Location', fullWidth: true }}
+                />
+              </Box>
             )}
             {net?.field_config?.skywarn_number?.enabled && (
               <TextField size="small" value={checkInForm.skywarn_number} onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })} placeholder="Spotter #" sx={{ width: 100 }} />

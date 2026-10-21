@@ -5,6 +5,7 @@ import Chat from '../Chat';
 import ActivityLog from '../ActivityLog';
 import CheckInMap from '../CheckInMap';
 import CoveragePanel from './CoveragePanel';
+import { SiteCoverageSummary } from '../../utils/coverageSites';
 import TrafficPanel from './TrafficPanel';
 import ResizeHandle from '../ResizeHandle';
 import useResizableSplit from '../../hooks/useResizableSplit';
@@ -85,6 +86,7 @@ interface NetViewSidePanelsProps {
   // through to the docked CheckInMap exactly as NetView.tsx passes it to its
   // own floating CheckInMap instance, rather than re-fetching here.
   canHearReports: any[];
+  siteCoverage?: SiteCoverageSummary;
   // Station Coverage side panel (Phase 3 chrome + Phase 4 map cross-link).
   // On-demand like Map above (opened via the toolbar), so it also needs
   // coverageOpen true, not just coverageDocked.
@@ -172,6 +174,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   onMinimizeMap,
   onRestoreMap,
   canHearReports,
+  siteCoverage,
   coverageOpen,
   coverageDocked,
   coverageMinimized,
@@ -347,6 +350,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           canManage={canReportCanHear}
           currentUserId={currentUserId}
           onToast={onToast}
+          siteCoverage={siteCoverage}
         />
       ),
     });
@@ -524,6 +528,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
             canManage={canReportCanHear}
             currentUserId={currentUserId}
             onToast={onToast}
+            siteCoverage={siteCoverage}
           />
         </FloatingWindow>
       )}

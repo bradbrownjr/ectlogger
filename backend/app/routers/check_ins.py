@@ -8,7 +8,7 @@ import json
 import logging
 from app.database import get_db
 from app.services.callsign_people import find_user_by_callsign, follow_callsign_correction
-from app.models import CheckIn, FieldDefinition, Net, NetStatus, User, UserRole, StationStatus, NetRole, Contact, Frequency
+from app.models import CheckIn, CoverageSite, FieldDefinition, Net, NetStatus, User, UserRole, StationStatus, NetRole, Contact, Frequency
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse, ExpectedCodeResponse, VerifyIdentityRequest
 from app.dependencies import get_current_user, get_current_user_optional
 from app.utils import display_callsign, looks_like_email_or_url
@@ -122,6 +122,16 @@ async def _sync_contact_location(
         await db.rollback()
 
 
+async def _coverage_site_for_net(db: AsyncSession, net_id: int, site_id: int) -> CoverageSite:
+    """The coverage site, or a 400 when it isn't one of this net's."""
+    site = (await db.execute(
+        select(CoverageSite).where(CoverageSite.id == site_id, CoverageSite.net_id == net_id)
+    )).scalar_one_or_none()
+    if site is None or site.site_type == 'infrastructure':
+        raise HTTPException(status_code=400, detail="That site isn't one of this net's sites")
+    return site
+
+
 @router.post("/nets/{net_id}/check-ins", response_model=CheckInResponse, status_code=status.HTTP_201_CREATED)
 async def create_check_in(
     net_id: int,
@@ -226,6 +236,16 @@ async def create_check_in(
                 detail=f"Invalid frequency IDs: {invalid_freqs}. Must be from net's prescribed frequencies."
             )
     
+    # A site picked at check-in places the station there. With no location
+    # typed, the site's own place stands in for it, so the map pin and the
+    # "rechecked from ..." message show the shelter. That matters most on a
+    # recheck, which would otherwise reuse the first visit's location.
+    if check_in_data.coverage_site_id is not None:
+        site = await _coverage_site_for_net(db, net_id, check_in_data.coverage_site_id)
+        if not (check_in_data.location or '').strip():
+            from app.services.site_coverage import site_line
+            check_in_data.location = site_line(site.name, site.location)[:200]
+
     # Check if this is a recheck (user previously checked in to this net)
     # Find the root (original) check-in for this callsign to use as parent_check_in_id,
     # and the latest row to know whether the station is currently still checked in.
@@ -297,6 +317,7 @@ async def create_check_in(
             custom_fields=custom_fields_json,
             frequency_id=check_in_data.frequency_id,
             available_frequencies=available_frequencies_json,
+            coverage_site_id=check_in_data.coverage_site_id,
             is_recheck=True,
             parent_check_in_id=root_check_in.id,
             checked_in_by_id=current_user.id,
@@ -324,6 +345,7 @@ async def create_check_in(
             custom_fields=custom_fields_json,
             frequency_id=check_in_data.frequency_id,
             available_frequencies=available_frequencies_json,
+            coverage_site_id=check_in_data.coverage_site_id,
             is_recheck=False,
             parent_check_in_id=None,
             checked_in_by_id=current_user.id,
@@ -580,6 +602,9 @@ async def update_check_in(
         check_in.custom_fields = json.dumps(existing_custom)
     
     old_callsign = check_in.callsign
+
+    if update_data.get('coverage_site_id') is not None:
+        await _coverage_site_for_net(db, check_in.net_id, update_data['coverage_site_id'])
 
     # Update remaining fields
     for field, value in update_data.items():

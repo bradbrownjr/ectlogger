@@ -336,3 +336,33 @@ shots:
     caption: >
       The link sits above the subscriber list, so the people it brings in
       show up right below it.
+
+  # ---------- Coverage drills (docs/net-managers/coverage-drills.md) ----------
+  - id: coverage-sites-editor
+    section: net-managers
+    page: /docs/net-managers/coverage-drills/
+    route: /nets/{{net:set}}/edit
+    as: W1PINE
+    viewport:
+      width: 1280
+      height: 1600
+    wait_for: 'button:has-text("Add site")'
+    steps:
+      - hover: 'h6:has-text("Sites")'
+    element:
+      - 'h6:has-text("Sites")'
+      - 'button:has-text("Add site")'
+    pad: 16
+    annotate:
+      - selector: 'button:has-text("Add site")'
+        style: box
+    alt: >
+      The Sites list under coverage logging in the net's settings. Each row
+      has the site typed as one line, such as Naples Shelter, Naples, ME,
+      with the name and place it was split into shown underneath, then its
+      type and a Primary star. The Example County EOC and the North Office
+      are starred. The three repeaters and nodes have a Frequency box
+      instead of a star. Add site, at the bottom, is outlined in red.
+    caption: >
+      Type each site as one line. Star the offices every other site should
+      reach.

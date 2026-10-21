@@ -46,6 +46,12 @@ interface CommunicationPlanPanelProps {
   setFrequencies: React.Dispatch<React.SetStateAction<FrequencyItem[]>>;
   selectedFrequencyIds: number[];
   setSelectedFrequencyIds: React.Dispatch<React.SetStateAction<number[]>>;
+  // Coverage logging on: which of the selected frequencies collect coverage
+  // reports. Stored as an exclusion list (Net/NetTemplate
+  // .coverage_excluded_frequency_ids) so a frequency added later collects
+  // them by default. Omit both to hide the section.
+  coverageExcludedFrequencyIds?: number[];
+  setCoverageExcludedFrequencyIds?: React.Dispatch<React.SetStateAction<number[]>>;
 }
 
 const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
@@ -53,6 +59,8 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
   setFrequencies,
   selectedFrequencyIds,
   setSelectedFrequencyIds,
+  coverageExcludedFrequencyIds,
+  setCoverageExcludedFrequencyIds,
 }) => {
   const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
   const [frequencyFilter, setFrequencyFilter] = useState('');
@@ -261,6 +269,38 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* ========== COVERAGE FREQUENCIES ========== */}
+      {/* Only when coverage logging is on: a drill's repeater or DMR
+          talkgroup says nothing about who hears whom directly, so the
+          manager can leave it out of the "who can you hear?" dialog. */}
+      {coverageExcludedFrequencyIds && setCoverageExcludedFrequencyIds && selectedFrequencyIds.length > 0 && (
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="subtitle2">Coverage reports</Typography>
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+            Untick repeaters and talkgroups. Everyone hears everyone through them, so only direct (simplex) frequencies
+            say who can reach whom. To record whether a site could get into a repeater, add it as a site of type
+            Repeater or node instead.
+          </Typography>
+          {frequencies
+            .filter((f) => f.id != null && selectedFrequencyIds.includes(f.id))
+            .map((f) => (
+              <Box key={f.id}>
+                <Checkbox
+                  size="small"
+                  checked={!coverageExcludedFrequencyIds.includes(f.id!)}
+                  onChange={(e) => setCoverageExcludedFrequencyIds((prev) =>
+                    e.target.checked ? prev.filter((id) => id !== f.id) : [...prev, f.id!]
+                  )}
+                  inputProps={{ 'aria-label': `Collect coverage reports on ${getDisplayText(f)} ${f.mode}` }}
+                />
+                <Typography variant="body2" component="span">
+                  {getDisplayText(f)} {f.mode}{f.talkgroup ? ` TG ${f.talkgroup}` : ''}{f.description ? ` (${f.description})` : ''}
+                </Typography>
+              </Box>
+            ))}
+        </Box>
+      )}
     </>
   );
 };

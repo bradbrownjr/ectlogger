@@ -27,6 +27,7 @@ async def send_net_log(
     poll_question: str = None,
     propagation_logging_enabled: bool = False,
     coverage_edges: list = None,
+    site_coverage: dict = None,
     traffic_enabled: bool = False,
     traffic_summary: dict = None,
     unsubscribe_token: str = None
@@ -175,6 +176,67 @@ async def send_net_log(
             </div>
             {% endif %}
 
+            {% if propagation_enabled and site_coverage %}
+            <div class="poll-section" style="background-color: #e8f5e9; border-left: 4px solid #2e7d32;">
+                <h3>📍 Coverage by Site</h3>
+                {% if site_coverage.reach %}
+                <h4>Reaching the primary sites</h4>
+                <table>
+                    <thead><tr><th>Site</th><th>Primary site</th><th>Result</th><th>Details</th></tr></thead>
+                    <tbody>
+                        {% for row in site_coverage.reach %}
+                        <tr><td>{{ (row.site)|e }}</td><td>{{ (row.primary)|e }}</td><td>{{ (row.status)|e }}</td><td>{{ (row.detail)|e }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+                {% if site_coverage.access %}
+                <h4>Repeaters and nodes</h4>
+                <table>
+                    <thead><tr><th>From</th><th>Repeater or node</th><th>Result</th><th>Notes</th></tr></thead>
+                    <tbody>
+                        {% for row in site_coverage.access %}
+                        <tr><td>{{ (row['from'])|e }}</td><td>{{ (row.target)|e }}</td><td>{{ (row.result)|e }}</td><td>{{ (row.notes or '—')|e }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+                {% if site_coverage.pairs %}
+                <h4>Between sites</h4>
+                <table>
+                    <thead><tr><th>Sites</th><th>What worked</th></tr></thead>
+                    <tbody>
+                        {% for row in site_coverage.pairs %}
+                        <tr><td>{{ (row.label)|e }}</td><td>{{ (row.detail)|e }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+                {% if site_coverage.counties %}
+                <h4>Counties reached</h4>
+                <table>
+                    <thead><tr><th>County</th><th>Reached from</th><th>Frequency</th></tr></thead>
+                    <tbody>
+                        {% for row in site_coverage.counties %}
+                        <tr><td>{{ (row.county)|e }}</td><td>{{ (row.from)|e }}</td><td>{{ (row.frequencies)|e }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+                {% if site_coverage.contacts %}
+                <h4>Contacts outside the net</h4>
+                <table>
+                    <thead><tr><th>From</th><th>Station</th><th>County</th><th>Frequency</th><th>Direction</th></tr></thead>
+                    <tbody>
+                        {% for row in site_coverage.contacts %}
+                        <tr><td>{{ (row['from'])|e }}</td><td>{{ (row.station)|e }}</td><td>{{ (row['where'] or '—')|e }}</td><td>{{ (row.frequency)|e }}</td><td>{{ (row.direction)|e }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
+            {% endif %}
+
             {% if traffic_enabled and traffic_summary and traffic_total %}
             <div class="poll-section" style="background-color: #fce4ec; border-left: 4px solid #c2185b;">
                 <h3>📨 Traffic Handled</h3>
@@ -270,6 +332,7 @@ async def send_net_log(
         total_poll_responses=total_poll_responses,
         propagation_enabled=propagation_logging_enabled,
         coverage_pairs=coverage_pairs,
+        site_coverage=site_coverage,
         traffic_enabled=traffic_enabled,
         traffic_summary=traffic_summary,
         traffic_total=sum(traffic_summary.values()) if traffic_summary else 0,

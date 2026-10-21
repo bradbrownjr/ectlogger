@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Autocomplete,
   Box,
@@ -10,6 +10,7 @@ import {
   DialogTitle,
   FormControl,
   FormControlLabel,
+  IconButton,
   InputLabel,
   MenuItem,
   Select,
@@ -22,7 +23,10 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { canHearApi } from '../../services/api';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { canHearApi, coverageSiteApi } from '../../services/api';
+import { CoverageAccess, CoverageContact, CoverageSite, coverageFrequencies, infrastructureSites, reportingSites, stationSiteName } from '../../utils/coverageSites';
 
 // ========== "WHO CAN THIS STATION HEAR?" COVERAGE REPORTING DIALOG ==========
 // Phase 2 of the "can hear" inter-station propagation logging feature (see
@@ -49,6 +53,50 @@ import { canHearApi } from '../../services/api';
 
 const OPERATING_POSITION_OPTIONS = ['Home', 'Field Deployed'];
 
+// One editable row of "Outside the net" - a station reached that never
+// checked in (a neighboring county's EOC). Saved as a whole set per reporting
+// check-in, like the checkboxes above (routers/coverage_sites.py).
+interface ContactDraft {
+  callsign: string;
+  station: string;
+  county: string;
+  state: string;
+  frequency_id: number | null;
+  two_way: boolean;
+}
+
+const toDraft = (c: CoverageContact): ContactDraft => ({
+  callsign: c.callsign || '',
+  station: c.station || '',
+  county: c.county || '',
+  state: c.state || '',
+  frequency_id: c.frequency_id,
+  two_way: c.two_way,
+});
+
+// A station's callsign, with its site on the line below when it has one, so
+// a long site name wraps under the callsign instead of breaking it apart.
+const StationName: React.FC<{ station: any; sitesById: Map<number, CoverageSite> }> = ({ station, sitesById }) => {
+  const site = stationSiteName(station, sitesById);
+  return (
+    <>
+      <span>{station.callsign}{station.status === 'checked_out' ? ' (checked out)' : ''}</span>
+      {site && <Typography component="span" variant="caption" color="text.secondary" display="block">{site}</Typography>}
+    </>
+  );
+};
+
+type AccessDraft = Record<number, { result: 'reached' | 'failed'; note: string }>;
+
+// This station's saved repeater and node results, keyed by target site.
+const accessFor = (existing: CoverageAccess[], checkInId: number): AccessDraft => {
+  const drafts: AccessDraft = {};
+  existing
+    .filter((a) => a.reporter_check_in_id === checkInId)
+    .forEach((a) => { drafts[a.target_site_id] = { result: a.reached ? 'reached' : 'failed', note: a.note || '' }; });
+  return drafts;
+};
+
 interface CanHearDialogProps {
   open: boolean;
   onClose: () => void;
@@ -57,6 +105,10 @@ interface CanHearDialogProps {
   reporterCheckIn: any;
   allCheckIns: any[];
   existingReports: any[];
+  // The net's coverage sites and its contacts outside the net (useSiteCoverage).
+  sites?: CoverageSite[];
+  existingContacts?: CoverageContact[];
+  existingAccess?: CoverageAccess[];
   onSaved: () => void;
   // Reuses NetView's existing app-wide toast/Snackbar (setToastMessage) for
   // error display, matching the pattern already used across checkInActions.ts.
@@ -91,20 +143,33 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
   reporterCheckIn,
   allCheckIns,
   existingReports,
+  sites: allSites = [],
+  existingContacts = [],
+  existingAccess = [],
   onSaved,
   onToast,
 }) => {
-  const netFrequencies: any[] = net?.frequencies || [];
+  // Only the frequencies this net collects coverage on: a drill's repeater
+  // and DMR talkgroup are excluded by its manager, since everyone hears
+  // everyone through them.
+  const netFrequencies: any[] = coverageFrequencies(net);
+  const sitesById = new Map(allSites.map((site) => [site.id, site]));
+  // Places a station can be at, and the repeaters and nodes it tries.
+  const sites = reportingSites(allSites);
+  const targets = infrastructureSites(allSites);
   // 2+ frequencies switches to the per-frequency grid layout - with 0 or 1
   // there's nothing for columns to distinguish, so the original single list
   // (with its own frequency dropdown for the 1-frequency case) stays simpler.
   const gridMode = netFrequencies.length > 1;
 
-  const [selectedFrequencyId, setSelectedFrequencyId] = useState<number | null>(
-    net?.active_frequency_id ?? null
-  );
+  // Starts on the net's active frequency when that one collects coverage,
+  // otherwise on the only coverage frequency if there's just one.
+  const initialFrequencyId: number | null =
+    netFrequencies.some((f) => f.id === net?.active_frequency_id) ? net.active_frequency_id
+      : netFrequencies.length === 1 ? netFrequencies[0].id : null;
+  const [selectedFrequencyId, setSelectedFrequencyId] = useState<number | null>(initialFrequencyId);
   const [checkedIds, setCheckedIds] = useState<Set<number>>(() =>
-    deriveCheckedIds(existingReports, reporterCheckIn.id, net?.active_frequency_id ?? null)
+    deriveCheckedIds(existingReports, reporterCheckIn.id, initialFrequencyId)
   );
   // Grid mode: one checked-set per net frequency, keyed by frequency_id -
   // each column reconciles independently server-side, so this just mirrors
@@ -121,7 +186,63 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
   // Defaults to "Home" when the station has no operating position recorded
   // yet - most stations reporting on a routine net are home stations, so
   // this saves the common case a click rather than leaving the field blank.
-  const [operatingPosition, setOperatingPosition] = useState<string>(reporterCheckIn.operating_position || 'Home');
+  // On a net with sites, the station's site is offered first and an
+  // operator not yet placed starts blank rather than at Home, since most
+  // stations on a drill with sites are at one.
+  const currentSite = reporterCheckIn.coverage_site_id != null ? sitesById.get(reporterCheckIn.coverage_site_id) : undefined;
+  const [operatingPosition, setOperatingPosition] = useState<string>(
+    currentSite?.name || reporterCheckIn.operating_position || (sites.length > 0 ? '' : 'Home')
+  );
+  const positionOptions = [...sites.map((site) => site.name), ...OPERATING_POSITION_OPTIONS];
+  const siteForPosition = (text: string) =>
+    sites.find((site) => site.name.toLowerCase() === text.trim().toLowerCase());
+
+  const [contacts, setContacts] = useState<ContactDraft[]>(() =>
+    existingContacts.filter((c) => c.reporter_check_in_id === reporterCheckIn.id).map(toDraft)
+  );
+  const [contactsChanged, setContactsChanged] = useState(false);
+  // The net's contacts and access results load alongside its sites and can
+  // arrive after the dialog opens. Until the user edits a section, follow
+  // what's saved, or the section opens empty and Save erases it.
+  useEffect(() => {
+    if (!contactsChanged) {
+      setContacts(existingContacts.filter((c) => c.reporter_check_in_id === reporterCheckIn.id).map(toDraft));
+    }
+  }, [existingContacts, reporterCheckIn.id, contactsChanged]);
+  const updateContact = (index: number, patch: Partial<ContactDraft>) => {
+    setContacts((prev) => prev.map((c, i) => (i === index ? { ...c, ...patch } : c)));
+    setContactsChanged(true);
+  };
+  const addContact = () => {
+    setContacts((prev) => [...prev, {
+      callsign: '', station: '', county: '', state: '',
+      frequency_id: netFrequencies.length === 1 ? netFrequencies[0].id : selectedFrequencyId, two_way: true,
+    }]);
+    setContactsChanged(true);
+  };
+  const removeContact = (index: number) => {
+    setContacts((prev) => prev.filter((_, i) => i !== index));
+    setContactsChanged(true);
+  };
+  // Repeaters and nodes: 'reached', 'failed', or absent for "didn't try".
+  const [access, setAccess] = useState<AccessDraft>(() => accessFor(existingAccess, reporterCheckIn.id));
+  const [accessChanged, setAccessChanged] = useState(false);
+  useEffect(() => {
+    if (!accessChanged) setAccess(accessFor(existingAccess, reporterCheckIn.id));
+  }, [existingAccess, reporterCheckIn.id, accessChanged]);
+  const setAccessResult = (targetId: number, result: '' | 'reached' | 'failed') => {
+    setAccess((prev) => {
+      const next = { ...prev };
+      if (result === '') delete next[targetId];
+      else next[targetId] = { result, note: prev[targetId]?.note || '' };
+      return next;
+    });
+    setAccessChanged(true);
+  };
+  const setAccessNote = (targetId: number, note: string) => {
+    setAccess((prev) => (prev[targetId] ? { ...prev, [targetId]: { ...prev[targetId], note } } : prev));
+    setAccessChanged(true);
+  };
   const [saving, setSaving] = useState(false);
 
   // Changing the frequency re-derives which checkboxes are pre-checked, since
@@ -195,6 +316,11 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
   };
 
   const handleSave = async () => {
+    // A row with neither a callsign nor a station name is an empty "Add"
+    // nobody filled in: drop it rather than have the save refused.
+    const filledContacts = contacts.filter((c) => c.callsign.trim() || c.station.trim());
+    const position = operatingPosition.trim() || null;
+    const coverageSiteId = position ? siteForPosition(position)?.id ?? null : null;
     setSaving(true);
     try {
       if (gridMode) {
@@ -207,7 +333,8 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
               reporter_check_in_id: reporterCheckIn.id,
               heard_check_in_ids: Array.from(checkedByFrequency[freq.id] ?? []),
               frequency_id: freq.id,
-              operating_position: operatingPosition.trim() || null,
+              operating_position: position,
+              coverage_site_id: coverageSiteId,
             })
           )
         );
@@ -216,8 +343,26 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
           reporter_check_in_id: reporterCheckIn.id,
           heard_check_in_ids: Array.from(checkedIds),
           frequency_id: selectedFrequencyId,
-          operating_position: operatingPosition.trim() || null,
+          operating_position: position,
+          coverage_site_id: coverageSiteId,
         });
+      }
+      if (accessChanged) {
+        await coverageSiteApi.saveAccess(netId, reporterCheckIn.id, Object.entries(access).map(([targetId, a]) => ({
+          target_site_id: Number(targetId),
+          reached: a.result === 'reached',
+          note: a.note.trim() || null,
+        })));
+      }
+      if (contactsChanged) {
+        await coverageSiteApi.saveContacts(netId, reporterCheckIn.id, filledContacts.map((c) => ({
+          callsign: c.callsign.trim() || null,
+          station: c.station.trim() || null,
+          county: c.county.trim() || null,
+          state: c.state.trim() || null,
+          frequency_id: c.frequency_id,
+          two_way: c.two_way,
+        })));
       }
       onSaved();
     } catch (error: any) {
@@ -248,7 +393,7 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
             per frequency, so a combined repeater/simplex drill can tell them
             apart. Defaults to the net's active frequency. Grid mode below
             replaces this with one column per frequency instead. */}
-        {!gridMode && net?.frequencies && net.frequencies.length > 0 && (
+        {!gridMode && netFrequencies.length > 0 && (
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel id="can-hear-frequency-label">Frequency</InputLabel>
             <Select
@@ -260,7 +405,7 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
               <MenuItem value="">
                 <em>No specific frequency</em>
               </MenuItem>
-              {net.frequencies.map((freq: any) => (
+              {netFrequencies.map((freq: any) => (
                 <MenuItem key={freq.id} value={freq.id}>
                   {frequencyLabel(freq)}
                 </MenuItem>
@@ -302,7 +447,7 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
                 {otherStations.map((station: any) => (
                   <TableRow key={station.id} sx={{ opacity: station.status === 'checked_out' ? 0.6 : 1 }}>
                     <TableCell>
-                      {station.callsign}{station.status === 'checked_out' ? ' (checked out)' : ''}
+                      <StationName station={station} sitesById={sitesById} />
                     </TableCell>
                     {netFrequencies.map((freq) => (
                       <TableCell key={freq.id} align="center" sx={{ p: 0 }}>
@@ -341,7 +486,7 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
                     onChange={() => toggleStation(station.id)}
                   />
                 }
-                label={station.callsign + (station.status === 'checked_out' ? ' (checked out)' : '')}
+                label={<StationName station={station} sitesById={sitesById} />}
                 sx={{ opacity: station.status === 'checked_out' ? 0.6 : 1 }}
               />
             ))}
@@ -351,9 +496,13 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
 
         {/* Operating position describes the reporting station, not the pair -
             see docs/ROADMAP.md "Operating position" for why it lives here. */}
+        {/* On a net with sites, picking one puts this check-in at that site
+            (CheckIn.coverage_site_id), which is what Coverage by site groups
+            on. Typed text that isn't a site name is an ordinary position. */}
         <Autocomplete
           freeSolo
-          options={OPERATING_POSITION_OPTIONS}
+          options={positionOptions}
+          groupBy={sites.length > 0 ? (option) => (siteForPosition(option) ? 'Sites' : 'Other') : undefined}
           value={operatingPosition}
           onChange={(_, newValue) => setOperatingPosition(newValue || '')}
           onInputChange={(_, newInputValue) => setOperatingPosition(newInputValue)}
@@ -362,11 +511,125 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
               {...params}
               label="Operating Position"
               margin="normal"
-              placeholder="Home, Field Deployed, or type your own"
-              helperText={`Describes ${reporterCheckIn.callsign}'s setup, not this report`}
+              placeholder={sites.length > 0 ? 'Pick a site, or Home, or type your own' : 'Home, Field Deployed, or type your own'}
+              helperText={sites.length > 0
+                ? `Where ${reporterCheckIn.callsign} is operating from on this net`
+                : `Describes ${reporterCheckIn.callsign}'s setup, not this report`}
             />
           )}
         />
+
+        {/* ========== REPEATERS AND NODES ========== */}
+        {/* Whether this station got into each of the net's repeaters, packet
+            nodes and gateways. Unlike the checkboxes above, "couldn't reach"
+            is recorded: it's a finding. Blank = didn't try. */}
+        {targets.length > 0 && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2">Repeaters and nodes</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Could {reporterCheckIn.callsign} get into each one? Leave it at Didn't try if they didn't.
+            </Typography>
+            {targets.map((target) => {
+              const entry = access[target.id];
+              return (
+                <Box
+                  key={target.id}
+                  sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1.2fr 1fr 1.6fr' }, gap: 1, alignItems: 'center', mb: 1 }}
+                >
+                  <Typography variant="body2" fontWeight="medium">{target.name}</Typography>
+                  <FormControl size="small">
+                    <Select
+                      value={entry?.result || ''}
+                      displayEmpty
+                      onChange={(e) => setAccessResult(target.id, e.target.value as '' | 'reached' | 'failed')}
+                      inputProps={{ 'aria-label': `Result for ${target.name}` }}
+                    >
+                      <MenuItem value=""><em>Didn't try</em></MenuItem>
+                      <MenuItem value="reached">Reached</MenuItem>
+                      <MenuItem value="failed">Couldn't reach</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    size="small"
+                    placeholder="Note (optional)"
+                    value={entry?.note || ''}
+                    disabled={!entry}
+                    onChange={(e) => setAccessNote(target.id, e.target.value)}
+                    inputProps={{ maxLength: 500, 'aria-label': `Note for ${target.name}` }}
+                  />
+                </Box>
+              );
+            })}
+          </Box>
+        )}
+
+        {/* ========== OUTSIDE THE NET ========== */}
+        {/* Stations reached that never checked in, such as a neighboring
+            county's EOC. They feed the Counties reached list. */}
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="subtitle2">Outside the net</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Stations {reporterCheckIn.callsign} reached that aren't checked in, such as another county's EOC.
+          </Typography>
+          {contacts.map((contact, index) => (
+            <Box
+              key={index}
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1.4fr 1fr 0.6fr' },
+                gap: 1,
+                alignItems: 'center',
+                mb: 1.5,
+                pb: 1.5,
+                borderBottom: 1,
+                borderColor: 'divider',
+              }}
+            >
+              <TextField size="small" label="Callsign" value={contact.callsign}
+                onChange={(e) => updateContact(index, { callsign: e.target.value.toUpperCase() })} />
+              <TextField size="small" label="Station or agency" value={contact.station}
+                onChange={(e) => updateContact(index, { station: e.target.value })} />
+              <TextField size="small" label="County" value={contact.county}
+                onChange={(e) => updateContact(index, { county: e.target.value })} />
+              <TextField size="small" label="State" value={contact.state}
+                onChange={(e) => updateContact(index, { state: e.target.value.toUpperCase() })} />
+              {netFrequencies.length > 0 && (
+                <FormControl size="small" sx={{ gridColumn: { xs: '1 / -1', sm: 'span 2' } }}>
+                  <InputLabel id={`contact-frequency-${index}`}>Frequency</InputLabel>
+                  <Select
+                    labelId={`contact-frequency-${index}`}
+                    label="Frequency"
+                    value={contact.frequency_id ?? ''}
+                    onChange={(e) => updateContact(index, { frequency_id: e.target.value === '' ? null : Number(e.target.value) })}
+                  >
+                    <MenuItem value=""><em>No specific frequency</em></MenuItem>
+                    {netFrequencies.map((freq: any) => (
+                      <MenuItem key={freq.id} value={freq.id}>{frequencyLabel(freq)}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+              <FormControl size="small">
+                <InputLabel id={`contact-direction-${index}`}>Direction</InputLabel>
+                <Select
+                  labelId={`contact-direction-${index}`}
+                  label="Direction"
+                  value={contact.two_way ? 'two_way' : 'heard'}
+                  onChange={(e) => updateContact(index, { two_way: e.target.value === 'two_way' })}
+                >
+                  <MenuItem value="two_way">Two-way</MenuItem>
+                  <MenuItem value="heard">Heard only</MenuItem>
+                </Select>
+              </FormControl>
+              <Box sx={{ justifySelf: 'end' }}>
+                <IconButton aria-label="Remove this contact" onClick={() => removeContact(index)}>
+                  <DeleteOutlineIcon />
+                </IconButton>
+              </Box>
+            </Box>
+          ))}
+          <Button startIcon={<AddIcon />} onClick={addContact}>Add contact</Button>
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={saving}>Cancel</Button>

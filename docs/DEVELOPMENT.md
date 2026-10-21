@@ -347,6 +347,44 @@ grid for a town costs the map no precision.
 
 ---
 
+## Coverage by site
+
+A coverage drill with sites (an ARES SET) answers "which places can reach
+each other", on top of the station-to-station `CanHearReport` rows. Migration
+`083_coverage_sites.py` adds:
+
+- `CoverageSite` (per net): `site_type` is `office`, `shelter` or
+  `infrastructure`. Offices and shelters can be `is_primary` (what every
+  other site is graded against). Infrastructure is a repeater or node: never
+  primary, never a place a check-in is at, and the only type with a
+  `frequency_id`. `routers/coverage_sites.py::save_coverage_sites` enforces
+  all three rather than trusting the client.
+- `CheckIn.coverage_site_id`: the site is per check-in **row**, not per
+  callsign, so a team that checks out and rechecks from another shelter keeps
+  each visit's results apart. `create_check_in` fills an empty location from
+  `site_line()` so the station still geocodes.
+- `CoverageAccess` (one row per reporter check-in and infrastructure site:
+  reached, note) and `CoverageContact` (stations reached that never checked
+  in, with county and state). Both are saved as whole sets per reporter, like
+  can-hear reports, under the same `may_report_coverage_for` rule.
+- `coverage_excluded_frequency_ids` (JSON list on `Net` and `NetTemplate`):
+  repeaters and talkgroups left out of coverage reports. Saving a can-hear
+  report or contact on one is a 400 (`validate_coverage_frequency`).
+
+`services/site_coverage.py::build_site_coverage` is the one rollup, computed
+at read time and never stored. Reports are grouped onto nodes (`site:{id}`,
+or `station:{CALLSIGN}` for a check-in with no site), and each site's reach to
+each primary is `two_way`, `relay` (one hop through a node both reached
+two-way, on any frequency), `one_way` or `none`. The live panel
+(`GET /nets/{id}/site-coverage`), the net report, and the closing email
+(`describe_site_coverage`) all read it, so they cannot disagree. Frontend:
+`hooks/useSiteCoverage.ts` fetches sites, contacts, access and the summary
+together and refreshes on `can_hear_changed`; `SiteLocationField` is the
+check-in Location box on every check-in form; `CanHearDialog` follows
+late-loading contacts and access until the user edits that section, or Save
+would erase what was already recorded. Tests:
+`backend/tests/test_site_coverage.py`, `frontend/src/utils/coverageSites.test.ts`.
+
 ## Check-in fields and profile values
 
 A net turns its check-in fields on and off (`net.field_config`). Every
@@ -907,7 +945,7 @@ write. These are the authoritative events:
 | `net_status_change` | `routers/nets_core.py` (net closed) and `routers/nets_export.py` (net archived/unarchived) |
 | `net_pause_change` | `net_pause.py` |
 | `role_change` | `routers/nets_roles.py` |
-| `can_hear_changed` | `routers/can_hear.py` — a "who can this station hear?" report was saved |
+| `can_hear_changed` | `routers/can_hear.py`, `routers/coverage_sites.py` — a "who can this station hear?" report, a net's coverage sites, an outside contact, or a repeater/node result was saved |
 | `chat_message`, `chat_message_edited`, `chat_reaction`, `chat_image` | `routers/chat.py` — `chat_message_edited` carries the whole updated message (same shape as `chat_message`), so `Chat.tsx` replaces its copy by id instead of patching fields |
 | `chat_net_mute_changed` | `routers/chat.py` — a staff member applied or lifted a net-wide chat mute (`data.active` true/false); keeps every already-open tab's mute banner/manage list live instead of only updating on next page load. Separate from `chat_message`'s own per-connection `only_for_user_ids` restriction, which is what actually keeps a net-wide-muted author's message off the wire to other viewers in the first place |
 | `identity_verified_changed` | `routers/check_ins.py` — NCS/Logger confirmed or rejected a station's TOTP match on an authenticated net (`data.identity_verified` true/false); keeps every viewer's padlock icon live |

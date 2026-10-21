@@ -20,6 +20,8 @@ import type { UseDialogResult } from '../../hooks/useDialog';
 import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING, FIELD_SPAM_WARNING } from '../../utils/nameFieldGuard';
 import api from '../../services/api';
 import { isFieldShown } from '../../utils/checkInFields';
+import SiteLocationField from './SiteLocationField';
+import type { CoverageSite } from '../../utils/coverageSites';
 
 // ========== CHECK-IN FORM DIALOG ==========
 // The "Check In to {net}" modal. Renders the dynamic check-in form (fields shown
@@ -49,6 +51,9 @@ export interface CheckInFormState {
   // to 'standard' -- see the fail-safe history in schemas.py's
   // CheckInCreate.self_role_choice.
   self_role_choice?: 'standard' | 'ncs' | 'logger';
+  // The coverage site the station is at, picked from the Location field on
+  // a net with sites (SiteLocationField). Absent otherwise.
+  coverage_site_id?: number | null;
 }
 
 interface CheckInFormDialogProps {
@@ -81,6 +86,8 @@ interface CheckInFormDialogProps {
   // self-check-in answers stay consistent with staff-entered ones (see the
   // identical pattern in NetView.tsx's inline check-in rows).
   pollResponses?: string[];
+  // The net's coverage sites, offered in the Location field.
+  coverageSites?: CoverageSite[];
 }
 
 const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
@@ -100,6 +107,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
   pollEnabled,
   pollQuestion,
   pollResponses,
+  coverageSites = [],
 }) => {
   // Which check-in fields currently reject a URL/email-looking value --
   // admin-configurable per field (Admin > Check-in Fields > Spam Guard),
@@ -207,14 +215,17 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
           )}
 
           {fieldConfig?.location?.enabled && (
-            <TextField
-              label="Location"
+            <SiteLocationField
+              sites={coverageSites}
               value={checkInForm.location}
-              onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
-              fullWidth
-              required={fieldConfig.location.required}
-              error={isSpammy('location', checkInForm.location)}
-              helperText={isSpammy('location', checkInForm.location) ? FIELD_SPAM_WARNING : undefined}
+              onChange={(location, coverageSiteId) => setCheckInForm((prev) => ({ ...prev, location, coverage_site_id: coverageSiteId }))}
+              textFieldProps={{
+                label: 'Location',
+                fullWidth: true,
+                required: fieldConfig.location.required,
+                error: isSpammy('location', checkInForm.location),
+                helperText: isSpammy('location', checkInForm.location) ? FIELD_SPAM_WARNING : undefined,
+              }}
             />
           )}
 

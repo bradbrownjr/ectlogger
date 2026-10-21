@@ -82,6 +82,8 @@ import FloatingWindow from '../components/FloatingWindow';
 import UserProfileDialog from '../components/UserProfileDialog';
 import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
 import CanHearDialog from '../components/netview/CanHearDialog';
+import { useSiteCoverage } from '../hooks/useSiteCoverage';
+import SiteLocationField from '../components/netview/SiteLocationField';
 import EditTopicResponseDialog from '../components/netview/EditTopicResponseDialog';
 import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import { watchZoomAwarePopovers } from '../utils/zoomAwarePopovers';
@@ -189,6 +191,8 @@ const NetView: React.FC = () => {
     fetchNetStats,
     fetchAllUsers,
   } = useNetData(netId);
+  // Coverage sites, contacts and repeater/node results (coverage drills)
+  const siteCoverage = useSiteCoverage(netId ? Number(netId) : null, !!net?.propagation_logging_enabled);
   const roleDialog = useDialog();
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
   const [selectedRole, setSelectedRole] = useState<string>('NCS');
@@ -411,6 +415,9 @@ const NetView: React.FC = () => {
   // arbitrary number of edges at once.
   const fetchCanHearReports = async () => {
     if (!netId) return;
+    // Sites, contacts and repeater/node results ride the same
+    // can_hear_changed event, so they refresh here too.
+    siteCoverage.refresh();
     try {
       const response = await canHearApi.list(parseInt(netId));
       setCanHearReports(response.data);
@@ -2037,20 +2044,24 @@ const NetView: React.FC = () => {
                     )}
                     {net?.field_config?.location?.enabled && (
                       <TableCell>
-                        <TextField
-                          size="small"
+                        {/* Offers the net's coverage sites, when it has any */}
+                        <SiteLocationField
+                          sites={siteCoverage.sites}
                           value={checkInForm.location}
-                          onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleCheckIn();
-                            }
+                          onChange={(location, coverageSiteId) => setCheckInForm((prev) => ({ ...prev, location, coverage_site_id: coverageSiteId }))}
+                          textFieldProps={{
+                            size: 'small',
+                            onKeyDown: (e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleCheckIn();
+                              }
+                            },
+                            placeholder: siteCoverage.sites.length > 0 ? 'Location or site' : 'Location',
+                            inputProps: { style: { fontSize: '0.875rem' } },
+                            fullWidth: true,
+                            required: net.field_config.location.required,
                           }}
-                          placeholder="Location"
-                          inputProps={{ style: { fontSize: '0.875rem' } }}
-                          fullWidth
-                          required={net.field_config.location.required}
                         />
                       </TableCell>
                     )}
@@ -2349,7 +2360,7 @@ const NetView: React.FC = () => {
                   {/* Callsign - always required */}
                   <TextField
                     size="small"
-                    label="Callsign *"
+                    label="Callsign"
                     value={checkInForm.callsign}
                     onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value.toUpperCase() })}
                     onBlur={(e) => handleCallsignLookup(e.target.value)}
@@ -2363,7 +2374,7 @@ const NetView: React.FC = () => {
                   {net?.field_config?.name?.enabled && (
                     <TextField
                       size="small"
-                      label={`Name${net.field_config.name.required ? ' *' : ''}`}
+                      label="Name"
                       value={checkInForm.name}
                       onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
                       placeholder="Name"
@@ -2374,21 +2385,24 @@ const NetView: React.FC = () => {
                   )}
                   
                   {net?.field_config?.location?.enabled && (
-                    <TextField
-                      size="small"
-                      label={`Location${net.field_config.location.required ? ' *' : ''}`}
+                    <SiteLocationField
+                      sites={siteCoverage.sites}
                       value={checkInForm.location}
-                      onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
-                      placeholder="Location"
-                      fullWidth
-                      required={net.field_config.location.required}
+                      onChange={(location, coverageSiteId) => setCheckInForm((prev) => ({ ...prev, location, coverage_site_id: coverageSiteId }))}
+                      textFieldProps={{
+                        size: 'small',
+                        label: 'Location',
+                        placeholder: siteCoverage.sites.length > 0 ? 'Location or site' : 'Location',
+                        fullWidth: true,
+                        required: net.field_config.location.required,
+                      }}
                     />
                   )}
                   
                   {net?.field_config?.skywarn_number?.enabled && (
                     <TextField
                       size="small"
-                      label={`Spotter #${net.field_config.skywarn_number.required ? ' *' : ''}`}
+                      label="Spotter #"
                       value={checkInForm.skywarn_number}
                       onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
                       placeholder="Spotter #"
@@ -2400,7 +2414,7 @@ const NetView: React.FC = () => {
                   {net?.field_config?.weather_observation?.enabled && (
                     <TextField
                       size="small"
-                      label={`Weather${net.field_config.weather_observation.required ? ' *' : ''}`}
+                      label="Weather"
                       value={checkInForm.weather_observation}
                       onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
                       placeholder="Weather observation"
@@ -2414,7 +2428,7 @@ const NetView: React.FC = () => {
                   {net?.field_config?.power_source?.enabled && (
                     <TextField
                       size="small"
-                      label={`Power Src${net.field_config.power_source.required ? ' *' : ''}`}
+                      label="Power Src"
                       value={checkInForm.power_source}
                       onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
                       placeholder="Power source"
@@ -2426,7 +2440,7 @@ const NetView: React.FC = () => {
                   {net?.field_config?.power?.enabled && (
                     <TextField
                       size="small"
-                      label={`Power${net.field_config.power.required ? ' *' : ''}`}
+                      label="Power"
                       value={checkInForm.power}
                       onChange={(e) => setCheckInForm({ ...checkInForm, power: e.target.value })}
                       placeholder="Power output"
@@ -2438,7 +2452,7 @@ const NetView: React.FC = () => {
                   {net?.field_config?.notes?.enabled && (
                     <TextField
                       size="small"
-                      label={`Notes${net.field_config.notes.required ? ' *' : ''}`}
+                      label="Notes"
                       value={checkInForm.notes}
                       onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
                       placeholder="Notes"
@@ -2494,7 +2508,7 @@ const NetView: React.FC = () => {
                       <TextField
                         key={field.name}
                         size="small"
-                        label={`${field.label}${isFieldRequired(field.name) ? ' *' : ''}`}
+                        label={field.label}
                         value={checkInForm.custom_fields[field.name] || ''}
                         onChange={(e) => setCheckInForm({
                           ...checkInForm,
@@ -2631,6 +2645,7 @@ const NetView: React.FC = () => {
               onMinimizeMap={() => setMapMinimized(true)}
               onRestoreMap={() => setMapMinimized(false)}
               canHearReports={canHearReports}
+              siteCoverage={siteCoverage.summary}
               coverageOpen={coverage.open}
               coverageDocked={coverageDocked}
               coverageMinimized={coverageMinimized}
@@ -2783,7 +2798,14 @@ const NetView: React.FC = () => {
                       <TextField size="small" value={checkInForm.name} onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })} placeholder="Name" autoComplete="off" sx={{ width: 120 }} />
                     )}
                     {net?.field_config?.location?.enabled && (
-                      <TextField size="small" value={checkInForm.location} onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })} placeholder="Location" sx={{ width: 150 }} />
+                      <Box sx={{ width: 150 }}>
+                        <SiteLocationField
+                          sites={siteCoverage.sites}
+                          value={checkInForm.location}
+                          onChange={(location, coverageSiteId) => setCheckInForm((prev) => ({ ...prev, location, coverage_site_id: coverageSiteId }))}
+                          textFieldProps={{ size: 'small', placeholder: siteCoverage.sites.length > 0 ? 'Location or site' : 'Location', fullWidth: true }}
+                        />
+                      </Box>
                     )}
                     {net?.field_config?.skywarn_number?.enabled && (
                       <TextField size="small" value={checkInForm.skywarn_number} onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })} placeholder="Spotter #" sx={{ width: 100 }} />
@@ -2904,6 +2926,7 @@ const NetView: React.FC = () => {
 
       {/* Check-In Dialog for Regular Users */}
       <CheckInFormDialog
+        coverageSites={siteCoverage.sites}
         dialog={checkInDialog}
         netName={net?.name}
         fieldConfig={net?.field_config}
@@ -3060,6 +3083,9 @@ const NetView: React.FC = () => {
           reporterCheckIn={canHearDialogCheckIn}
           allCheckIns={checkIns}
           existingReports={canHearReports}
+          sites={siteCoverage.sites}
+          existingContacts={siteCoverage.contacts}
+          existingAccess={siteCoverage.access}
           onSaved={() => setCanHearDialogCheckInId(null)}
           onToast={setToastMessage}
         />

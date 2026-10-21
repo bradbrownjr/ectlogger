@@ -1,3 +1,4 @@
+import type { SiteDraft } from '../components/forms/CoverageSitesEditor';
 import { createContext, useContext, Dispatch, SetStateAction } from 'react';
 import { FrequencyItem } from '../components/forms/CommunicationPlanPanel';
 import { FieldDefinitionItem, FieldConfigEntry } from '../components/forms/CheckInFieldsPanel';
@@ -34,6 +35,7 @@ export interface CreateNetContextValue {
   ics309HideMutedStations: boolean; setIcs309HideMutedStations: Dispatch<SetStateAction<boolean>>;
   propagationLoggingEnabled: boolean; setPropagationLoggingEnabled: Dispatch<SetStateAction<boolean>>;
   selfCanHearEnabled: boolean; setSelfCanHearEnabled: Dispatch<SetStateAction<boolean>>;
+  coverageSites: SiteDraft[]; setCoverageSites: Dispatch<SetStateAction<SiteDraft[]>>;
   authenticated: boolean; setAuthenticated: Dispatch<SetStateAction<boolean>>;
   // Assisted Traffic Handling settings -- see components/forms/TrafficSettingsPanel.tsx
   trafficEnabled: boolean; setTrafficEnabled: Dispatch<SetStateAction<boolean>>;

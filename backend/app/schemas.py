@@ -531,6 +531,12 @@ class FrequencyWithUsageResponse(FrequencyBase):
 # and net_templates (migration 056) but travels the API as a real list. Shared
 # by NetResponse.from_orm and NetTemplateResponse.from_orm so the two can't
 # drift. Tolerates junk rather than 500ing a whole net fetch over one column.
+def _parse_frequency_id_list(raw) -> List[int]:
+    """coverage_excluded_frequency_ids: a JSON list of ints in a TEXT column."""
+    parsed = _parse_traffic_form_types(raw) or []
+    return sorted({int(v) for v in parsed if isinstance(v, int) or (isinstance(v, str) and v.isdigit())})
+
+
 def _parse_traffic_form_types(raw) -> Optional[List[str]]:
     if not raw:
         return None
@@ -559,6 +565,9 @@ class NetBase(BaseModel):
     ics309_hide_muted_stations: Optional[bool] = True
     propagation_logging_enabled: Optional[bool] = False
     self_can_hear_enabled: Optional[bool] = True
+    # The net's frequencies that don't collect coverage reports; see
+    # models.Net.coverage_excluded_frequency_ids. Empty = every frequency.
+    coverage_excluded_frequency_ids: Optional[List[int]] = Field(None, max_length=50)
     # Opt-in, matching the two EmComm toggles above. Nets created before the
     # settings toggle existed keep their stored True -- see migration 056.
     traffic_enabled: Optional[bool] = False
@@ -610,6 +619,7 @@ class NetUpdate(BaseModel):
     ics309_hide_muted_stations: Optional[bool] = None
     propagation_logging_enabled: Optional[bool] = None
     self_can_hear_enabled: Optional[bool] = None
+    coverage_excluded_frequency_ids: Optional[List[int]] = Field(None, max_length=50)
     traffic_enabled: Optional[bool] = None
     traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
     traffic_strip_form_type: Optional[str] = Field(None, max_length=32)
@@ -751,6 +761,7 @@ class NetResponse(NetBase):
             'ics309_hide_muted_stations': net.ics309_hide_muted_stations if net.ics309_hide_muted_stations is not None else True,
             'propagation_logging_enabled': net.propagation_logging_enabled or False,
             'self_can_hear_enabled': net.self_can_hear_enabled if net.self_can_hear_enabled is not None else True,
+            'coverage_excluded_frequency_ids': _parse_frequency_id_list(net.coverage_excluded_frequency_ids),
             'traffic_enabled': net.traffic_enabled if net.traffic_enabled is not None else True,
             'traffic_form_types': _parse_traffic_form_types(net.traffic_form_types),
             'traffic_strip_form_type': net.traffic_strip_form_type,
@@ -811,6 +822,7 @@ class NetTemplateBase(BaseModel):
     ics309_hide_muted_stations: bool = True  # Seeds Net.ics309_hide_muted_stations for nets created from this template
     propagation_logging_enabled: bool = False  # Seeds propagation_logging_enabled for nets created from this template
     self_can_hear_enabled: bool = True  # Seeds self_can_hear_enabled for nets created from this template
+    coverage_excluded_frequency_ids: Optional[List[int]] = Field(None, max_length=50)  # Seeds the net's copy
     traffic_enabled: bool = False  # Seeds traffic_enabled for nets created from this template
     # Seed the three per-net traffic settings; same null semantics as NetBase.
     traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
@@ -857,6 +869,7 @@ class NetTemplateUpdate(BaseModel):
     ics309_hide_muted_stations: Optional[bool] = None
     propagation_logging_enabled: Optional[bool] = None
     self_can_hear_enabled: Optional[bool] = None
+    coverage_excluded_frequency_ids: Optional[List[int]] = Field(None, max_length=50)
     traffic_enabled: Optional[bool] = None
     traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
     traffic_strip_form_type: Optional[str] = Field(None, max_length=32)
@@ -927,6 +940,7 @@ class NetTemplateResponse(NetTemplateBase):
             'ics309_hide_muted_stations': template.ics309_hide_muted_stations if template.ics309_hide_muted_stations is not None else True,
             'propagation_logging_enabled': template.propagation_logging_enabled or False,
             'self_can_hear_enabled': template.self_can_hear_enabled if template.self_can_hear_enabled is not None else True,
+            'coverage_excluded_frequency_ids': _parse_frequency_id_list(template.coverage_excluded_frequency_ids),
             'traffic_enabled': template.traffic_enabled if template.traffic_enabled is not None else True,
             'traffic_form_types': _parse_traffic_form_types(template.traffic_form_types),
             'traffic_strip_form_type': template.traffic_strip_form_type,
@@ -1049,6 +1063,8 @@ class CheckInBase(BaseModel):
     notes: Optional[str] = Field(None, max_length=2000)
     relayed_by: Optional[str] = Field(None, max_length=50)
     operating_position: Optional[str] = Field(None, max_length=50)
+    # The net's coverage site (CoverageSite) this row is at; see models.CheckIn.
+    coverage_site_id: Optional[int] = None
     # Topic of the Week / Poll responses
     topic_response: Optional[str] = Field(None, max_length=2000)
     poll_response: Optional[str] = Field(None, max_length=255)
@@ -1123,6 +1139,7 @@ class CheckInUpdate(BaseModel):
     notes: Optional[str] = Field(None, max_length=2000)
     relayed_by: Optional[str] = Field(None, max_length=50)
     operating_position: Optional[str] = Field(None, max_length=50)
+    coverage_site_id: Optional[int] = None
     available_frequency_ids: Optional[List[int]] = None
     custom_fields: Optional[dict] = None
     # Topic of the Week / Poll responses
@@ -2164,6 +2181,194 @@ class CanHearReportSave(BaseModel):
     heard_check_in_ids: List[int]
     frequency_id: Optional[int] = None
     operating_position: Optional[str] = Field(None, max_length=50)
+    # Travels with operating_position: whenever a position is sent, the
+    # reporter's row is put at this site (null = not at one of the net's
+    # sites). Ignored when operating_position is omitted.
+    coverage_site_id: Optional[int] = None
+
+
+# ========== Coverage sites and contacts outside the net ==========
+
+class CoverageSiteItem(BaseModel):
+    """One site in PUT /nets/{id}/coverage-sites. An id keeps an existing
+    site (and every check-in placed at it); no id adds a new one."""
+    id: Optional[int] = None
+    name: str = Field(min_length=1, max_length=100)
+    location: Optional[str] = Field(None, max_length=255)
+    site_type: Literal['office', 'shelter', 'infrastructure'] = 'shelter'
+    is_primary: bool = False
+    # Infrastructure only: which of the net's frequencies it's on.
+    frequency_id: Optional[int] = None
+
+
+class CoverageSiteResponse(BaseModel):
+    id: int
+    net_id: int
+    name: str
+    location: Optional[str] = None
+    site_type: str
+    is_primary: bool
+    sort_order: int
+    frequency_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CoverageContactItem(BaseModel):
+    """One station reached outside the net. A callsign or a station name is
+    required; the county is what the Counties reached list is built from."""
+    frequency_id: Optional[int] = None
+    callsign: Optional[str] = Field(None, max_length=20)
+    station: Optional[str] = Field(None, max_length=100)
+    county: Optional[str] = Field(None, max_length=100)
+    state: Optional[str] = Field(None, max_length=50)
+    two_way: bool = True
+
+    @field_validator('callsign')
+    @classmethod
+    def normalize_callsign(cls, v: Optional[str]) -> Optional[str]:
+        v = (v or '').strip().upper()
+        return v or None
+
+    @model_validator(mode='after')
+    def needs_callsign_or_station(self):
+        if not self.callsign and not (self.station or '').strip():
+            raise ValueError('Give a callsign or a station name for each contact')
+        return self
+
+
+class CoverageContactsSave(BaseModel):
+    """Replaces every outside contact the reporting check-in has recorded."""
+    reporter_check_in_id: int
+    contacts: List[CoverageContactItem] = Field(default_factory=list, max_length=100)
+
+
+class CoverageContactResponse(BaseModel):
+    id: int
+    net_id: int
+    reporter_check_in_id: int
+    frequency_id: Optional[int] = None
+    callsign: Optional[str] = None
+    station: Optional[str] = None
+    county: Optional[str] = None
+    state: Optional[str] = None
+    two_way: bool
+    reported_by_user_id: Optional[int] = None
+    reported_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CoverageAccessItem(BaseModel):
+    """One repeater or node a station tried: reached it or not, and why."""
+    target_site_id: int
+    reached: bool
+    note: Optional[str] = Field(None, max_length=500)
+
+
+class CoverageAccessSave(BaseModel):
+    """Replaces every repeater/node result the reporting check-in has. A
+    target left out is "didn't try"."""
+    reporter_check_in_id: int
+    results: List[CoverageAccessItem] = Field(default_factory=list, max_length=50)
+
+
+class CoverageAccessResponse(BaseModel):
+    id: int
+    net_id: int
+    reporter_check_in_id: int
+    target_site_id: int
+    reached: bool
+    note: Optional[str] = None
+    reported_by_user_id: Optional[int] = None
+    reported_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SiteCoverageTarget(BaseModel):
+    site_id: int
+    name: str
+    location: Optional[str] = None
+    frequency_id: Optional[int] = None
+
+
+class SiteAccessAttempt(BaseModel):
+    callsign: str
+    reached: bool
+    note: Optional[str] = None
+
+
+class SiteAccessCell(BaseModel):
+    node_key: str
+    target_site_id: int
+    reached: bool
+    attempts: List[SiteAccessAttempt] = []
+
+
+class SiteCoverageNode(BaseModel):
+    key: str
+    kind: Literal['site', 'station']
+    name: str
+    site_id: Optional[int] = None
+    site_type: Optional[str] = None
+    is_primary: bool = False
+    location: Optional[str] = None
+    callsigns: List[str] = []
+
+
+class SiteCoverageLink(BaseModel):
+    from_key: str
+    to_key: str
+    frequency_id: Optional[int] = None
+    two_way: bool
+
+
+class SiteReachTarget(BaseModel):
+    primary_key: str
+    status: Literal['two_way', 'relay', 'one_way', 'none']
+    two_way_frequency_ids: List[Optional[int]] = []
+    one_way_frequency_ids: List[Optional[int]] = []
+    relay_keys: List[str] = []
+
+
+class SiteReach(BaseModel):
+    site_key: str
+    targets: List[SiteReachTarget] = []
+
+
+class SiteCoverageContact(BaseModel):
+    id: int
+    from_key: str
+    reporter_callsign: str
+    frequency_id: Optional[int] = None
+    callsign: Optional[str] = None
+    station: Optional[str] = None
+    county: Optional[str] = None
+    state: Optional[str] = None
+    two_way: bool
+
+
+class SiteCoverageCounty(BaseModel):
+    county: str
+    state: Optional[str] = None
+    from_keys: List[str] = []
+    frequency_ids: List[Optional[int]] = []
+    two_way: bool
+
+
+class SiteCoverageResponse(BaseModel):
+    """GET /nets/{id}/site-coverage: services/site_coverage.py's rollup."""
+    nodes: List[SiteCoverageNode] = []
+    links: List[SiteCoverageLink] = []
+    reach: List[SiteReach] = []
+    contacts: List[SiteCoverageContact] = []
+    counties: List[SiteCoverageCounty] = []
+    targets: List[SiteCoverageTarget] = []
+    access: List[SiteAccessCell] = []
 
 
 class CanHearReportFrequencyUpdate(BaseModel):

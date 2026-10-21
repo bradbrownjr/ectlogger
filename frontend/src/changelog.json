@@ -1,6 +1,40 @@
 {
-  "version": "2026.10.20",
+  "version": "2026.10.21",
   "entries": [
+    {
+      "version": "2026.10.21",
+      "date": "2026-10-21",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Coverage: Drills by site — For exercises such as the SET, list a net's shelters, offices, repeaters and nodes, and star the primary offices. Stations pick their site at check-in. Coverage then shows whether each site reached each primary office, which repeaters and nodes it got into, and the counties and outside stations it reached. The net report and closing email include the same summary.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Coverage: Limit reports to simplex — A net or schedule can untick its repeaters and talkgroups under Coverage reports, so \"Who can hear\" only asks about simplex frequencies."
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Mobile: One asterisk on required check-in fields — On a phone, the New Check-in form showed two asterisks beside each required field, such as \"Callsign * *\". It now shows one."
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.10.20",
       "date": "2026-10-20",

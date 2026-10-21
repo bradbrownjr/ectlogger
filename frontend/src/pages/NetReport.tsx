@@ -132,7 +132,7 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { netApi, statisticsApi, checkInApi, netRoleApi, canHearApi, callsignRoleApi } from '../services/api';
+import { netApi, statisticsApi, checkInApi, netRoleApi, canHearApi, callsignRoleApi, coverageSiteApi } from '../services/api';
 import { activeNcsRoles, CallsignRole, mergeStationRoles } from '../utils/stationRoles';
 import { chatApi, ChatMessage, formatChatMessageText } from '../api/chat';
 import { formatDateTime, formatTimeWithDate, formatReportSpan, formatReportShortDate } from '../utils/dateUtils';
@@ -151,6 +151,8 @@ import ReportSectionTitle from '../components/report/ReportSectionTitle';
 import ReportFooter from '../components/report/ReportFooter';
 import SocialSummaryImages, { SocialRosterRow, SOCIAL_PAGE_WIDTH_PX } from '../components/report/SocialSummaryImages';
 import CoverageReport, { CanHearReportEntry } from '../components/netview/CoverageReport';
+import SiteCoverageView from '../components/netview/SiteCoverageView';
+import { EMPTY_SITE_COVERAGE, SiteCoverageSummary } from '../utils/coverageSites';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
 
 // ========== INTERFACES ==========
@@ -258,6 +260,7 @@ const NetReport: React.FC = () => {
   const [pollQuestion, setPollQuestion] = useState<string | null>(null);
   const [pollResults, setPollResults] = useState<PollResult[]>([]);
   const [canHearReports, setCanHearReports] = useState<CanHearReportEntry[]>([]);
+  const [siteCoverage, setSiteCoverage] = useState<SiteCoverageSummary>(EMPTY_SITE_COVERAGE);
   const [ics309LogData, setIcs309LogData] = useState<Ics309LogData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -333,6 +336,12 @@ const NetReport: React.FC = () => {
           canHearApi.list(parseInt(netId)),
           netApi.getIcs309Log(parseInt(netId)),
         ]);
+        // Coverage by site: only on a coverage net, and never fatal to the report.
+        if (netRes.data.propagation_logging_enabled) {
+          coverageSiteApi.summary(parseInt(netId))
+            .then((res) => setSiteCoverage(res.data))
+            .catch((e) => console.error('Failed to fetch coverage by site:', e));
+        }
 
         setNet(netRes.data);
         setStats(statsRes.data);
@@ -1466,6 +1475,25 @@ const NetReport: React.FC = () => {
             <Paper variant="outlined" sx={{ p: 2, mb: 3, overflowX: 'auto' }}>
               <ICS309PrintView id="net-report-ics309-view" data={ics309LogData} />
             </Paper>
+          </>
+        )}
+
+        {/* ========== SECTION 9B: COVERAGE BY SITE (drills with sites) ========== */}
+        {/* The place-to-place results a drill's after-action report needs:
+            reach to the primary sites, between sites, repeaters and nodes,
+            counties reached. Ahead of the station-by-station list. */}
+        {net.propagation_logging_enabled && (
+          siteCoverage.nodes.some((n) => n.kind === 'site') || siteCoverage.targets.length > 0 || siteCoverage.contacts.length > 0
+        ) && (
+          <>
+            <ReportSectionTitle sx={{ mb: 1 }}>Coverage by Site</ReportSectionTitle>
+            <Box sx={{ mb: 3 }}>
+              <SiteCoverageView
+                summary={siteCoverage}
+                frequencyLabels={Object.fromEntries(net.frequencies.map(f => [f.id, getFrequencyLabel(f)]))}
+                exporting={exporting}
+              />
+            </Box>
           </>
         )}
 

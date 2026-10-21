@@ -107,6 +107,12 @@
     "caption": "The box accepts one check-in per line-segment, separated by semicolons -- see Speed entry syntax for the exact grammar.",
     "page": "/docs/net-control/speed-entry/"
   },
+  "net-control/can-hear-dialog-site": {
+    "path": "/docs/img/net-control/can-hear-dialog-site.png",
+    "alt": "The Who can K1COVE hear? dialog on the SET net. A grid of stations against 146.520 FM and 3.930 SSB, each station's site shown under its callsign, such as North Office under W1PINE. Operating Position reads Naples Shelter. In the Repeaters and nodes section, outlined in red, the County VHF repeater is Reached, and the County UHF repeater and the EOC packet node are Couldn't reach, each with a note. Outside the net lists W1ANDY, Androscoggin County EOC, heard only.\n",
+    "caption": "One dialog records who a station heard, which repeaters and nodes it got into, and stations it reached outside the net.\n",
+    "page": "/docs/net-managers/coverage-drills/"
+  },
   "net-control/can-hear-grid": {
     "path": "/docs/img/net-control/can-hear-grid.png",
     "alt": "The Who can N1LAKE hear? dialog on a two-band net: one column of checkboxes for 3.930 SSB (80m) and one for 146.520 FM (2m), each with its own all-stations checkbox under the heading. On 80m every station is ticked, and that column's checkbox, outlined in red, is ticked too. On 2m only K1COVE is ticked and the column's checkbox shows a dash.\n",
@@ -124,6 +130,12 @@
     "alt": "A chat message from KC1HILL with a hover toolbar showing reaction, reply, and mute icons; the mute icon is outlined in red.\n",
     "caption": "A plain click mutes a station for you only. As Logger or NCS, shift-click the same icon to mute them for everyone in this net's chat.\n",
     "page": "/docs/net-control/chat-moderation/"
+  },
+  "net-control/check-in-at-a-site": {
+    "path": "/docs/img/net-control/check-in-at-a-site.png",
+    "alt": "The New Check-in form on a phone, with its Location box outlined in red and open on a list of the net's sites: Example County EOC, Windham, ME; North Office, Bridgton, ME; Naples Shelter, Naples, ME; Freeport Shelter, Freeport, ME; and Gray Weather Office FN43rv.\n",
+    "caption": "On a net with sites, Location offers them. Picking one puts the station at that site.",
+    "page": "/docs/net-managers/coverage-drills/"
   },
   "net-control/close-net-dialog": {
     "path": "/docs/img/net-control/close-net-dialog.png",
@@ -221,6 +233,18 @@
     "caption": "A popped-out pane is a real second window with its own connection to the net -- move it to another monitor and it keeps working on its own.",
     "page": "/docs/net-control/multiple-monitors/"
   },
+  "net-control/site-coverage-access": {
+    "path": "/docs/img/net-control/site-coverage-access.png",
+    "alt": "The rest of Coverage by site. Repeaters and nodes: Naples Shelter reached the County VHF repeater but not the County UHF repeater or the EOC packet node, each with a note saying why; Freeport reached the VHF repeater at 50 W; Gray Weather Office reached all three. A map of the sites follows, with lines for each path. Counties reached lists York and Androscoggin, and the contacts outside the net are listed last.\n",
+    "caption": "Repeater and node results keep their notes, which is what explains a failure afterward.",
+    "page": "/docs/net-managers/coverage-drills/"
+  },
+  "net-control/site-coverage-reach": {
+    "path": "/docs/img/net-control/site-coverage-reach.png",
+    "alt": "Coverage by site. A table checks every site against the two starred offices: Gray Weather Office reaches the Example County EOC two-way on 146.520 FM; Naples Shelter reaches it through a relay, the North Office; Freeport Shelter reaches it through W2FERN, a home station, and has no path to the North Office. Below it, a grid of sites lists the frequencies each row heard each column on, two-way ones marked with a double arrow.\n",
+    "caption": "Every site against the primary offices: two-way, through a relay, one-way only, or no path.\n",
+    "page": "/docs/net-managers/coverage-drills/"
+  },
   "net-control/toolbar-speed-entry": {
     "path": "/docs/img/net-control/toolbar-speed-entry.png",
     "alt": "The net control toolbar, with the leftmost button, labelled \"Bulk add\", outlined in red. The rest of the row reads Search, Map, Traffic, Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS, Step away, Just listening, Check out, Close net.\n",
@@ -244,6 +268,12 @@
     "alt": "The Cancel confirmation dialog for a scheduled net, explaining that the net will be marked Cancelled rather than deleted and won't be recreated by the schedule, with an optional reason field and a Cancel Net button outlined in red.\n",
     "caption": "Cancelling keeps the occurrence on record in Archived Nets and stops the schedule from quietly recreating it.",
     "page": "/docs/net-managers/cancelling-and-archiving/"
+  },
+  "net-managers/coverage-sites-editor": {
+    "path": "/docs/img/net-managers/coverage-sites-editor.png",
+    "alt": "The Sites list under coverage logging in the net's settings. Each row has the site typed as one line, such as Naples Shelter, Naples, ME, with the name and place it was split into shown underneath, then its type and a Primary star. The Example County EOC and the North Office are starred. The three repeaters and nodes have a Frequency box instead of a star. Add site, at the bottom, is outlined in red.\n",
+    "caption": "Type each site as one line. Star the offices every other site should reach.\n",
+    "page": "/docs/net-managers/coverage-drills/"
   },
   "net-managers/create-net-frequencies": {
     "path": "/docs/img/net-managers/create-net-frequencies.png",

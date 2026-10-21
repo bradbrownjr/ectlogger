@@ -4,8 +4,8 @@ summary: Telling the net which other stations you can hear directly, why that ma
 kind: How-to
 audience: Anyone checking into a net
 owner: KC1JMH
-revised: 2026-10-20
-review_by: 2027-10-20
+revised: 2026-10-21
+review_by: 2027-10-21
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/operators/reporting-what-you-hear/
 ---
@@ -51,13 +51,22 @@ While only some stations are ticked, the **All stations** box shows a dash inste
 
 **Saving replaces your last report, it doesn't add to it.** The dialog opens with your previous answers already ticked. Change what's different and save again; whatever is unticked when you save is removed.
 
-**Reports are per frequency.** On a net with one frequency, a **Frequency** box at the top shows which one you're reporting on. On a net with several, the dialog becomes a grid with one column per frequency, so you can say you hear a station on 2m but not on 80m. Each column has its own select-all box under its heading.
+**Reports are per frequency.** On a net with one frequency, a **Frequency** box at the top shows which one you're reporting on. On a net with several, the dialog becomes a grid with one column per frequency, so you can say you hear a station on 2m but not on 80m. Each column has its own select-all box under its heading. Repeaters and talkgroups usually aren't offered: everyone hears everyone through them, so they say nothing about who can hear whom directly.
 
 **Net control can record it for you.** If you'd rather say it on the air ("KC1HILL, I hear everybody but W2FERN and N2OAKS"), net control, the Logger, or a Relay can tick the boxes for you from your row. That counts exactly the same, including on your own map below. It's also the only way to report on a net that has turned self-reporting off: you won't see **I hear** there at all.
 
 **Everyone viewing the net can see the reports.** Coverage is part of the net's log, the same as the check-in list. Your personal map, below, is only yours.
 
 **One-way isn't an accusation.** When you report hearing a station and they haven't reported hearing you yet, net control sees that pair marked **One-way**. It often just means the other station hasn't been asked.
+
+## On a drill at a shelter or an office
+
+Some exercises, such as the ARES Simulated Emergency Test, send teams to shelters and offices to find out which places can reach each other. On a net like that:
+
+- **Pick your site when you check in.** The **Location** box offers the net's sites. If your team moves to another site, check out and check in again from the new one, so each site keeps its own results.
+- **Operating Position starts at your site.** Your reports from a site never reach your personal map below, which is only for home.
+- **Repeaters and nodes** asks whether you got into each one: **Reached**, **Couldn't reach**, or **Didn't try**. If you couldn't, a few words in the note on why (a basement room, a low antenna) is the most useful thing you can add.
+- **Outside the net** is for stations you reached that never checked in, such as another county's EOC. Fill in their county; that's how the exercise counts which counties it reached.
 
 ## Your coverage map
 

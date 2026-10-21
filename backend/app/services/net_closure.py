@@ -209,6 +209,15 @@ async def close_net_and_notify(
         )
         can_hear_reports = can_hear_result.scalars().all()
 
+    # Coverage by site and contacts outside the net: tz-independent, so built
+    # once. None on an ordinary coverage net with neither.
+    site_coverage = None
+    if net.propagation_logging_enabled:
+        from app.services.site_coverage import describe_site_coverage, load_site_coverage
+        site_coverage = describe_site_coverage(
+            await load_site_coverage(db, net), {fid: format_freq(f) for fid, f in freq_map.items()},
+        )
+
     # Assisted Traffic Handling: log entries and summary counts for this net.
     # Entries are only needed for the ICS-309 attachment (metadata rows,
     # gated on net.ics309_enabled -- see TRAFFIC-HANDLING-DESIGN.md D3's
@@ -427,6 +436,7 @@ async def close_net_and_notify(
                     poll_question=net.poll_question,
                     propagation_logging_enabled=net.propagation_logging_enabled,
                     coverage_edges=coverage_edges_data,
+                    site_coverage=site_coverage,
                     traffic_enabled=net.traffic_enabled,
                     traffic_summary=traffic_summary,
                     unsubscribe_token=unsub_token
