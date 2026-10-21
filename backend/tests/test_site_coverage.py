@@ -187,11 +187,16 @@ async def test_editing_sites_keeps_check_ins_at_kept_sites_and_clears_removed_on
 
 
 @pytest.mark.asyncio
-async def test_duplicate_site_names_are_refused(client, db, owner):
+async def test_a_name_may_repeat_in_another_place_but_not_the_same_one(client, db, owner):
+    """Imported lists have a "Fire Station" in every town."""
     net, _, _ = await _net(db, owner)
     resp = await client.put(f"/api/nets/{net.id}/coverage-sites",
-                            json=[SITES[0], {**SITES[1], "name": "windham ema"}], headers=auth_headers(owner))
+                            json=[SITES[0], {**SITES[1], "name": "windham ema", "location": "Windham, ME"}],
+                            headers=auth_headers(owner))
     assert resp.status_code == 400
+    resp = await client.put(f"/api/nets/{net.id}/coverage-sites",
+                            json=[SITES[0], {**SITES[1], "name": "windham ema"}], headers=auth_headers(owner))
+    assert resp.status_code == 200
 
 
 @pytest.mark.asyncio

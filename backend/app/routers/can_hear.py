@@ -22,7 +22,7 @@ from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from datetime import datetime
 from app.database import get_db
-from app.models import CanHearReport, CheckIn, CoverageSite, Frequency, Net, User, net_frequencies
+from app.models import CanHearReport, CheckIn, Frequency, Net, User, net_frequencies
 from app.schemas import CanHearReportResponse, CanHearReportSave, CanHearReportFrequencyUpdate
 from app.dependencies import get_current_user, get_current_user_optional
 from app.permissions import may_record_coverage, net_access
@@ -177,11 +177,9 @@ async def save_can_hear_report(
     await validate_coverage_frequency(db, net, payload.frequency_id)
 
     if payload.operating_position is not None and payload.coverage_site_id is not None:
-        site = (await db.execute(
-            select(CoverageSite).where(CoverageSite.id == payload.coverage_site_id, CoverageSite.net_id == net_id)
-        )).scalar_one_or_none()
-        if site is None or site.site_type == 'infrastructure':
-            raise HTTPException(status_code=400, detail="That site isn't one of this net's sites")
+        # Same rule as placing a station at a site from the check-in form.
+        from app.routers.check_ins import coverage_site_for_net
+        await coverage_site_for_net(db, net_id, payload.coverage_site_id, current_user)
 
     # Load existing edges for this (reporter, frequency) pair
     freq_filter = (

@@ -127,7 +127,7 @@ Then paste the figure into the page:
 | `page` | no | The documentation page that embeds it. Documentation only |
 | `as` | no | Seeded callsign to log in as. Omitted means signed out |
 | `wait_for` | no | Selector to wait for before doing anything |
-| `steps` | no | Ordered interactions: `click`, `hover`, `fill`, `press`, `wait_for`, `wait`, `scroll_to`, `evaluate` |
+| `steps` | no | Ordered interactions: `click`, `hover`, `fill`, `press`, `wait_for`, `wait`, `scroll_to`, `evaluate`, `upload` (`selector`, `file` relative to the repo root, optional `mime_type`; sends the file's bytes to the remote browser) |
 | `element` | no | Capture only this element, with `pad` pixels around it. A list of selectors captures their union |
 | `pad` | no | Padding around `element`, default 12 |
 | `with_online` | no | Callsigns to sign in and park on the same route first, so the app sees them as present |

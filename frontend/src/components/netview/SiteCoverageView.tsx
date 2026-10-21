@@ -27,7 +27,7 @@ import {
   SITE_TYPE_LABELS,
   SiteCoverageNode,
   SiteCoverageSummary,
-  formatSiteLine,
+  siteMapLocation,
 } from '../../utils/coverageSites';
 
 // ========== COVERAGE BY SITE ==========
@@ -146,7 +146,7 @@ const SiteCoverageView: React.FC<SiteCoverageViewProps> = ({ summary, frequencyL
 
   // ---- Map: sites placed through the same pipeline as check-ins ----
   const mappableSites = useMemo(
-    () => siteNodes.map((n, i) => ({ id: n.site_id ?? -i - 1, key: n.key, name: n.name, location: n.location ? formatSiteLine(n.name, n.location) : null })),
+    () => siteNodes.map((n, i) => ({ id: n.site_id ?? -i - 1, key: n.key, name: n.name, location: siteMapLocation(n) })),
     [siteNodes]
   );
   const { mapped, loading: sitesLoading } = useMappedCheckIns(mappableSites, { enabled: showMap && siteNodes.length > 0 });
@@ -171,7 +171,7 @@ const SiteCoverageView: React.FC<SiteCoverageViewProps> = ({ summary, frequencyL
   const accessByCell = new Map(summary.access.map((a) => [`${a.node_key}|${a.target_site_id}`, a]));
   const accessNodes = summary.nodes.filter((n) => summary.access.some((a) => a.node_key === n.key) || n.kind === 'site');
   const mappableTargets = useMemo(
-    () => summary.targets.map((t) => ({ id: t.site_id, key: `target:${t.site_id}`, name: t.name, location: t.location ? formatSiteLine(t.name, t.location) : null })),
+    () => summary.targets.map((t) => ({ id: t.site_id, key: `target:${t.site_id}`, name: t.name, location: siteMapLocation(t) })),
     [summary.targets]
   );
   const { mapped: mappedTargets, loading: targetsLoading } = useMappedCheckIns(mappableTargets, { enabled: showMap && summary.targets.length > 0 });

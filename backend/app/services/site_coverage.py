@@ -33,6 +33,8 @@ class SiteIn:
     location: Optional[str]
     site_type: str
     is_primary: bool
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 @dataclass
@@ -79,6 +81,8 @@ class Node:
     is_primary: bool = False
     location: Optional[str] = None
     callsigns: List[str] = field(default_factory=list)
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 def parse_excluded_frequency_ids(raw: Optional[str]) -> Set[int]:
@@ -139,6 +143,7 @@ def build_site_coverage(
         nodes[site_key(site.id)] = Node(
             key=site_key(site.id), kind="site", name=site.name, site_id=site.id,
             site_type=site.site_type, is_primary=bool(site.is_primary), location=site.location,
+            latitude=site.latitude, longitude=site.longitude,
         )
     site_ids = {s.id for s in sites}
     check_in_by_id = {}
@@ -284,7 +289,8 @@ def build_site_coverage(
     return {
         "nodes": [
             {"key": n.key, "kind": n.kind, "name": n.name, "site_id": n.site_id, "site_type": n.site_type,
-             "is_primary": n.is_primary, "location": n.location, "callsigns": n.callsigns}
+             "is_primary": n.is_primary, "location": n.location, "callsigns": n.callsigns,
+             "latitude": n.latitude, "longitude": n.longitude}
             for n in ordered
         ],
         "links": links,
@@ -293,6 +299,7 @@ def build_site_coverage(
         "counties": sorted(counties.values(), key=lambda e: (e["state"] or "", e["county"])),
         "targets": [
             {"site_id": t.id, "name": t.name, "location": t.location,
+             "latitude": t.latitude, "longitude": t.longitude,
              "frequency_id": (target_frequency_ids or {}).get(t.id)}
             for t in infrastructure
         ],
@@ -300,8 +307,24 @@ def build_site_coverage(
     }
 
 
+def coverage_site_in_use(site, checked_in_site_ids: Set[int]) -> bool:
+    """Whether a site is part of what the net is doing, and so may be shown
+    to anyone: one the net supports, a primary office, a repeater or node,
+    or a site somebody has checked in at. The rest of an imported list is
+    net staff only (an EMA's list of possible shelters must not read as
+    shelters that are open), and is left out of the rollup for everyone,
+    so a hundred unused distribution points don't fill the reach table."""
+    return (
+        bool(site.is_supported)
+        or bool(site.is_primary)
+        or site.site_type == "infrastructure"
+        or site.id in checked_in_site_ids
+    )
+
+
 async def load_site_coverage(db: AsyncSession, net) -> dict:
-    """build_site_coverage() for one net, read from the database."""
+    """build_site_coverage() for one net, read from the database. Only sites
+    in use (coverage_site_in_use) take part."""
     from app.models import CanHearReport, CheckIn, CoverageAccess, CoverageContact, CoverageSite
 
     sites = (await db.execute(
@@ -321,8 +344,10 @@ async def load_site_coverage(db: AsyncSession, net) -> dict:
         select(CoverageAccess).where(CoverageAccess.net_id == net.id).order_by(CoverageAccess.id)
     )).scalars().all()
 
+    checked_in_site_ids = {r.coverage_site_id for r in check_ins if r.coverage_site_id is not None}
+    sites = [s for s in sites if coverage_site_in_use(s, checked_in_site_ids)]
     return build_site_coverage(
-        [SiteIn(s.id, s.name, s.location, s.site_type, bool(s.is_primary)) for s in sites],
+        [SiteIn(s.id, s.name, s.location, s.site_type, bool(s.is_primary), s.latitude, s.longitude) for s in sites],
         [CheckInIn(r.id, r.callsign, r.coverage_site_id) for r in check_ins],
         [ReportIn(r.reporter_check_in_id, r.heard_check_in_id, r.frequency_id) for r in reports],
         [ContactIn(c.id, c.reporter_check_in_id, c.frequency_id, c.callsign, c.station, c.county, c.state, bool(c.two_way))

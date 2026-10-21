@@ -373,6 +373,7 @@ const BasicInfoTab: React.FC = () => {
                     sites={coverageSites}
                     setSites={setCoverageSites}
                     frequencies={frequencies.filter((f) => f.id != null && selectedFrequencyIds.includes(f.id))}
+                    netId={isEditMode && netId ? Number(netId) : undefined}
                     disabled={isInfoMode}
                   />
                 </Box>

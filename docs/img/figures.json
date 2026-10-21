@@ -271,8 +271,14 @@
   },
   "net-managers/coverage-sites-editor": {
     "path": "/docs/img/net-managers/coverage-sites-editor.png",
-    "alt": "The Sites list under coverage logging in the net's settings. Each row has the site typed as one line, such as Naples Shelter, Naples, ME, with the name and place it was split into shown underneath, then its type and a Primary star. The Example County EOC and the North Office are starred. The three repeaters and nodes have a Frequency box instead of a star. Add site, at the bottom, is outlined in red.\n",
-    "caption": "Type each site as one line. Star the offices every other site should reach.\n",
+    "alt": "The Sites list under coverage logging in the net's settings, with a search box, a type filter and an Import button above it. Each row has the site typed as one line, such as Naples Shelter, Naples, ME, then its type, a Primary star and a Supported tick. Naples Shelter is opened to show its address, its notes, and the columns kept from the EMA's list: emergency and long-term capacity, generator, and plan status. Its Supported tick is outlined in red. The schools and PODs further down, imported from the EMA's lists, are not ticked.\n",
+    "caption": "Tick Supported for the sites your teams staff. Open a site to see its address, notes and the rest of its row from the EMA's list.\n",
+    "page": "/docs/net-managers/coverage-drills/"
+  },
+  "net-managers/coverage-sites-import": {
+    "path": "/docs/img/net-managers/coverage-sites-import.png",
+    "alt": "The Import sites dialog with a CSV of points of distribution loaded. Headings are on row 2, under the list's title. The columns are matched as Name to SITE NAME, Address to LOCATION, Town to CITY, Latitude to LAT., Longitude to LONG. and Notes to POC, Notes, with ME typed as the state for every site. Type for every site, outlined in red, is Point of distribution (POD), and Our teams staff every site on this list is unticked. The preview reads 6 sites read: 4 new, 2 already on the net's list will be updated, and shows the first five with their place, address and coordinates.\n",
+    "caption": "Match the list's columns, choose its type, and check the preview before importing.\n",
     "page": "/docs/net-managers/coverage-drills/"
   },
   "net-managers/create-net-frequencies": {

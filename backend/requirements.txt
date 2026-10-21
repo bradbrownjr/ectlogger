@@ -37,6 +37,10 @@ python-dotenv>=1.0.0
 python-dateutil>=2.8.2
 aiofiles>=23.2.0
 Pillow>=10.0.0
+# Coverage site import (routers/coverage_sites.py::read_site_file). defusedxml
+# makes openpyxl refuse XML entity attacks it doesn't guard against alone.
+openpyxl>=3.1.5
+defusedxml>=0.7.1
 
 # Backups (app/backup/): age encryption, SFTP and S3-compatible targets
 pyrage>=1.2.0

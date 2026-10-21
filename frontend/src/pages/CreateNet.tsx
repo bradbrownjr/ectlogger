@@ -26,7 +26,7 @@ import { FrequencyItem } from '../components/forms/CommunicationPlanPanel';
 import { FieldDefinitionItem, FieldConfigEntry } from '../components/forms/CheckInFieldsPanel';
 import BasicInfoTab from '../components/create-net/BasicInfoTab';
 import NCSStaffTab from '../components/create-net/NCSStaffTab';
-import { SiteDraft, draftsToPayload, siteToDraft } from '../components/forms/CoverageSitesEditor';
+import { SiteDraft, draftsToPayload, siteToDraft } from '../utils/siteDrafts';
 import CommunicationPlanPanel from '../components/forms/CommunicationPlanPanel';
 import NetScriptPanel from '../components/forms/NetScriptPanel';
 import AnnouncementsPanel from '../components/forms/AnnouncementsPanel';

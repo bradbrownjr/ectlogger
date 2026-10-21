@@ -29,7 +29,7 @@ import SendIcon from '@mui/icons-material/Send';
 import api, { coverageSiteApi, drillPlanApi } from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
 import { exportElementToPdf } from '../utils/pdfExport';
-import { CoverageSite } from '../utils/coverageSites';
+import { CoverageSite, formatSiteLine } from '../utils/coverageSites';
 import {
   DrillEvent, DrillPlan as Plan, OBJECTIVE_RATING_LABELS, groupObjectives, messageStatus, newPlan,
 } from '../utils/drillPlan';
@@ -125,7 +125,10 @@ const DrillPlanPage: React.FC = () => {
 
   const canEdit = plan ? !!plan.can_edit : !!net?.actions?.edit;
   const siteName = (sid: number | null | undefined) => sites.find((s) => s.id === sid)?.name;
-  const placeSites = sites.filter((s) => s.site_type !== 'infrastructure');
+  // Packets for the sites the net uses, and any a schedule row names; an
+  // imported EMA list's other sites get none.
+  const placeSites = sites.filter((s) => s.site_type !== 'infrastructure'
+    && (s.in_use || (plan?.events || []).some((e) => e.site_id === s.id)));
 
   const startEditing = () => {
     setDraft(plan ? JSON.parse(JSON.stringify(plan)) : newPlan(net?.name || ''));
@@ -138,7 +141,7 @@ const DrillPlanPage: React.FC = () => {
       const payload = {
         ...draft,
         objectives: draft.objectives.filter((o) => o.text.trim()),
-        events: draft.events.map(({ form_id, form_status, form_message_number, sent_at, ...e }) => e),
+        events: draft.events.map(({ form_id: _formId, form_status: _status, form_message_number: _number, sent_at: _sentAt, ...e }) => e),
       };
       const res = await drillPlanApi.save(id, payload);
       setPlan(res.data);
@@ -376,7 +379,7 @@ const DrillPlanPage: React.FC = () => {
                 setPrintBlanks(v === '' ? '0' : '5');
               }}>
               <MenuItem value="">The whole plan</MenuItem>
-              {placeSites.map((s) => <MenuItem key={s.id} value={s.id}>Packet for {s.name}</MenuItem>)}
+              {placeSites.map((s) => <MenuItem key={s.id} value={s.id}>Packet for {formatSiteLine(s.name, s.location)}</MenuItem>)}
             </Select>
           </FormControl>
           <TextField label="Blank ICS-213s" type="number" value={printBlanks} onChange={(e) => setPrintBlanks(e.target.value)}

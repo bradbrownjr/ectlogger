@@ -14,11 +14,23 @@ export interface CoverageSite {
   sort_order: number;
   // Repeaters and nodes only: the net frequency it's on, if one of them.
   frequency_id: number | null;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  // A site the net's teams staff. An EMA's full list is imported with most
+  // sites unsupported, and those are shown only to net staff.
+  is_supported: boolean;
+  // Supported, primary, a repeater or node, or someone checked in there
+  // (backend services/site_coverage.py::coverage_site_in_use).
+  in_use: boolean;
+  // Net staff only; null for everyone else.
+  notes?: string | null;
+  details?: Record<string, string> | null;
 }
 
 // A repeater, packet node or Winlink gateway is "infrastructure": sites try
 // to get into it, nobody reports from it.
-export type SiteType = 'office' | 'shelter' | 'infrastructure';
+export type SiteType = 'office' | 'shelter' | 'pod' | 'staging' | 'hospital' | 'other' | 'infrastructure';
 
 export interface CoverageAccess {
   id: number;
@@ -51,6 +63,8 @@ export interface SiteCoverageNode {
   site_type: SiteType | null;
   is_primary: boolean;
   location: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   callsigns: string[];
 }
 
@@ -80,7 +94,7 @@ export interface SiteCoverageSummary {
     callsign: string | null; station: string | null; county: string | null; state: string | null; two_way: boolean;
   }[];
   counties: { county: string; state: string | null; from_keys: string[]; frequency_ids: (number | null)[]; two_way: boolean }[];
-  targets: { site_id: number; name: string; location: string | null; frequency_id: number | null }[];
+  targets: { site_id: number; name: string; location: string | null; latitude?: number | null; longitude?: number | null; frequency_id: number | null }[];
   // One cell per (node, repeater/node) someone at the node tried.
   access: { node_key: string; target_site_id: number; reached: boolean; attempts: { callsign: string; reached: boolean; note: string | null }[] }[];
 }
@@ -90,6 +104,10 @@ export const EMPTY_SITE_COVERAGE: SiteCoverageSummary = { nodes: [], links: [], 
 export const SITE_TYPE_LABELS: Record<SiteType, string> = {
   office: 'Official office',
   shelter: 'Shelter',
+  pod: 'Point of distribution (POD)',
+  staging: 'Staging area',
+  hospital: 'Hospital',
+  other: 'Other',
   infrastructure: 'Repeater or node',
 };
 
@@ -138,6 +156,14 @@ export function formatSiteLine(name: string, location: string | null | undefined
   const loc = (location || '').trim();
   if (!loc) return name;
   return GRID.test(loc) ? `${name} ${loc}` : `${name}, ${loc}`;
+}
+
+// Where the map puts a site: its coordinates when the list had them, since
+// a POD list's "Fire Station, Gray" may not geocode; otherwise the site line.
+// utils/locationParser.ts reads a bare "lat, lon" as GPS.
+export function siteMapLocation(site: { name: string; location: string | null; latitude?: number | null; longitude?: number | null }): string | null {
+  if (site.latitude != null && site.longitude != null) return `${site.latitude}, ${site.longitude}`;
+  return site.location ? formatSiteLine(site.name, site.location) : null;
 }
 
 // The net's frequencies that collect coverage reports: all of them, less the

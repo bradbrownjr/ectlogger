@@ -1,0 +1,8 @@
+Example County Points of Distribution
+SITE NAME,LOCATION,CITY,LAT.,LONG.,LANES,"POC, Notes"
+Raymond Fire Station,12 Example Road,Raymond,43.9012,-70.4701,2,"Station chief, 555-0141. Key at town office."
+Casco Community Hall,40 Sample Street,Casco,43.9568,-70.5225,1,"Hall manager, 555-0142"
+Gray Public Works,7 Placeholder Lane,Gray,43.8851,-70.3318,3,"Public works director, 555-0143. Gate code with dispatch."
+Windham Middle School,88 Demo Avenue,Windham,43.8003,-70.4219,4,"Facilities, 555-0144"
+Standish Town Garage,5 Fictional Way,Standish,43.7368,-70.5517,2,"Road commissioner, 555-0145"
+New Gloucester Fairgrounds,21 Example Road,New Gloucester,43.9628,-70.2829,6,"Fair association, 555-0146"

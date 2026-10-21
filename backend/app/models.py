@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Enum, Table, UniqueConstraint, Index
+from sqlalchemy import BigInteger, Column, Float, Integer, String, Boolean, DateTime, ForeignKey, Text, Enum, Table, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -549,6 +549,21 @@ class CoverageSite(Base):
     frequency_id = Column(Integer, ForeignKey("frequencies.id"), nullable=True)
     # A site every other site is graded against ("can it reach the EMA?").
     is_primary = Column(Boolean, nullable=False, default=False)
+    # Imported from an EMA's list (routers/coverage_sites.py::parse_site_file).
+    # Street address and exact coordinates; the map uses the coordinates
+    # when there are any.
+    address = Column(String(255), nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    # Net staff only, always: contacts, capacity, generator, and every other
+    # column of the source spreadsheet (details is a JSON object of them).
+    notes = Column(Text, nullable=True)
+    details = Column(Text, nullable=True)
+    # A site the net is staffing. Only supported sites, primaries, repeaters
+    # and nodes, and sites someone has checked in at are shown to anyone but
+    # net staff: an EMA's full shelter list must never read as a list of open
+    # shelters (see coverage_site_in_use).
+    is_supported = Column(Boolean, nullable=False, default=True)
     sort_order = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -558,7 +573,7 @@ class CoverageSite(Base):
 
 # "infrastructure" is a repeater, packet node or Winlink gateway: a target a
 # site tries to get into (CoverageAccess), not a place operators report from.
-COVERAGE_SITE_TYPES = ("office", "shelter", "infrastructure")
+COVERAGE_SITE_TYPES = ("office", "shelter", "pod", "staging", "hospital", "other", "infrastructure")
 
 
 class CoverageAccess(Base):

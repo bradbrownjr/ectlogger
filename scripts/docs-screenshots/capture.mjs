@@ -453,6 +453,18 @@ async function runSteps(page, steps) {
       case 'evaluate':
         await page.evaluate(value);
         break;
+      case 'upload': {
+        // Sends the file's bytes, not a path: the browser is remote
+        // (Browserless) and can't read this machine's disk. File inputs are
+        // usually hidden, so this one isn't limited to visible elements.
+        const file = resolve(REPO, value.file);
+        await page.locator(expand(value.selector)).first().setInputFiles({
+          name: file.split('/').pop(),
+          mimeType: value.mime_type || 'application/octet-stream',
+          buffer: readFileSync(file),
+        });
+        break;
+      }
       default:
         throw new Error(`Unknown step "${action}"`);
     }

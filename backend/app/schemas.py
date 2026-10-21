@@ -2200,13 +2200,31 @@ class CoverageSiteItem(BaseModel):
     id: Optional[int] = None
     name: str = Field(min_length=1, max_length=100)
     location: Optional[str] = Field(None, max_length=255)
-    site_type: Literal['office', 'shelter', 'infrastructure'] = 'shelter'
+    site_type: Literal['office', 'shelter', 'pod', 'staging', 'hospital', 'other', 'infrastructure'] = 'shelter'
     is_primary: bool = False
     # Infrastructure only: which of the net's frequencies it's on.
     frequency_id: Optional[int] = None
+    address: Optional[str] = Field(None, max_length=255)
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
+    notes: Optional[str] = Field(None, max_length=4000)
+    # The source spreadsheet's other columns, label to value.
+    details: Optional[Dict[str, str]] = None
+    is_supported: bool = True
+
+    @field_validator('details')
+    @classmethod
+    def validate_details(cls, v):
+        if v is None:
+            return v
+        if len(v) > 40:
+            raise ValueError('At most 40 details per site')
+        return {str(k)[:100]: str(val)[:1000] for k, val in v.items() if str(val).strip()}
 
 
 class CoverageSiteResponse(BaseModel):
+    """notes and details are filled in for net staff only
+    (routers/coverage_sites.py::list_coverage_sites)."""
     id: int
     net_id: int
     name: str
@@ -2215,9 +2233,22 @@ class CoverageSiteResponse(BaseModel):
     is_primary: bool
     sort_order: int
     frequency_id: Optional[int] = None
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    is_supported: bool = True
+    in_use: bool = True
+    notes: Optional[str] = None
+    details: Optional[Dict[str, str]] = None
 
-    class Config:
-        from_attributes = True
+
+class SiteFileResponse(BaseModel):
+    """A spreadsheet read for the site import: its sheets, and the chosen
+    sheet's cells as text, first row first. Nothing is saved."""
+    sheets: List[str]
+    sheet: Optional[str] = None
+    rows: List[List[str]]
+    truncated: bool = False
 
 
 class CoverageContactItem(BaseModel):
@@ -2298,6 +2329,8 @@ class SiteCoverageTarget(BaseModel):
     site_id: int
     name: str
     location: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     frequency_id: Optional[int] = None
 
 
@@ -2323,6 +2356,8 @@ class SiteCoverageNode(BaseModel):
     is_primary: bool = False
     location: Optional[str] = None
     callsigns: List[str] = []
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class SiteCoverageLink(BaseModel):

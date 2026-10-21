@@ -1,6 +1,6 @@
 import React from 'react';
 import { Autocomplete, Popper, PopperProps, TextField, TextFieldProps } from '@mui/material';
-import { CoverageSite, formatSiteLine, reportingSites } from '../../utils/coverageSites';
+import { CoverageSite, SITE_TYPE_LABELS, SiteType, formatSiteLine, reportingSites } from '../../utils/coverageSites';
 
 // ========== LOCATION FIELD WITH COVERAGE SITES ==========
 // The check-in form's Location field. On a net with coverage sites (a drill
@@ -12,6 +12,10 @@ import { CoverageSite, formatSiteLine, reportingSites } from '../../utils/covera
 //
 // The site comes from the text, so the two can't disagree: editing the
 // location away from a site's line takes the station off that site.
+//
+// Sites are grouped by type, since an imported EMA list can run to hundreds.
+// Net staff get every site; everyone else only the sites in use
+// (backend routers/coverage_sites.py::list_coverage_sites).
 
 interface SiteLocationFieldProps {
   sites: CoverageSite[];
@@ -49,11 +53,16 @@ const SiteLocationField: React.FC<SiteLocationFieldProps> = ({ sites, value, onC
       />
     );
   }
-  const options = places.map((s) => formatSiteLine(s.name, s.location));
+  const typeOrder = Object.keys(SITE_TYPE_LABELS) as SiteType[];
+  const sorted = [...places].sort((a, b) => typeOrder.indexOf(a.site_type) - typeOrder.indexOf(b.site_type));
+  const options = sorted.map((s) => formatSiteLine(s.name, s.location));
+  const typeByLine = new Map(sorted.map((s) => [formatSiteLine(s.name, s.location), s.site_type]));
+  const grouped = new Set(sorted.map((s) => s.site_type)).size > 1;
   return (
     <Autocomplete
       freeSolo
       options={options}
+      groupBy={grouped ? (line) => SITE_TYPE_LABELS[typeByLine.get(line) ?? 'other'] : undefined}
       inputValue={value}
       onInputChange={(_, text) => onChange(text, siteIdForLocation(sites, text))}
       fullWidth={textFieldProps?.fullWidth}

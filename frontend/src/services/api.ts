@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { CoverageSitePayload } from '../utils/siteDrafts';
 
 // Default includes /api suffix for backend routes
 // For LAN development: http://localhost:8000/api
@@ -229,8 +230,18 @@ export const canHearApi = {
 // (backend routers/coverage_sites.py). Reads are open to guests.
 export const coverageSiteApi = {
   listSites: (netId: number) => api.get(`/nets/${netId}/coverage-sites`),
-  saveSites: (netId: number, sites: { id?: number; name: string; location: string | null; site_type: 'office' | 'shelter' | 'infrastructure'; is_primary: boolean; frequency_id: number | null }[]) =>
+  saveSites: (netId: number, sites: CoverageSitePayload[]) =>
     api.put(`/nets/${netId}/coverage-sites`, sites),
+  // An EMA's spreadsheet read into rows of text, for the import dialog to
+  // map. Nothing is saved.
+  readSiteFile: (netId: number, file: File, sheet?: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    if (sheet) form.append('sheet', sheet);
+    return api.post<{ sheets: string[]; sheet: string | null; rows: string[][]; truncated: boolean }>(
+      `/nets/${netId}/coverage-sites/read-file`, form, { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+  },
   listContacts: (netId: number) => api.get(`/nets/${netId}/coverage-contacts`),
   saveContacts: (netId: number, reporterCheckInId: number, contacts: { frequency_id: number | null; callsign: string | null; station: string | null; county: string | null; state: string | null; two_way: boolean }[]) =>
     api.put(`/nets/${netId}/coverage-contacts`, { reporter_check_in_id: reporterCheckInId, contacts }),

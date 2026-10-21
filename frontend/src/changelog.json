@@ -1,8 +1,8 @@
 {
-  "version": "2026.10.21c",
+  "version": "2026.10.21d",
   "entries": [
     {
-      "version": "2026.10.21c",
+      "version": "2026.10.21d",
       "date": "2026-10-21",
       "sections": [
         {
@@ -15,6 +15,10 @@
             },
             {
               "text": "Drills: Exercise plan — Write a drill's scenario, objectives and schedule on the net, with prepared ICS-213s assigned to the sites that send them. Print the plan and a packet for each site, mark messages sent and received during the drill, and rate each objective afterward.",
+              "userImpact": true
+            },
+            {
+              "text": "Coverage: Import sites from a spreadsheet — Load an EMA's shelter or distribution point list from Excel or CSV. Match its columns to name, address, town, coordinates and notes, and choose the type for the whole list. Mark the sites your teams will staff; the rest of the list, and every site's address, contacts and capacity, are shown only to net staff.",
               "userImpact": true
             }
           ]

@@ -51,8 +51,10 @@ Don't type "This is an exercise" into the message. It's added at the start and e
 
 Click **Print**, choose what to print, and click **Download PDF**.
 
-- **The whole plan** is for net control and the exercise leads: every objective, every row, and every prepared message.
-- **Packet for** a site is what that site's team carries: the overview, the objectives, the site's own rows and the rows for every site, the messages it sends, each on a printed ICS-213, and blank ICS-213s for the traffic it writes on the day.
+- **The whole plan** is for net control and the exercise leads: every objective, every row, every prepared message, and a **Sites** list of the sites the net supports, each with its address, notes, and the details kept from the agency's list.
+- **Packet for** a site is what that site's team carries: its address and details, the overview, the objectives, the site's own rows and the rows for every site, the messages it sends, each on a printed ICS-213, and blank ICS-213s for the traffic it writes on the day.
+
+Packets are offered for the sites in use, not for every site on an imported list. See [Who sees the sites](/docs/net-managers/coverage-drills/#who-sees-the-sites).
 
 Every page is marked **THIS IS AN EXERCISE** at the top and bottom.
 

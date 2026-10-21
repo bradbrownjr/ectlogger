@@ -567,10 +567,12 @@ shots:
       - selector: 'input[placeholder="Location or site"]:visible'
         style: box
     alt: >
-      The New Check-in form on a phone, with its Location box outlined in
-      red and open on a list of the net's sites: Example County EOC,
-      Windham, ME; North Office, Bridgton, ME; Naples Shelter, Naples, ME;
-      Freeport Shelter, Freeport, ME; and Gray Weather Office FN43rv.
+      The New Check-in form on a phone, with its Location box outlined
+      in red and open on a list of the net's sites, grouped by type:
+      under Official office, Example County EOC, Windham, ME; North
+      Office, Bridgton, ME; and Gray Weather Office FN43rv; under
+      Shelter, Naples Shelter, Naples, ME, and Freeport Shelter,
+      Freeport, ME.
     caption: On a net with sites, Location offers them. Picking one puts the station at that site.
 
   - id: can-hear-dialog-site

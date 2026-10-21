@@ -18,7 +18,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { CoverageSite } from '../../utils/coverageSites';
+import { CoverageSite, formatSiteLine } from '../../utils/coverageSites';
 import {
   DrillEvent, DrillMessage, DrillObjective, DrillPlan, OBJECTIVE_RATING_LABELS, ObjectiveRating, newMessage,
 } from '../../utils/drillPlan';
@@ -215,7 +215,10 @@ const DrillPlanEditor: React.FC<DrillPlanEditorProps> = ({ draft, setDraft, site
                   <Select labelId={`site-${i}`} label="Site" value={e.site_id ?? ''}
                     onChange={(ev) => setEvent(i, { site_id: ev.target.value === '' ? null : Number(ev.target.value) })}>
                     <MenuItem value=""><em>Every site</em></MenuItem>
-                    {placeSites.map((s) => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
+                    {/* The sites the net uses; an imported list's other sites stay out of the way. */}
+                    {placeSites.filter((s) => s.in_use || s.id === e.site_id).map((s) => (
+                      <MenuItem key={s.id} value={s.id}>{formatSiteLine(s.name, s.location)}</MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
                 <TextField label="Event" size="small" multiline value={e.description || ''}

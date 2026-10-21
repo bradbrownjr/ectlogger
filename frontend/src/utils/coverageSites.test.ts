@@ -36,7 +36,7 @@ describe('coverageFrequencies', () => {
 
 describe('stationSiteName', () => {
   it('names the site so two visits by one operator can be told apart', () => {
-    const sites = new Map([[7, { id: 7, net_id: 1, name: 'Gray NWS', location: null, site_type: 'office' as const, is_primary: false, sort_order: 0, frequency_id: null }]]);
+    const sites = new Map([[7, { id: 7, net_id: 1, name: 'Gray NWS', location: null, site_type: 'office' as const, is_primary: false, sort_order: 0, frequency_id: null, is_supported: true, in_use: true }]]);
     expect(stationSiteName({ coverage_site_id: 7 }, sites)).toBe('Gray NWS');
     expect(stationSiteName({}, sites)).toBeNull();
   });

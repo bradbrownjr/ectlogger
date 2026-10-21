@@ -805,6 +805,25 @@ async def _build(db_path: Path, out_path: Path):
                                 is_primary=primary, frequency_id=freq_id, sort_order=order)
             db.add(site)
             set_sites[name] = site
+        # As if imported from the EMA's lists: the supported shelter carries
+        # the list's columns, and the sites nobody staffs are net-staff-only.
+        set_sites["Naples Shelter"].address = "14 Example Road"
+        set_sites["Naples Shelter"].notes = "Shelter manager, 555-0131. Enter by the gym doors."
+        set_sites["Naples Shelter"].details = json.dumps(
+            {"Emergency Capacity": "150", "Long term Capacity": "60", "Generator": "Yes", "OPS Plan status": "Current"})
+        imported_specs = [
+            ("Sebago Elementary School", "Sebago, ME", "shelter", "3 Sample Street", None, None,
+             "Principal, 555-0132", {"Emergency Capacity": "90", "Generator": "No"}),
+            ("Raymond Fire Station", "Raymond, ME", "pod", "12 Example Road", 43.9012, -70.4701,
+             "Station chief, 555-0141", {"LANES": "2"}),
+            ("Casco Community Hall", "Casco, ME", "pod", "40 Sample Street", 43.9568, -70.5225,
+             "Hall manager, 555-0142", {"LANES": "1"}),
+        ]
+        for i, (name, location, site_type, address, lat, lon, notes, details) in enumerate(imported_specs):
+            db.add(CoverageSite(net_id=net_set.id, name=name, location=location, site_type=site_type,
+                                address=address, latitude=lat, longitude=lon, notes=notes,
+                                details=json.dumps(details), is_supported=False,
+                                sort_order=len(site_specs) + i))
         await db.flush()
         db.add_all([
             NetRole(net_id=net_set.id, user_id=users["W1PINE"].id, role="NCS",

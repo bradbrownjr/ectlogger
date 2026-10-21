@@ -29,18 +29,51 @@ You need to be able to edit the net: its manager, its schedule's manager or a co
 3. Click **Add site** and type the site as one line: **Name, Town, ST**, such as `Naples Shelter, Naples, ME`, or a name followed by a grid square, such as `Gray Weather Office FN43rv`. The line underneath shows how it was split. If it says no place was found, add a comma before the town.
 4. Pick the site's **Type**:
    - **Official office**, for an emergency management office, an EOC, or the weather office.
-   - **Shelter**, for anywhere a team deploys to.
+   - **Shelter**, **Point of distribution (POD)**, **Staging area**, or **Hospital**, for the places teams deploy to.
+   - **Other**, for anywhere else a team operates from.
    - **Repeater or node**, for a repeater, a packet node, or anything else teams try to get into. See [Repeaters and nodes](#repeaters-and-nodes) below.
 5. Click the star beside each office every other site should be able to reach, usually the county and regional offices. These are the **primary** sites, and the results are measured against them.
-6. Click **Save**.
+6. Leave **Supported** ticked on each site your teams will staff. A site you add by hand starts ticked.
+7. Click **Save**.
 
 <figure>
   <img src="/docs/img/net-managers/coverage-sites-editor.png"
-       alt="The Sites list under coverage logging in the net's settings. Each row has the site typed as one line, such as Naples Shelter, Naples, ME, with the name and place it was split into shown underneath, then its type and a Primary star. The Example County EOC and the North Office are starred. The three repeaters and nodes have a Frequency box instead of a star. Add site, at the bottom, is outlined in red.">
-  <figcaption>Type each site as one line. Star the offices every other site should reach.</figcaption>
+       alt="The Sites list under coverage logging in the net's settings, with a search box, a type filter and an Import button above it. Each row has the site typed as one line, such as Naples Shelter, Naples, ME, then its type, a Primary star and a Supported tick. Naples Shelter is opened to show its address, its notes, and the columns kept from the EMA's list: emergency and long-term capacity, generator, and plan status. Its Supported tick is outlined in red. The schools and PODs further down, imported from the EMA's lists, are not ticked.">
+  <figcaption>Tick Supported for the sites your teams staff. Open a site to see its address, notes and the rest of its row from the EMA's list.</figcaption>
 </figure>
 
+Open a site with the arrow at the end of its row to add its address, latitude and longitude, and notes such as a point of contact or how to get in. Latitude and longitude, when you have them, place the site on the map exactly.
+
 Removing a site takes the stations placed at it off that site; their reports are kept.
+
+### Import an emergency management agency's site list
+
+An emergency management agency (EMA) keeps its shelters and points of distribution in a spreadsheet, and each agency lays its list out differently. Instead of typing hundreds of sites, import the list and tell ECTLogger which column is which.
+
+1. Save the net first. Importing needs a saved net.
+2. Under **Sites**, click **Import** and choose the file: Excel (.xlsx) or CSV, up to 5 MB.
+3. If the workbook has more than one sheet, pick the **Sheet**. If the list has a title above its headings, check that **Headings are on** names the row with the column headings.
+4. Under **Columns**, check what each field was matched to, and change any that are wrong. Only **Name** is required. The town and state become the site's place; if the list has no state column, type it in **State for every site**.
+5. Choose the **Type for every site**, such as **Point of distribution (POD)**. Import a shelter list and a POD list one at a time so each gets its own type.
+6. Leave **Our teams staff every site on this list** unticked for an agency's full list. You'll tick **Supported** on the sites you staff afterward.
+7. Check the preview and click **Import**. The sites are added to the list on the form; click **Save** to keep them.
+
+<figure>
+  <img src="/docs/img/net-managers/coverage-sites-import.png"
+       alt="The Import sites dialog with a CSV of points of distribution loaded. Headings are on row 2, under the list's title. The columns are matched as Name to SITE NAME, Address to LOCATION, Town to CITY, Latitude to LAT., Longitude to LONG. and Notes to POC, Notes, with ME typed as the state for every site. Type for every site, outlined in red, is Point of distribution (POD), and Our teams staff every site on this list is unticked. The preview reads 6 sites read: 4 new, 2 already on the net's list will be updated, and shows the first five with their place, address and coordinates.">
+  <figcaption>Match the list's columns, choose its type, and check the preview before importing.</figcaption>
+</figure>
+
+Every other column, such as capacity, generator, or plan status, is kept with its site and shown when you open the site. Importing a newer copy of the same list updates the sites already there, matched by name and town, and keeps their star, their **Supported** tick, and the stations checked in at them. A net holds up to 500 sites. Use the search box and the **Type** filter to find one.
+
+### Who sees the sites
+
+An agency's list of possible shelters is not public: a shelter on a published list reads as an open shelter, and in a real event some won't be. So:
+
+- **Net staff** see every site, with its address, notes, and the other columns. That's the net's manager, its schedule's manager and staff, an admin, and anyone acting as NCS, Logger, or Relay.
+- **Everyone else** sees only the sites in use: ticked **Supported**, starred as primary, a repeater or node, or with a station checked in there. They see the site's name and place, never its address, notes, or other columns.
+
+Only sites in use appear in the coverage results, the report, and the closing email. If a team turns up at a site you didn't tick, net control can check them in there, which puts it in use.
 
 ### Leave repeaters and talkgroups out of the reports
 
@@ -56,11 +89,11 @@ Add each one as a site of type **Repeater or node**. Instead of a star it has an
 
 ### Checking a station in at a site
 
-On a net with sites, the check-in form's **Location** offers them. Picking one puts the station at that site, and fills in the location so it still lands on the map. Typing anything else is an ordinary location with no site, which is right for a home station that's relaying.
+On a net with sites, the check-in form's **Location** offers them, grouped by type. Net staff are offered every site; a station checking itself in is offered only the sites in use. Picking one puts the station at that site, and fills in the location so it still lands on the map. Typing anything else is an ordinary location with no site, which is right for a home station that's relaying.
 
 <figure>
   <img src="/docs/img/net-control/check-in-at-a-site.png"
-       alt="The New Check-in form on a phone, with its Location box outlined in red and open on a list of the net's sites: Example County EOC, Windham, ME; North Office, Bridgton, ME; Naples Shelter, Naples, ME; Freeport Shelter, Freeport, ME; and Gray Weather Office FN43rv.">
+       alt="The New Check-in form on a phone, with its Location box outlined in red and open on a list of the net's sites, grouped by type: under Official office, Example County EOC, Windham, ME; North Office, Bridgton, ME; and Gray Weather Office FN43rv; under Shelter, Naples Shelter, Naples, ME, and Freeport Shelter, Freeport, ME.">
   <figcaption>On a net with sites, Location offers them. Picking one puts the station at that site.</figcaption>
 </figure>
 

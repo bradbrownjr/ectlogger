@@ -2,7 +2,7 @@ import React from 'react';
 import ICS213PrintView from '../traffic/print/ICS213PrintView';
 import ExerciseMarking from '../traffic/print/ExerciseMarking';
 import { printPageStyle, gridTableStyle, cellStyle } from '../traffic/print/printStyles';
-import { CoverageSite } from '../../utils/coverageSites';
+import { CoverageSite, SITE_TYPE_LABELS, formatSiteLine } from '../../utils/coverageSites';
 import {
   DrillEvent, DrillPlan, OBJECTIVE_RATING_LABELS, eventsForSite, groupObjectives, markExerciseText,
 } from '../../utils/drillPlan';
@@ -13,9 +13,12 @@ import {
 // the app's theme, and every block is a data-pdf-avoid-break so a table row
 // or a form is never cut across two pages.
 //
-// The whole plan has every row and every prepared message. A site's packet
-// has that site's rows and the every-site rows, the messages it sends, and
-// blank ICS-213s for the traffic it writes on the day.
+// The whole plan has every row and every prepared message, and a Sites list
+// listing the sites the net supports with their addresses, notes and other
+// details, for the exercise director. A site's packet has that site's own
+// details, its rows and the every-site rows, the messages it sends, and
+// blank ICS-213s for the traffic it writes on the day. Only net staff can
+// open a plan, so the details print (routers/drill_plans.py).
 
 interface DrillPlanPrintViewProps {
   id: string;
@@ -37,8 +40,34 @@ const Block: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div data-pdf-avoid-break="">{children}</div>
 );
 
+// A site's address, coordinates, notes and imported columns.
+const SiteDetails: React.FC<{ site: CoverageSite }> = ({ site }) => {
+  const rows: [string, string][] = [];
+  if (site.address) rows.push(['Address', site.address]);
+  if (site.latitude != null && site.longitude != null) rows.push(['Coordinates', `${site.latitude}, ${site.longitude}`]);
+  if (site.notes) rows.push(['Notes', site.notes]);
+  Object.entries(site.details || {}).forEach(([k, v]) => rows.push([k, v]));
+  if (rows.length === 0) return null;
+  return (
+    <table style={{ fontSize: 10, borderCollapse: 'collapse', marginTop: 2 }}>
+      <tbody>
+        {rows.map(([k, v]) => (
+          <tr key={k}>
+            <td style={{ padding: '1px 10px 1px 0', fontWeight: 700, verticalAlign: 'top', whiteSpace: 'nowrap' }}>{k}</td>
+            <td style={{ padding: '1px 0', whiteSpace: 'pre-wrap' }}>{v}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
+
 const DrillPlanPrintView: React.FC<DrillPlanPrintViewProps> = ({ id, plan, netName, sites, siteId, blankForms, showRatings }) => {
   const siteName = (sid: number | null | undefined) => sites.find((s) => s.id === sid)?.name ?? null;
+  const packetSite = siteId == null ? null : sites.find((s) => s.id === siteId) ?? null;
+  // The Sites list: the sites the net supports or uses, not an imported
+  // list's others.
+  const usedSites = sites.filter((s) => s.site_type !== 'infrastructure' && s.in_use);
   const events = eventsForSite(plan.events, siteId);
   const messages: DrillEvent[] = events.filter((e) => e.message && (siteId == null || e.site_id === siteId));
   const incidentName = plan.exercise_name || netName;
@@ -56,6 +85,15 @@ const DrillPlanPrintView: React.FC<DrillPlanPrintViewProps> = ({ id, plan, netNa
           {plan.exercise_when && <div style={{ fontSize: 11, marginTop: 4 }}>{plan.exercise_when}</div>}
           {plan.location && <div style={{ fontSize: 11 }}>{plan.location}</div>}
         </Block>
+
+        {/* Packet only: where this site is and what the EMA's list says about it */}
+        {packetSite && (packetSite.location || packetSite.address || packetSite.notes || packetSite.details) && (
+          <Block>
+            <div style={headingStyle}>Site</div>
+            <div style={{ fontSize: 11 }}>{formatSiteLine(packetSite.name, packetSite.location)}</div>
+            <SiteDetails site={packetSite} />
+          </Block>
+        )}
 
         {plan.purpose && (
           <Block>
@@ -136,6 +174,28 @@ const DrillPlanPrintView: React.FC<DrillPlanPrintViewProps> = ({ id, plan, netNa
         )}
         <Block><ExerciseMarking position="bottom" /></Block>
       </div>
+
+      {/* Whole plan only: the Sites section, after the schedule */}
+      {siteId == null && usedSites.length > 0 && (
+        <div style={{ ...printPageStyle, marginTop: 24 }}>
+          <Block>
+            <ExerciseMarking position="top" />
+            <div style={headingStyle}>Sites</div>
+          </Block>
+          {usedSites.map((site) => (
+            <Block key={site.id}>
+              <div style={{ fontSize: 11, fontWeight: 700, marginTop: 8 }}>
+                {formatSiteLine(site.name, site.location)}
+                <span style={{ fontWeight: 400 }}>
+                  {' '}({SITE_TYPE_LABELS[site.site_type]}{site.is_primary ? ', primary' : ''})
+                </span>
+              </div>
+              <SiteDetails site={site} />
+            </Block>
+          ))}
+          <Block><ExerciseMarking position="bottom" /></Block>
+        </div>
+      )}
 
       {/* Prepared messages, each on its own form, as the site sends them. */}
       {messages.map((e, i) => (

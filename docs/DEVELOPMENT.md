@@ -353,8 +353,8 @@ A coverage drill with sites (an ARES SET) answers "which places can reach
 each other", on top of the station-to-station `CanHearReport` rows. Migration
 `083_coverage_sites.py` adds:
 
-- `CoverageSite` (per net): `site_type` is `office`, `shelter` or
-  `infrastructure`. Offices and shelters can be `is_primary` (what every
+- `CoverageSite` (per net): `site_type` is `office`, `shelter`, `pod`,
+  `staging`, `hospital`, `other` or `infrastructure`. Offices and shelters can be `is_primary` (what every
   other site is graded against). Infrastructure is a repeater or node: never
   primary, never a place a check-in is at, and the only type with a
   `frequency_id`. `routers/coverage_sites.py::save_coverage_sites` enforces
@@ -384,6 +384,45 @@ check-in Location box on every check-in form; `CanHearDialog` follows
 late-loading contacts and access until the user edits that section, or Save
 would erase what was already recorded. Tests:
 `backend/tests/test_site_coverage.py`, `frontend/src/utils/coverageSites.test.ts`.
+
+### Imported site lists and who sees them
+
+An emergency management agency's shelter and POD lists arrive as
+spreadsheets, laid out differently by each agency, and are **not public**: a
+published list of possible shelters sends people to ones that aren't open.
+Migration `085_coverage_site_details.py` adds `address`, `latitude`,
+`longitude`, `notes`, `details` (the sheet's other columns, label to value,
+JSON as Text) and `is_supported` (default true, so sites typed before it stay
+public).
+
+- **One visibility rule**, `services/site_coverage.py::coverage_site_in_use`:
+  a site is in use when it is supported, primary, infrastructure, or has a
+  check-in. `routers/coverage_sites.py::_site_list` gives net staff
+  (`may_see_every_site` = `may_run_drill` or `may_edit_net`) every site with
+  its notes and details, and everyone else (guests included) the sites in use
+  with `notes`/`details` nulled. `load_site_coverage` filters to sites in use
+  before the rollup, for everyone, so the panel, report and closing email
+  never list an unused site. Never return `address`/`notes`/`details` from
+  any other public read.
+- **Placing a station at a site** (`check_ins.py::coverage_site_for_net`,
+  shared by create, update, and the can-hear save's operating position):
+  only net staff may use a site that isn't in use yet, and doing so puts it
+  in use.
+- **Reading the file**: `POST /nets/{id}/coverage-sites/read-file`
+  (`may_edit_net`) returns rows of text and saves nothing; the column mapping
+  happens in the browser (`utils/siteImport.ts`,
+  `components/forms/ImportSitesDialog.tsx`) and the result goes through the
+  ordinary `PUT`. xlsx is read with openpyxl `read_only=True,
+  data_only=True` (cached values, formulas never evaluated), and
+  `defusedxml` must be installed: openpyxl only guards against XML entity
+  expansion attacks when it is, so the endpoint imports it and fails closed.
+  Caps: 5 MB, 2,000 rows, 40 columns, 500 sites per net.
+- **Drafts**: `utils/siteDrafts.ts` keeps the loaded name and place beside the
+  editable one-line text, so an imported name containing a comma survives a
+  save without being re-split. An import matches existing sites on name plus
+  place, ignoring case (the backend refuses two sites with the same pair).
+- Tests: `backend/tests/test_site_import.py`,
+  `frontend/src/utils/siteImport.test.ts`.
 
 ## Drill plans
 

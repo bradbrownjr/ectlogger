@@ -1,4 +1,4 @@
-import type { SiteDraft } from '../components/forms/CoverageSitesEditor';
+import type { SiteDraft } from '../utils/siteDrafts';
 import { createContext, useContext, Dispatch, SetStateAction } from 'react';
 import { FrequencyItem } from '../components/forms/CommunicationPlanPanel';
 import { FieldDefinitionItem, FieldConfigEntry } from '../components/forms/CheckInFieldsPanel';
