@@ -29,12 +29,12 @@ RADIOGRAM_VALUES = {
 }
 
 
-async def _create_form(client, owner, **overrides) -> int:
+async def _create_form(client, owner, test_category=None, **overrides) -> int:
     values = dict(RADIOGRAM_VALUES)
     values.update(overrides)
     resp = await client.post(
         "/api/traffic/forms",
-        json={"form_type": "RADIOGRAM", "field_values": values},
+        json={"form_type": "RADIOGRAM", "field_values": values, "test_category": test_category},
         headers=auth_headers(owner),
     )
     assert resp.status_code == 201
@@ -57,6 +57,19 @@ async def test_export_text_matches_format_form_exactly(client, db, owner):
     )
     form = result.scalar_one()
     assert resp.text == format_form(form)
+
+
+@pytest.mark.asyncio
+async def test_drill_export_is_marked_at_start_and_end(client, db, owner):
+    await upsert_form_definitions(db)
+    form_id = await _create_form(client, owner, test_category="drill")
+
+    resp = await client.get(f"/api/traffic/forms/{form_id}/export", headers=auth_headers(owner))
+    assert resp.status_code == 200
+    lines = resp.text.strip().splitlines()
+    assert lines[0] == "THIS IS AN EXERCISE"
+    assert lines[-1] == "THIS IS AN EXERCISE"
+    assert "PLEASE ADVISE YOUR STATUS" in resp.text.upper()
 
 
 @pytest.mark.asyncio

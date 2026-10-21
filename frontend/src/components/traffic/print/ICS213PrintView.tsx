@@ -1,5 +1,6 @@
 import React from 'react';
 import { printPageStyle, gridTableStyle, cellStyle, labelCaptionStyle } from './printStyles';
+import ExerciseMarking, { isExerciseForm } from './ExerciseMarking';
 
 // ========== ICS213PrintView ==========
 // A pixel-accurate replica of FEMA's ICS 213 General Message form (the
@@ -15,6 +16,7 @@ import { printPageStyle, gridTableStyle, cellStyle, labelCaptionStyle } from './
 // so those are meant to be hand-filled, same as REC'D/SENT on the radiogram.
 
 interface Ics213FormLike {
+  test_category?: string | null;
   filed_at: string;
   field_values: Record<string, any>;
 }
@@ -47,6 +49,7 @@ const ICS213PrintView: React.FC<Ics213PrintViewProps> = ({ id, form }) => {
 
   return (
     <div id={id} style={printPageStyle}>
+      {isExerciseForm(form) && <ExerciseMarking position="top" />}
       <div style={{ textAlign: 'center', fontSize: 15, fontWeight: 700, marginBottom: 4 }}>
         GENERAL MESSAGE (ICS 213)
       </div>
@@ -115,6 +118,7 @@ const ICS213PrintView: React.FC<Ics213PrintViewProps> = ({ id, form }) => {
           </tr>
         </tbody>
       </table>
+      {isExerciseForm(form) && <ExerciseMarking position="bottom" />}
     </div>
   );
 };

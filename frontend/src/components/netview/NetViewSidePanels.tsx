@@ -363,6 +363,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
         <TrafficPanel
           netId={Number(netId)}
           currentUserId={currentUserId}
+          incidentName={net?.name}
           onCompose={onComposeTraffic}
           onClose={onCloseTraffic}
           onDetach={onUndockTraffic}
@@ -555,7 +556,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           minHeight={250}
           storageKey="traffic"
         >
-          <TrafficPanel netId={Number(netId)} currentUserId={currentUserId} onCompose={onComposeTraffic} />
+          <TrafficPanel netId={Number(netId)} currentUserId={currentUserId} incidentName={net?.name} onCompose={onComposeTraffic} />
         </FloatingWindow>
       )}
     </>

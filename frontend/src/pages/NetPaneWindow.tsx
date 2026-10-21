@@ -298,6 +298,7 @@ const NetPaneWindow: React.FC = () => {
         <TrafficPanel
           netId={Number(netId)}
           currentUserId={user?.id}
+          incidentName={net?.name}
           onCompose={() => setFileTrafficOpen(true)}
         />
         {/* Outside TrafficPanel, matching NetView — the composer must not be

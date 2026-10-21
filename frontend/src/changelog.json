@@ -1,8 +1,8 @@
 {
-  "version": "2026.10.21",
+  "version": "2026.10.21b",
   "entries": [
     {
-      "version": "2026.10.21",
+      "version": "2026.10.21b",
       "date": "2026-10-21",
       "sections": [
         {
@@ -21,6 +21,9 @@
           "items": [
             {
               "text": "Coverage: Limit reports to simplex — A net or schedule can untick its repeaters and talkgroups under Coverage reports, so \"Who can hear\" only asks about simplex frequencies."
+            },
+            {
+              "text": "Traffic: ICS-213s for exercises — Print a pad of blank ICS-213s with the incident name filled in. Printed drill traffic now reads THIS IS AN EXERCISE at the top and bottom."
             }
           ]
         },

@@ -1,5 +1,6 @@
 import React from 'react';
 import { printPageStyle, gridTableStyle, cellStyle, labelCaptionStyle, formatFiledDate } from './printStyles';
+import ExerciseMarking, { isExerciseForm } from './ExerciseMarking';
 import { formatText5Words } from '../../../utils/ntsText';
 
 // ========== RadiogramPrintView ==========
@@ -17,6 +18,7 @@ import { formatText5Words } from '../../../utils/ntsText';
 // on a paper copy.
 
 interface RadiogramFormLike {
+  test_category?: string | null;
   message_number: string | null;
   precedence: string | null;
   handling: string | null;
@@ -60,6 +62,7 @@ const RadiogramPrintView: React.FC<RadiogramPrintViewProps> = ({ id, form }) => 
 
   return (
     <div id={id} style={printPageStyle}>
+      {isExerciseForm(form) && <ExerciseMarking position="top" />}
       <div style={{ textAlign: 'center', marginBottom: 10 }}>
         <div style={{ fontSize: 13, fontWeight: 700 }}>THE AMERICAN RADIO RELAY LEAGUE</div>
         <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: 2 }}>RADIOGRAM</div>
@@ -145,6 +148,7 @@ const RadiogramPrintView: React.FC<RadiogramPrintViewProps> = ({ id, form }) => 
           </tr>
         </tbody>
       </table>
+      {isExerciseForm(form) && <ExerciseMarking position="bottom" />}
     </div>
   );
 };

@@ -4,7 +4,7 @@ summary: The traffic panel, filing and relaying formal messages, and what the ch
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-10-21
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/handling-traffic/
@@ -66,6 +66,12 @@ The clock starts when the message reaches you, and the reminders stop the moment
 ## Exporting
 
 The panel's export button offers two genuinely different outputs: **Text**, one line per report, good for pasting into a spreadsheet or a Winlink template; and **PDF**, every report rendered as its real form (a radiogram pad, an ICS-213, or a strip layout) for printing or handing off on paper.
+
+**Blank ICS-213 pad (PDF)** prints blank ICS-213s for teams to write on in the field, with the incident name filled in. Choose how many copies, up to 50.
+
+### Drill traffic is marked as an exercise
+
+ARES exercise plans require every formal message to say it is an exercise at its start and end. Any form marked as drill traffic prints with **THIS IS AN EXERCISE** at the top and bottom, and its text export begins and ends with the same line. For a blank pad, tick **Mark as an exercise**.
 
 ## Next
 

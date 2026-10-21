@@ -25,6 +25,7 @@ All notable changes to ECTLogger are documented here.
 ## Improvements
 
 * **Coverage: Limit reports to simplex** — A net or schedule can untick its repeaters and talkgroups under Coverage reports, so "Who can hear" only asks about simplex frequencies.
+* **Traffic: ICS-213s for exercises** — Print a pad of blank ICS-213s with the incident name filled in. Printed drill traffic now reads THIS IS AN EXERCISE at the top and bottom.
 
 ## Bug Fixes
 

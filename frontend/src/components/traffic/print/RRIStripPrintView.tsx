@@ -1,5 +1,6 @@
 import React from 'react';
 import { printPageStyle, gridTableStyle, cellStyle, labelCaptionStyle, formatFiledDate } from './printStyles';
+import ExerciseMarking, { isExerciseForm } from './ExerciseMarking';
 import { FormDefinitionField } from '../../../hooks/useFormDefinitions';
 
 // ========== RRIStripPrintView ==========
@@ -12,6 +13,7 @@ import { FormDefinitionField } from '../../../hooks/useFormDefinitions';
 // form.definition.fields so it needs no per-type branching.
 
 interface RRIStripFormLike {
+  test_category?: string | null;
   form_type: string;
   filed_at: string;
   normalized_text: string | null;
@@ -32,6 +34,7 @@ const RRIStripPrintView: React.FC<RRIStripPrintViewProps> = ({ id, form }) => {
 
   return (
     <div id={id} style={printPageStyle}>
+      {isExerciseForm(form) && <ExerciseMarking position="top" />}
       <div style={{ textAlign: 'center', marginBottom: 10 }}>
         <div style={{ fontSize: 13, fontWeight: 700 }}>RADIO RELAY INTERNATIONAL</div>
         <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 1 }}>{form.definition.title}</div>
@@ -63,6 +66,7 @@ const RRIStripPrintView: React.FC<RRIStripPrintViewProps> = ({ id, form }) => {
           ))}
         </tbody>
       </table>
+      {isExerciseForm(form) && <ExerciseMarking position="bottom" />}
     </div>
   );
 };

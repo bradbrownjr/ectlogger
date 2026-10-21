@@ -31,6 +31,7 @@ import { getErrorMessage } from '../../utils/apiErrors';
 import TrafficTable from '../traffic/TrafficTable';
 import TrafficDetail from '../traffic/TrafficDetail';
 import NetTrafficPrintBundle from '../traffic/print/NetTrafficPrintBundle';
+import BlankIcs213Dialog from '../traffic/BlankIcs213Dialog';
 import { exportElementToPdf } from '../../utils/pdfExport';
 import { TrafficForm } from '../../hooks/useTrafficList';
 
@@ -72,6 +73,8 @@ const DISPOSITION_COLOR: Record<string, 'default' | 'warning' | 'info' | 'succes
 interface TrafficPanelProps {
   netId: number;
   currentUserId?: number;
+  // Prefills the blank ICS-213 pad's incident name.
+  incidentName?: string;
   // Opens the host page's FileTrafficDialog. The dialog is not mounted here
   // on purpose (see FileTrafficDialog.tsx), so a host that doesn't offer one
   // simply gets no "+" button rather than a button that does nothing.
@@ -90,6 +93,7 @@ interface TrafficPanelProps {
 const TrafficPanel: React.FC<TrafficPanelProps> = ({
   netId,
   currentUserId,
+  incidentName,
   onCompose,
   onClose,
   onDetach,
@@ -185,6 +189,7 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
   const [exportMenuAnchor, setExportMenuAnchor] = useState<HTMLElement | null>(null);
   const [pdfForms, setPdfForms] = useState<any[] | null>(null);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [blankPadOpen, setBlankPadOpen] = useState(false);
 
   const handleExportText = async () => {
     setExportMenuAnchor(null);
@@ -309,6 +314,12 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
                       <MenuItem onClick={handleExportPdf} disabled={exportingPdf} sx={{ minHeight: 44 }}>
                         {exportingPdf ? 'Building PDF...' : 'PDF (printable forms)'}
                       </MenuItem>
+                      <MenuItem
+                        onClick={() => { setExportMenuAnchor(null); setBlankPadOpen(true); }}
+                        sx={{ minHeight: 44 }}
+                      >
+                        Blank ICS-213 pad (PDF)
+                      </MenuItem>
                     </Menu>
                     <IconButton size="small" onClick={handleViewAll} title="View all in Traffic" sx={{ p: 0.25 }}>
                       <ListAltIcon sx={{ fontSize: 14 }} />
@@ -407,6 +418,11 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
           <NetTrafficPrintBundle id="net-traffic-print-bundle" forms={pdfForms} />
         </Box>
       )}
+      <BlankIcs213Dialog
+        open={blankPadOpen}
+        onClose={() => setBlankPadOpen(false)}
+        defaultIncidentName={incidentName}
+      />
     </Paper>
   );
 };

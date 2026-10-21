@@ -29,12 +29,14 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import Form, User
+from app.models import Form, TrafficTestCategory, User
 from app.permissions import FormPermissionResult, check_form_permission
 from app.schemas import ImportPreviewRequest, ImportPreviewResponse
 from app.traffic.formatters import format_form, parse_any
 
 router = APIRouter(tags=["traffic-export"])
+
+EXERCISE_MARKING = "THIS IS AN EXERCISE"
 
 
 def _export_filename(form: Form, extension: str) -> str:
@@ -65,6 +67,11 @@ async def export_form(
         raise HTTPException(status_code=403, detail="Not authorized to export this form")
 
     text = format_form(form)
+    # A drill message says so at its start and end, as ARES exercise plans
+    # require of formal traffic; the printed forms carry the same marking
+    # (frontend traffic/print/ExerciseMarking.tsx).
+    if form.test_category == TrafficTestCategory.DRILL:
+        text = f"{EXERCISE_MARKING}\n\n{text.rstrip()}\n\n{EXERCISE_MARKING}\n"
 
     return StreamingResponse(
         iter([text]),
