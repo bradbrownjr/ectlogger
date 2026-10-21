@@ -7,7 +7,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.database import init_db, AsyncSessionLocal
-from app.routers import auth, users, nets, check_ins, frequencies, templates, chat, ncs_rotation, security, statistics, geocode, contacts, feedback, can_hear, coverage_sites, traffic, feeds, backups
+from app.routers import auth, users, nets, check_ins, frequencies, templates, chat, ncs_rotation, security, statistics, geocode, contacts, feedback, can_hear, coverage_sites, drill_plans, traffic, feeds, backups
 from app.routers import settings as app_settings_router
 from app.security import sanitize_html
 from app.ncs_reminder_service import ncs_reminder_service
@@ -157,6 +157,7 @@ app.include_router(contacts.router, prefix="/api")
 app.include_router(feedback.router, prefix="/api")
 app.include_router(can_hear.router, prefix="/api")
 app.include_router(coverage_sites.router, prefix="/api")
+app.include_router(drill_plans.router, prefix="/api")
 app.include_router(traffic.router, prefix="/api")
 app.include_router(backups.router, prefix="/api")
 

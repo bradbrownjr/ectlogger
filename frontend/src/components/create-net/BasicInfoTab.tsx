@@ -11,6 +11,7 @@ import {
   Autocomplete,
   Button,
 } from '@mui/material';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import { useCreateNetContext } from '../../contexts/CreateNetContext';
 import TrafficSettingsPanel from '../forms/TrafficSettingsPanel';
 import CoverageSitesEditor from '../forms/CoverageSitesEditor';
@@ -390,6 +391,27 @@ const BasicInfoTab: React.FC = () => {
               two-factor authentication set up simply show as unverified.
             </Typography>
           </Box>
+
+          {/* Drill plan: its own page, so only once the net exists */}
+          {!isInfoMode && isEditMode && netId && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2">Drill plan</Typography>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                For an exercise: the scenario, objectives, and schedule of events, with prepared ICS-213s for the
+                sites that send them, and a printed packet for each site.
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<AssignmentIcon />}
+                href={`/nets/${netId}/drill-plan`}
+                target="_blank"
+                rel="noopener"
+              >
+                Open drill plan
+              </Button>
+            </Box>
+          )}
 
           {/* Assisted Traffic Handling — shared with the Schedule editor */}
           <TrafficSettingsPanel

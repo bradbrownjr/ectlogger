@@ -23,7 +23,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import CheckIn, CoverageAccess, CoverageContact, CoverageSite, Net, User, net_frequencies
+from app.models import CheckIn, CoverageAccess, CoverageContact, CoverageSite, DrillEvent, Net, User, net_frequencies
 from app.permissions import may_edit_net, net_access
 from app.routers.can_hear import may_report_coverage_for, validate_coverage_frequency
 from app.schemas import (
@@ -104,6 +104,7 @@ async def save_coverage_sites(
             update(CheckIn).where(CheckIn.coverage_site_id.in_(removed_ids)).values(coverage_site_id=None)
         )
         await db.execute(delete(CoverageAccess).where(CoverageAccess.target_site_id.in_(removed_ids)))
+        await db.execute(update(DrillEvent).where(DrillEvent.site_id.in_(removed_ids)).values(site_id=None))
         for site_id in removed_ids:
             await db.delete(existing[site_id])
 

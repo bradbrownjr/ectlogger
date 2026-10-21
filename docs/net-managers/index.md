@@ -50,6 +50,8 @@ Create a net or a recurring schedule, decide who is allowed to run it and in wha
 
 **[Coverage drills by site](/docs/net-managers/coverage-drills/)** — Setting up an exercise such as the ARES Simulated Emergency Test, which tests where you can reach rather than who: sites, primary offices, repeaters and nodes, and the results afterward.
 
+**[Drill plans](/docs/net-managers/drill-plans/)** — Writing an exercise plan on a net: objectives, a schedule of events, and prepared ICS-213s for each site, with a printed packet per site and results for the hot wash.
+
 **[Schedule statistics and leaderboards](/docs/net-managers/schedule-statistics/)** — Participation over time, the four leaderboards, the net history, and the schedule report.
 
 ## A word on importing

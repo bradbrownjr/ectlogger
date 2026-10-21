@@ -240,6 +240,17 @@ export const coverageSiteApi = {
   summary: (netId: number) => api.get(`/nets/${netId}/site-coverage`),
 };
 
+// Drill plan for one net (routers/drill_plans.py). get 404s when the net
+// has none; `background` marks the page's refresh poll.
+export const drillPlanApi = {
+  get: (netId: number, background = false) =>
+    api.get(`/nets/${netId}/drill-plan`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
+  save: (netId: number, plan: any) => api.put(`/nets/${netId}/drill-plan`, plan),
+  remove: (netId: number) => api.delete(`/nets/${netId}/drill-plan`),
+  send: (netId: number, eventId: number, data: { handled_by?: string | null }) =>
+    api.post(`/nets/${netId}/drill-plan/events/${eventId}/send`, data),
+};
+
 // Template API
 export const templateApi = {
   create: (data: any) => api.post('/templates/', data),

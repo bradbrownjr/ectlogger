@@ -49,6 +49,13 @@ async def create_form(
     check, promotes list/search columns, and inserts the initial ORIGINATED
     (default) or RECEIVED log entry, all in one transaction (append_entry
     commits; see app/traffic/log.py)."""
+    return await file_form(db, data, current_user)
+
+
+async def file_form(db: AsyncSession, data: FormCreate, current_user: User) -> FormDetailResponse:
+    """The whole of filing a form, shared by POST /forms and by sending a
+    drill plan's prepared message (routers/drill_plans.py), so a drill
+    message is validated, numbered and logged exactly like any other."""
     result = await db.execute(
         select(FormDefinition)
         .options(selectinload(FormDefinition.fields))

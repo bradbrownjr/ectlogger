@@ -104,7 +104,9 @@ async def _build(db_path: Path, out_path: Path):
         NetRole, CheckIn, ChatMessage, ChatReaction, TemplateStaff,
         NCSRotationMember, FormDefinition, Form, TrafficAction, AppSettings,
         FieldDefinition, CanHearReport, CoverageSite, CoverageAccess, CoverageContact,
+        DrillPlan, DrillObjective, DrillEvent, TrafficTestCategory,
     )
+    from app.traffic.exercise import mark_exercise_text
     from app.auth import (
         hash_password, generate_totp_secret, encrypt_mfa_secret, current_totp_codes,
     )
@@ -782,6 +784,7 @@ async def _build(db_path: Path, out_path: Path):
             started_at=set_started,
             frequencies=[f_simplex, f_hf, f_repeater, f_dmr],
             coverage_excluded_frequency_ids=json.dumps([f_repeater.id, f_dmr.id]),
+            traffic_enabled=True,
         )
         db.add(net_set)
         await db.flush()
@@ -873,6 +876,99 @@ async def _build(db_path: Path, out_path: Path):
         ])
         await db.commit()
         await db.refresh(net_set)
+
+        # ---- the SET's drill plan: objectives, a schedule of events, and
+        # three prepared ICS-213s: one received at the EOC, one sent, one
+        # not sent yet. The first two are filed drill forms, exactly as
+        # routers/drill_plans.py::send_drill_message files them. ----
+        exercise_name = "2026 Example County SET"
+        drill_plan = DrillPlan(
+            net_id=net_set.id,
+            exercise_name=exercise_name,
+            exercise_when="Saturday, October 24, 2026, 0800 to 1200",
+            location="Example County shelters, the EOC, the North Office and the Gray Weather Office",
+            purpose="Test whether each shelter and office can reach the county's two primary offices, "
+                    "and which repeaters and nodes each one gets into, with the commercial network down.",
+            scenario="A winter storm has left most of the county without power. Phones and cellular service "
+                     "are down. Two shelters are open and the EOC has activated.",
+            announcement="Every net announces that it is an exercise at its start, during, and at its end. "
+                         "Every formal or tactical message says \"This is an exercise\" at its beginning and end.",
+            updated_by_id=users["W1PINE"].id,
+        )
+        db.add(drill_plan)
+        await db.flush()
+        county = "Example County ARES (EC - W1PINE)"
+        for order, (heading, text, rating, note) in enumerate([
+            ("Section objectives", "Check into the section HF net, or by Winlink if no HF capability.", "P", None),
+            ("Section objectives", "Send one request for support message to the state EMA.", None, None),
+            (county, "Establish 2m simplex between every shelter and the EOC.", "S",
+             "Freeport needed a home station to relay."),
+            (county, "Establish HF and 2m with the Gray Weather Office.", None, None),
+            (county, "Send and retrieve Winlink traffic from each shelter.", None, None),
+            (county, "Relay a simulated request for support to an adjacent county EOC.", None, None),
+        ]):
+            db.add(DrillObjective(plan_id=drill_plan.id, heading=heading, text=text, rating=rating,
+                                  result_note=note, sort_order=order))
+
+        def prepared(to_name, to_position, from_name, from_position, subject, message, priority="Routine"):
+            return {"to_name": to_name, "to_position": to_position, "from_name": from_name,
+                    "from_position": from_position, "subject": subject, "message": message,
+                    "priority": priority, "reply_requested": "Yes"}
+
+        event_specs = [
+            ("08:00", "NCS", "All stations", "Control", "2m simplex, 80m", None,
+             "Net opens. Exercise announcement.", "Every site checks in and reports its power source.", None),
+            ("08:30", "Naples Shelter", "Example County EOC", "Message", "2m simplex", "Naples Shelter",
+             "Shelter supply request.", "EOC acknowledges and logs the request.",
+             prepared("EOC Logistics", "Duty Officer", "Shelter Manager", "Naples Shelter", "Cots and water",
+                      "Shelter at 60 occupants. Request 40 cots and 10 cases of water by 1400.", "Urgent")),
+            ("09:00", "Freeport Shelter", "Example County EOC", "Message", "2m simplex", "Freeport Shelter",
+             "Status report.", "Relay through any station if there is no direct path.",
+             prepared("EOC Operations", "Operations Chief", "Shelter Manager", "Freeport Shelter", "Shelter status",
+                      "Shelter open on generator power. 22 occupants. No medical needs.")),
+            ("09:30", "Gray Weather Office", "Example County EOC", "Message", "80m SSB", "Gray Weather Office",
+             "Weather update.", "EOC passes it to all sites.",
+             prepared("EOC Operations", "Operations Chief", "Meteorologist", "Gray Weather Office",
+                      "Storm update", "Snow ending by 1500. Winds gusting to 40 mph through the evening.")),
+            ("10:00", "Every site", "County VHF and UHF repeaters, EOC packet node", "Control", "Repeaters, packet",
+             None, "Repeater and node access checks.", "Record reached or couldn't reach, with a note.", None),
+            ("12:00", "NCS", "All stations", "Control", "2m simplex, 80m", None,
+             "End of exercise.", "Hot wash at each site immediately after.", None),
+        ]
+        for order, (time_label, initiator, receiver, event_type, method, site_name, description,
+                    expected, message) in enumerate(event_specs):
+            event = DrillEvent(
+                plan_id=drill_plan.id, sort_order=order, time_label=time_label, initiator=initiator,
+                receiver=receiver, event_type=event_type, method=method, description=description,
+                expected_actions=expected, site_id=set_sites[site_name].id if site_name else None,
+                message=json.dumps(message) if message else None,
+            )
+            db.add(event)
+            if site_name in ("Naples Shelter", "Freeport Shelter"):
+                values = dict(message, incident_name=exercise_name, message=mark_exercise_text(message["message"]))
+                promoted, values = compute_promoted_fields(ics213_def, values)
+                drill_form = Form(
+                    definition_id=ics213_def.id, form_type=ics213_def.form_type,
+                    definition_version=ics213_def.version, net_id=net_set.id,
+                    created_by_id=users["N1LAKE"].id, field_values=json.dumps(values),
+                    test_category=TrafficTestCategory.DRILL, **promoted,
+                )
+                db.add(drill_form)
+                await db.flush()
+                sent_at = set_started + timedelta(minutes=30 if site_name == "Naples Shelter" else 60)
+                await append_entry(
+                    db, drill_form, TrafficAction.ORIGINATED, handled_by=site_name,
+                    reported_by_user_id=users["N1LAKE"].id, net_id=net_set.id, occurred_at=sent_at,
+                    note="Prepared message from the drill plan",
+                )
+                if site_name == "Naples Shelter":
+                    await append_entry(
+                        db, drill_form, TrafficAction.RECEIVED, handled_by="Example County EOC",
+                        reported_by_user_id=users["N1LAKE"].id, net_id=net_set.id,
+                        occurred_at=sent_at + timedelta(minutes=4),
+                    )
+                event.form_id = drill_form.id
+        await db.commit()
 
         # =================================================================
         # A truly custom (non-builtin) check-in field, so the admin Fields

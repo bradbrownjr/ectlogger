@@ -1,6 +1,6 @@
 # Team Management Spec Draft (Back-Burner)
 
-Last updated: 2026-09-17
+Last updated: 2026-10-21
 
 This document is a structured draft spec for a future Team Management module. It is intentionally scoped as back-burner work while core web app stability and self-hosting priorities are completed.
 
@@ -25,6 +25,21 @@ The Team Management concept is four interlinked documents, split once it outgrew
 This hub owns everything shared: problem statement, goals and non-goals, scope boundaries, personas, the user-story index, the data-model conventions, the permissions matrix, the privacy classification, the phase overview with model assignments, and the reference bibliography. Read it first; nothing in the other three is standalone design. The three child documents keep their own phase sections, phase-specific validation cases, and phase-specific open questions, so each is executable on its own once this hub has been read.
 
 Sections that moved out are left below as one-line pointers rather than being renumbered away, so that every existing "see section 5.x" reference in the codebase and the roadmap still lands somewhere useful.
+
+## Built Ahead of Teams: Migrate, Don't Rebuild
+
+Some of this concept shipped early, scoped to a single net, for the Cumberland County ARES Simulated Emergency Test of 2026-10-24. Each piece was shaped to match the design here so it can be lifted into the Teams module rather than built a second time. **Whoever builds a Teams phase that covers one of these rows starts from the shipped code and migrates its rows; do not write a parallel model.** Each row names the shipped tables and code, and where in this concept it lands.
+
+| Shipped (net-scoped) | Code | Lands in | Migration notes |
+|---|---|---|---|
+| Coverage sites: offices, shelters, repeaters and nodes, with primary offices (2026-10-21) | `CoverageSite`, migration 083, `routers/coverage_sites.py`, `components/forms/CoverageSitesEditor.tsx` | Section 5.6 `TeamLocation` | Field-for-field the same shape (name, type, location string the map already parses). Promote a team's recurring sites to `TeamLocation` rows by manager review, never string matching, then point the net's site at the team location instead of owning a copy. `infrastructure` sites (repeaters, nodes) map to team assets or team frequencies (5.13), not locations. |
+| The site a check-in row is at | `CheckIn.coverage_site_id` | Section 5.6 `team_location_id` | Per check-in **row**, not per callsign, so a team that rechecks from another shelter keeps each visit apart. `team_location_id` must keep that rule. |
+| Coverage between sites, reach to primary offices (two-way, relay, one-way, none) | `services/site_coverage.py::build_site_coverage` (read-time rollup) | Section 5.6 `TeamLocationCoverage` | Already the read-time rollup 5.6 asks for, over one net. Teams widens the input to many nets and adds recency; the reach rules and the per-row grouping carry over unchanged. |
+| Repeater and node access results with notes | `CoverageAccess` | Sections 5.6 and 5.13 | "Got into the UHF repeater from this shelter" is location-to-asset evidence; keep the note, which is what explains a failure. |
+| Stations reached outside the net, by county | `CoverageContact` | Section 5.6 outputs | Counties reached is a team-level coverage finding across drills. |
+| Drill plan: overview, objectives with HSEEP ratings, schedule of events, prepared ICS-213s per site, printed site packets (2026-10-21) | `DrillPlan`, `DrillObjective`, `DrillEvent`, migration 084, `routers/drill_plans.py`, `pages/DrillPlan.tsx`, `components/drill/` | Section 5.12, phases M5 and M6 | One plan per net. The overview, objectives and schedule are 5.12's "context and objectives" and requirements; objective ratings are the after-action results M6 reviews. A schedule row assigns a message to a **place**, never a person, so it is not the second staffing system 5.12 refuses. When the incident record (roadmap "Incident Operations Log") exists, re-parent the plan from the net to the incident; a multi-net drill is the reason to. |
+| Prepared messages tracked through traffic | `DrillEvent.form_id`, `traffic_forms.file_form` | Section 5.12 "Operate, then review" | Sending files an ordinary DRILL `Form`; status is read from its chain of custody, never stored on the row. Keep it that way: traffic is the record. |
+| Exercise marking and the blank ICS-213 pad | `app/traffic/exercise.py`, `traffic/print/ExerciseMarking.tsx`, `traffic/BlankIcs213Dialog.tsx` | Section 5.12 form support | Every form family added later inherits the marking for DRILL traffic. |
 
 ## 1. Problem Statement
 
@@ -399,6 +414,8 @@ When an authorized net manager creates or edits a net connected to a team, autom
 The [NH ARES timecard v1-6 hosted by GMARES](https://gmares.org/wp-content/uploads/2025/12/NH-ARES-Timecard-v1-6.xlsx) is a concrete adapter example: nets, exercises, training, public service, community service, SKYWARN, meetings, emergencies, and unclassified activity. Support reviewed off-air activity such as mentoring and station maintenance without inventing a net. Retain source activity IDs, dates, actual durations, and the approved report mapping/version. Apply destination-specific rounding (the example workbook requests half-hour increments) only at export, preserving original time; confirm rounding granularity and category definitions with the receiving coordinator. Linked net, session, tag, and Events records represent one contribution, not additive hours. An NH mapping must not silently become the default for Maine or other programs.
 
 ### 5.6 Team Locations and Coverage Assessment
+
+**Partly built ahead of Teams (2026-10-21):** net-scoped sites, the per-row site on a check-in, the site-to-site rollup, repeater and node access, and contacts outside the net. See "Built Ahead of Teams" near the top of this document before designing anything below; the named-locations work here migrates those rows rather than starting over.
 
 This is the Teams-dependent half of the "can hear" inter-station propagation feature. The per-net capture side of that feature (station-to-station coverage logging: the reporting dialog, the Coverage panel, and the map overlay) shipped 2026-08-02 and did not wait on Teams — see `docs/CHANGELOG.md` for the release entry. Its settled data model (the `can_hear_reports` table, the `operating_position` classifier on check-ins, the `team_location_id` upgrade path below) lives in `backend/app/models.py` and `backend/app/routers/can_hear.py` now that it has shipped; it's no longer a separate roadmap entry. This section covers only what genuinely requires a team to exist.
 

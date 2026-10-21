@@ -36,6 +36,7 @@ import HearingIcon from '@mui/icons-material/Hearing';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 // Envelope, matching what Navbar.tsx already uses for the Traffic section.
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import MailIcon from '@mui/icons-material/Mail';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -459,6 +460,16 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       visible: canViewTraffic,
       Icon: MailIcon, color: theme.palette.primary.main, label: 'Traffic',
       tooltip: 'View and file traffic for this net', onClick: traffic.onToggle,
+    },
+    {
+      // Opens in its own tab, so net control can keep the net and the plan
+      // side by side. Only once the net has a plan (it's created from Edit
+      // net), and only for those running the drill: the schedule and the
+      // prepared messages aren't for the stations being tested.
+      key: 'drill-plan', group: 'info', priority: 2,
+      visible: !!net.has_drill_plan && (actions.run_drill || actions.edit),
+      Icon: AssignmentIcon, color: theme.palette.primary.main, label: 'Drill plan',
+      tooltip: 'Open the drill plan', onClick: () => window.open(`/nets/${net.id}/drill-plan`, '_blank'),
     },
     {
       key: 'audio', group: 'info', priority: 1,

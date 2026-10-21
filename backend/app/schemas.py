@@ -664,6 +664,7 @@ class NetActions(BaseModel):
     manage_roles: bool = False       # Roles dialog
     email_subscribers: bool = False  # Email subscribers
     record_coverage: bool = False    # "Who can this station hear?" on any row
+    run_drill: bool = False          # Drill plan: read it, mark messages sent
 
 
 class NetResponse(NetBase):
@@ -734,9 +735,12 @@ class NetResponse(NetBase):
     # auto_close_after_minutes is off, the net isn't ACTIVE, or this response
     # wasn't built with a value (only get_net computes it, not the list view).
     auto_close_at: Optional[datetime] = None
+    # Whether the net has a drill plan (routers/drill_plans.py), so the
+    # toolbar can offer it. Like auto_close_at, only get_net fills it in.
+    has_drill_plan: bool = False
 
     @classmethod
-    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, actions: dict = None, actions_as_regular_user: dict = None, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, current_user_logger_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None, auto_close_at: datetime = None):
+    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, actions: dict = None, actions_as_regular_user: dict = None, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, current_user_logger_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None, auto_close_at: datetime = None, has_drill_plan: bool = False):
         import json
         data = {
             'id': net.id,
@@ -796,6 +800,7 @@ class NetResponse(NetBase):
             'user_ran': user_ran,
             'template_schedule_type': template_schedule_type,
             'auto_close_at': auto_close_at,
+            'has_drill_plan': has_drill_plan,
         }
         return cls(**data)
 
@@ -2369,6 +2374,103 @@ class SiteCoverageResponse(BaseModel):
     counties: List[SiteCoverageCounty] = []
     targets: List[SiteCoverageTarget] = []
     access: List[SiteAccessCell] = []
+
+
+# ========== DRILL PLANS (routers/drill_plans.py) ==========
+
+class DrillMessage(BaseModel):
+    """A prepared ICS-213, in the ICS213 form definition's field names.
+    Partial while the plan is drafted; the required fields are checked when
+    it is sent, by the same rule as filing any form."""
+    to_name: Optional[str] = Field(None, max_length=100)
+    to_position: Optional[str] = Field(None, max_length=100)
+    from_name: Optional[str] = Field(None, max_length=100)
+    from_position: Optional[str] = Field(None, max_length=100)
+    subject: Optional[str] = Field(None, max_length=200)
+    message: Optional[str] = Field(None, max_length=5000)
+    priority: Optional[Literal['Routine', 'Urgent', 'Emergency']] = 'Routine'
+    reply_requested: Optional[Literal['Yes', 'No']] = 'No'
+
+
+class DrillObjectiveItem(BaseModel):
+    id: Optional[int] = None
+    heading: Optional[str] = Field(None, max_length=200)
+    text: str = Field(..., min_length=1, max_length=2000)
+    rating: Optional[Literal['P', 'S', 'M', 'U']] = None
+    result_note: Optional[str] = Field(None, max_length=4000)
+
+
+class DrillEventItem(BaseModel):
+    """One schedule row as the editor saves it. form_id is never accepted:
+    only sending a message sets it."""
+    id: Optional[int] = None
+    time_label: Optional[str] = Field(None, max_length=40)
+    initiator: Optional[str] = Field(None, max_length=120)
+    receiver: Optional[str] = Field(None, max_length=120)
+    event_type: Optional[str] = Field(None, max_length=40)
+    method: Optional[str] = Field(None, max_length=80)
+    description: Optional[str] = Field(None, max_length=4000)
+    expected_actions: Optional[str] = Field(None, max_length=4000)
+    site_id: Optional[int] = None
+    message: Optional[DrillMessage] = None
+
+
+class DrillPlanSave(BaseModel):
+    exercise_name: Optional[str] = Field(None, max_length=200)
+    exercise_when: Optional[str] = Field(None, max_length=200)
+    location: Optional[str] = Field(None, max_length=200)
+    purpose: Optional[str] = Field(None, max_length=8000)
+    scenario: Optional[str] = Field(None, max_length=8000)
+    announcement: Optional[str] = Field(None, max_length=2000)
+    objectives: List[DrillObjectiveItem] = Field(default_factory=list, max_length=200)
+    events: List[DrillEventItem] = Field(default_factory=list, max_length=200)
+
+
+class DrillObjectiveResponse(DrillObjectiveItem):
+    id: int
+    sort_order: int
+
+
+class DrillEventResponse(BaseModel):
+    id: int
+    sort_order: int
+    time_label: Optional[str] = None
+    initiator: Optional[str] = None
+    receiver: Optional[str] = None
+    event_type: Optional[str] = None
+    method: Optional[str] = None
+    description: Optional[str] = None
+    expected_actions: Optional[str] = None
+    site_id: Optional[int] = None
+    message: Optional[DrillMessage] = None
+    # Set once the message is sent: the drill form it was filed as, and that
+    # form's latest step ("originated", "received", "relayed", "delivered").
+    form_id: Optional[int] = None
+    form_status: Optional[str] = None
+    form_message_number: Optional[str] = None
+    sent_at: Optional[datetime] = None
+
+
+class DrillPlanResponse(BaseModel):
+    id: int
+    net_id: int
+    exercise_name: Optional[str] = None
+    exercise_when: Optional[str] = None
+    location: Optional[str] = None
+    purpose: Optional[str] = None
+    scenario: Optional[str] = None
+    announcement: Optional[str] = None
+    objectives: List[DrillObjectiveResponse] = Field(default_factory=list)
+    events: List[DrillEventResponse] = Field(default_factory=list)
+    updated_at: Optional[datetime] = None
+    can_edit: bool = False
+
+
+class DrillMessageSend(BaseModel):
+    """Marking a prepared message sent. handled_by is the station that sent
+    it over the air, when that isn't the person logging it."""
+    handled_by: Optional[str] = Field(None, max_length=200)
+    occurred_at: Optional[datetime] = None
 
 
 class CanHearReportFrequencyUpdate(BaseModel):

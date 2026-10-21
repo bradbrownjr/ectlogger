@@ -1,6 +1,6 @@
 # Incident and Drill Planning, Packets, and Accountability (Concept Draft)
 
-Last updated: 2026-09-16
+Last updated: 2026-10-21
 
 Part of the Team Management concept. This document is the planning layer: turning objectives and required services into a reviewable communications plan, finding people and equipment for it, issuing a deployment packet someone can carry, and accounting for those people from authorization through return.
 
@@ -34,6 +34,8 @@ The roadmap's Incident Operations Log entry holds the full design and owns the b
 The same discipline applies to accountability. The [activation document](TEAM-ACTIVATION-CALLOUTS.md) introduces a lightweight tag board in section 5.19 that records who is where without any of this machinery. Section 5.17 below is the full incident version of that same fact, and it **extends the tag record rather than replacing it**. Two presence ledgers would disagree during exactly the event they exist for.
 
 ### 5.12 Incident and Drill Planner
+
+**Partly built ahead of Teams (2026-10-21):** a net-scoped drill plan with an overview, objectives grouped under headings and rated with the HSEEP after-action ratings, a schedule of events in the ARES section plan's columns, prepared ICS-213s assigned to sites and tracked through the traffic log, and printed site packets. It covers workflow steps 1 and 6 for a single-net exercise, without staffing. The hub's "Built Ahead of Teams" table lists the tables and code and how each migrates; M5 and M6 extend that plan rather than building a second one.
 
 This is a phased communications-planning assistant integrated with Teams and Events. A structured wizard and deterministic matching rules are sufficient; generative AI is not a dependency.
 

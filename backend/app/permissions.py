@@ -317,6 +317,19 @@ def may_record_coverage(a: NetAccess) -> bool:
     return _manager(a) or bool(a.active_roles & {"NCS", "LOGGER", "RELAY"})
 
 
+def may_run_drill(a: NetAccess) -> bool:
+    """Reading the net's drill plan and marking its prepared messages sent.
+    Net control staff and the schedule's staff, like import: the schedule of
+    events and the prepared messages are for the people running the drill,
+    not for the stations being tested by it. Changing the plan is
+    may_edit_net."""
+    return (
+        _manager(a)
+        or bool(a.active_roles & {"NCS", "LOGGER", "RELAY"})
+        or (a.has_template and a.is_template_staff)
+    )
+
+
 def net_actions(a: NetAccess) -> Dict[str, bool]:
     """Every per-action rule for one NetAccess, keyed as NetResponse.actions
     (schemas.NetActions) sends them to the app."""
@@ -330,6 +343,7 @@ def net_actions(a: NetAccess) -> Dict[str, bool]:
         "manage_roles": may_manage_net_roles(a),
         "email_subscribers": may_email_net_subscribers(a),
         "record_coverage": may_record_coverage(a),
+        "run_drill": may_run_drill(a),
     }
 
 

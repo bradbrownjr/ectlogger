@@ -366,3 +366,82 @@ shots:
     caption: >
       Type each site as one line. Star the offices every other site should
       reach.
+
+  # ---------- Drill plans (docs/net-managers/drill-plans.md) ----------
+  - id: drill-plan-message-editor
+    section: net-managers
+    page: /docs/net-managers/drill-plans/
+    route: /nets/{{net:set}}/drill-plan
+    as: W1PINE
+    viewport:
+      width: 1280
+      height: 3200
+    wait_for: 'button:has-text("Edit")'
+    steps:
+      - click: 'button:has-text("Edit")'
+      - wait_for: '[data-drill-event="3"]'
+    element: '[data-drill-event="3"]'
+    pad: 16
+    annotate:
+      - selector: '[data-drill-event="3"] label:has-text("Prepared ICS-213")'
+        style: box
+    alt: >
+      One row of the schedule of events in the drill plan editor: at 09:30
+      the Gray Weather Office sends a message to the Example County EOC on
+      80m SSB, with the Gray Weather Office chosen as its site. The
+      Prepared ICS-213 switch, outlined in red, is on, and below it are the
+      message's To and From names and positions, the subject Storm update,
+      the message text, Priority Routine and Reply requested Yes.
+    caption: >
+      A row with a prepared ICS-213 is sent by its site. The exercise
+      marking is added when it goes out.
+
+  - id: drill-plan-schedule
+    section: net-managers
+    page: /docs/net-managers/drill-plans/
+    route: /nets/{{net:set}}/drill-plan
+    as: W1PINE
+    viewport:
+      width: 1280
+      height: 2400
+    wait_for: '[data-drill-event="3"]'
+    element:
+      - '[data-drill-event="1"]'
+      - '[data-drill-event="3"]'
+    pad: 16
+    annotate:
+      - selector: 'button:has-text("Mark sent")'
+        style: box
+    alt: >
+      The schedule of events on the drill plan page during the drill. The
+      08:30 row's ICS-213 from Naples Shelter, Cots and water, shows
+      Received. The 09:00 row's Shelter status message from Freeport
+      Shelter shows Sent. The 09:30 row's Storm update from the Gray
+      Weather Office shows Not sent, with a Mark sent button outlined in
+      red.
+    caption: >
+      Each prepared message shows where it is: not sent, sent, received,
+      or delivered.
+
+  - id: drill-plan-print
+    section: net-managers
+    page: /docs/net-managers/drill-plans/
+    route: /nets/{{net:set}}/drill-plan
+    as: W1PINE
+    viewport:
+      width: 1280
+      height: 1000
+    wait_for: 'button:has-text("Print")'
+    steps:
+      - click: 'button:has-text("Print")'
+      - wait_for: '.MuiDialog-paper'
+      - click: '[aria-labelledby~="print-what"]'
+      - click: 'li:has-text("Packet for Naples Shelter")'
+      - wait: 400
+    element: '.MuiDialog-paper'
+    pad: 16
+    alt: >
+      The Print dialog on the drill plan page. What to print is set to Packet for Naples Shelter. Blank ICS-213s is 5, with
+      the note that they are added at the end with the incident name filled
+      in, and Include objective results is unticked.
+    caption: Print the whole plan, or a packet for one site.

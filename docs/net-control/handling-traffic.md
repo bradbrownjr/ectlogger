@@ -71,7 +71,7 @@ The panel's export button offers two genuinely different outputs: **Text**, one 
 
 ### Drill traffic is marked as an exercise
 
-ARES exercise plans require every formal message to say it is an exercise at its start and end. Any form marked as drill traffic prints with **THIS IS AN EXERCISE** at the top and bottom, and its text export begins and ends with the same line. For a blank pad, tick **Mark as an exercise**.
+ARES exercise plans require every formal message to say it is an exercise at its start and end. Any form marked as drill traffic prints with **THIS IS AN EXERCISE** at the top and bottom, and its text export begins and ends with the same line. For a blank pad, tick **Mark as an exercise**. Prepared messages sent from a [drill plan](/docs/net-managers/drill-plans/) are filed as drill traffic automatically.
 
 ## Next
 

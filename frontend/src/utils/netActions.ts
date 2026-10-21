@@ -16,6 +16,7 @@ export interface NetActions {
   manage_roles: boolean;      // Roles dialog
   email_subscribers: boolean; // Email subscribers
   record_coverage: boolean;   // "Who can this station hear?" on any row
+  run_drill: boolean;         // Drill plan: read it, mark messages sent
 }
 
 const NO_ACTIONS: NetActions = {
@@ -28,6 +29,7 @@ const NO_ACTIONS: NetActions = {
   manage_roles: false,
   email_subscribers: false,
   record_coverage: false,
+  run_drill: false,
 };
 
 interface WithActions {

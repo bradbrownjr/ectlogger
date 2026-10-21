@@ -297,6 +297,7 @@ class Net(Base):
     coverage_sites = relationship("CoverageSite", back_populates="net", cascade="all, delete-orphan", order_by="CoverageSite.sort_order")
     coverage_contacts = relationship("CoverageContact", back_populates="net", cascade="all, delete-orphan")
     forms = relationship("Form", back_populates="net")   # no cascade: traffic outlives the net
+    drill_plan = relationship("DrillPlan", back_populates="net", uselist=False, cascade="all, delete-orphan")
 
 
 class NetTemplate(Base):
@@ -604,6 +605,99 @@ class CoverageContact(Base):
 
     net = relationship("Net", back_populates="coverage_contacts")
     reporter_check_in = relationship("CheckIn", foreign_keys=[reporter_check_in_id], back_populates="coverage_contacts")
+
+
+# Ratings an after-action report gives each objective, from the Homeland
+# Security Exercise and Evaluation Program (HSEEP) AAR/IP template.
+DRILL_OBJECTIVE_RATINGS = {
+    'P': 'Performed without Challenges',
+    'S': 'Performed with Some Challenges',
+    'M': 'Performed with Major Challenges',
+    'U': 'Unable to be Performed',
+}
+
+
+class DrillPlan(Base):
+    """The exercise plan for one net's drill, such as an ARES Simulated
+    Emergency Test: scenario, objectives, and a schedule of events whose
+    message rows carry a prepared ICS-213 for the site that sends it.
+
+    Net-scoped for now, one plan per net (one net per drill). Its shape
+    follows the incident and drill planner design
+    (docs/concepts/TEAM-INCIDENT-PLANNER.md section 5.12) so it can move to
+    the incident record or a team later; that document lists what to carry
+    over.
+    """
+    __tablename__ = "drill_plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    exercise_name = Column(String(200), nullable=True)   # also the ICS-213 incident name
+    exercise_when = Column(String(200), nullable=True)   # "Saturday, October 24, 2026, 0800 to 1200"
+    location = Column(String(200), nullable=True)
+    purpose = Column(Text, nullable=True)
+    scenario = Column(Text, nullable=True)
+    # What stations announce at the start, during and end of every net, and
+    # what formal messages say: "This is an exercise".
+    announcement = Column(Text, nullable=True)
+    updated_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    net = relationship("Net", back_populates="drill_plan")
+    objectives = relationship("DrillObjective", back_populates="plan", cascade="all, delete-orphan",
+                              order_by="DrillObjective.sort_order")
+    events = relationship("DrillEvent", back_populates="plan", cascade="all, delete-orphan",
+                          order_by="DrillEvent.sort_order")
+
+
+class DrillObjective(Base):
+    """One numbered objective, grouped under a heading such as
+    "Cumberland County (CDEMA - WS1EC)", with the rating it earned."""
+    __tablename__ = "drill_objectives"
+
+    id = Column(Integer, primary_key=True, index=True)
+    plan_id = Column(Integer, ForeignKey("drill_plans.id", ondelete="CASCADE"), nullable=False, index=True)
+    heading = Column(String(200), nullable=True)
+    text = Column(Text, nullable=False)
+    sort_order = Column(Integer, nullable=False, default=0)
+    rating = Column(String(1), nullable=True)            # a DRILL_OBJECTIVE_RATINGS key
+    result_note = Column(Text, nullable=True)
+
+    plan = relationship("DrillPlan", back_populates="objectives")
+
+
+class DrillEvent(Base):
+    """One row of the schedule of events, in the columns ARES exercise
+    plans use (and HSEEP's master scenario events list): time, initiator,
+    receiver, type, method, event, expected actions.
+
+    A row with a prepared message holds ICS-213 field values in `message`.
+    Sending it files a real drill Form (form_id), so it is tracked through
+    the existing chain of custody and reaches the ICS-309 like any traffic;
+    the row's status is read from that form, never stored here.
+    """
+    __tablename__ = "drill_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    plan_id = Column(Integer, ForeignKey("drill_plans.id", ondelete="CASCADE"), nullable=False, index=True)
+    sort_order = Column(Integer, nullable=False, default=0)
+    time_label = Column(String(40), nullable=True)       # "09:15", "Upon FINEX"
+    initiator = Column(String(120), nullable=True)
+    receiver = Column(String(120), nullable=True)
+    event_type = Column(String(40), nullable=True)       # Control, Message, Admin...
+    method = Column(String(80), nullable=True)           # "2m simplex", "HF Winlink"
+    description = Column(Text, nullable=True)
+    expected_actions = Column(Text, nullable=True)
+    # The site whose packet this row goes in, and which sends its message.
+    # Null = every site.
+    site_id = Column(Integer, ForeignKey("coverage_sites.id", ondelete="SET NULL"), nullable=True, index=True)
+    message = Column(Text, nullable=True)                # JSON ICS-213 field values
+    form_id = Column(Integer, ForeignKey("forms.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    plan = relationship("DrillPlan", back_populates="events")
+    site = relationship("CoverageSite")
+    form = relationship("Form")
 
 
 class CanHearReport(Base):

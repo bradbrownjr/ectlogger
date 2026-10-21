@@ -13,6 +13,7 @@ from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
 from app.models import (
     CheckIn,
+    DrillPlan,
     Frequency,
     Net,
     NetRole,
@@ -341,6 +342,9 @@ async def get_net(
     ncs_callsign, ncs_name = await net_ncs_attribution(db, net_id)
 
     auto_close_at = await compute_auto_close_at(db, net)
+    has_drill_plan = (await db.execute(
+        select(DrillPlan.id).where(DrillPlan.net_id == net_id)
+    )).scalar_one_or_none() is not None
 
     return NetResponse.from_orm(
         net,
@@ -356,6 +360,7 @@ async def get_net(
         ncs_name=public_display_name(ncs_name, current_user is not None),
         template_schedule_type=net.template.schedule_type if net.template else None,
         auto_close_at=auto_close_at,
+        has_drill_plan=has_drill_plan,
     )
 
 

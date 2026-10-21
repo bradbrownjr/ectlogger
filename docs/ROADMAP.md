@@ -936,7 +936,7 @@ A package that cannot be briefed this way is too large. Split it.
 | M4-6 | Historical participation and manual-activity CSV template | Haiku | none | 5.11 |
 | M4-G | **Gate:** attribution reconciled against hand-calculated samples with overlaps, transfers, and missing hours | Opus | ultrathink | M4 exit criteria |
 
-**M5 — Incident and Drill Requirements with Staffing Integration.** Requires Events.
+**M5 — Incident and Drill Requirements with Staffing Integration.** Requires Events. M5-2 starts from the net-scoped drill plan and M4-5 from the coverage sites that shipped 2026-10-21; see "Built Ahead of Teams" in [`concepts/TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md) before writing either.
 
 | # | Package | Model | Think | Reads |
 |---|---|---|---|---|

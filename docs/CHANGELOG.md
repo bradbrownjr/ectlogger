@@ -21,6 +21,7 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Coverage: Drills by site** — For exercises such as the SET, list a net's shelters, offices, repeaters and nodes, and star the primary offices. Stations pick their site at check-in. Coverage then shows whether each site reached each primary office, which repeaters and nodes it got into, and the counties and outside stations it reached. The net report and closing email include the same summary.
+* **Drills: Exercise plan** — Write a drill's scenario, objectives and schedule on the net, with prepared ICS-213s assigned to the sites that send them. Print the plan and a packet for each site, mark messages sent and received during the drill, and rate each objective afterward.
 
 ## Improvements
 

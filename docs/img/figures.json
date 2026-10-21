@@ -293,6 +293,24 @@
     "caption": "Download the template first -- it has the exact column headers the importer expects, with two sample rows to delete before you import.",
     "page": "/docs/net-managers/importing-check-ins/"
   },
+  "net-managers/drill-plan-message-editor": {
+    "path": "/docs/img/net-managers/drill-plan-message-editor.png",
+    "alt": "One row of the schedule of events in the drill plan editor: at 09:30 the Gray Weather Office sends a message to the Example County EOC on 80m SSB, with the Gray Weather Office chosen as its site. The Prepared ICS-213 switch, outlined in red, is on, and below it are the message's To and From names and positions, the subject Storm update, the message text, Priority Routine and Reply requested Yes.\n",
+    "caption": "A row with a prepared ICS-213 is sent by its site. The exercise marking is added when it goes out.\n",
+    "page": "/docs/net-managers/drill-plans/"
+  },
+  "net-managers/drill-plan-print": {
+    "path": "/docs/img/net-managers/drill-plan-print.png",
+    "alt": "The Print dialog on the drill plan page. What to print is set to Packet for Naples Shelter. Blank ICS-213s is 5, with the note that they are added at the end with the incident name filled in, and Include objective results is unticked.\n",
+    "caption": "Print the whole plan, or a packet for one site.",
+    "page": "/docs/net-managers/drill-plans/"
+  },
+  "net-managers/drill-plan-schedule": {
+    "path": "/docs/img/net-managers/drill-plan-schedule.png",
+    "alt": "The schedule of events on the drill plan page during the drill. The 08:30 row's ICS-213 from Naples Shelter, Cots and water, shows Received. The 09:00 row's Shelter status message from Freeport Shelter shows Sent. The 09:30 row's Storm update from the Gray Weather Office shows Not sent, with a Mark sent button outlined in red.\n",
+    "caption": "Each prepared message shows where it is: not sent, sent, received, or delivered.\n",
+    "page": "/docs/net-managers/drill-plans/"
+  },
   "net-managers/lobby-and-close-toggles": {
     "path": "/docs/img/net-managers/lobby-and-close-toggles.png",
     "alt": "Two switches on the Edit Net Basic Info tab, both off: \"Open the lobby automatically before the net\" and \"Close this net automatically after inactivity,\" each with an explanatory line beneath it.\n",

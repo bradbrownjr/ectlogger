@@ -125,10 +125,12 @@ Below those are the **Repeaters and nodes** results by site, with their notes; a
 - **Enable ICS-309 Communications Log format** on **Basic Info**, so the closing email carries the log in the form served agencies expect.
 - **Power Src** on **Check-In Fields**, if the exercise asks which sites ran on emergency power.
 - **Traffic handling**, if the exercise moves messages. See the traffic pages in [Net control](/docs/net-control/).
+- **A drill plan**, for the objectives, the schedule of events, and the messages each site sends. See [Drill plans](/docs/net-managers/drill-plans/).
 - **Chat**, for observations that fit nowhere else. It's part of the net's record.
 
 ## Related
 
+- [Drill plans](/docs/net-managers/drill-plans/), for the exercise's objectives, schedule, and prepared messages.
 - [Station coverage](/docs/net-control/station-coverage/), for recording reports and reading the station-by-station table.
 - [Reporting what you hear](/docs/operators/reporting-what-you-hear/), the operator's side.
 - [Creating a net](/docs/net-managers/creating-a-net/), for the rest of the net's settings.

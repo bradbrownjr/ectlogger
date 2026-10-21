@@ -20,6 +20,7 @@ A real-time net logger for amateur radio, built for emergency communications tea
 - Locations in town-and-state, GPS, Maidenhead, UTM, or MGRS, all on one map
 - Station-to-station coverage: who can hear whom, logged during the net, drawn as two-way and one-way paths on the map, and built up into each operator's own map of everyone they've heard from home
 - Coverage drills by site: for an exercise such as the ARES SET, each shelter and office is checked against the primary offices (two-way, through a relay, or no path), with repeater and node results, counties reached, and stations reached outside the net, all in the report and closing email
+- Drill plans: an exercise's objectives, schedule of events, and prepared ICS-213s on the net, with a printed packet for each site, sent and received tracking through the traffic log, and objective results for the hot wash
 - Recurring schedules that create their own nets, remind their staff, and rotate Net Control, even among operators who have no account yet
 - A month calendar of every net: what was held, what's coming, and who is on NCS
 - Formal traffic: ARRL radiograms, ICS-213, and RRI weather strips, with a full chain of custody

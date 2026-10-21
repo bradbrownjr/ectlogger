@@ -4,7 +4,7 @@ summary: Every role ECTLogger has, at every level, and a grid of who can do what
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-19
+revised: 2026-10-21
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/roles-and-permissions/
@@ -108,6 +108,8 @@ Read this as: given the row's action, which of the columns can do it. "Net manag
 | Step down your own active NCS role | — | — | — | Yes⁶ | — | — | — | — |
 | Mute a station net-wide in chat | No | No | No | Yes | Yes | No | Yes | Yes |
 | Record which stations another station can hear (coverage logging nets only) | No⁸ | No⁸ | No⁸ | Yes | Yes | Yes | Yes | Yes |
+| Read a net's drill plan and mark its messages sent | No | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Write, change, or rate a net's drill plan | No | No | No | Yes | No | No | Yes | Yes |
 | Edit the schedule, rotation, or staff list | No | Yes | Yes | — | — | — | Yes | Yes |
 | Transfer schedule ownership | No | No | Yes | — | — | — | Yes | Yes |
 | Merge one schedule into another | No | No | Yes | — | — | — | Yes | Yes |

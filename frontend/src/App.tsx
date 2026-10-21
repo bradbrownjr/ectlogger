@@ -22,6 +22,7 @@ import Profile from './pages/Profile';
 import Statistics from './pages/Statistics';
 import NetStatistics from './pages/NetStatistics';
 import NetReport from './pages/NetReport';
+import DrillPlanPage from './pages/DrillPlan';
 import ScheduleStatistics from './pages/ScheduleStatistics';
 import Unsubscribe from './pages/Unsubscribe';
 import SubscribeToSchedule from './pages/SubscribeToSchedule';
@@ -201,6 +202,14 @@ const AppRoutes: React.FC = () => {
           />
           <Route path="/nets/:netId/info" element={<CreateNet />} />
           <Route path="/nets/:netId/report" element={<NetReport />} />
+          <Route
+            path="/nets/:netId/drill-plan"
+            element={
+              <PrivateRoute>
+                <DrillPlanPage />
+              </PrivateRoute>
+            }
+          />
           <Route path="/nets/:netId/pane/:paneType" element={<NetPaneWindow />} />
           <Route
             path="/nets/:netId"

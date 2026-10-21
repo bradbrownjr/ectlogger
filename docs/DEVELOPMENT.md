@@ -385,6 +385,41 @@ late-loading contacts and access until the user edits that section, or Save
 would erase what was already recorded. Tests:
 `backend/tests/test_site_coverage.py`, `frontend/src/utils/coverageSites.test.ts`.
 
+## Drill plans
+
+An exercise plan on one net (`DrillPlan`, `DrillObjective`, `DrillEvent`;
+migration `084_drill_plans.py`; `routers/drill_plans.py`). One plan per net,
+`net_id` unique. `PUT /nets/{id}/drill-plan` replaces the plan's objectives
+and schedule rows, keeping rows sent with an `id`, like coverage sites.
+
+- **Permissions** are two net actions: writing and rating the plan is
+  `may_edit_net`; reading it and sending its messages is `may_run_drill`
+  (`NetActions.run_drill`: managers, active NCS/Logger/Relay, schedule
+  staff). Reads are deliberately not public: the schedule and the prepared
+  messages are for the people running the drill.
+- **A prepared message is ICS-213 field values on a row** (`DrillEvent.message`,
+  JSON). `POST .../events/{id}/send` files it through
+  `traffic_forms.file_form`, the same function behind `POST /traffic/forms`,
+  as a `TrafficTestCategory.DRILL` form with the plan's exercise name as the
+  incident name and the text wrapped by `app/traffic/exercise.py::mark_exercise_text`.
+  The row keeps `form_id`; its status (`form_status`, `sent_at`) is read from
+  that form's chain of custody on every read, never stored. A sent row's
+  message can no longer be changed by a save.
+- **Sites**: `DrillEvent.site_id` is the row's site (its packet, its sender),
+  null for every site. Removing a coverage site clears it, since SQLite does
+  not enforce the `SET NULL`.
+- **Frontend**: `pages/DrillPlan.tsx` (`/nets/:netId/drill-plan`, opened in
+  its own tab from the toolbar's Drill plan button when `has_drill_plan`,
+  which only `get_net` fills in), `components/drill/DrillPlanEditor.tsx`,
+  `components/drill/DrillPlanPrintView.tsx` (plan and site packets, captured
+  by `utils/pdfExport.ts`), rules in `utils/drillPlan.ts`. The page polls
+  every 30 s with `BACKGROUND_REQUEST_CONFIG` instead of a WebSocket event.
+- **Teams**: this and coverage sites were built ahead of the Teams module;
+  `docs/concepts/TEAM-MANAGEMENT-NOTES.md` "Built Ahead of Teams" says how
+  each table migrates.
+
+Tests: `backend/tests/test_drill_plans.py`, `frontend/src/utils/drillPlan.test.ts`.
+
 ## Check-in fields and profile values
 
 A net turns its check-in fields on and off (`net.field_config`). Every
