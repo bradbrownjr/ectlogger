@@ -508,14 +508,35 @@ class FrequencyResponse(FrequencyBase):
     # Frequency.band / band_utils.py. None for digital-mode entries or
     # values outside every mapped band.
     band: Optional[str] = None
+    # Why the viewer may not change or delete it themselves, in their words,
+    # or None when they may. Same rule PUT/DELETE enforce
+    # (routers/frequencies.py::change_refusal), judged in the form the list
+    # was asked for (net_id / template_id).
+    edit_refused: Optional[str] = None
+    delete_refused: Optional[str] = None
 
     class Config:
         from_attributes = True
 
 
+class FrequencyChangeRequest(BaseModel):
+    """Ask the admins to change or delete a frequency the requester may not."""
+    action: Literal['edit', 'delete']
+    proposed: Optional[FrequencyCreate] = None  # required for 'edit'
+    note: Optional[str] = Field(None, max_length=1000)
+    net_id: Optional[int] = None
+    template_id: Optional[int] = None
+
+    @model_validator(mode='after')
+    def edit_needs_proposal(self):
+        if self.action == 'edit' and self.proposed is None:
+            raise ValueError('Say what the frequency should be changed to')
+        return self
+
+
 class FrequencyWithUsageResponse(FrequencyBase):
     """Frequency response with usage counts for the admin view. Any non-zero
-    count means delete_frequency will refuse it (see frequency_usage)."""
+    count means delete_frequency will refuse it (see frequency_uses)."""
     id: int
     created_at: datetime
     band: Optional[str] = None

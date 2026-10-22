@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-21
+revised: 2026-10-22
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,14 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# October 22, 2026
+
+## Improvements
+
+* **Frequencies: Fix your own mistakes** — When you add a frequency or talkgroup on the Create Net or schedule form, you can now edit or delete it yourself if you got something wrong, such as the mode. This works until another net or schedule uses it or a station checks in on it. For any frequency you can't change, the same buttons send your change to the admins by email.
 
 ---
 

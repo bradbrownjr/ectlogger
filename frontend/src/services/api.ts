@@ -301,12 +301,25 @@ export const templateApi = {
 
 
 // Frequency API
+// The net or schedule form a frequency is changed from. Its own use of a
+// frequency doesn't count against the person who added it
+// (routers/frequencies.py::change_refusal).
+export interface FrequencyFormContext {
+  net_id?: number;
+  template_id?: number;
+}
+
 export const frequencyApi = {
   create: (data: any) => api.post('/frequencies', data),
-  list: () => api.get('/frequencies'),
+  list: (context?: FrequencyFormContext) => api.get('/frequencies', { params: context }),
   listWithUsage: () => api.get('/frequencies/admin/with-usage'),
-  update: (id: number, data: any) => api.put(`/frequencies/${id}`, data),
-  delete: (id: number) => api.delete(`/frequencies/${id}`),
+  update: (id: number, data: any, context?: FrequencyFormContext) =>
+    api.put(`/frequencies/${id}`, data, { params: context }),
+  delete: (id: number, context?: FrequencyFormContext) =>
+    api.delete(`/frequencies/${id}`, { params: context }),
+  // Ask the admins for a change the server refused (edit_refused / delete_refused)
+  requestChange: (id: number, data: { action: 'edit' | 'delete'; proposed?: any; note?: string } & FrequencyFormContext) =>
+    api.post(`/frequencies/${id}/change-request`, data),
 };
 
 // NCS Rotation API

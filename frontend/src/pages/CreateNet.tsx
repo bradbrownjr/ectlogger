@@ -61,6 +61,8 @@ const CreateNet: React.FC = () => {
   const { user } = useAuth();
 
   const isEditMode = !!netId;
+  // Edit Net's own use of a frequency doesn't stop whoever added it from fixing it
+  const frequencyContext = netId ? { net_id: parseInt(netId) } : undefined;
   const isInfoMode = location.pathname.endsWith('/info');
 
   // ---- UI state ----
@@ -166,7 +168,7 @@ const CreateNet: React.FC = () => {
 
   const fetchFrequencies = async () => {
     try {
-      const response = await frequencyApi.list();
+      const response = await frequencyApi.list(frequencyContext);
       setFrequencies(response.data);
     } catch (error) {
       console.error('Failed to fetch frequencies:', error);
@@ -569,6 +571,7 @@ const CreateNet: React.FC = () => {
               setFrequencies={setFrequencies as React.Dispatch<React.SetStateAction<FrequencyItem[]>>}
               selectedFrequencyIds={selectedFrequencyIds}
               setSelectedFrequencyIds={setSelectedFrequencyIds}
+              context={frequencyContext}
               coverageExcludedFrequencyIds={propagationLoggingEnabled ? coverageExcludedFrequencyIds : undefined}
               setCoverageExcludedFrequencyIds={propagationLoggingEnabled ? setCoverageExcludedFrequencyIds : undefined}
             />

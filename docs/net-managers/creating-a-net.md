@@ -4,7 +4,7 @@ summary: The net form field by field: frequencies, check-in fields, self check-i
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-19
+revised: 2026-10-22
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/creating-a-net/
@@ -54,7 +54,7 @@ A net's staff come from its schedule, so this tab shows who is NCS for this net 
   <figcaption>Check a frequency's box to make it available on this net; add a new one from the blank row at the bottom.</figcaption>
 </figure>
 
-Every net needs at least one frequency or digital talkgroup. Check the boxes in the **Use** column to attach existing ones, or fill in the blank row at the bottom to add a new repeater, simplex frequency, DMR/D-STAR/YSF/P25 network, or GMRS channel and it's added to the shared list for next time. Pressing Enter in any field of that row saves it, same as clicking Add. The list is shared by every net on the site, so you can't change or remove an entry from here; if one is wrong, ask an admin to fix it in [Shared frequencies](/docs/admins/frequencies/).
+Every net needs at least one frequency or digital talkgroup. Check the boxes in the **Use** column to attach existing ones, or fill in the blank row at the bottom to add a new repeater, simplex frequency, DMR/D-STAR/YSF/P25 network, or GMRS channel and it's added to the shared list for next time. Pressing Enter in any field of that row saves it, same as clicking Add. The list is shared by every net on the site. You can fix or delete an entry you added yourself with the pencil and trash icons on its row, until another net or schedule uses it or a station checks in on it. For any other entry, the same icons let you send the change to the admins, who make it in [Shared frequencies](/docs/admins/frequencies/).
 
 ### Net script and announcements
 

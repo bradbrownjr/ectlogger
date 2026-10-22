@@ -1,6 +1,22 @@
 {
-  "version": "2026.10.21d",
+  "version": "2026.10.22",
   "entries": [
+    {
+      "version": "2026.10.22",
+      "date": "2026-10-22",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Frequencies: Fix your own mistakes — When you add a frequency or talkgroup on the Create Net or schedule form, you can now edit or delete it yourself if you got something wrong, such as the mode. This works until another net or schedule uses it or a station checks in on it. For any frequency you can't change, the same buttons send your change to the admins by email.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.10.21d",
       "date": "2026-10-21",

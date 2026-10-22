@@ -396,6 +396,10 @@ class Frequency(Base):
     talkgroup = Column(String(50), nullable=True)  # e.g., "31665", "Room 12345"
     description = Column(String(255))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # Who added it to the shared list (migration 086). They may fix or remove
+    # it while no other net uses it (routers/frequencies.py::change_refusal).
+    # Null for rows added before 086, which stay admin-only.
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     @property
     def band(self):

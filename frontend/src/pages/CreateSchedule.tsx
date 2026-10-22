@@ -66,6 +66,8 @@ const CreateSchedule: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isEdit = Boolean(scheduleId);
+  // The schedule's own use of a frequency doesn't stop whoever added it from fixing it
+  const frequencyContext = scheduleId ? { template_id: parseInt(scheduleId) } : undefined;
   const timezoneAbbr = getTimezoneAbbr();
   const { user: currentUser } = useAuth();
   const initialType = searchParams.get('type') || 'ad_hoc';
@@ -171,7 +173,7 @@ const CreateSchedule: React.FC = () => {
 
   const fetchFrequencies = async () => {
     try {
-      const response = await frequencyApi.list();
+      const response = await frequencyApi.list(frequencyContext);
       setFrequencies(response.data);
     } catch (error) {
       console.error('Failed to fetch frequencies:', error);

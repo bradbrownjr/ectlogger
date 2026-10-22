@@ -11,6 +11,7 @@ const CommunicationPlanTab: React.FC = () => {
     selectedFrequencyIds, setSelectedFrequencyIds,
     propagationLoggingEnabled,
     coverageExcludedFrequencyIds, setCoverageExcludedFrequencyIds,
+    scheduleId,
   } = useCreateScheduleContext();
 
   return (
@@ -19,6 +20,7 @@ const CommunicationPlanTab: React.FC = () => {
       setFrequencies={setFrequencies as any}
       selectedFrequencyIds={selectedFrequencyIds}
       setSelectedFrequencyIds={setSelectedFrequencyIds}
+      context={scheduleId ? { template_id: parseInt(scheduleId) } : undefined}
       coverageExcludedFrequencyIds={propagationLoggingEnabled ? coverageExcludedFrequencyIds : undefined}
       setCoverageExcludedFrequencyIds={propagationLoggingEnabled ? setCoverageExcludedFrequencyIds : undefined}
     />
