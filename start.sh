@@ -167,6 +167,16 @@ fi
 # Export port for frontend vite proxy
 export VITE_BACKEND_PORT=$BACKEND_PORT
 
+# Get frontend port from frontend/.env (default: 3000). vite.config.ts reads
+# the same key for the dev server; `vite preview` is given it explicitly below.
+FRONTEND_PORT=3000
+if [ -f "frontend/.env" ]; then
+    CONFIGURED_FRONTEND_PORT=$(grep "^FRONTEND_PORT=" frontend/.env | cut -d'=' -f2)
+    if [ -n "$CONFIGURED_FRONTEND_PORT" ]; then
+        FRONTEND_PORT=$CONFIGURED_FRONTEND_PORT
+    fi
+fi
+
 # Start backend in background
 echo "📡 Starting backend server on http://localhost:$BACKEND_PORT"
 cd backend
@@ -215,15 +225,15 @@ if [ "$SKIP_VITE" = true ]; then
     echo "📁 Frontend served from static build (frontend/dist)"
     FRONTEND_PID=""
 elif [ "$VITE_SERVE_MODE" = "preview" ]; then
-    # Serve the production build from frontend/dist via Vite preview on :3000.
-    echo "🏗️  Serving production build (frontend/dist) via vite preview on http://localhost:3000"
+    # Serve the production build from frontend/dist via Vite preview on :$FRONTEND_PORT.
+    echo "🏗️  Serving production build (frontend/dist) via vite preview on http://localhost:$FRONTEND_PORT"
     cd frontend
-    npm run preview -- --host 0.0.0.0 --port 3000 &
+    npm run preview -- --host 0.0.0.0 --port $FRONTEND_PORT &
     FRONTEND_PID=$!
     cd ..
 else
     # Start frontend dev server (HMR) in background
-    echo "🌐 Starting frontend dev server on http://localhost:3000"
+    echo "🌐 Starting frontend dev server on http://localhost:$FRONTEND_PORT"
     cd frontend
     npm run dev -- --host 0.0.0.0 &
     FRONTEND_PID=$!
@@ -234,7 +244,7 @@ echo ""
 echo "✓ ECTLogger is starting!"
 echo ""
 if [ "$SERVICE_MODE" = false ]; then
-    echo "🌐 Frontend: http://localhost:3000"
+    echo "🌐 Frontend: http://localhost:$FRONTEND_PORT"
 fi
 echo "📡 Backend:  http://localhost:$BACKEND_PORT"
 echo "📚 API Docs: http://localhost:$BACKEND_PORT/docs"

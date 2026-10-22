@@ -1191,6 +1191,23 @@ instance will mail whatever real addresses its database holds; beta's database
 contains real user rows, so prefer a net or template whose only subscriber is
 your own address.
 
+**A test instance that must really send mail** (the Teams instance, where
+invitations, sign-in links and notices are what is being tested) runs with
+`EMAIL_ENABLED=true` plus a recipient allowlist instead:
+
+```bash
+# in backend/.env
+EMAIL_ENABLED=true
+EMAIL_RECIPIENT_ALLOWLIST=bradbrownjr+*@gmail.com,bradbrownjr@gmail.com
+```
+
+Patterns are comma-separated shell-style globs, matched case-insensitively by
+`_recipient_allowed()` in `app/email/base.py`. A recipient matching none of them
+is suppressed and logged exactly like `EMAIL_ENABLED=false`, with the reason
+`not in EMAIL_RECIPIENT_ALLOWLIST`. Empty (the default) allows everyone, so
+production never sets it. Pair it with a database of test fixtures rather than
+a copy of production: the allowlist is the last line, not the only one.
+
 Why this exists as well as the SMTP setting: beta has long pointed `SMTP_HOST`
 at `127.0.0.1` so connections are refused. That works, but it is failure-based
 protection — the message is fully composed and the real recipient list resolved

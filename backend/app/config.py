@@ -47,6 +47,12 @@ class Settings(BaseSettings):
     # no matter what the SMTP settings below point at. See docs/DEVELOPMENT.md
     # "Enabling and disabling outbound email".
     email_enabled: bool = True
+    # Optional recipient allowlist for a test instance that sends real mail:
+    # comma-separated shell-style patterns (fnmatch, case-insensitive), e.g.
+    # "bradbrownjr+*@gmail.com,bradbrownjr@gmail.com". Empty (the default)
+    # allows every recipient, so production is unaffected. A recipient that
+    # matches no pattern is suppressed exactly like EMAIL_ENABLED=false.
+    email_recipient_allowlist: str = ""
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 587
     smtp_user: str

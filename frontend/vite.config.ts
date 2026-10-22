@@ -54,6 +54,11 @@ export default defineConfig(({ mode }) => {
   
   // Backend port - can be configured via VITE_BACKEND_PORT or defaults to 8000
   const backendPort = env.VITE_BACKEND_PORT || '8000'
+
+  // Frontend port - FRONTEND_PORT in frontend/.env, defaults to 3000. Lets a
+  // second instance on the same host (the feature/teams test instance) take
+  // its own port. start.sh reads the same key for `vite preview`.
+  const frontendPort = Number(env.FRONTEND_PORT) || 3000
   
   return {
     plugins: [react(), writeVersionFile(buildId)],
@@ -73,7 +78,7 @@ export default defineConfig(({ mode }) => {
       reportCompressedSize: false,
     },
     server: {
-      port: 3000,
+      port: frontendPort,
       // Restrict hosts to configured list for security
       // Set VITE_ALLOWED_HOSTS in frontend/.env for custom domains
       allowedHosts,
@@ -93,7 +98,7 @@ export default defineConfig(({ mode }) => {
     // beta when serving a production build instead of the HMR dev server so
     // headless tooling loads the app in ~1-2s instead of a slow dev cold-start.
     preview: {
-      port: 3000,
+      port: frontendPort,
       allowedHosts,
       proxy: {
         '/api': {

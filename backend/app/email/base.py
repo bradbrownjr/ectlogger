@@ -1,4 +1,5 @@
 from email import encoders
+from fnmatch import fnmatchcase
 from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
@@ -26,13 +27,32 @@ def _send_suppressed(to_email: str, subject: str, what: str = "email") -> bool:
     resolved. This switch stops the send before any connection is attempted,
     so a mistaken SMTP_HOST edit on a test instance cannot mail real users.
     """
-    if settings.email_enabled:
+    if not settings.email_enabled:
+        reason = "EMAIL_ENABLED=false"
+    elif not _recipient_allowed(to_email):
+        reason = "not in EMAIL_RECIPIENT_ALLOWLIST"
+    else:
         return False
     logger.info(
         "EMAIL",
-        f"Suppressed {what} to {to_email} (EMAIL_ENABLED=false): {subject}",
+        f"Suppressed {what} to {to_email} ({reason}): {subject}",
     )
     return True
+
+def _recipient_allowed(to_email: str) -> bool:
+    """Check ``to_email`` against EMAIL_RECIPIENT_ALLOWLIST.
+
+    An empty allowlist allows everyone. Otherwise the address must match at
+    least one comma-separated fnmatch pattern, compared lower-cased. This is
+    what lets a test instance run with EMAIL_ENABLED=true (the Teams instance,
+    where invitations and sign-in links have to really arrive) while a stray
+    fixture or copied address still cannot mail a real operator.
+    """
+    patterns = [p.strip().lower() for p in settings.email_recipient_allowlist.split(",") if p.strip()]
+    if not patterns:
+        return True
+    address = (to_email or "").strip().lower()
+    return any(fnmatchcase(address, pattern) for pattern in patterns)
 
 def get_unsubscribe_url(unsubscribe_token: str, list_name: Optional[str] = None) -> str:
     """Generate the unsubscribe URL for a user.
