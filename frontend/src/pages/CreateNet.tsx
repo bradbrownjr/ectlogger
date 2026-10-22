@@ -385,15 +385,23 @@ const CreateNet: React.FC = () => {
     await coverageSiteApi.saveSites(id, payload);
   };
 
+  // The net's own settings: the shared ones plus its one-night Notes and start time.
+  const buildNetPayload = () => ({
+    ...buildSharedSettings(),
+    announcements,
+    scheduled_start_time: scheduledStartTime ? new Date(scheduledStartTime).toISOString() : null,
+  });
+
+  // Edit mode: save this net (and its sites). Shared by both save buttons.
+  const saveThisNet = async (): Promise<number> => {
+    const response = await netApi.update(parseInt(netId!), buildNetPayload());
+    await saveCoverageSites(response.data.id);
+    return response.data.id;
+  };
+
   const handleCreateNet = async () => {
     try {
-      const scheduledStartTimeISO = scheduledStartTime ? new Date(scheduledStartTime).toISOString() : null;
-      const payload = {
-        ...buildSharedSettings(),
-        // The net's own one-night Notes; the schedule's announcements are saved below.
-        announcements,
-        scheduled_start_time: scheduledStartTimeISO,
-      };
+      const payload = buildNetPayload();
 
       if (isEditMode) {
         // Save the schedule's announcements first if they were changed here.
@@ -402,9 +410,7 @@ const CreateNet: React.FC = () => {
           await templateApi.update(templateId, { announcements: scheduleAnnouncements });
           setSavedScheduleAnnouncements(scheduleAnnouncements);
         }
-        const response = await netApi.update(parseInt(netId!), payload);
-        await saveCoverageSites(response.data.id);
-        navigate(`/nets/${response.data.id}`);
+        navigate(`/nets/${await saveThisNet()}`);
       } else {
         const response = await netApi.create(payload);
         const newNetId = response.data.id;
@@ -424,6 +430,10 @@ const CreateNet: React.FC = () => {
     }
   };
 
+  // Saves the schedule AND this net. Until 2026-10-22 it saved the schedule
+  // only, so a manager who turned on the lobby here and clicked it found the
+  // net they were editing unchanged (net 137, a one-time schedule that will
+  // never create another net).
   const handleSaveToSchedule = async () => {
     if (!templateId) return;
     setSavingToSchedule(true);
@@ -434,8 +444,9 @@ const CreateNet: React.FC = () => {
         ...(scheduleAnnouncements !== null ? { announcements: scheduleAnnouncements } : {}),
       });
       if (scheduleAnnouncements !== null) setSavedScheduleAnnouncements(scheduleAnnouncements);
+      const savedNetId = await saveThisNet();
       setSaveToScheduleConfirmOpen(false);
-      showToast('Schedule updated. Future nets opened from this schedule will use these values.', 'success');
+      navigate(`/nets/${savedNetId}`);
     } catch (error: any) {
       const status = error?.response?.status;
       if (status === 403) {
@@ -673,7 +684,7 @@ const CreateNet: React.FC = () => {
                   {isEditMode ? 'Save for this Net' : 'Create Net'}
                 </Button>
                 {/* Save to Schedule: only available when editing a net created from a schedule.
-                    Pushes editable fields back to the parent schedule so future nets inherit them.
+                    Saves this net and pushes editable fields back to the parent schedule so future nets inherit them.
                     Backend enforces permission (owner/admin/staff/rotation). */}
                 {isEditMode && templateId && (
                   <Button
@@ -713,11 +724,11 @@ const CreateNet: React.FC = () => {
           maxWidth="sm"
           fullWidth
         >
-          <DialogTitle>Save changes to the schedule?</DialogTitle>
+          <DialogTitle>Save this net and its schedule?</DialogTitle>
           <DialogContent>
             <DialogContentText component="div">
-              This will replace the schedule's saved defaults with the values
-              currently on this net, including:
+              This saves this net, and replaces the schedule's saved defaults
+              with the values on this net, including:
               <ul style={{ marginTop: 8, marginBottom: 8 }}>
                 <li>Name, description, info URL, stream URL</li>
                 <li>Net script and the schedule's announcements (not this net's notes)</li>

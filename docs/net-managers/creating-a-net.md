@@ -71,7 +71,7 @@ Callsign is the only field every net always requires. Everything else (Name, Loc
 
 ## Saving
 
-**Create Net** (or **Save for this Net** when editing) saves changes to this occurrence only. If the net was created from a schedule, editing it also offers **Save to Schedule**, which pushes everything on this tab set (name, description, script, the schedule's announcements, frequencies, check-in fields, the check-in, chat, traffic, lobby and auto-close settings, and the ICS-309/topic/poll toggles) back to the schedule so every future net inherits it. This net's own notes stay on this net. Net staff and the rotation are managed separately and are never touched by Save to Schedule.
+**Create Net** (or **Save for this Net** when editing) saves changes to this occurrence only. If the net was created from a schedule, editing it also offers **Save to Schedule**, which saves this net and pushes everything on this tab set (name, description, script, the schedule's announcements, frequencies, check-in fields, the check-in, chat, traffic, lobby and auto-close settings, and the ICS-309/topic/poll toggles) back to the schedule so every future net inherits it. This net's own notes stay on this net. Net staff and the rotation are managed separately and are never touched by Save to Schedule.
 
 Editing a closed or archived net still works, so a typo or a wrong setting can still be fixed, but nothing about it re-sends the closing email or re-triggers a notification. It updates the record only.
 
