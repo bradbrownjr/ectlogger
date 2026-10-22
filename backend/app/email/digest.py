@@ -1,3 +1,4 @@
+import html
 from app.logger import logger
 from typing import Optional
 
@@ -190,7 +191,7 @@ async def send_whats_new_email(to_email: str, unsubscribe_token: Optional[str],
         style = type_styles.get(section.get('type', 'improvement'),
                                 type_styles['improvement'])
         items_html = ''.join(
-            f'<li style="margin-bottom: 8px;">{item.get("text", "")}</li>'
+            f'<li style="margin-bottom: 8px;">{item.get("text", "")}{_docs_link_html(item)}</li>'
             for item in section.get('items', [])
         )
         sections_html_parts.append(f'''
@@ -253,3 +254,20 @@ async def send_whats_new_email(to_email: str, unsubscribe_token: Optional[str],
         unsubscribe_token=unsubscribe_token,
         unsubscribe_list="whats_new",
     )
+
+# Where the documentation site lives; a changelog item's optional "docs" field
+# is a permalink on it ("/docs/net-control/closing-the-net/"). Same base as
+# ChangelogNotification.tsx::DOCS_SITE.
+DOCS_SITE = "https://ectlogger.us"
+
+
+def _docs_link_html(item: dict) -> str:
+    """ "Learn more" link for an item that names the docs page for its feature.
+    Only a site-relative path is accepted, so the JSON can never point the
+    email at another host."""
+    path = item.get("docs") or ""
+    if not path.startswith("/docs/"):
+        return ""
+    return (f' <a href="{DOCS_SITE}{html.escape(path, quote=True)}" '
+            f'style="color: #0288d1;">Learn more</a>')
+

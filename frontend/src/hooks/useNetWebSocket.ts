@@ -312,6 +312,13 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
           if (typeof window !== 'undefined' && window.dispatchEvent) {
             window.dispatchEvent(new CustomEvent('trafficLogged', { detail: message.data }));
           }
+        } else if (message.type === 'off_net_log_changed') {
+          // An off-net log entry was added, changed, reviewed or removed.
+          // Carries no content; OffNetLogDialog refetches what this viewer
+          // may see. Same window-event relay as the traffic events.
+          if (typeof window !== 'undefined' && window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('offNetLogChanged', { detail: message.data }));
+          }
         } else if (message.type === 'traffic_log_changed') {
           // A chain-of-custody hop was appended to a form on this net.
           // Same window-event relay as traffic_logged -- TrafficPanel.tsx,

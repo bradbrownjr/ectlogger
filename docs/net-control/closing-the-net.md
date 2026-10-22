@@ -4,7 +4,7 @@ summary: What closing generates, who receives it, and what to do if you closed o
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-10-22
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/closing-the-net/
@@ -20,22 +20,24 @@ Closing a net is a real state change, not a formality: it ends the live session,
 
 <figure>
   <img src="/docs/img/net-control/close-net-dialog.png"
-       alt="The Close Net confirmation dialog: &quot;Are you sure you want to close this net? This will end the session and send log emails to subscribers,&quot; with the Close Net button outlined in red.">
+       alt="The Close Net confirmation dialog: &quot;Are you sure you want to close this net? This will end the session and send log emails to subscribers,&quot; with a notice that 1 off-net entry is awaiting review, and Cancel, Review, Accept all and close, and Close anyway buttons. Close anyway is outlined in red.">
   <figcaption>There is no scheduled undo for this; see below for what to do if you close one by mistake.</figcaption>
 </figure>
 
 Confirm, and the net's status moves to Closed immediately for every viewer.
 
+If stations logged off-net activity that nobody has accepted yet, the dialog says how many entries are waiting, as above. **Review** opens the off-net log without closing, **Accept all and close** accepts them and closes, and **Close anyway** closes with them left off the emailed ICS-309. When nothing is waiting, the dialog has just Cancel and **Close Net**. See [Logging off-net activity](/docs/net-control/off-net-log/).
+
 ## What happens the moment it closes
 
 - A system message posts to the net's chat noting it closed.
 - A log email goes out to the net's manager (if they've opted in), anyone explicitly subscribed to this schedule, and every active NCS, Logger, and Relay who actually worked this specific occurrence and hasn't opted out. Running a net is enough to get a copy of its own log, even without a separate subscription.
-- If the net has **ICS-309** turned on, that email uses the formal ICS-309 log format and folds in any traffic logged on the net as metadata rows (never the message text itself); otherwise it's a plain net-log email. A recipient with their own preference for ICS-309 gets that format regardless of the net's own setting.
+- If the net has **ICS-309** turned on, that email uses the formal ICS-309 log format and folds in any traffic logged on the net as metadata rows (never the message text itself), plus the net's accepted off-net log entries; otherwise it's a plain net-log email. A recipient with their own preference for ICS-309 gets that format regardless of the net's own setting.
 - Formal traffic filed on the net isn't touched by closing it. Forms keep whatever disposition their own chain of custody says, and you can keep logging handoffs against them after the net closes. See [Handling traffic](/docs/net-control/handling-traffic/).
 
 ## After closing
 
-Once a net is closed, its exports become available to **anyone who can see the net**, not just staff. Export (CSV), ICS-309, ICS-309 PDF, and the full Report are all open to any viewer, participant included, and to a visitor who isn't signed in. For a visitor, email addresses and phone numbers typed into notes and other free-text fields are hidden, the same as on the check-in list.
+Once a net is closed, its exports become available to **anyone who can see the net**, not just staff. Export (CSV), ICS-309, ICS-309 PDF, and the full Report are all open to any viewer, participant included, and to a visitor who isn't signed in. For a visitor, email addresses and phone numbers typed into notes and other free-text fields are hidden, the same as on the check-in list, and the ICS-309 leaves out the off-net log.
 
 <figure>
   <img src="/docs/img/net-control/closed-net-exports.png"

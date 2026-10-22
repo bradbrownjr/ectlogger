@@ -72,6 +72,8 @@
       url: /docs/net-control/station-coverage/
     - title: Handling traffic
       url: /docs/net-control/handling-traffic/
+    - title: Logging off-net activity
+      url: /docs/net-control/off-net-log/
     - title: Multiple monitors and wide screens
       url: /docs/net-control/multiple-monitors/
     - title: Closing the net

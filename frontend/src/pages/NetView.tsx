@@ -64,7 +64,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { netApi, checkInApi, netRoleApi, templateApi, canHearApi } from '../services/api';
+import { netApi, checkInApi, netRoleApi, templateApi, canHearApi, offNetLogApi } from '../services/api';
 import api from '../services/api';
 import { exportElementToPdf } from '../utils/pdfExport';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
@@ -78,6 +78,7 @@ import NetScript from '../components/NetScript';
 import Announcements from '../components/Announcements';
 import ScheduleAnnouncements from '../components/ScheduleAnnouncements';
 import TopicHistory from '../components/TopicHistory';
+import OffNetLogDialog from '../components/netview/OffNetLogDialog';
 import FloatingWindow from '../components/FloatingWindow';
 import UserProfileDialog from '../components/UserProfileDialog';
 import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
@@ -248,6 +249,7 @@ const NetView: React.FC = () => {
   const announcements = usePersistedDialog(STORAGE_KEYS.ANNOUNCEMENTS_OPEN);
   const scheduleAnnouncements = usePersistedDialog(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_OPEN);
   const topicHistory = useDialog();
+  const offNetLog = useDialog();
   const importDialog = useDialog();
   const [highlightCheckIn, setHighlightCheckIn] = useState(false);
   const [highlightStartNet, setHighlightStartNet] = useState(false);
@@ -1070,6 +1072,35 @@ const NetView: React.FC = () => {
     }
   };
 
+  // Closing with stations' off-net entries still awaiting review: the close
+  // dialog says so and offers Review or Accept all. Pending entries are left
+  // off the emailed ICS-309, and can still be accepted after the net closes.
+  const [pendingOffNetCount, setPendingOffNetCount] = useState(0);
+  useEffect(() => {
+    if (!closeNetDialog.open || !net?.actions?.review_off_net_log) {
+      setPendingOffNetCount(0);
+      return;
+    }
+    offNetLogApi.list(net.id)
+      .then(({ data }) => setPendingOffNetCount(data.pending_count))
+      .catch(() => setPendingOffNetCount(0));
+  }, [closeNetDialog.open, net?.id, net?.actions?.review_off_net_log]);
+
+  const handleReviewOffNet = () => {
+    closeNetDialog.onClose();
+    offNetLog.onOpen();
+  };
+
+  const handleAcceptOffNetAndClose = async () => {
+    try {
+      await offNetLogApi.acceptPending(Number(netId));
+    } catch (error) {
+      console.error('Failed to accept off-net entries:', error);
+      return;
+    }
+    await handleCloseNet();
+  };
+
   const handleCloseNet = async () => {
     try {
       // Capture values before closing since net state will change
@@ -1414,6 +1445,11 @@ const NetView: React.FC = () => {
   // management button is gated on the flag for its own action.
   const actions = getNetActions(net, simulateRegularUser);
   const canStartNet = actions.start;
+  // Off-net log: net control staff, or a signed-in station checked in here.
+  // The server applies the same rule (routers/off_net_log.py).
+  const canUseOffNetLog = isAuthenticated && (
+    actions.log_off_net || checkIns.some((ci: CheckIn) => ci.user_id === user?.id)
+  );
   // Recording "who can this station hear?" for any row: NCS, Logger, Relay
   // and the net's managers, not the broad canManage, which also includes
   // schedule staff who hold no role here and would be refused.
@@ -1722,6 +1758,8 @@ const NetView: React.FC = () => {
         coverage={coverage}
         traffic={traffic}
         canViewTraffic={canOpenTraffic}
+        offNetLog={offNetLog}
+        canUseOffNetLog={canUseOffNetLog}
         script={script}
         scheduleAnnouncements={scheduleAnnouncements}
         announcements={announcements}
@@ -2869,6 +2907,9 @@ const NetView: React.FC = () => {
       <NetControlDialogs
         closeNetDialog={closeNetDialog}
         onCloseNet={handleCloseNet}
+        pendingOffNetCount={pendingOffNetCount}
+        onReviewOffNet={handleReviewOffNet}
+        onAcceptOffNetAndClose={handleAcceptOffNetAndClose}
         subscribeDialog={subscribeDialog}
         netName={net?.name}
         subscribing={subscribing}
@@ -3042,6 +3083,18 @@ const NetView: React.FC = () => {
           canEdit={canManage}
           onDock={isXlUp ? handleDockScheduleAnnouncements : undefined}
           onPopOut={handlePopOutScheduleAnnouncements}
+        />
+      )}
+
+      {/* ========== OFF-NET LOG DIALOG ========== */}
+      {/* Toolbar "Off-net" button, and Review from the close dialog */}
+      {net && (
+        <OffNetLogDialog
+          open={offNetLog.open}
+          onClose={offNetLog.onClose}
+          netId={net.id}
+          channelSuggestions={(net.frequencies || []).map(formatFrequencyDisplay)}
+          preferUtc={user?.prefer_utc ?? false}
         />
       )}
 

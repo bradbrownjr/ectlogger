@@ -16,7 +16,8 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import PersonIcon from '@mui/icons-material/Person';
 import DeleteIcon from '@mui/icons-material/Delete';
-import api, { callsignRoleApi } from '../../services/api';
+import api, { callsignRoleApi, templateStaffApi } from '../../services/api';
+import { SchedulePerson, toPerson, uniquePeople } from '../../utils/staffPeople';
 import { ScheduleStaffButton } from '../NCSStaffModal';
 import { useCreateNetContext, NetUser } from '../../contexts/CreateNetContext';
 import { getErrorMessage } from '../../utils/apiErrors';
@@ -55,6 +56,25 @@ const NCSStaffTab: React.FC = () => {
   // Edit mode: the net's own manager, not whoever is editing (an admin or a
   // staff member can open Edit Net too).
   const [netOwner, setNetOwner] = useState<{ callsign?: string; name?: string | null } | null>(null);
+
+  // Net from a schedule: the schedule's active staff, who can start this net
+  // and take NCS or Logger by checking in (permissions.is_active_template_staff).
+  // Listed read-only so the tab doesn't look as if nobody is attached; until
+  // 2026-10-22 it showed only NCS roles, and a schedule's staff hold none
+  // until the night (net 137).
+  const [scheduleStaff, setScheduleStaff] = useState<SchedulePerson[]>([]);
+  const fetchScheduleStaff = async () => {
+    if (!templateId) return;
+    try {
+      const { data } = await templateStaffApi.list(templateId);
+      setScheduleStaff(uniquePeople((data || []).filter((s: any) => s.is_active).map(toPerson)));
+    } catch {
+      // non-fatal; the schedule's Staff dialog still shows them
+    }
+  };
+  useEffect(() => {
+    if (scheduleManaged) fetchScheduleStaff();
+  }, [scheduleManaged, templateId]);
 
   // Load existing NCS roles in edit mode
   useEffect(() => {
@@ -168,11 +188,41 @@ const NCSStaffTab: React.FC = () => {
         </Box>
       </Box>
 
+      {/* Net from a schedule: its staff, read-only */}
+      {scheduleManaged && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            Schedule staff (can start this net and take NCS or Logger by checking in)
+          </Typography>
+          {scheduleStaff.length === 0 ? (
+            <Typography color="text.secondary" variant="body2">The schedule has no staff.</Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {scheduleStaff.map((person) => (
+                <Chip
+                  key={person.key}
+                  icon={<PersonIcon />}
+                  label={person.name ? `${person.callsign} (${person.name})` : person.callsign}
+                  variant="outlined"
+                />
+              ))}
+            </Box>
+          )}
+        </Box>
+      )}
+
       {/* Net from a schedule: open its Staff dialog instead of editing here */}
       {scheduleManaged && !isInfoMode && (
         <Box sx={{ mb: 2 }}>
-          <ScheduleStaffButton templateId={templateId!} onClosed={fetchNetRoles} />
+          <ScheduleStaffButton templateId={templateId!} onClosed={() => { fetchNetRoles(); fetchScheduleStaff(); }} />
         </Box>
+      )}
+
+      {/* Net from a schedule: who holds NCS on this net right now */}
+      {scheduleManaged && (
+        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+          Net Control for this net
+        </Typography>
       )}
 
       {/* Add NCS autocomplete (ad hoc nets, and new nets) */}

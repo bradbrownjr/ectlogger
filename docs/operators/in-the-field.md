@@ -4,7 +4,7 @@ summary: What to set up before you leave the house, what's different on a small 
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-10-22
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/in-the-field/
@@ -31,6 +31,10 @@ The check-in list simplifies on a phone: other stations' rows are read-only (nob
   >
   <figcaption>Other stations' rows are read-only on a phone; your own status is still yours to change.</figcaption>
 </figure>
+
+## Logging what you did off the net
+
+If you check in to another net, call on a statewide talkgroup, or send a Winlink message while you're out, log it with the **Off-net** button on the net toolbar (on a narrow phone it may be in the **More** menu, the three dots). It goes on this net's ICS-309 once net control accepts it. Log that it happened and fill in the Winlink message ID, but not the message itself. If you can't reach the app, tell net control over the air and they'll log it for you. See [Logging off-net activity](/docs/net-control/off-net-log/).
 
 ## What degrades on a bad connection
 

@@ -686,6 +686,8 @@ class NetActions(BaseModel):
     email_subscribers: bool = False  # Email subscribers
     record_coverage: bool = False    # "Who can this station hear?" on any row
     run_drill: bool = False          # Drill plan: read it, mark messages sent
+    log_off_net: bool = False        # Off-net log: add for any station, no review
+    review_off_net_log: bool = False # Off-net log: accept, reject, edit any entry
 
 
 class NetResponse(NetBase):
@@ -3193,3 +3195,65 @@ class BackupOverview(BaseModel):
     last_success_at: Optional[datetime] = None
     overdue: bool
     running: bool
+
+
+# ========== Off-net log ==========
+
+class OffNetLogEntryCreate(BaseModel):
+    """POST/PUT /nets/{id}/off-net-log. A station logging its own activity
+    has from_station set to its own callsign server-side, whatever it sends."""
+    occurred_at: datetime
+    from_station: Optional[str] = Field(None, max_length=100)
+    to_station: str = Field(min_length=1, max_length=200)
+    channel: Optional[str] = Field(None, max_length=200)
+    message: str = Field(min_length=1, max_length=1000)
+    message_id: Optional[str] = Field(None, max_length=100)
+
+    @field_validator('occurred_at')
+    @classmethod
+    def to_utc(cls, v: datetime) -> datetime:
+        # SQLite keeps the wall-clock digits and drops the offset, so store UTC.
+        from datetime import timezone
+        return v.astimezone(timezone.utc) if v.tzinfo else v.replace(tzinfo=timezone.utc)
+
+    @field_validator('from_station', 'to_station', 'channel', 'message', 'message_id')
+    @classmethod
+    def strip_text(cls, v):
+        if v is None:
+            return v
+        v = v.strip()
+        return v or None
+
+
+class OffNetLogReview(BaseModel):
+    status: Literal['accepted', 'rejected']
+
+
+class OffNetLogEntryResponse(BaseModel):
+    id: int
+    net_id: int
+    occurred_at: datetime
+    from_station: str
+    to_station: str
+    channel: Optional[str] = None
+    message: str
+    message_id: Optional[str] = None
+    status: str
+    entered_by_user_id: Optional[int] = None
+    entered_by_callsign: Optional[str] = None
+    reviewed_by_callsign: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    # What the viewer may do with this entry (routers/off_net_log.py).
+    can_edit: bool = False
+    can_review: bool = False
+
+
+class OffNetLogListResponse(BaseModel):
+    entries: List[OffNetLogEntryResponse]
+    # The viewer's own abilities on this net, for the add form.
+    can_add: bool = False          # checked in, or net control staff
+    adds_accepted: bool = False    # entries count without review (may_log_off_net)
+    can_review: bool = False
+    own_callsign: Optional[str] = None
+    pending_count: int = 0

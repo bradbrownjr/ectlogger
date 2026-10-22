@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -27,6 +28,10 @@ interface NetControlDialogsProps {
   // Close Net
   closeNetDialog: UseDialogResult;
   onCloseNet: () => void;
+  // Stations' off-net log entries still awaiting review (net control only)
+  pendingOffNetCount: number;
+  onReviewOffNet: () => void;
+  onAcceptOffNetAndClose: () => void;
 
   // Subscribe to schedule
   subscribeDialog: UseDialogResult;
@@ -59,6 +64,9 @@ interface NetControlDialogsProps {
 const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
   closeNetDialog,
   onCloseNet,
+  pendingOffNetCount,
+  onReviewOffNet,
+  onAcceptOffNetAndClose,
   subscribeDialog,
   netName,
   subscribing,
@@ -97,11 +105,26 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
           <Typography>
             Are you sure you want to close this net? This will end the session and send log emails to subscribers.
           </Typography>
+          {/* Shows when stations' off-net entries are waiting for review */}
+          {pendingOffNetCount > 0 && (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              {pendingOffNetCount === 1 ? '1 off-net entry is' : `${pendingOffNetCount} off-net entries are`} awaiting
+              review. Entries you don't accept are left off the emailed ICS-309. You can still accept them after the net closes.
+            </Alert>
+          )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
           <Button onClick={closeNetDialog.onClose}>Cancel</Button>
+          {pendingOffNetCount > 0 && (
+            <>
+              <Button onClick={onReviewOffNet}>Review</Button>
+              <Button onClick={onAcceptOffNetAndClose} variant="outlined" color="error">
+                Accept all and close
+              </Button>
+            </>
+          )}
           <Button onClick={onCloseNet} variant="contained" color="error">
-            Close Net
+            {pendingOffNetCount > 0 ? 'Close anyway' : 'Close Net'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -4,7 +4,7 @@ summary: Every role ECTLogger has, at every level, and a grid of who can do what
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-21
+revised: 2026-10-22
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/roles-and-permissions/
@@ -108,6 +108,8 @@ Read this as: given the row's action, which of the columns can do it. "Net manag
 | Step down your own active NCS role | — | — | — | Yes⁶ | — | — | — | — |
 | Mute a station net-wide in chat | No | No | No | Yes | Yes | No | Yes | Yes |
 | Record which stations another station can hear (coverage logging nets only) | No⁸ | No⁸ | No⁸ | Yes | Yes | Yes | Yes | Yes |
+| Log off-net activity for any station, on the ICS-309 without review | No⁹ | No⁹ | No⁹ | Yes | Yes | Yes | Yes | Yes |
+| Accept, reject, or change a station's off-net entry | No | No | No | Yes | Yes | No | Yes | Yes |
 | Read a net's drill plan and mark its messages sent | No | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | Write, change, or rate a net's drill plan | No | No | No | Yes | No | No | Yes | Yes |
 | Edit the schedule, rotation, or staff list | No | Yes | Yes | — | — | — | Yes | Yes |
@@ -124,4 +126,6 @@ Read this as: given the row's action, which of the columns can do it. "Net manag
 6. Blocked if you are the only active NCS on a net that is currently active; assign someone else first.
 7. These are the two rows where being an admin genuinely does not help. Eligibility to self-grant on check-in is drawn from the schedule's own staff and rotation, and being an admin is not membership of either. It costs an admin nothing: they can assign themselves the role outright in the Manage Net Control Staff dialog, which is the same result in one more click.
 8. Anyone checked in can record what their own station hears, unless the net's manager turned off **Allow stations to self-report**. Recording it for somebody else needs an active NCS, Logger, or Relay role on this net; schedule staff and co-managers take one by checking in as NCS or Logger first. See [Station coverage](/docs/net-control/station-coverage/).
+9. Anyone signed in and checked into the net can log their own off-net activity. It waits for an active NCS or Logger, or the net's manager, to accept it before it goes on the ICS-309. See [Logging off-net activity](/docs/net-control/off-net-log/).
+
 For the underlying permission checks this grid is drawn from, see `backend/app/permissions.py`. For who gets emailed about a role or a net's lifecycle, see [Emails we send](/docs/reference/emails/).

@@ -200,6 +200,24 @@ const BasicInfoTab: React.FC = () => {
             </Typography>
           </Box>
 
+          {/* Lobby, no start time: nothing to count down from, so the switch
+              only decides whether Open lobby is offered next to Start net
+              (utils/netStart.ts::canOpenLobby). Same control as the schedule
+              form's Ad-Hoc case. Until 2026-10-22 this form hid the lobby
+              setting entirely without a start time, so a one-time net saved
+              with none could never offer Open lobby (net 137). */}
+          {!scheduledStartTime && (
+            <Box sx={{ mt: 2 }}>
+              <FormControlLabel
+                control={<Switch checked={autoLobbyEnabled} onChange={(e) => setAutoLobbyEnabled(e.target.checked)} />}
+                label="Enable lobby"
+              />
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+                This net has no start time, so there's nothing to count down from. When this is on, the net shows an Open lobby button next to Start net, so stations can check in and chat before Net Control clicks Go Live.
+              </Typography>
+            </Box>
+          )}
+
           {/* Auto-open lobby — needs a scheduled start time to count back from.
               Inherited from the schedule; changing it here affects this net only. */}
           {!!scheduledStartTime && (

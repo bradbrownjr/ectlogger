@@ -530,6 +530,46 @@ class CheckIn(Base):
     )
 
 
+class OffNetLogEntry(Base):
+    """Something a station did off this net that belongs in the net's
+    communications log: a check-in to another net, a call on a statewide
+    talkgroup, a Winlink message sent to another county. One row becomes one
+    ICS-309 row (services/ics309_log.py).
+
+    It records that the contact happened, never its content: a Winlink
+    message's text stays with the station (message_id lets the printed copy
+    be matched to its row). It is not a situational-awareness report about
+    someone else; see the "Log what you hear once" roadmap item.
+
+    Entries from net staff count straight away. A station's own entry waits
+    for NCS, Logger or a net manager (permissions.may_review_off_net_log)
+    before it reaches the ICS-309.
+    """
+    __tablename__ = "off_net_log_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False, index=True)
+    occurred_at = Column(DateTime(timezone=True), nullable=False)
+    from_station = Column(String(100), nullable=False)
+    to_station = Column(String(200), nullable=False)    # "Maine ARES Net", "York County EMA"
+    channel = Column(String(200), nullable=True)        # "3.940 LSB", "DMR TG 3123", "Winlink"
+    message = Column(String(1000), nullable=False)      # what happened, one line
+    message_id = Column(String(100), nullable=True)     # Winlink or other message ID
+    status = Column(String(20), nullable=False, default="accepted")  # see OFF_NET_LOG_STATUSES
+    entered_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    reviewed_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    entered_by = relationship("User", foreign_keys=[entered_by_user_id])
+    reviewed_by = relationship("User", foreign_keys=[reviewed_by_user_id])
+
+
+# pending: a station's own entry, not on the ICS-309 until reviewed.
+OFF_NET_LOG_STATUSES = ("pending", "accepted", "rejected")
+
+
 class CoverageSite(Base):
     """A place a coverage drill is testing from, such as a shelter or an EMA
     office, listed on one net by its manager. Coverage between sites is a

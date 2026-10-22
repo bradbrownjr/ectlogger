@@ -104,7 +104,7 @@ async def _build(db_path: Path, out_path: Path):
         NetRole, CheckIn, ChatMessage, ChatReaction, TemplateStaff,
         NCSRotationMember, FormDefinition, Form, TrafficAction, AppSettings,
         FieldDefinition, CanHearReport, CoverageSite, CoverageAccess, CoverageContact,
-        DrillPlan, DrillObjective, DrillEvent, TrafficTestCategory,
+        DrillPlan, DrillObjective, DrillEvent, TrafficTestCategory, OffNetLogEntry,
     )
     from app.traffic.exercise import mark_exercise_text
     from app.auth import (
@@ -416,6 +416,24 @@ async def _build(db_path: Path, out_path: Path):
         add_chat(28, "K1CAMP has traffic.", is_system=True)
         await db.flush()
         db.add(ChatReaction(message_id=msg_greeting.id, user_id=users["N1ROVE"].id, emoji="👍"))
+        await db.commit()
+
+        # ---- off-net log: two accepted entries, and a station's own Winlink
+        # entry still awaiting review (docs/net-control/off-net-log.md) ----
+        db.add_all([
+            OffNetLogEntry(net_id=net_active.id, occurred_at=ci_time(30), from_station="W1PINE",
+                           to_station="State ARES HF Net", channel="3.940 LSB",
+                           message="Checked in for Example County", status="accepted",
+                           entered_by_user_id=users["W1PINE"].id),
+            OffNetLogEntry(net_id=net_active.id, occurred_at=ci_time(22), from_station="N1LAKE",
+                           to_station="Statewide DMR talkgroup", channel="DMR TG 3100",
+                           message="Relayed the net's status to the state desk", status="accepted",
+                           entered_by_user_id=users["K1COVE"].id),
+            OffNetLogEntry(net_id=net_active.id, occurred_at=ci_time(10), from_station="K1CAMP",
+                           to_station="Harbor County EMA", channel="Winlink",
+                           message="Sent the shelter status report", message_id="4QX7T2KDM8RA",
+                           status="pending", entered_by_user_id=users["K1CAMP"].id),
+        ])
         await db.commit()
 
         # ---- traffic: K1CAMP's shelter supply request, ICS-213 ----

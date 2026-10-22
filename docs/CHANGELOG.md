@@ -20,7 +20,14 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Frequencies: Fix your own mistakes** — When you add a frequency or talkgroup on the Create Net or schedule form, you can now edit or delete it yourself if you got something wrong, such as the mode. This works until another net or schedule uses it or a station checks in on it. For any frequency you can't change, the same buttons send your change to the admins by email.
+* **Net View: Off-net log** — Stations and net control can now add off-net activity to the net's ICS-309, such as a check-in on another net or a Winlink message sent to another county. [Learn more](/docs/net-control/off-net-log/)
+* **Frequencies: Fix your own mistakes** — When you add a frequency or talkgroup on the Create Net or schedule form, you can now edit or delete it yourself if you got something wrong, such as the mode. This works until another net or schedule uses it or a station checks in on it. For any frequency you can't change, the same buttons send your change to the admins by email. [Learn more](/docs/admins/frequencies/#editing-and-deleting)
+* **Changelog: Learn more links** — Items in What's New and the daily email now link to the help page for the feature.
+
+## Bug Fixes
+
+* **Edit Net: Open lobby on a net with no start time** — A net's Edit page hid the Enable lobby switch when the net had no start time, so a one-time net saved without one could never offer Open lobby. The switch is there now, as on the schedule form. [Learn more](/docs/net-managers/lobby-and-auto-close/)
+* **Edit Net: Schedule staff shown** — The Net Staff tab listed only who holds NCS, so a net from a schedule looked as if it had no staff. It now lists the schedule's staff too. [Learn more](/docs/net-managers/creating-a-net/)
 
 ---
 
@@ -28,14 +35,14 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Coverage: Drills by site** — For exercises such as the SET, list a net's shelters, offices, repeaters and nodes, and star the primary offices. Stations pick their site at check-in. Coverage then shows whether each site reached each primary office, which repeaters and nodes it got into, and the counties and outside stations it reached. The net report and closing email include the same summary.
-* **Drills: Exercise plan** — Write a drill's scenario, objectives and schedule on the net, with prepared ICS-213s assigned to the sites that send them. Print the plan and a packet for each site, mark messages sent and received during the drill, and rate each objective afterward.
-* **Coverage: Import sites from a spreadsheet** — Load an EMA's shelter or distribution point list from Excel or CSV. Match its columns to name, address, town, coordinates and notes, and choose the type for the whole list. Mark the sites your teams will staff; the rest of the list, and every site's address, contacts and capacity, are shown only to net staff.
+* **Coverage: Drills by site** — For exercises such as the SET, list a net's shelters, offices, repeaters and nodes, and star the primary offices. Stations pick their site at check-in. Coverage then shows whether each site reached each primary office, which repeaters and nodes it got into, and the counties and outside stations it reached. The net report and closing email include the same summary. [Learn more](/docs/net-managers/coverage-drills/)
+* **Drills: Exercise plan** — Write a drill's scenario, objectives and schedule on the net, with prepared ICS-213s assigned to the sites that send them. Print the plan and a packet for each site, mark messages sent and received during the drill, and rate each objective afterward. [Learn more](/docs/net-managers/drill-plans/)
+* **Coverage: Import sites from a spreadsheet** — Load an EMA's shelter or distribution point list from Excel or CSV. Match its columns to name, address, town, coordinates and notes, and choose the type for the whole list. Mark the sites your teams will staff; the rest of the list, and every site's address, contacts and capacity, are shown only to net staff. [Learn more](/docs/net-managers/coverage-drills/#import-an-emergency-management-agencys-site-list)
 
 ## Improvements
 
-* **Coverage: Limit reports to simplex** — A net or schedule can untick its repeaters and talkgroups under Coverage reports, so "Who can hear" only asks about simplex frequencies.
-* **Traffic: ICS-213s for exercises** — Print a pad of blank ICS-213s with the incident name filled in. Printed drill traffic now reads THIS IS AN EXERCISE at the top and bottom.
+* **Coverage: Limit reports to simplex** — A net or schedule can untick its repeaters and talkgroups under Coverage reports, so "Who can hear" only asks about simplex frequencies. [Learn more](/docs/net-managers/coverage-drills/#leave-repeaters-and-talkgroups-out-of-the-reports)
+* **Traffic: ICS-213s for exercises** — Print a pad of blank ICS-213s with the incident name filled in. Printed drill traffic now reads THIS IS AN EXERCISE at the top and bottom. [Learn more](/docs/net-control/handling-traffic/#drill-traffic-is-marked-as-an-exercise)
 
 ## Bug Fixes
 
@@ -47,7 +54,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Coverage: Select all stations** — The "who can hear" dialog now has an All stations checkbox (one per frequency on multi-frequency nets), so when a station reports hearing everyone but a few, you tick everyone in one click and untick the ones they missed.
+* **Coverage: Select all stations** — The "who can hear" dialog now has an All stations checkbox (one per frequency on multi-frequency nets), so when a station reports hearing everyone but a few, you tick everyone in one click and untick the ones they missed. [Learn more](/docs/operators/reporting-what-you-hear/#record-what-you-can-hear)
 
 ## Bug Fixes
 
@@ -60,11 +67,11 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Schedules: Build your team before everyone signs up** — Add net control operators to your staff and NCS rotation by callsign before they have an account, and optionally email them an invitation to sign up. Swaps and the fifth week work for them too. When they're on duty, the net card, report and ICS-309 credit them as NCS, and a Logger can mark any station without an account as NCS. An invited operator takes over their spot as soon as they sign in with that address; for anyone else, you confirm it's really them with one click.
+* **Schedules: Build your team before everyone signs up** — Add net control operators to your staff and NCS rotation by callsign before they have an account, and optionally email them an invitation to sign up. Swaps and the fifth week work for them too. When they're on duty, the net card, report and ICS-309 credit them as NCS, and a Logger can mark any station without an account as NCS. An invited operator takes over their spot as soon as they sign in with that address; for anyone else, you confirm it's really them with one click. [Learn more](/docs/net-managers/net-staff-and-rotation/#operators-who-havent-signed-up-yet)
 
 ## Improvements
 
-* **Schedules Simplified: One place to manage your staff** — An opened net’s Staff button and Edit Net now just show who’s running that net. Open the net's schedule template to edit its staff and rotation, so it’s always clear a change applies to the schedule. A swap on the schedule now also updates a net that’s already been created for that night.
+* **Schedules Simplified: One place to manage your staff** — An opened net’s Staff button and Edit Net now just show who’s running that net. Open the net's schedule template to edit its staff and rotation, so it’s always clear a change applies to the schedule. A swap on the schedule now also updates a net that’s already been created for that night. [Learn more](/docs/net-managers/net-staff-and-rotation/#from-a-net)
 
 ## Bug Fixes
 
@@ -87,7 +94,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Net View: Print the script, announcements, or notes** — The Script, Announcements, and Notes panels each have a PDF button next to the pencil, so you can print just that one. The Paperwork button now includes the schedule's announcements too, and opening a panel in a new window gives you the full panel there, including editing and printing.
+* **Net View: Print the script, announcements, or notes** — The Script, Announcements, and Notes panels each have a PDF button next to the pencil, so you can print just that one. The Paperwork button now includes the schedule's announcements too, and opening a panel in a new window gives you the full panel there, including editing and printing. [Learn more](/docs/net-managers/scripts-and-announcements/#the-printable-version)
 
 ## Bug Fixes
 
@@ -101,7 +108,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Schedule: Share a subscribe link** — Net managers can now copy a link from Staff > Subscribers and post it anywhere. Anyone who opens it sees the net and can subscribe to its notifications, signing in first if they need to.
+* **Schedule: Share a subscribe link** — Net managers can now copy a link from Staff > Subscribers and post it anywhere. Anyone who opens it sees the net and can subscribe to its notifications, signing in first if they need to. [Learn more](/docs/net-managers/net-staff-and-rotation/#inviting-people-to-subscribe)
 
 ---
 
@@ -109,11 +116,11 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Check-in: Your town instead of a grid square** — With location awareness on, your check-in now fills in your town (like Waterboro, ME) instead of a grid square, and so does net control's callsign lookup, so they can read your location on the air. Hover over or tap the location in the check-in list to see the grid square, and the menu bar shows your town beside it.
+* **Check-in: Your town instead of a grid square** — With location awareness on, your check-in now fills in your town (like Waterboro, ME) instead of a grid square, and so does net control's callsign lookup, so they can read your location on the air. Hover over or tap the location in the check-in list to see the grid square, and the menu bar shows your town beside it. [Learn more](/docs/operators/location-and-the-map/#auto-filling-it-instead-of-typing-it)
 
-* **Check-in: See who has a hand up** — A raised hand now shows beside the station's callsign for everyone in the net, on phones too, so you can see who else is waiting with a question or input.
+* **Check-in: See who has a hand up** — A raised hand now shows beside the station's callsign for everyone in the net, on phones too, so you can see who else is waiting with a question or input. [Learn more](/docs/operators/status-and-checking-out/)
 
-* **Reports: Dark mode stays dark, PDFs print on Letter paper** — Net reports and schedule statistics now follow your dark or light setting on screen instead of switching to a bright white page. Export PDF still prints in light colors, now on US Letter pages that come out the same whether you export from a phone or a computer.
+* **Reports: Dark mode stays dark, PDFs print on Letter paper** — Net reports and schedule statistics now follow your dark or light setting on screen instead of switching to a bright white page. Export PDF still prints in light colors, now on US Letter pages that come out the same whether you export from a phone or a computer. [Learn more](/docs/net-managers/reports-and-exports/)
 
 ## Bug Fixes
 
@@ -147,11 +154,11 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Schedules: Request early access** — If you can't create a schedule yet, the message now lets you ask the administrators for early access, with an optional note, and you get an email when it is granted.
+* **Schedules: Request early access** — If you can't create a schedule yet, the message now lets you ask the administrators for early access, with an optional note, and you get an email when it is granted. [Learn more](/docs/net-managers/recurring-schedules/#a-brand-new-account-may-have-to-wait)
 
 ## Improvements
 
-* **Admin: Early access and profiles from the user list** — You can grant or revoke early schedule access for any user at any time, not only while their account is new, and click a callsign to see their profile and nets attended before deciding.
+* **Admin: Early access and profiles from the user list** — You can grant or revoke early schedule access for any user at any time, not only while their account is new, and click a callsign to see their profile and nets attended before deciding. [Learn more](/docs/admins/users-and-roles/#early-access-to-schedule-creation)
 
 ## Bug Fixes
 
@@ -163,9 +170,9 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Schedule: Calendar view** — The Schedule page can now show a month calendar with every net on its day, who is on NCS, check-in counts for past nets, and cancelled nets struck through. Click any net for that date's details and the schedule's usual card. Nets with no regular schedule are listed below the calendar, and on a phone the month is listed day by day.
+* **Schedule: Calendar view** — The Schedule page can now show a month calendar with every net on its day, who is on NCS, check-in counts for past nets, and cancelled nets struck through. Click any net for that date's details and the schedule's usual card. Nets with no regular schedule are listed below the calendar, and on a phone the month is listed day by day. [Learn more](/docs/operators/finding-a-net/#seeing-the-month-on-a-calendar)
 
-* **Admin: Encrypted backups** — Administrators can now schedule encrypted backups of the database and uploaded images from the Admin panel, send copies to another server or cloud storage, and see at a glance whether recent backups succeeded.
+* **Admin: Encrypted backups** — Administrators can now schedule encrypted backups of the database and uploaded images from the Admin panel, send copies to another server or cloud storage, and see at a glance whether recent backups succeeded. [Learn more](/docs/admins/backups/)
 
 ## Improvements
 
@@ -187,15 +194,15 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Schedules: Follow a net from its card** — Net cards on the dashboard now have their own Subscribe button, so you can sign up for a net's emails wherever you see it listed. When a net's schedule has standing announcements, its card on the dashboard and on the Schedule page shows an Announcements link, so you can catch up on club news without joining the net, and save a copy as a PDF.
+* **Schedules: Follow a net from its card** — Net cards on the dashboard now have their own Subscribe button, so you can sign up for a net's emails wherever you see it listed. When a net's schedule has standing announcements, its card on the dashboard and on the Schedule page shows an Announcements link, so you can catch up on club news without joining the net, and save a copy as a PDF. [Learn more](/docs/operators/finding-a-net/#getting-emails-about-a-net)
 
 ## Improvements
 
-* **Nets: Open the lobby or start the net** — Nets that haven't started now have an Open lobby button next to Start net (Lobby on dashboard cards), so you can open the lobby early for stations to gather. Start net always starts the net, even ahead of its scheduled time. Before, one button did either, depending on the clock.
+* **Nets: Open the lobby or start the net** — Nets that haven't started now have an Open lobby button next to Start net (Lobby on dashboard cards), so you can open the lobby early for stations to gather. Start net always starts the net, even ahead of its scheduled time. Before, one button did either, depending on the clock. [Learn more](/docs/net-managers/lobby-and-auto-close/#open-lobby-or-start-net)
 
-* **Sign In: One click for a new link** — Opening a sign-in link that's more than 30 days old now tells you it has expired and offers a Send me a new link button that emails a fresh link to the same address, so you don't have to go back and type your email again.
+* **Sign In: One click for a new link** — Opening a sign-in link that's more than 30 days old now tells you it has expired and offers a Send me a new link button that emails a fresh link to the same address, so you don't have to go back and type your email again. [Learn more](/docs/operators/signing-in/)
 
-* **Check-ins: Open a profile from the avatar** — Net Control and Loggers can now click a station's avatar in the check-in list to see their profile. Clicking the callsign still opens the row for editing.
+* **Check-ins: Open a profile from the avatar** — Net Control and Loggers can now click a station's avatar in the check-in list to see their profile. Clicking the callsign still opens the row for editing. [Learn more](/docs/net-control/logging-check-ins/)
 
 ## Bug Fixes
 
@@ -207,7 +214,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Reports: Your net comes first** — Reports now lead with your net instead of ECTLogger. PDFs open with the net's logo, name, and date in colors matched to the logo, and every page is numbered and labeled, so a separated page still says which report it belongs to. Export PNG images carry the same header, waste less space, and fit a Facebook, Instagram, or X feed without cropping, with the graphs and every station that checked in on one summary image. Export PDF and Export PNG on a net's statistics page now give you the same report and images.
+* **Reports: Your net comes first** — Reports now lead with your net instead of ECTLogger. PDFs open with the net's logo, name, and date in colors matched to the logo, and every page is numbered and labeled, so a separated page still says which report it belongs to. Export PNG images carry the same header, waste less space, and fit a Facebook, Instagram, or X feed without cropping, with the graphs and every station that checked in on one summary image. Export PDF and Export PNG on a net's statistics page now give you the same report and images. [Learn more](/docs/net-managers/reports-and-exports/)
 
 ## Bug Fixes
 
@@ -219,7 +226,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Frequencies: JS8Call, Packet, and Data modes** — Frequencies can now be marked JS8Call, Packet, or Data (for FLDIGI and other digital modes), so a digital net's frequency list shows how to actually reach it.
+* **Frequencies: JS8Call, Packet, and Data modes** — Frequencies can now be marked JS8Call, Packet, or Data (for FLDIGI and other digital modes), so a digital net's frequency list shows how to actually reach it. [Learn more](/docs/admins/frequencies/)
 
 ## Bug Fixes
 
@@ -249,7 +256,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Admin: Fix a user's name, callsign, or login email** — Admins can now correct these directly from the Users tab. If someone loses access to the email they signed up with, an admin can move their account to a new address and they're back in, no lost check-in history required.
+* **Admin: Fix a user's name, callsign, or login email** — Admins can now correct these directly from the Users tab. If someone loses access to the email they signed up with, an admin can move their account to a new address and they're back in, no lost check-in history required. [Learn more](/docs/admins/users-and-roles/)
 
 ---
 
@@ -257,7 +264,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Check-in: Spam has no place in your official log** — A check-in field that looks like a link or email address (Location, Notes, and similar fields) is now rejected outright, and a station net control mutes for spam no longer appears in the ICS-309 Communications Log. These are official forms your group hands to the served agencies you support, so spam never belongs in them.
+* **Check-in: Spam has no place in your official log** — A check-in field that looks like a link or email address (Location, Notes, and similar fields) is now rejected outright, and a station net control mutes for spam no longer appears in the ICS-309 Communications Log. These are official forms your group hands to the served agencies you support, so spam never belongs in them. [Learn more](/docs/admins/custom-fields/#spam-guard)
 
 ---
 
@@ -283,7 +290,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Help: Rebuilt help site** — The user guide was one long page trying to serve newcomers, net control, net managers and administrators all at once, illustrated with screenshots of a version of the app that no longer looks like this. It is now a proper site at ectlogger.us/docs, organized by what you are doing: getting started, taking part in a net, running one, managing a net or a schedule, and administering an instance. Every screenshot is current, the controls you need to click are circled in red, the whole site reads properly on a phone, and there is a search box. Signing in has a page of its own, covering the password fallback for the night email is down and two-factor authentication. The Help menu now also takes you straight to a Known Issues page listing the problems we already know about and how to work around them.
+* **Help: Rebuilt help site** — The user guide was one long page trying to serve newcomers, net control, net managers and administrators all at once, illustrated with screenshots of a version of the app that no longer looks like this. It is now a proper site at ectlogger.us/docs, organized by what you are doing: getting started, taking part in a net, running one, managing a net or a schedule, and administering an instance. Every screenshot is current, the controls you need to click are circled in red, the whole site reads properly on a phone, and there is a search box. Signing in has a page of its own, covering the password fallback for the night email is down and two-factor authentication. The Help menu now also takes you straight to a Known Issues page listing the problems we already know about and how to work around them. [Learn more](/docs/)
 
 ---
 
@@ -301,7 +308,7 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Statistics: Time window and most-attended nets** — Switch the whole statistics page between a week, month, six months, year, or all time, and see which nets draw the biggest turnout in that window on a new leaderboard.
-* **Net View: Combined script and notes PDF** — Download the net script and net notes together as one printable PDF from the toolbar, so an NCS running the net from paper doesn't need to print two separate documents.
+* **Net View: Combined script and notes PDF** — Download the net script and net notes together as one printable PDF from the toolbar, so an NCS running the net from paper doesn't need to print two separate documents. [Learn more](/docs/net-managers/scripts-and-announcements/#the-printable-version)
 
 ## Bug Fixes
 
@@ -313,7 +320,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Net Settings: Close automatically after inactivity** — Turn on an optional timeout (1-4 hours) so a net with no new check-ins, rechecks, or chat closes itself, instead of sitting open for hours after net control forgets to close it. Off by default, so a long SKYWARN or ARES activation with quiet stretches is never closed out from under you. Set a default for a whole schedule from Create/Edit Schedule, or turn it on for a single net from that net's own settings. Anyone viewing the net gets a dismissible warning with a live countdown once it's within 15 minutes of closing, so there's a last chance to act.
+* **Net Settings: Close automatically after inactivity** — Turn on an optional timeout (1-4 hours) so a net with no new check-ins, rechecks, or chat closes itself, instead of sitting open for hours after net control forgets to close it. Off by default, so a long SKYWARN or ARES activation with quiet stretches is never closed out from under you. Set a default for a whole schedule from Create/Edit Schedule, or turn it on for a single net from that net's own settings. Anyone viewing the net gets a dismissible warning with a live countdown once it's within 15 minutes of closing, so there's a last chance to act. [Learn more](/docs/net-managers/lobby-and-auto-close/#auto-close-on-inactivity)
 
 ## Bug Fixes
 
@@ -342,11 +349,11 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Net View: Edit your topic answer** — Change your Topic of the Week response after checking in, from a new toolbar button, instead of being stuck with what you typed on your way in.
+* **Net View: Edit your topic answer** — Change your Topic of the Week response after checking in, from a new toolbar button, instead of being stuck with what you typed on your way in. [Learn more](/docs/operators/chat-and-polls/#topic-of-the-week-and-the-poll)
 * **Logos: Tap to see full size** — Net and club logos on the dashboard, schedule list, and net view were too small to make out. Tap one to see it full size.
-* **Chat: Mute a station** — Hide one station's chat messages from your own view of a net, without affecting anyone else's view or the net log, from a control in the message action row. NCS and Logger can shift+click the same control to mute a spammer for everyone in the net's chat instead, without notifying them or touching the net's saved log or export. Manage or undo any mute anytime from the banner above chat.
-* **Security: Authenticated nets** — On a net with the new Authenticated Net setting, NCS and Logger can confirm a checked-in station's identity by comparing the code on their authenticator app to the one ECTLogger computes for that account, turning the check-in row's padlock icon from open to locked once confirmed. Participants need an ECT Logger account with two-factor authentication (MFA) set up under Profile → Security for this to work; a station without it simply shows as unverified.
-* **Profile: Website or YouTube Channel link** — Add a link to your personal site or YouTube channel in your profile, and it shows up when someone taps your callsign to see who you are. Your callsign there also now links out to your QRZ.com listing.
+* **Chat: Mute a station** — Hide one station's chat messages from your own view of a net, without affecting anyone else's view or the net log, from a control in the message action row. NCS and Logger can shift+click the same control to mute a spammer for everyone in the net's chat instead, without notifying them or touching the net's saved log or export. Manage or undo any mute anytime from the banner above chat. [Learn more](/docs/operators/chat-and-polls/#editing-and-muting)
+* **Security: Authenticated nets** — On a net with the new Authenticated Net setting, NCS and Logger can confirm a checked-in station's identity by comparing the code on their authenticator app to the one ECTLogger computes for that account, turning the check-in row's padlock icon from open to locked once confirmed. Participants need an ECT Logger account with two-factor authentication (MFA) set up under Profile → Security for this to work; a station without it simply shows as unverified. [Learn more](/docs/net-control/authenticated-nets/)
+* **Profile: Website or YouTube Channel link** — Add a link to your personal site or YouTube channel in your profile, and it shows up when someone taps your callsign to see who you are. Your callsign there also now links out to your QRZ.com listing. [Learn more](/docs/operators/account-and-profile/)
 * **Net View & Chat: Tap any callsign for a profile** — Callsigns are now clickable next to the avatar in chat and the check-in list, not just the avatar itself, and a check-in with no linked account now opens a profile too, showing its check-in history, so no one on the list is a dead end to click on.
 
 ## Bug Fixes
@@ -361,14 +368,14 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Check-in: Sneak-in arrival alert** — When a station checks itself in without NCS or Logger typing it in, its row briefly flashes gold so you notice the new arrival even if you're running the net mostly by voice. If it lands below what you're currently viewing, a small arrow fades in at the bottom of the table to point you there.
-* **Net View: Just Listening button** — Mark yourself as monitoring only with one click from the toolbar, instead of typing "just listening" into the Topic of the Week answer or check-in notes.
-* **Chat: Edit, @mention, and reply** — Fix a typo or a wrong frequency by editing your own message in place (marked "(edited)"), tag a station with @callsign so the message flashes on their screen instead of scrolling past, and quote a message to reply to it, which tags the original sender the same way.
+* **Net View: Just Listening button** — Mark yourself as monitoring only with one click from the toolbar, instead of typing "just listening" into the Topic of the Week answer or check-in notes. [Learn more](/docs/operators/status-and-checking-out/)
+* **Chat: Edit, @mention, and reply** — Fix a typo or a wrong frequency by editing your own message in place (marked "(edited)"), tag a station with @callsign so the message flashes on their screen instead of scrolling past, and quote a message to reply to it, which tags the original sender the same way. [Learn more](/docs/operators/chat-and-polls/)
 
 ## Improvements
 
 * **Check-in: Check In as Participant stands out** — The plain participant option in the lobby check-in prompt is now a filled green button instead of a faint outline, so it's just as easy to spot as the NCS/Logger buttons next to it.
 * **Profile & Check-in: Email address warning on Name** — The Name field now warns you if what you typed looks like an email address, so it doesn't end up shown on the public check-in list or a shareable net link.
-* **Chat: More reactions** — Added a 🤣 laughing reaction alongside the existing emoji options.
+* **Chat: More reactions** — Added a 🤣 laughing reaction alongside the existing emoji options. [Learn more](/docs/operators/chat-and-polls/#reacting-to-a-message)
 
 ## Bug Fixes
 
@@ -382,11 +389,11 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Net & Schedule: Logo upload** — Add a club or net logo from the net or schedule editor. It shows on net and schedule cards and next to the net name on the check-in page, so your net is recognizable at a glance.
-* **Check-in: Check in as Logger** — A net's owner (or an active co-manager/rotation member) can now check themselves in as Logger, the same way NCS already worked, so you can open a lobby and start logging stations while waiting for the scheduled NCS to arrive.
+* **Check-in: Check in as Logger** — A net's owner (or an active co-manager/rotation member) can now check themselves in as Logger, the same way NCS already worked, so you can open a lobby and start logging stations while waiting for the scheduled NCS to arrive. [Learn more](/docs/net-control/roles-and-stepping-away/#taking-a-role-by-checking-yourself-in)
 
 ## Improvements
 
-* **Topic and poll question shown everywhere it's needed** — When a net has a Topic of the Week or Poll question set, it now stays pinned above the chat messages, and the actual question also shows next to the answer field in the check-in dialog, the check-in row, and the check-in table's column headers, so whoever is checking a station in always knows what's being asked.
+* **Topic and poll question shown everywhere it's needed** — When a net has a Topic of the Week or Poll question set, it now stays pinned above the chat messages, and the actual question also shows next to the answer field in the check-in dialog, the check-in row, and the check-in table's column headers, so whoever is checking a station in always knows what's being asked. [Learn more](/docs/operators/chat-and-polls/#topic-of-the-week-and-the-poll)
 
 ## Bug Fixes
 
@@ -399,7 +406,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Net Report and Statistics: One-click PNG export** — A new Export PNG button on both pages downloads every section at once, and the images are now shaped for a social post: the graphs stack, the map is 4:3, and the buttons and expand arrows no longer appear in the picture. The graphs image also shows the total check-ins, unique operators, re-checks, and duration numbers alongside the charts, so it stands on its own without the rest of the page. Both pages now label their export buttons the same way.
+* **Net Report and Statistics: One-click PNG export** — A new Export PNG button on both pages downloads every section at once, and the images are now shaped for a social post: the graphs stack, the map is 4:3, and the buttons and expand arrows no longer appear in the picture. The graphs image also shows the total check-ins, unique operators, re-checks, and duration numbers alongside the charts, so it stands on its own without the rest of the page. Both pages now label their export buttons the same way. [Learn more](/docs/net-managers/reports-and-exports/#images-for-social-media)
 
 ---
 
@@ -407,7 +414,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Net Report: Download PNG images** — The check-in graphs, map, and check-in list can each be downloaded as their own PNG image, ready to attach to a social media post.
+* **Net Report: Download PNG images** — The check-in graphs, map, and check-in list can each be downloaded as their own PNG image, ready to attach to a social media post. [Learn more](/docs/net-managers/reports-and-exports/#images-for-social-media)
 
 ## Bug Fixes
 
@@ -430,7 +437,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Net View: Bulk check-in notice** — When someone is using Bulk Add to check in a list of stations, everyone watching the net now sees a heads-up that check-ins may arrive in a burst, instead of it looking like something's wrong.
+* **Net View: Bulk check-in notice** — When someone is using Bulk Add to check in a list of stations, everyone watching the net now sees a heads-up that check-ins may arrive in a burst, instead of it looking like something's wrong. [Learn more](/docs/net-control/speed-entry/#what-everyone-else-sees-while-youre-typing)
 
 ## Bug Fixes
 
@@ -445,12 +452,12 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Login: Password sign-in and two-factor authentication** — You can now set a password as a backup sign-in method for when magic-link email isn't available. Admin accounts are now required to set up an authenticator app code at sign-in, to help protect the site and its data.
-* **Help: Privacy Policy** — A new Privacy Policy page, linked from the Help menu and the About window, explains what data ECTLogger collects and why.
+* **Login: Password sign-in and two-factor authentication** — You can now set a password as a backup sign-in method for when magic-link email isn't available. Admin accounts are now required to set up an authenticator app code at sign-in, to help protect the site and its data. [Learn more](/docs/operators/signing-in/)
+* **Help: Privacy Policy** — A new Privacy Policy page, linked from the Help menu and the About window, explains what data ECTLogger collects and why. [Learn more](/docs/PRIVACY/)
 
 ## Improvements
 
-* **Login: Stronger password requirements** — A password you set now needs at least 12 characters with a mix of uppercase, lowercase, a number, and a symbol, matching industry-standard security practice.
+* **Login: Stronger password requirements** — A password you set now needs at least 12 characters with a mix of uppercase, lowercase, a number, and a symbol, matching industry-standard security practice. [Learn more](/docs/operators/signing-in/#set-a-password)
 
 ---
 
@@ -458,8 +465,8 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Help: Feedback becomes a trackable GitHub issue** — Bug reports and feature requests submitted through Submit Feedback are now also opened as public issues on the project's GitHub page (tagged with your callsign, not your email), so you can watch progress on what you reported instead of just sending it into an email.
-* **RSS Feeds: Subscribe to schedule and changelog updates** — New RSS icons on the Scheduler page (next to Filters) and in the What's New dialog let you subscribe in any feed reader to see nets scheduled in the next 14 days or new changelog entries, without having to check the app.
+* **Help: Feedback becomes a trackable GitHub issue** — Bug reports and feature requests submitted through Submit Feedback are now also opened as public issues on the project's GitHub page (tagged with your callsign, not your email), so you can watch progress on what you reported instead of just sending it into an email. [Learn more](/docs/about/getting-help/#report-a-bug-or-ask-for-a-feature)
+* **RSS Feeds: Subscribe to schedule and changelog updates** — New RSS icons on the Scheduler page (next to Filters) and in the What's New dialog let you subscribe in any feed reader to see nets scheduled in the next 14 days or new changelog entries, without having to check the app. [Learn more](/docs/reference/feeds/)
 
 ## Improvements
 
@@ -471,7 +478,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Dashboard: Cancel a scheduled net** — Cancelling a net that hasn't happened yet now marks it Cancelled instead of deleting it, with an optional reason, so it stays on record in Archived Nets instead of vanishing, won't be recreated by the recurring schedule, and can be restored if plans change.
+* **Dashboard: Cancel a scheduled net** — Cancelling a net that hasn't happened yet now marks it Cancelled instead of deleting it, with an optional reason, so it stays on record in Archived Nets instead of vanishing, won't be recreated by the recurring schedule, and can be restored if plans change. [Learn more](/docs/net-managers/cancelling-and-archiving/#cancelling-a-net-that-hasnt-happened)
 
 ---
 
@@ -479,7 +486,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Net Script: Highlight important text** — A new highlight button in the script toolbar wraps selected text in a yellow highlight, so instructions NCS operators shouldn't miss stand out from the rest of the script.
+* **Net Script: Highlight important text** — A new highlight button in the script toolbar wraps selected text in a yellow highlight, so instructions NCS operators shouldn't miss stand out from the rest of the script. [Learn more](/docs/net-managers/scripts-and-announcements/#the-net-script)
 
 ---
 
@@ -487,7 +494,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Traffic: Mark traffic as Drill or Demo** — You can now label a piece of traffic as Drill (a full exercise, still logged and reported like real traffic) or Demo (throwaway test data), right when you file it or any time after. Demo traffic is excluded from reminder emails and from ICS-309/Net Report exports and traffic counts, and you (or an admin) can delete it even after it's been logged, so a test strip never sits in your inbox nagging you.
+* **Traffic: Mark traffic as Drill or Demo** — You can now label a piece of traffic as Drill (a full exercise, still logged and reported like real traffic) or Demo (throwaway test data), right when you file it or any time after. Demo traffic is excluded from reminder emails and from ICS-309/Net Report exports and traffic counts, and you (or an admin) can delete it even after it's been logged, so a test strip never sits in your inbox nagging you. [Learn more](/docs/net-control/handling-traffic/#drill-traffic-is-marked-as-an-exercise)
 
 ## Bug Fixes
 
@@ -507,7 +514,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Check-in Import: Imports now logged** — A CSV check-in import posts a summary note to the net's Activity Log recording who ran it and how many rows landed, so there's a visible record of when and how a backfilled net's data arrived.
+* **Check-in Import: Imports now logged** — A CSV check-in import posts a summary note to the net's Activity Log recording who ran it and how many rows landed, so there's a visible record of when and how a backfilled net's data arrived. [Learn more](/docs/net-managers/importing-check-ins/#after-importing)
 
 ## Bug Fixes
 
@@ -522,7 +529,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Net View: Backfill a net that ran off-app** — If a net was run on paper or in another program and never started in ECT Logger, staff can now import its check-in log from a CSV, enter the net's real start and end times, and have the net recorded as closed in one step, so everyone who took part gets attendance credit and the schedule's participation statistics stay accurate. Rows that list only a time of day, like 7:05 PM, are now placed correctly when you pick your own time zone instead of UTC, and anyone on a schedule's staff can run the import rather than only the net's owner.
+* **Net View: Backfill a net that ran off-app** — If a net was run on paper or in another program and never started in ECT Logger, staff can now import its check-in log from a CSV, enter the net's real start and end times, and have the net recorded as closed in one step, so everyone who took part gets attendance credit and the schedule's participation statistics stay accurate. Rows that list only a time of day, like 7:05 PM, are now placed correctly when you pick your own time zone instead of UTC, and anyone on a schedule's staff can run the import rather than only the net's owner. [Learn more](/docs/net-managers/importing-check-ins/#backfilling-a-net-that-never-ran-here)
 
 ---
 
@@ -530,7 +537,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Admin: Checkbox custom fields** — Custom check-in fields can now be a checkbox, not just text or a dropdown, for capturing yes/no info like whether a station can do digital modes.
+* **Admin: Checkbox custom fields** — Custom check-in fields can now be a checkbox, not just text or a dropdown, for capturing yes/no info like whether a station can do digital modes. [Learn more](/docs/admins/custom-fields/#adding-a-field)
 
 ---
 
@@ -538,8 +545,8 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Net View: Coverage reports now show band** — Station-to-station "can hear" reports and your Profile's coverage map now label (and color-code) each entry by the amateur band it was heard on, like 2m or 40m, blending colors on the map when a station's been heard on more than one, since HF and VHF/UHF propagation behave very differently. On nets with more than one frequency, the "Who can this station hear?" dialog now shows one column per frequency so you can record who you heard on each in a single pass, instead of switching a dropdown and re-checking the list per frequency.
-* **Net View: Export coverage reports to CSV** — The Station Coverage panel is wider by default so every column, including the timestamp, fits without wrapping, and a new download button next to the search and map icons lets you export the current report to a CSV file for use in a spreadsheet.
+* **Net View: Coverage reports now show band** — Station-to-station "can hear" reports and your Profile's coverage map now label (and color-code) each entry by the amateur band it was heard on, like 2m or 40m, blending colors on the map when a station's been heard on more than one, since HF and VHF/UHF propagation behave very differently. On nets with more than one frequency, the "Who can this station hear?" dialog now shows one column per frequency so you can record who you heard on each in a single pass, instead of switching a dropdown and re-checking the list per frequency. [Learn more](/docs/net-control/station-coverage/#read-the-coverage-table)
+* **Net View: Export coverage reports to CSV** — The Station Coverage panel is wider by default so every column, including the timestamp, fits without wrapping, and a new download button next to the search and map icons lets you export the current report to a CSV file for use in a spreadsheet. [Learn more](/docs/net-control/station-coverage/#read-the-coverage-table)
 * **Net View: Correct a coverage report's frequency** — If a station-to-station coverage report was logged without picking a specific frequency (or the wrong one), NCS, Logger, and Relay can now fix it right in the Station Coverage panel's Frequency column, and any station can correct its own past reports the same way.
 
 ## Bug Fixes
@@ -552,9 +559,9 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Traffic: Copy exported text** — A piece of traffic's detail screen now shows the exact text that gets exported to a text file, with a copy icon right next to it, so you can hand it to whoever needs it without exporting and opening a file first.
+* **Traffic: Copy exported text** — A piece of traffic's detail screen now shows the exact text that gets exported to a text file, with a copy icon right next to it, so you can hand it to whoever needs it without exporting and opening a file first. [Learn more](/docs/net-control/handling-traffic/#exporting)
 
-* **Traffic: Log who actually handled it** — Log a Handoff now has a "Handled by" field for who performed the action (separate from "Handed to," who it went to), pre-filled with your own callsign since you're usually logging your own work; overwrite it when you're instead logging a hop someone else verbally reported to you, like an NCS logging a relay a station reported over the net.
+* **Traffic: Log who actually handled it** — Log a Handoff now has a "Handled by" field for who performed the action (separate from "Handed to," who it went to), pre-filled with your own callsign since you're usually logging your own work; overwrite it when you're instead logging a hop someone else verbally reported to you, like an NCS logging a relay a station reported over the net. [Learn more](/docs/net-control/handling-traffic/#logging-the-chain-of-custody)
 
 ## Bug Fixes
 
@@ -566,9 +573,9 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Net View: Stations can self-report their own coverage** — Any station can now log its own "can hear" report from the ear icon on its own check-in row, not just NCS, Logger, and Relay recording on its behalf. Net managers can turn this off per net or schedule under ARES & EmComm Features if they'd rather staff record every report themselves.
+* **Net View: Stations can self-report their own coverage** — Any station can now log its own "can hear" report from the ear icon on its own check-in row, not just NCS, Logger, and Relay recording on its behalf. Net managers can turn this off per net or schedule under ARES & EmComm Features if they'd rather staff record every report themselves. [Learn more](/docs/net-control/station-coverage/#who-can-record-a-report)
 
-* **Net View: Co-managers and rotation members can step in as NCS** — Any active co-manager or NCS rotation member for a schedule is now automatically granted acting-NCS access the moment they check themselves into one of its nets, even when it isn't their week, so they can pick up net control if the scheduled NCS is unavailable or has to step away. A "Check in as NCS / Check in as Participant" choice on the check-in prompt and check-in form lets them decide up front, and the existing Acting as NCS/Standard toggle lets them change their mind at any time afterward. A station checked in by NCS or Logger on its behalf (e.g. by voice) is always recorded as a standard participant.
+* **Net View: Co-managers and rotation members can step in as NCS** — Any active co-manager or NCS rotation member for a schedule is now automatically granted acting-NCS access the moment they check themselves into one of its nets, even when it isn't their week, so they can pick up net control if the scheduled NCS is unavailable or has to step away. A "Check in as NCS / Check in as Participant" choice on the check-in prompt and check-in form lets them decide up front, and the existing Acting as NCS/Standard toggle lets them change their mind at any time afterward. A station checked in by NCS or Logger on its behalf (e.g. by voice) is always recorded as a standard participant. [Learn more](/docs/reference/roles-and-permissions/#becoming-ncs-or-logger-by-checking-yourself-in)
 
 ---
 
@@ -576,11 +583,11 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Help: Diagnostics for support** — the Help menu now has a Diagnostics option describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. Some problems only happen at particular window sizes and are otherwise almost impossible to track down. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it.
+* **Help: Diagnostics for support** — the Help menu now has a Diagnostics option describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. Some problems only happen at particular window sizes and are otherwise almost impossible to track down. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it. [Learn more](/docs/about/getting-help/#check-diagnostics-before-you-report-too)
 
-* **Sitewide: New-version banner** — If a tab is left open through a deploy, it now shows a banner offering to reload once a new version has shipped, so you're never troubleshooting on outdated code without realizing it, and you won't be told to force a hard refresh to see something new.
+* **Sitewide: New-version banner** — If a tab is left open through a deploy, it now shows a banner offering to reload once a new version has shipped, so you're never troubleshooting on outdated code without realizing it, and you won't be told to force a hard refresh to see something new. [Learn more](/docs/admins/maintenance-banner/#how-this-differs-from-the-update-notice)
 
-* **Help: Feedback reports now carry diagnostics and a screenshot** — The Submit Feedback form has a checkbox (checked by default for bug reports) to include your diagnostics snapshot, which now also captures any recent browser console errors, plus a screenshot you attach from a file you've already captured. Reports arrive with the context needed to track down a problem instead of a back-and-forth asking what happened.
+* **Help: Feedback reports now carry diagnostics and a screenshot** — The Submit Feedback form has a checkbox (checked by default for bug reports) to include your diagnostics snapshot, which now also captures any recent browser console errors, plus a screenshot you attach from a file you've already captured. Reports arrive with the context needed to track down a problem instead of a back-and-forth asking what happened. [Learn more](/docs/about/getting-help/)
 
 ## Improvements
 
@@ -588,15 +595,15 @@ All notable changes to ECTLogger are documented here.
 
 * **Sitewide: Pages load faster** — every screen that shows people (the net roster, chat, staff pickers, and your own profile) was waiting on the server to look up each person's profile photo with an outside service before it could answer. The admin user list took about seven seconds; that work now happens in your browser instead, in the background, so pages come back right away and photos appear as they load.
 
-* **Admin: New option to turn off Gravatar** — Security now has a Profile Photos switch admins can use to stop the site from using Gravatar, the outside service that supplies profile pictures from a person's email address. Gravatar stays on by default, so nothing changes unless an admin turns it off. If an admin does turn it off, nothing on the site contacts gravatar.com at all, which matters for instances running on isolated or restricted networks. Uploaded profile photos are stored here and keep working either way.
+* **Admin: New option to turn off Gravatar** — Security now has a Profile Photos switch admins can use to stop the site from using Gravatar, the outside service that supplies profile pictures from a person's email address. Gravatar stays on by default, so nothing changes unless an admin turns it off. If an admin does turn it off, nothing on the site contacts gravatar.com at all, which matters for instances running on isolated or restricted networks. Uploaded profile photos are stored here and keep working either way. [Learn more](/docs/admins/security-and-mfa/#also-on-this-tab)
 
-* **Net View: Built to ride out a spotty connection** — Nets may be run or attended from field sites, EOCs on generator, and rural links where the internet comes and goes. The net page now keeps trying to reconnect for as long as you leave it open, instead of quietly giving up after a few minutes, and it reconnects the moment your signal returns rather than waiting out a timer. When it reconnects it catches up on everything that happened while you were out — check-ins, statuses, chat, the activity log, and traffic. Before this, a page could come back looking perfectly normal while showing an out-of-date net, which is the worst way to lose track of a net. This applies to everyone taking part, not just Net Control.
+* **Net View: Built to ride out a spotty connection** — Nets may be run or attended from field sites, EOCs on generator, and rural links where the internet comes and goes. The net page now keeps trying to reconnect for as long as you leave it open, instead of quietly giving up after a few minutes, and it reconnects the moment your signal returns rather than waiting out a timer. When it reconnects it catches up on everything that happened while you were out — check-ins, statuses, chat, the activity log, and traffic. Before this, a page could come back looking perfectly normal while showing an out-of-date net, which is the worst way to lose track of a net. This applies to everyone taking part, not just Net Control. [Learn more](/docs/operators/in-the-field/#what-degrades-on-a-bad-connection)
 
 * **Net View: Edit a closed or archived net** — NCS, net managers, and admins can now fix a typo or a wrong setting on a net after it has closed or archived, not just while it's part of a recurring schedule. A note reminds you the net's log has already gone out, so a change here updates the record only.
 
 * **Net View: Check-in prompt explains staff-only self check-in** — If a net has self check-in turned off, the owner, NCS, and loggers still get the check-in prompt since they can always check in; it now says why, so it doesn't look like the setting isn't working.
 
-* **Sitewide: Alert banner colors show urgency** — The maintenance banner is now red to mark it as a blocker, and the new-version banner is amber to mark it as a brief, non-blocking interruption, so the color itself tells you how urgent a sitewide notice is.
+* **Sitewide: Alert banner colors show urgency** — The maintenance banner is now red to mark it as a blocker, and the new-version banner is amber to mark it as a brief, non-blocking interruption, so the color itself tells you how urgent a sitewide notice is. [Learn more](/docs/admins/maintenance-banner/)
 
 ## Bug Fixes
 
@@ -614,11 +621,11 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Traffic: Weather and RRI strips** — File Radio Relay International's WXOBS weather observation strip, the GYX-CAR SKYWARN regional variant, or paste any other RRI strip as a general entry. Don't see your area's strip? Paste a filled-in example, name each field, and it becomes a real, reusable type available to everyone from then on, the same as the built-in ones. Filing shows the named fields and the exact strip text side by side and keeps them in sync as you type, so you can also just paste a strip a station reads back over the air and have it split across the fields.
+* **Traffic: Weather and RRI strips** — File Radio Relay International's WXOBS weather observation strip, the GYX-CAR SKYWARN regional variant, or paste any other RRI strip as a general entry. Don't see your area's strip? Paste a filled-in example, name each field, and it becomes a real, reusable type available to everyone from then on, the same as the built-in ones. Filing shows the named fields and the exact strip text side by side and keeps them in sync as you type, so you can also just paste a strip a station reads back over the air and have it split across the fields. [Learn more](/docs/operators/filing-traffic/)
 
-* **Traffic: File and track traffic from inside a net** — A new Traffic button in the net toolbar opens a panel showing that net's traffic, with the same detach, pop-out, and minimize controls as every other net panel. Filing traffic from here attaches it to that net, so it shows up in the net's own Traffic panel, its export, and its ICS-309 log — filing from the standalone Traffic section is still there for traffic that isn't tied to a particular net. Net settings can now say which form types a net accepts and pin the WX/RRI strip type (or paste an origin strip on the spot) so operators see the right fields without guessing.
+* **Traffic: File and track traffic from inside a net** — A new Traffic button in the net toolbar opens a panel showing that net's traffic, with the same detach, pop-out, and minimize controls as every other net panel. Filing traffic from here attaches it to that net, so it shows up in the net's own Traffic panel, its export, and its ICS-309 log — filing from the standalone Traffic section is still there for traffic that isn't tied to a particular net. Net settings can now say which form types a net accepts and pin the WX/RRI strip type (or paste an origin strip on the spot) so operators see the right fields without guessing. [Learn more](/docs/operators/filing-traffic/#where-you-file-from)
 
-* **Traffic: Export a whole net's traffic** — The Traffic panel's Export button now covers everything filed on that net in one go: plain text (one line per report, ready for a spreadsheet or a Winlink template) or a printable PDF with every message laid out like its real paper form — the ARRL Radiogram pad, the FEMA ICS-213, or the strip layout — several to a page, with no message ever split across a page break.
+* **Traffic: Export a whole net's traffic** — The Traffic panel's Export button now covers everything filed on that net in one go: plain text (one line per report, ready for a spreadsheet or a Winlink template) or a printable PDF with every message laid out like its real paper form — the ARRL Radiogram pad, the FEMA ICS-213, or the strip layout — several to a page, with no message ever split across a page break. [Learn more](/docs/net-control/handling-traffic/#exporting)
 
 ---
 
@@ -626,15 +633,15 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Traffic: Assisted traffic handling** — File and track formal traffic (ARRL radiograms and ICS-213 general messages) from a net's Traffic panel or the standalone Traffic section. Every hop — originated, received, relayed, delivered, serviced, cancelled — is logged so you always know what happened to a message, and your personal inbox keeps anything you're still holding visible until you log that it moved on. Only the submitter, current holder, chain of custody, that net's NCS/logger, and admins can see a given piece of traffic, since it can carry a private individual's name, address, and phone number.
+* **Traffic: Assisted traffic handling** — File and track formal traffic (ARRL radiograms and ICS-213 general messages) from a net's Traffic panel or the standalone Traffic section. Every hop — originated, received, relayed, delivered, serviced, cancelled — is logged so you always know what happened to a message, and your personal inbox keeps anything you're still holding visible until you log that it moved on. Only the submitter, current holder, chain of custody, that net's NCS/logger, and admins can see a given piece of traffic, since it can carry a private individual's name, address, and phone number. [Learn more](/docs/net-control/handling-traffic/)
 
-* **Traffic: Paste or drop to import** — Already have a message copied down by hand or relayed from packet? Paste the plaintext in, or drag a text file onto the box, and the parser pre-fills a new form for you to review before saving — no need to re-type every field.
+* **Traffic: Paste or drop to import** — Already have a message copied down by hand or relayed from packet? Paste the plaintext in, or drag a text file onto the box, and the parser pre-fills a new form for you to review before saving — no need to re-type every field. [Learn more](/docs/net-control/handling-traffic/#filing-traffic)
 
-* **Traffic: Form-accurate PDF export** — Printable PDFs now look like the real paper forms — the ARRL Radiogram pad and FEMA ICS-213 General Message form, boxes and rules included — ready to file or hand to the addressee, instead of a plain text dump.
+* **Traffic: Form-accurate PDF export** — Printable PDFs now look like the real paper forms — the ARRL Radiogram pad and FEMA ICS-213 General Message form, boxes and rules included — ready to file or hand to the addressee, instead of a plain text dump. [Learn more](/docs/net-control/handling-traffic/#exporting)
 
 * **ICS-309: Traffic Handling integration** — Nets with ICS-309 enabled now show formal traffic hops as metadata rows on the Communications Log, including its own form-accurate PDF export, so a net's formal traffic appears alongside the rest of its logged activity — the message text itself is never included.
 
-* **Profile: Traffic stats** — Your Activity tab now shows Traffic Handled and Traffic Pending counts, each with a drill-down list of the underlying messages.
+* **Profile: Traffic stats** — Your Activity tab now shows Traffic Handled and Traffic Pending counts, each with a drill-down list of the underlying messages. [Learn more](/docs/operators/your-statistics/)
 
 ## Bug Fixes
 
@@ -646,15 +653,15 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Net View: Station-to-station coverage logging** — NCS, Logger, and Relay can now record which stations can hear each other during a net, not just who NCS hears. Turn it on per net under ARES & EmComm Features, then use the new ear icon on a check-in row to log who that station can hear. A new Coverage panel (alongside Chat, Activity Log, and the Check-In Map) shows the results as a sortable, filterable table, and an overlay on the Check-In Map draws the confirmed one-way and two-way paths — click a callsign in either place to see just that station's connections. This is the coverage-assessment picture ARES and SKYWARN drills need, without the paper notes. Your Profile also gets a personal map of stations you've confirmed hearing from home, each labeled with when you last heard them.
+* **Net View: Station-to-station coverage logging** — NCS, Logger, and Relay can now record which stations can hear each other during a net, not just who NCS hears. Turn it on per net under ARES & EmComm Features, then use the new ear icon on a check-in row to log who that station can hear. A new Coverage panel (alongside Chat, Activity Log, and the Check-In Map) shows the results as a sortable, filterable table, and an overlay on the Check-In Map draws the confirmed one-way and two-way paths — click a callsign in either place to see just that station's connections. This is the coverage-assessment picture ARES and SKYWARN drills need, without the paper notes. Your Profile also gets a personal map of stations you've confirmed hearing from home, each labeled with when you last heard them. [Learn more](/docs/net-control/station-coverage/)
 
-* **Net Report: Per-station coverage maps** — When Station-to-Station Coverage Logging is on, the net report can now include a map for each reporting station showing who it heard, with every pin labeled by callsign, so an after-action report can show propagation station-by-station instead of just as a table. Off by default via a switch on the report's Station Coverage section, since it can add many pages to a large net's report.
+* **Net Report: Per-station coverage maps** — When Station-to-Station Coverage Logging is on, the net report can now include a map for each reporting station showing who it heard, with every pin labeled by callsign, so an after-action report can show propagation station-by-station instead of just as a table. Off by default via a switch on the report's Station Coverage section, since it can add many pages to a large net's report. [Learn more](/docs/net-control/station-coverage/#after-the-net)
 
 ## Improvements
 
 * **Net View: Start Net moved to the front of the toolbar** — On a draft or scheduled net, Start Net is now the very first button, ahead of Net Info and everything else, so it's not buried behind read-only actions.
 
-* **Editor: Markdown preview** — You can now toggle between Write and Preview while editing the net script, notes, or announcements, both in the net/schedule editor and in the floating dialogs, so you can check how your formatting will look before saving.
+* **Editor: Markdown preview** — You can now toggle between Write and Preview while editing the net script, notes, or announcements, both in the net/schedule editor and in the floating dialogs, so you can check how your formatting will look before saving. [Learn more](/docs/net-managers/scripts-and-announcements/)
 
 ## Bug Fixes
 
@@ -666,22 +673,22 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Branding: Color themes** — Pick a color theme in Profile → Settings, each with light and dark variants that follow the existing dark mode toggle.
+* **Branding: Color themes** — Pick a color theme in Profile → Settings, each with light and dark variants that follow the existing dark mode toggle. [Learn more](/docs/operators/account-and-profile/)
   * Admins can set the site-wide default everyone else follows, build a fully custom color theme, and upload a custom logo to replace the built-in mark — all from Admin → Branding — useful for a self-hosted instance that wants to look like its own organization.
 
-* **Net View: Run a net across multiple monitors** — Check-Ins, Chat, and Activity Log can each open in their own real browser window, not just a movable panel inside the page, so a multi-monitor NCS station can dedicate a full screen to logging, another to chat, and another to the activity feed. Every window stays live and in sync with the net in real time. Already using the in-page floating panel? A new button on its title bar sends it straight to its own window — no need to dock it back first.
+* **Net View: Run a net across multiple monitors** — Check-Ins, Chat, and Activity Log can each open in their own real browser window, not just a movable panel inside the page, so a multi-monitor NCS station can dedicate a full screen to logging, another to chat, and another to the activity feed. Every window stays live and in sync with the net in real time. Already using the in-page floating panel? A new button on its title bar sends it straight to its own window — no need to dock it back first. [Learn more](/docs/net-control/multiple-monitors/)
 
-* **Net View: Arrange the page for a wide screen** — On an ultrawide monitor, Script, Announcements, and the Check-In Map can now dock directly into the page next to Chat and Activity Log, instead of floating on top of everything else. Drag the divider between any two panels — or between the columns themselves — to resize them however you use them; your layout is remembered next time.
+* **Net View: Arrange the page for a wide screen** — On an ultrawide monitor, Script, Announcements, and the Check-In Map can now dock directly into the page next to Chat and Activity Log, instead of floating on top of everything else. Drag the divider between any two panels — or between the columns themselves — to resize them however you use them; your layout is remembered next time. [Learn more](/docs/net-control/multiple-monitors/#on-an-ultrawide-monitor)
 
-* **Net View: Net Notes** — Jot down something you noticed during a specific net, like a repeater running weaker than usual, without touching your schedule's standing Announcements text. Look for the Notes button once you're checked in.
+* **Net View: Net Notes** — Jot down something you noticed during a specific net, like a repeater running weaker than usual, without touching your schedule's standing Announcements text. Look for the Notes button once you're checked in. [Learn more](/docs/net-managers/scripts-and-announcements/#notes-for-tonight)
 
-* **Profile: Choose whether your Net View layout is remembered** — A "Remember Net View Layout" toggle and a one-click reset in Profile → Settings let you decide whether panel positions, sizes, and docking stay exactly the way you left them on that device (the default) or start fresh every time. Sizes already stay independent across a phone, a laptop, and an ultrawide monitor even if they share a browser.
+* **Profile: Choose whether your Net View layout is remembered** — A "Remember Net View Layout" toggle and a one-click reset in Profile → Settings let you decide whether panel positions, sizes, and docking stay exactly the way you left them on that device (the default) or start fresh every time. Sizes already stay independent across a phone, a laptop, and an ultrawide monitor even if they share a browser. [Learn more](/docs/operators/account-and-profile/)
 
 ## Improvements
 
-* **Net View: Easier to write Script, Announcements, and Notes** — Long entries now scroll properly while editing instead of getting clipped, every line break renders the way you typed it, and a new Link button inserts a properly formatted link.
+* **Net View: Easier to write Script, Announcements, and Notes** — Long entries now scroll properly while editing instead of getting clipped, every line break renders the way you typed it, and a new Link button inserts a properly formatted link. [Learn more](/docs/net-managers/scripts-and-announcements/)
 
-* **Profile: Notifications is now its own tab** — Email notification settings moved out of Settings into a dedicated Notifications tab and menu item, with room for more notification types as they're added.
+* **Profile: Notifications is now its own tab** — Email notification settings moved out of Settings into a dedicated Notifications tab and menu item, with room for more notification types as they're added. [Learn more](/docs/operators/account-and-profile/)
 
 ## Bug Fixes
 
@@ -703,13 +710,13 @@ All notable changes to ECTLogger are documented here.
 
 * **Schedule: Clearer "Create net now" tooltip** — The manual create button on the Scheduler page now says it skips the normal auto-schedule timing, so it's clear that's what you're choosing to do instead of waiting for the net to auto-create.
 
-* **Admin: Users list improvements** — New NCS and What's New subscriber badges show at a glance who has run a net as NCS and who is following development, without opening their profile. The table is also tighter so more columns fit on screen, and clicking Status, Last Active, Created, or either badge column now shows active/most-recent first instead of oldest first.
+* **Admin: Users list improvements** — New NCS and What's New subscriber badges show at a glance who has run a net as NCS and who is following development, without opening their profile. The table is also tighter so more columns fit on screen, and clicking Status, Last Active, Created, or either badge column now shows active/most-recent first instead of oldest first. [Learn more](/docs/admins/users-and-roles/)
 
 * **Net View: Check-in action buttons stay visible while scrolling** — On a wide net or a narrow phone screen, the check-in list's action buttons (step away, raise hand, delete) now stay pinned to the edge as you scroll sideways through the other columns, so you don't have to scroll back to reach them.
 
 * **Nets & Schedule: Sort choice now follows your account** — Switching Active Nets or Schedule to alphabetical (or back) used to reset when you opened the app on a different device or browser. It's now saved to your account, and Schedule now defaults to next-occurrence order for anyone who hasn't picked a preference yet.
 
-* **Login: Sessions now last 90 days by default** — Login sessions were resetting to 30 days by default, which meant infrequent operators sometimes had to request a new magic link. The login page also now points out that bookmarking the emailed magic link (valid 30 days and reusable) gets you back in instantly even if your browser clears cookies or you switch devices.
+* **Login: Sessions now last 90 days by default** — Login sessions were resetting to 30 days by default, which meant infrequent operators sometimes had to request a new magic link. The login page also now points out that bookmarking the emailed magic link (valid 30 days and reusable) gets you back in instantly even if your browser clears cookies or you switch devices. [Learn more](/docs/admins/security-and-mfa/#session-length)
 
 ## Bug Fixes
 
@@ -725,7 +732,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Schedule: Automatic lobby opening** — A schedule's Schedule tab can now open its net's lobby on its own, so stations can check in and chat early without waiting for Net Control. Recurring schedules pick a lead time (15/30/60 minutes); Ad-Hoc opens the lobby the moment Net Control clicks Start; One-Time nets can do either, or be given an actual future start time for the first time. A net with automatic opening enabled shows a live countdown to when its lobby will open. It is off by default, and Net Control can still open the lobby by hand at any time.
+* **Schedule: Automatic lobby opening** — A schedule's Schedule tab can now open its net's lobby on its own, so stations can check in and chat early without waiting for Net Control. Recurring schedules pick a lead time (15/30/60 minutes); Ad-Hoc opens the lobby the moment Net Control clicks Start; One-Time nets can do either, or be given an actual future start time for the first time. A net with automatic opening enabled shows a live countdown to when its lobby will open. It is off by default, and Net Control can still open the lobby by hand at any time. [Learn more](/docs/net-managers/lobby-and-auto-close/#auto-open-lobby)
 
 ## Improvements
 
@@ -743,11 +750,11 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Net View: Paused-net indicator** — If the NCS steps away and no co-NCS is covering, a blue border frames the whole window and a banner says the net is paused until Net Control returns. The on-air timer pauses too, and both clear the instant an NCS is present again, so a net's recorded duration no longer counts time with nobody running it.
+* **Net View: Paused-net indicator** — If the NCS steps away and no co-NCS is covering, a blue border frames the whole window and a banner says the net is paused until Net Control returns. The on-air timer pauses too, and both clear the instant an NCS is present again, so a net's recorded duration no longer counts time with nobody running it. [Learn more](/docs/net-control/roles-and-stepping-away/#the-paused-net-banner)
 
 ## Improvements
 
-* **Net View: Redesigned toolbar** — The toolbar now uses the full width of the page and keeps full button labels visible whenever there is room, instead of hiding them behind More at a fixed screen size. Check In is green so newcomers spot it immediately, and the NCS toggle reads "Role: NCS" or "Role: Standard" so it is obvious which role you are in. Raise Hand is hidden while you are NCS, and stepping away as the only NCS now warns you first.
+* **Net View: Redesigned toolbar** — The toolbar now uses the full width of the page and keeps full button labels visible whenever there is room, instead of hiding them behind More at a fixed screen size. Check In is green so newcomers spot it immediately, and the NCS toggle reads "Role: NCS" or "Role: Standard" so it is obvious which role you are in. Raise Hand is hidden while you are NCS, and stepping away as the only NCS now warns you first. [Learn more](/docs/net-control/the-net-control-desk/#the-command-bar)
 
 * **Nets and Schedule: Redesigned card buttons** — Every button on a net or schedule card now shows a short label beside its icon and offers a bigger target on a phone, so you can tell what each one does at a glance instead of hovering. Buttons that change something (Create, Edit, Cancel, Start, Delete) are grouped apart from the view-only buttons everyone sees, ordered so Start is easy to reach and no longer sits beside Cancel. Wide cards spread the two groups to opposite edges; narrow ones stack them.
 
@@ -772,7 +779,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Check-in: Disable self check-in per net** — Net Managers can now turn off self check-in for a schedule or net, from the schedule editor or the net's own settings. When off, only Net Control and logging staff can add check-ins, so stations aren't logged twice when they check in both by voice and by app.
+* **Check-in: Disable self check-in per net** — Net Managers can now turn off self check-in for a schedule or net, from the schedule editor or the net's own settings. When off, only Net Control and logging staff can add check-ins, so stations aren't logged twice when they check in both by voice and by app. [Learn more](/docs/net-managers/creating-a-net/)
 
 ## Bug Fixes
 
@@ -788,7 +795,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Platform: Behind-the-scenes cleanup** — We spent the last few weeks reorganizing the app's internal code so future bug fixes and feature requests can ship faster and more safely. That work is done, and regular fixes and new features resume now.
 
-* **Net View: Redesigned toolbar** — The net toolbar now spans the full width of the page with labeled buttons instead of unlabeled icons packed into a narrow column, so you can find Search, Stats, Roles, and the rest without hovering to guess. It automatically switches to icon-only on narrower screens so nothing gets cut off.
+* **Net View: Redesigned toolbar** — The net toolbar now spans the full width of the page with labeled buttons instead of unlabeled icons packed into a narrow column, so you can find Search, Stats, Roles, and the rest without hovering to guess. It automatically switches to icon-only on narrower screens so nothing gets cut off. [Learn more](/docs/net-control/the-net-control-desk/#the-command-bar)
 
 ---
 
@@ -828,11 +835,11 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Auto-archive stale scheduled nets** — A scheduled net that was never opened (never transitioned to Lobby or Active) is automatically archived 24 hours after its scheduled start time. Nets that didn't happen no longer linger on the Active Nets dashboard.
+* **Auto-archive stale scheduled nets** — A scheduled net that was never opened (never transitioned to Lobby or Active) is automatically archived 24 hours after its scheduled start time. Nets that didn't happen no longer linger on the Active Nets dashboard. [Learn more](/docs/net-managers/cancelling-and-archiving/)
 
-* **Help menu** — The "Docs" nav link is replaced by a Help dropdown with four options: User Guide (opens the documentation site), Start Walkthrough, Submit Feedback, and About ECTLogger.
+* **Help menu** — The "Docs" nav link is replaced by a Help dropdown with four options: User Guide (opens the documentation site), Start Walkthrough, Submit Feedback, and About ECTLogger. [Learn more](/docs/about/getting-help/)
 
-* **Submit Feedback** — Authenticated users can report bugs or request features directly from the Help menu. Submissions are emailed to every admin on the instance, with the submitter's callsign, name, and email included so admins can follow up. Rate-limited to 5 submissions per IP per hour.
+* **Submit Feedback** — Authenticated users can report bugs or request features directly from the Help menu. Submissions are emailed to every admin on the instance, with the submitter's callsign, name, and email included so admins can follow up. Rate-limited to 5 submissions per IP per hour. [Learn more](/docs/about/getting-help/#report-a-bug-or-ask-for-a-feature)
 
 * **Guided walkthrough** — A step-through tour covers the main app areas (Dashboard, Net View, Scheduler, Statistics, Profile, and the Help menu itself). Launches automatically for new users on their first login and can be relaunched at any time from Help.
 
@@ -890,7 +897,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Admin: View as Regular User** — Admins can now temporarily simulate the regular user experience from the avatar menu (padlock icon, near the dark/light mode switch). Admin-only UI elements are hidden and an amber User View chip appears in the navbar as a reminder. Click the chip or choose Exit User View to restore full access. Useful for reproducing bug reports and guiding other operators through the app.
+* **Admin: View as Regular User** — Admins can now temporarily simulate the regular user experience from the avatar menu (padlock icon, near the dark/light mode switch). Admin-only UI elements are hidden and an amber User View chip appears in the navbar as a reminder. Click the chip or choose Exit User View to restore full access. Useful for reproducing bug reports and guiding other operators through the app. [Learn more](/docs/admins/users-and-roles/#seeing-the-app-the-way-everyone-else-does)
 
 * **Schedule: Auto-archive previous nets on new net creation** — When a new net is created from a recurring schedule (manually or by the automatic 24-hour pre-creation), all closed nets from that schedule are archived automatically. The dashboard stays clean without requiring manual cleanup after each session. Archived nets remain fully accessible and can be unarchived at any time.
 
@@ -946,7 +953,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Net View: Archive reminder after closing a net** — When you close a net, a prompt appears at the top of the screen offering to archive it right away (preserving all check-ins and statistics) or delete it permanently. A help button explains the difference between the two so you can choose confidently.
+* **Net View: Archive reminder after closing a net** — When you close a net, a prompt appears at the top of the screen offering to archive it right away (preserving all check-ins and statistics) or delete it permanently. A help button explains the difference between the two so you can choose confidently. [Learn more](/docs/net-managers/cancelling-and-archiving/#archiving-a-net-thats-finished)
 
 ---
 
@@ -962,7 +969,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Scheduler: Star your favorite nets to keep them at the top** — Click the star icon on any net card or list row to pin it. Starred nets always appear first, no matter where they fall alphabetically.
+* **Scheduler: Star your favorite nets to keep them at the top** — Click the star icon on any net card or list row to pin it. Starred nets always appear first, no matter where they fall alphabetically. [Learn more](/docs/operators/finding-a-net/#starring-a-net-you-check-into-often)
 
 ---
 
@@ -990,7 +997,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Net View: Edit Net Script and Announcements in-place** — NCS and net staff can now click the pencil icon in the floating Net Script or Announcements window to edit the content directly during the net, with a markdown formatting toolbar. Changes save to the schedule template immediately.
+* **Net View: Edit Net Script and Announcements in-place** — NCS and net staff can now click the pencil icon in the floating Net Script or Announcements window to edit the content directly during the net, with a markdown formatting toolbar. Changes save to the schedule template immediately. [Learn more](/docs/net-managers/scripts-and-announcements/)
 
 ## Improvements
 
@@ -1022,13 +1029,13 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Profile: Personal net history is now navigable** — Your activity summary and net list on the Activity tab are clickable. Select any summary card or net name to see the individual sessions behind it and open any net report directly.
-* **Schedule: Recurring Announcements** — A new Announcements tab in the schedule editor lets NCS maintain a standing list of items to read each week (club events, upcoming trainings, etc.). During a live net, the list appears in the Announcements window as a checklist so NCS can check off each item as it's announced.
+* **Schedule: Recurring Announcements** — A new Announcements tab in the schedule editor lets NCS maintain a standing list of items to read each week (club events, upcoming trainings, etc.). During a live net, the list appears in the Announcements window as a checklist so NCS can check off each item as it's announced. [Learn more](/docs/net-managers/scripts-and-announcements/#standing-announcements)
 
 ## Improvements
 
 * **Changelog PDF: Styled layout** — The PDF now matches the What's New email design with a color-coded header and labeled sections, making it easier to read and share.
 * **Mobile: Narrow-screen layout fixes** — Data tables scroll horizontally instead of overflowing, and dialogs use compact margins on small phones so forms are fully usable without zooming.
-* **Archived Nets: Filter to nets you participated in** — Two checkboxes in the Archived Nets dialog let you narrow the list to nets you personally attended or ran as NCS, so you can find your own history without scrolling through everything.
+* **Archived Nets: Filter to nets you participated in** — Two checkboxes in the Archived Nets dialog let you narrow the list to nets you personally attended or ran as NCS, so you can find your own history without scrolling through everything. [Learn more](/docs/operators/finding-a-net/#finding-a-net-that-already-happened)
 * **Net Settings: Mobile station sort is now optional** — A new toggle controls whether mobile stations are promoted to the top of the check-in list. On by default; net managers who prefer strict chronological order can turn it off in net settings.
 
 ---
@@ -1037,7 +1044,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Maintenance Banner** — Admins can now display a sitewide warning banner from the new Maintenance tab in the Admin panel. The banner supports a custom message, dismissible or persistent mode, and an optional scheduled start/end window so it appears and clears automatically without manual intervention. The banner is served via a public API endpoint and is visible to logged-out users as well.
+* **Maintenance Banner** — Admins can now display a sitewide warning banner from the new Maintenance tab in the Admin panel. The banner supports a custom message, dismissible or persistent mode, and an optional scheduled start/end window so it appears and clears automatically without manual intervention. The banner is served via a public API endpoint and is visible to logged-out users as well. [Learn more](/docs/admins/maintenance-banner/)
 * **Server-side maintenance page** — A static `maintenance.html` page is included in the frontend build. Operators can activate it with `./run --maintenance on` over SSH when the app is completely down (bad deploy, DB outage). Caddy then serves the static page directly instead of proxying to the backend. An optional `--message` and `--eta` flag writes a `maintenance.json` sidecar that the page fetches and displays.
 * **`run.sh` — consolidated operational script** — `start.sh` and `update.sh` are consolidated into a single `run.sh`. Bare `./run` behaves identically to the old `start.sh`; `./run --service` for systemd; `./run -u` to apply updates and exit; `./run -m on|off` to toggle server-side maintenance mode and exit. The old scripts remain in place temporarily.
 
@@ -1074,9 +1081,9 @@ All notable changes to ECTLogger are documented here.
 
 * **Avatar menu in the nav bar** — The callsign text in the nav bar has been replaced with your avatar. Clicking it opens a menu with Profile, Personal Stats, Admin (if applicable), Dark/Light mode toggle, and Logout — consolidating controls that were previously scattered across the top bar. On mobile, the same items appear at the bottom of the slide-out drawer.
 * **In-browser crop and zoom for profile photos** — After selecting a photo, a dialog lets you drag to position and scroll or pinch to zoom before uploading. Only the cropped square is sent to the server, so portrait, landscape, and oddly-framed photos always produce a clean avatar.
-* **Session settings configurable in Admin panel** — Admins can now set session lifetime and toggle rolling renewal in Admin → Security → Session Settings, without editing server config files.
+* **Session settings configurable in Admin panel** — Admins can now set session lifetime and toggle rolling renewal in Admin → Security → Session Settings, without editing server config files. [Learn more](/docs/admins/security-and-mfa/#session-length)
 * **NCS check-in prompt now offers a role choice** — NCS operators who haven't yet checked in now see two buttons in the check-in prompt: "Check In as NCS" and "Check In as Participant". Both open the standard check-in dialog. Previously, clicking "Check In" scrolled down to the inline NCS entry form, which was confusing for operators who just wanted to observe before joining.
-* **NCS role toggle in toolbar** — NCS operators can now step down to participant (or back up to NCS) using the crown icon in the toolbar. Stepping down removes the NCS badge and management controls for that session without losing the permanent role assignment. Stepping back up restores full NCS status. The button only appears for operators with an NCS assignment who are checked in. The last active NCS on an active net cannot step down.
+* **NCS role toggle in toolbar** — NCS operators can now step down to participant (or back up to NCS) using the crown icon in the toolbar. Stepping down removes the NCS badge and management controls for that session without losing the permanent role assignment. Stepping back up restores full NCS status. The button only appears for operators with an NCS assignment who are checked in. The last active NCS on an active net cannot step down. [Learn more](/docs/net-control/roles-and-stepping-away/#stepping-down-and-stepping-away)
 
 ---
 
@@ -1108,7 +1115,7 @@ All notable changes to ECTLogger are documented here.
 
 ## UX Improvements
 
-* **Step away feature** — Users can now click the pause icon (⏸️) to temporarily step away without checking out. Useful when you know you're next but have an emergent need (bathroom, etc.). The button appears in both the toolbar for your own check-in and in the Actions column. Click again to return.
+* **Step away feature** — Users can now click the pause icon (⏸️) to temporarily step away without checking out. Useful when you know you're next but have an emergent need (bathroom, etc.). The button appears in both the toolbar for your own check-in and in the Actions column. Click again to return. [Learn more](/docs/net-control/roles-and-stepping-away/#stepping-down-and-stepping-away)
 
 ---
 
@@ -1130,15 +1137,15 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **CSV check-in import for closed/archived nets** — Added an Import CSV workflow next to export actions so net managers can merge logs from paper or external tools after a net closes. Includes drag-and-drop upload, an exportable import template, and row-numbered validation errors in the dialog.
-* **Co-Manager controls in staff rows** — Owners/admins can now promote or demote authorized staff as **Co-Managers** directly from each row using a star icon. Co-Managers are clearly labeled and share owner-level schedule responsibility for owner-gated actions (such as ownership transfer, linking nets, merge, and delete), providing true backup coverage.
-* **Hover reactions in chat** — Chat now supports per-message reactions (👍 🙂 🙁 ❤️ ✅) with live counts synchronized across connected clients.
-* **Paste-to-chat images** — Users can paste PNG/JPEG/WEBP images directly into chat; uploads are resized, thumbnailed, rendered inline, and viewable in a full-image lightbox.
+* **CSV check-in import for closed/archived nets** — Added an Import CSV workflow next to export actions so net managers can merge logs from paper or external tools after a net closes. Includes drag-and-drop upload, an exportable import template, and row-numbered validation errors in the dialog. [Learn more](/docs/net-managers/importing-check-ins/)
+* **Co-Manager controls in staff rows** — Owners/admins can now promote or demote authorized staff as **Co-Managers** directly from each row using a star icon. Co-Managers are clearly labeled and share owner-level schedule responsibility for owner-gated actions (such as ownership transfer, linking nets, merge, and delete), providing true backup coverage. [Learn more](/docs/net-managers/net-staff-and-rotation/#authorized-net-staff)
+* **Hover reactions in chat** — Chat now supports per-message reactions (👍 🙂 🙁 ❤️ ✅) with live counts synchronized across connected clients. [Learn more](/docs/operators/chat-and-polls/#reacting-to-a-message)
+* **Paste-to-chat images** — Users can paste PNG/JPEG/WEBP images directly into chat; uploads are resized, thumbnailed, rendered inline, and viewable in a full-image lightbox. [Learn more](/docs/operators/chat-and-polls/#sending-a-message)
 * **Status-at-entry for check-ins** — NCS quick-entry now supports choosing station status at creation time on both desktop and mobile forms.
 
 ## Improvements
 
-* **Import time parsing and timezone controls** — CSV import now accepts simple date/time formats used by operators (for example `6/3/2026 2:24 PM`, `3/6/2026 14:24`, `2:24 PM`, `14:24`) and supports both US and British slash-date ordering.
+* **Import time parsing and timezone controls** — CSV import now accepts simple date/time formats used by operators (for example `6/3/2026 2:24 PM`, `3/6/2026 14:24`, `2:24 PM`, `14:24`) and supports both US and British slash-date ordering. [Learn more](/docs/net-managers/importing-check-ins/#the-file-format)
 * **UTC checkbox + timezone selector on import** — Import dialog now includes a UTC toggle and timezone dropdown for national nets spanning multiple time zones. Explicit timezone markers in CSV values (`Z`, `UTC`, `GMT`, `+/-HH:MM`) are honored automatically.
 * **Import window safety checks** — Imported timestamps are validated against net open/lobby time through net close + 10 minutes. Out-of-window rows are skipped with clear row-numbered reasons.
 * **Away and Mobile visibility improvements** — Away rows now use a distinct yellow highlight, and Mobile stations are prioritized near the top of the check-in list (after NCS).
@@ -1166,7 +1173,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Net owners can delete their own nets
 
-* **Owners can now delete a net in any state** — draft, scheduled, active, or closed. Previously the trash icon only appeared on draft/scheduled nets, and closed-net deletion was locked to admins. Useful for net managers cleaning up training/practice runs.
+* **Owners can now delete a net in any state** — draft, scheduled, active, or closed. Previously the trash icon only appeared on draft/scheduled nets, and closed-net deletion was locked to admins. Useful for net managers cleaning up training/practice runs. [Learn more](/docs/net-managers/cancelling-and-archiving/#deleting)
 * **Stronger confirmation dialog** spells out exactly what gets destroyed (check-ins, chat messages, reports) and warns that deletion is permanent.
 * **Color-coded buttons**: blue **Cancel**, yellow **Archive Instead** (only for closed nets) or yellow **Close & Archive** (only for active/lobby nets), red **Delete Permanently**. Archive paths are presented as the safer alternative whenever they apply.
 * **Close & Archive** runs the existing close endpoint (which emails the complete log to the owner) and then immediately archives the net, so managers who want to preserve the record of a started test/training net can do it in one click.
@@ -1179,8 +1186,8 @@ All notable changes to ECTLogger are documented here.
 ## Save edits back to the schedule
 
 * **"Save for this Net" + "Save to Schedule" buttons** — The Edit Net page now has two save buttons. **Save for this Net** persists changes only to the current net (unchanged behavior, just renamed from "Save Changes"). **Save to Schedule** pushes the net's editable fields back to the parent schedule so future nets opened from that schedule inherit them. A confirmation dialog lists exactly what will be overwritten.
-* **Push staff to schedule** — The Net Staff dialog opened from a scheduled net now has a **Push staff to schedule** button that copies the net's NCS operators into the schedule's authorized staff list. Operators already on the schedule are skipped, so it's safe to repeat.
-* **Schedules now carry stream URL and announcements** — `stream_url` and `announcements` were previously net-only fields. They've been added to the schedule (template) model so values entered there propagate to nets opened from the schedule, and so the new "Save to Schedule" action can promote them. Migration: `018_add_template_stream_announcements.py`.
+* **Push staff to schedule** — The Net Staff dialog opened from a scheduled net now has a **Push staff to schedule** button that copies the net's NCS operators into the schedule's authorized staff list. Operators already on the schedule are skipped, so it's safe to repeat. [Learn more](/docs/net-managers/net-staff-and-rotation/#from-a-net)
+* **Schedules now carry stream URL and announcements** — `stream_url` and `announcements` were previously net-only fields. They've been added to the schedule (template) model so values entered there propagate to nets opened from the schedule, and so the new "Save to Schedule" action can promote them. Migration: `018_add_template_stream_announcements.py`. [Learn more](/docs/net-managers/recurring-schedules/#what-a-new-net-inherits)
 * **Schedule fields actually copy when opening a net** — Fixed a long-standing gap where `info_url`, `script`, `stream_url`, and `announcements` on a schedule were ignored when opening a net from it. Newly opened nets now inherit those values.
 * **Permission model unchanged** — Both new actions check the same backend permissions used everywhere else for editing a schedule (owner, admin, active staff, or active NCS rotation member). The buttons surface a clear error toast on permission failure rather than silently failing.
 
@@ -1206,10 +1213,10 @@ All notable changes to ECTLogger are documented here.
 ## Changelog Downloads & What's New Email Digest
 
 * **PDF download buttons** — The What's New dialog now has two download icons in its action bar: a single-page icon downloads just the latest version's changelog as a PDF, and an open-book icon downloads the entire changelog history. Output is text-native (selectable, small file size).
-* **What's New email digest** — Optional opt-in (off by default) that emails subscribed users a single 8 AM digest the morning after each release, summarising every changelog entry from the previous calendar day. Silent on days with no updates so it never spams.
+* **What's New email digest** — Optional opt-in (off by default) that emails subscribed users a single 8 AM digest the morning after each release, summarising every changelog entry from the previous calendar day. Silent on days with no updates so it never spams. [Learn more](/docs/reference/emails/#digests-and-feedback)
 * **Sparkling Subscribe button** — A subscribe/unsubscribe toggle appears in the What's New dialog (right next to "Got it!") so users can opt in to the digest without leaving the modal. Hidden when not signed in.
-* **Per-user timezone** — Digests fire at 8 AM in the user's local timezone (auto-captured from the browser the first time they subscribe). Falls back to America/Los_Angeles (PST/PDT) if the timezone isn't set, so we don't wake anyone up early.
-* **One-click per-list unsubscribe** — Every What's New email includes a `?list=whats_new` unsubscribe link that opts the user out of just the digest, leaving net-start / net-close / reminder preferences alone. Master unsubscribe still works for everything.
+* **Per-user timezone** — Digests fire at 8 AM in the user's local timezone (auto-captured from the browser the first time they subscribe). Falls back to America/Los_Angeles (PST/PDT) if the timezone isn't set, so we don't wake anyone up early. [Learn more](/docs/reference/emails/#digests-and-feedback)
+* **One-click per-list unsubscribe** — Every What's New email includes a `?list=whats_new` unsubscribe link that opts the user out of just the digest, leaving net-start / net-close / reminder preferences alone. Master unsubscribe still works for everything. [Learn more](/docs/reference/emails/#digests-and-feedback)
 * **Single source of truth** — The changelog data has moved from `frontend/src/components/ChangelogNotification.tsx` to `frontend/src/changelog.json`, which is imported by both the React dialog and the new backend `whats_new_service.py` so the in-app and email content can never drift apart.
 * **Migration 017** — Adds `users.notify_whats_new` (Boolean, default false) and `users.timezone` (String) columns. Run `python3 backend/migrations/017_add_whats_new_subscription.py` on each environment.
 
@@ -1264,14 +1271,14 @@ All notable changes to ECTLogger are documented here.
 
 ## Schedule Statistics Overhaul
 
-* **Time-window filters** — Schedule statistics page now supports 30 days / 90 days / 1 year / all-time filters, defaulting to last 30 days. Applies to summary cards, leaderboards, and the history log.
+* **Time-window filters** — Schedule statistics page now supports 30 days / 90 days / 1 year / all-time filters, defaulting to last 30 days. Applies to summary cards, leaderboards, and the history log. [Learn more](/docs/net-managers/schedule-statistics/)
 * **Leaderboards** — New tabbed leaderboards on schedule stats:
   * **Check-ins** — Top 20 callsigns by net appearances (replaces the previous "Regular Operators 50%+" view, which was empty for long-running nets).
   * **NCS** — Top operators by number of nets they ran as NCS.
   * **Logger** — Top operators by number of nets they logged.
   * **Relay** — Top callsigns by distinct nets where they relayed at least one check-in (derived from `CheckIn.relayed_by`).
-* **NCS column in Net History** — The history log now shows the NCS callsign(s) for each net instance.
-* **Export to PDF** — One-click PDF export of the schedule performance report.
+* **NCS column in Net History** — The history log now shows the NCS callsign(s) for each net instance. [Learn more](/docs/net-managers/schedule-statistics/#net-history)
+* **Export to PDF** — One-click PDF export of the schedule performance report. [Learn more](/docs/net-managers/schedule-statistics/#the-schedule-report)
 
 ## Improvements
 
@@ -1291,7 +1298,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Link Existing Net to Schedule** — From the schedule statistics page (`/statistics/schedules/:id`), schedule owners and admins can now click "Link Existing Net" to attach an ad-hoc net (or a net created under the wrong schedule) to this schedule. Useful when an NCS starts a one-off net and later realizes it should be counted toward a recurring schedule's history.
+* **Link Existing Net to Schedule** — From the schedule statistics page (`/statistics/schedules/:id`), schedule owners and admins can now click "Link Existing Net" to attach an ad-hoc net (or a net created under the wrong schedule) to this schedule. Useful when an NCS starts a one-off net and later realizes it should be counted toward a recurring schedule's history. [Learn more](/docs/net-managers/schedule-statistics/#linking-an-existing-net-into-a-schedule)
 
 ## API
 
@@ -1345,8 +1352,8 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Check-In Map on Statistics page** — The global Statistics page now includes an interactive map at the bottom showing the approximate geographic distribution of check-ins. Locations are aggregated to 4-character Maidenhead grid squares (~100 km resolution) or US state / Canadian province centroids, so individual operator positions are never revealed.
-* **Contacts & Auto-fill** — A new Contacts system auto-populates station information from check-in history. When an NCS or Logger enters a callsign, name, location, and SKYWARN number are auto-filled from the user's account (if registered) or from the contacts directory (built from prior check-ins). All auto-filled fields remain editable for each check-in.
-* **Admin Contacts Tab** — A new "Contacts" tab on the Admin page provides a rolodex-style directory of all known stations. Admins can fix misspelled names from rushed check-ins, add email addresses, send invites to create user accounts, and add admin-only notes.
+* **Contacts & Auto-fill** — A new Contacts system auto-populates station information from check-in history. When an NCS or Logger enters a callsign, name, location, and SKYWARN number are auto-filled from the user's account (if registered) or from the contacts directory (built from prior check-ins). All auto-filled fields remain editable for each check-in. [Learn more](/docs/admins/contacts/)
+* **Admin Contacts Tab** — A new "Contacts" tab on the Admin page provides a rolodex-style directory of all known stations. Admins can fix misspelled names from rushed check-ins, add email addresses, send invites to create user accounts, and add admin-only notes. [Learn more](/docs/admins/contacts/)
 * **Contact Invites** — Admins can add an email to any contact and send an invite. This creates a user account and sends a magic link email. When the contact signs in, their check-in history and statistics are linked to their new account.
 
 ---
@@ -1379,10 +1386,10 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Per-user Chat System Messages Toggle** - Users can now hide or show system (activity) messages in the chat using a toolbar icon located to the left of the pop-out button; the preference is saved to the user's profile and persists across sessions.
-* **Announcements / General Traffic** - Nets now have a dedicated "Announcements" field separate from the net script. This provides a running list of upcoming events, club announcements, and general traffic items for NCS to reference during the net. Visible to all users via a megaphone icon button in the net toolbar. Supports Markdown formatting and can be opened in a floating window or new tab. Can be edited when creating or editing a net (new "Announcements" tab in net configuration).
+* **Announcements / General Traffic** - Nets now have a dedicated "Announcements" field separate from the net script. This provides a running list of upcoming events, club announcements, and general traffic items for NCS to reference during the net. Visible to all users via a megaphone icon button in the net toolbar. Supports Markdown formatting and can be opened in a floating window or new tab. Can be edited when creating or editing a net (new "Announcements" tab in net configuration). [Learn more](/docs/net-managers/scripts-and-announcements/#standing-announcements)
 * **Prior Topics Log** - Track previously used "Topic of the Week" prompts to avoid repetition. When a net closes with a topic enabled, the topic is automatically logged to history. A history icon button appears in the net toolbar (for nets created from templates) to view all past topics with dates. Helps NCS staff rotate topics and avoid reusing recent ones.
-* **Audio Stream URL** - Nets can now include a direct audio stream URL (Shoutcast, Broadcastify, etc.). A speaker icon appears in the net toolbar for easy listening. Works for both authenticated users and guests.
-* **Unarchive from Archived List** - Added unarchive button directly to the Archived Nets dialog on the Dashboard (no need to open the net first)
+* **Audio Stream URL** - Nets can now include a direct audio stream URL (Shoutcast, Broadcastify, etc.). A speaker icon appears in the net toolbar for easy listening. Works for both authenticated users and guests. [Learn more](/docs/net-managers/creating-a-net/)
+* **Unarchive from Archived List** - Added unarchive button directly to the Archived Nets dialog on the Dashboard (no need to open the net first) [Learn more](/docs/net-managers/cancelling-and-archiving/)
 * **In-App Changelog** - New floating info button shows recent changes with unread indicator
 * **Consistent Action Button Colors** - All action buttons throughout the UI now use consistent colors: blue for view/search, purple for people/staff, orange for statistics, green for exports/downloads, teal for ICS-309 forms, and red for delete/close. This makes it easier to quickly identify the button you're looking for.
 
@@ -1402,7 +1409,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Email Unsubscribe Compliance** - All notification emails now include:
+* **Email Unsubscribe Compliance** - All notification emails now include: [Learn more](/docs/reference/emails/)
   - One-click unsubscribe link in the email footer
   - `List-Unsubscribe` header for email client "unsubscribe" buttons
   - `List-Unsubscribe-Post` header for RFC 8058 one-click compliance
@@ -1433,12 +1440,12 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Lobby Mode** - NCS can start a net before the scheduled time, entering "Lobby" status where check-ins and chat are enabled but a countdown shows until the official start time. Click "Go Live" to transition to active status.
+* **Lobby Mode** - NCS can start a net before the scheduled time, entering "Lobby" status where check-ins and chat are enabled but a countdown shows until the official start time. Click "Go Live" to transition to active status. [Learn more](/docs/net-managers/lobby-and-auto-close/)
 * **Email Subscribers** - NCS can send custom emails to all subscribers of a scheduled/draft net (e.g., to announce cancellations)
 * **Cancel Net Instance** - Delete button added to draft/scheduled nets on the Dashboard to cancel a specific net instance without affecting the recurring schedule
 * **Net Script Button** - Added script viewer button (article icon) to the net toolbar between map and edit buttons
-* **Unarchive Nets** - Archived nets can now be unarchived (restored to closed status) via the unarchive button in the net toolbar
-* **Net Report (PDF)** - Comprehensive multi-page PDF report for closed/archived nets including:
+* **Unarchive Nets** - Archived nets can now be unarchived (restored to closed status) via the unarchive button in the net toolbar [Learn more](/docs/net-managers/cancelling-and-archiving/)
+* **Net Report (PDF)** - Comprehensive multi-page PDF report for closed/archived nets including: [Learn more](/docs/net-managers/reports-and-exports/)
   - ECTLogger branded header with site URL
   - Net info (name, description, frequencies, NCS operators, duration)
   - Statistics summary with charts (status breakdown, check-ins by frequency)
@@ -1485,7 +1492,7 @@ All notable changes to ECTLogger are documented here.
 * **Countdown Timer** - Nets with a scheduled start time display a countdown timer (e.g., "Starts in 2h 15m 30s")
 * **Duration Timer** - Active nets display elapsed time since the net started (e.g., "Duration: 1:23:45")
 * **Scheduled Start Time** - Set a scheduled start time when creating a net for countdown display
-* **Inline Check-In Editing** - NCS and Loggers can now click any row in the check-in list to edit fields directly inline, eliminating the separate edit dialog
+* **Inline Check-In Editing** - NCS and Loggers can now click any row in the check-in list to edit fields directly inline, eliminating the separate edit dialog [Learn more](/docs/net-control/logging-check-ins/#editing-a-row-in-place)
 
 ## Improvements
 

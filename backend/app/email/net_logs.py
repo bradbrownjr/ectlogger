@@ -459,19 +459,17 @@ async def send_ics309_log(
     check_ins: list,
     started_at: str,
     closed_at: str,
-    chat_messages: list = None,
+    log_entries: list = None,
+    message_count: int = 0,
     frequencies: list = None,
-    traffic_log_rows: list = None,
     unsubscribe_token: str = None
 ):
     """Send ICS-309 Communications Log format after net is closed.
 
-    traffic_log_rows: pre-built {time, from_station, to_station, message}
-    dicts for this net's Assisted Traffic Handling activity (see
-    app/traffic/ics309.py). Metadata only -- the caller must never build
-    these from Form.field_values/normalized_text (the message body); see
-    TRAFFIC-HANDLING-DESIGN.md D3. Callers should only pass this when the
-    net has ics309_enabled set.
+    log_entries: the log's {time, from_station, to_station, message} rows,
+    built by services/ics309_log.py::build_ics309_rows, the same builder as
+    the ICS-309 export. check_ins is still needed for the detailed check-in
+    CSV attachment. message_count is the chat message total in the footer.
     """
     
     # Format frequencies for display
@@ -610,40 +608,7 @@ async def send_ics309_log(
     </html>
     """)
     
-    # Build log entries combining check-ins and chat messages
-    log_entries = []
-    
-    # Add check-ins as log entries
-    for check_in in check_ins:
-        location_info = f" from {check_in.get('location', '')}" if check_in.get('location') else ""
-        weather_info = f" | WX: {check_in.get('weather_observation', '')}" if check_in.get('weather_observation') else ""
-        
-        log_entries.append({
-            'time': check_in.get('time', ''),
-            'from_station': check_in.get('callsign', ''),
-            'to_station': 'NET',
-            'message': f"Check-in{location_info}{weather_info}"
-        })
-    
-    # Add chat messages (non-system messages only for cleaner log)
-    if chat_messages:
-        for msg in chat_messages:
-            callsign = msg.get('callsign', 'Unknown')
-            if callsign != 'System':  # Skip system messages in ICS-309
-                log_entries.append({
-                    'time': msg.get('timestamp', ''),
-                    'from_station': callsign,
-                    'to_station': 'NET',
-                    'message': msg.get('message', '')
-                })
-
-    # Add Assisted Traffic Handling rows, pre-built by the caller from
-    # app/traffic/ics309.py -- metadata only, body never included (D3).
-    if traffic_log_rows:
-        log_entries.extend(traffic_log_rows)
-
-    # Sort all entries by time
-    log_entries.sort(key=lambda x: x.get('time', ''))
+    log_entries = log_entries or []
     
     # "Cory Golob / KU1U" for a single named NCS. When a net has several NCS the
     # caller passes the callsign list as both values (there is no single name to
@@ -661,7 +626,7 @@ async def send_ics309_log(
         frequencies=freq_list,
         log_entries=log_entries,
         check_in_count=len(check_ins),
-        message_count=len(chat_messages) if chat_messages else 0,
+        message_count=message_count,
         unsubscribe_footer=get_unsubscribe_footer(unsubscribe_token)
     )
     

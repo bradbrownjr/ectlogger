@@ -98,7 +98,7 @@ async def test_send_ics309_log_includes_traffic_rows(monkeypatch):
         check_ins=[],
         started_at="2026-08-03 10:00:00",
         closed_at="2026-08-03 11:00:00",
-        traffic_log_rows=[
+        log_entries=[
             {"time": "10:05", "from_station": "KC1OWN", "to_station": "NET",
              "message": "Radiogram NR 21 R for Jim Kutsch KY2D — originated"},
         ],

@@ -44,7 +44,7 @@ Once the net exists, a **Net Logo** uploader appears here too. It's shown on net
 
 ### Net staff
 
-A net's staff come from its schedule, so this tab shows who is NCS for this net but doesn't change it. Click **Open the schedule's staff** to add or remove staff, change the rotation, or swap this night to someone else. The schedule's Staff dialog opens on top of this page; close it and you're back where you were, with anything you changed on the other tabs still there. See [Net staff and the NCS rotation](/docs/net-managers/net-staff-and-rotation/).
+A net's staff come from its schedule, so this tab lists the schedule's staff and who is NCS for this net, but doesn't change either. Schedule staff hold no role on the net until one of them checks in as NCS or Logger, so an empty NCS list before the net starts is normal. Click **Open the schedule's staff** to add or remove staff, change the rotation, or swap this night to someone else. The schedule's Staff dialog opens on top of this page; close it and you're back where you were, with anything you changed on the other tabs still there. See [Net staff and the NCS rotation](/docs/net-managers/net-staff-and-rotation/).
 
 ### Communication plan
 

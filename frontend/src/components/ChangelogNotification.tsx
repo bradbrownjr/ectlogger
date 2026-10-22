@@ -13,6 +13,7 @@ import {
   Chip,
   IconButton,
   Tooltip,
+  Link,
   useTheme,
   alpha,
   keyframes,
@@ -61,9 +62,15 @@ const sparkleAnimation = keyframes`
 // the same content. Update changelog.json (bump "version" and prepend
 // a new entry) when you ship a user-impacting change.
 
+// Where the documentation site lives; item.docs paths are relative to it.
+const DOCS_SITE = 'https://ectlogger.us';
+
 interface ChangelogItem {
   text: string;
   userImpact?: boolean;
+  // Docs site permalink for the feature, e.g. "/docs/net-control/closing-the-net/".
+  // Rendered as "Learn more" here and in the What's New email (email/digest.py).
+  docs?: string;
   importance?: 'critical' | 'high' | 'medium' | 'low';
 }
 
@@ -698,6 +705,15 @@ const ChangelogNotification: React.FC = () => {
                             items. Do NOT reintroduce a conditional fontWeight. */}
                         <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
                           {item.text}
+                          {/* Shows when the item names the docs page for its feature */}
+                          {item.docs && (
+                            <>
+                              {' '}
+                              <Link href={`${DOCS_SITE}${item.docs}`} target="_blank" rel="noopener noreferrer">
+                                Learn more
+                              </Link>
+                            </>
+                          )}
                           {item.userImpact && (
                             <Chip
                               label="User Impact"

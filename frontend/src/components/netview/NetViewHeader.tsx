@@ -62,6 +62,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import CellTowerIcon from '@mui/icons-material/CellTower';
 import type { UseDialogResult } from '../../hooks/useDialog';
 import ImageLightbox from '../ImageLightbox';
 import { NetActions } from '../../utils/netActions';
@@ -222,6 +223,9 @@ interface NetViewHeaderProps {
   // Whether this viewer may see the net's traffic at all -- net.traffic_enabled
   // plus NCS/logger/owner/admin, derived in NetView.tsx (canViewNetTraffic).
   canViewTraffic: boolean;
+  offNetLog: UseDialogResult;
+  // Signed in, and checked in or net control staff (derived in NetView.tsx)
+  canUseOffNetLog: boolean;
   script: UseDialogResult;
   scheduleAnnouncements: UseDialogResult;
   announcements: UseDialogResult;
@@ -341,6 +345,8 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   coverage,
   traffic,
   canViewTraffic,
+  offNetLog,
+  canUseOffNetLog,
   script,
   scheduleAnnouncements,
   announcements,
@@ -460,6 +466,14 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       visible: canViewTraffic,
       Icon: MailIcon, color: theme.palette.primary.main, label: 'Traffic',
       tooltip: 'View and file traffic for this net', onClick: traffic.onToggle,
+    },
+    {
+      // A station's activity away from this net, for its ICS-309. Open,
+      // lobby or closed (a late entry or a review after the net ends).
+      key: 'off-net-log', group: 'info', priority: 2,
+      visible: canUseOffNetLog && (isActiveOrLobby || net.status === 'closed'),
+      Icon: CellTowerIcon, color: theme.palette.primary.main, label: 'Off-net',
+      tooltip: 'Log activity on other nets, talkgroups and Winlink', onClick: offNetLog.onOpen,
     },
     {
       // Opens in its own tab, so net control can keep the net and the plan

@@ -17,6 +17,8 @@ export interface NetActions {
   email_subscribers: boolean; // Email subscribers
   record_coverage: boolean;   // "Who can this station hear?" on any row
   run_drill: boolean;         // Drill plan: read it, mark messages sent
+  log_off_net: boolean;       // Off-net log: add for any station, no review
+  review_off_net_log: boolean; // Off-net log: accept, reject, edit any entry
 }
 
 const NO_ACTIONS: NetActions = {
@@ -30,6 +32,8 @@ const NO_ACTIONS: NetActions = {
   email_subscribers: false,
   record_coverage: false,
   run_drill: false,
+  log_off_net: false,
+  review_off_net_log: false,
 };
 
 interface WithActions {

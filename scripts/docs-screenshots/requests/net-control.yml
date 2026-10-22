@@ -265,6 +265,74 @@ shots:
       message types this net has enabled.
     caption: Only the form types this net turned on appear here; the standalone Traffic section can always reach the rest.
 
+  # ========== Logging off-net activity ==========
+  - id: off-net-toolbar
+    section: net-control
+    page: /docs/net-control/off-net-log/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    element:
+      - 'span[aria-label="View and file traffic for this net"]'
+      - 'span[aria-label="Log activity on other nets, talkgroups and Winlink"]'
+      - 'span[aria-label="View schedule announcements"]'
+    pad: 10
+    annotate:
+      - selector: 'span[aria-label="Log activity on other nets, talkgroups and Winlink"]'
+        style: box
+    alt: >
+      The net toolbar with the Off-net button outlined in red, between
+      Traffic and Announcements.
+    caption: The Off-net button sits with the other views of the net on the toolbar.
+
+  - id: off-net-log-dialog
+    section: net-control
+    page: /docs/net-control/off-net-log/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="Log activity on other nets, talkgroups and Winlink"]'
+      - wait_for: '.MuiDialog-paper:visible'
+      - wait_for: '.MuiDialog-paper .MuiChip-root'
+    hide:
+      - '.MuiTooltip-popper'
+    element: '.MuiDialog-paper'
+    pad: 16
+    alt: >
+      The Off-net log dialog as Net Control sees it: a notice that 1 entry is
+      awaiting review with an Accept all button, two entries marked On the
+      log, and K1CAMP's Winlink entry to Harbor County EMA marked Awaiting
+      review with Accept and Reject buttons.
+    caption: Net control sees every entry, and accepts or rejects the ones stations logged themselves.
+
+  - id: off-net-add-entry
+    section: net-control
+    page: /docs/net-control/off-net-log/
+    route: /nets/{{net:active}}
+    # A station logging its own activity: From station is fixed to its callsign.
+    as: K1CAMP
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="Log activity on other nets, talkgroups and Winlink"]'
+      - wait_for: '[data-testid="off-net-log-add"]:visible'
+      - click: '[data-testid="off-net-log-add"]'
+      - fill: { selector: '.MuiDialog-paper input[placeholder="State ARES net, a neighboring county EMA"]', value: 'Harbor County EMA' }
+      - fill: { selector: '.MuiDialog-paper input[placeholder="3.940 LSB, a DMR talkgroup, Winlink"]', value: 'Winlink' }
+      - fill: { selector: '.MuiDialog-paper textarea[placeholder="Checked in for our county"]', value: 'Sent the shelter supply request' }
+      - fill: { selector: '.MuiDialog-paper input[placeholder^="The Winlink message ID"]', value: 'R8MW3KQ2ZT6D' }
+    hide:
+      - '.MuiTooltip-popper'
+      - '.MuiAutocomplete-popper'
+    element: '.MuiDialog-paper .MuiPaper-outlined'
+    pad: 12
+    alt: >
+      The Add entry form filled in for a Winlink message: From station
+      K1CAMP, To Harbor County EMA, Channel Winlink, What happened "Sent the
+      shelter supply request," and a Message ID. A note below says net
+      control reviews the entry before it goes on the ICS-309.
+    caption: A station logging its own activity. Net control reviews the entry before it goes on the ICS-309.
+
   # ========== Multiple monitors and wide screens ==========
   - id: panel-window-controls
     section: net-control
@@ -416,13 +484,17 @@ shots:
       - wait_for: '.MuiDialog-paper:visible'
     element: '.MuiDialog-paper'
     pad: 12
+    # The seeded active net has one station's off-net entry awaiting
+    # review, so the dialog shows the review choices.
     annotate:
-      - selector: '.MuiDialog-paper button:has-text("Close Net")'
+      - selector: '.MuiDialog-paper button:has-text("Close anyway")'
         style: box
     alt: >
       The Close Net confirmation dialog: "Are you sure you want to close this
       net? This will end the session and send log emails to subscribers,"
-      with the Close Net button outlined in red.
+      with a notice that 1 off-net entry is awaiting review, and Cancel,
+      Review, Accept all and close, and Close anyway buttons. Close anyway is
+      outlined in red.
     caption: There is no scheduled undo for this -- see Closing the net for what to do if you close one by mistake.
 
   - id: closed-net-exports

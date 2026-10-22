@@ -22,13 +22,8 @@ from sqlalchemy.orm import selectinload
 
 from app.email_service import EmailService
 from app.models import ChatMessage, CheckIn, Net, NetRole, NetStatus, User
-from app.traffic.ics309 import (
-    format_traffic_ics309_message,
-    get_ics309_muted_user_ids,
-    get_net_traffic_log_entries,
-    traffic_from_station,
-    traffic_to_station,
-)
+from app.services.ics309_log import build_ics309_rows, get_accepted_off_net_entries
+from app.traffic.ics309 import get_ics309_muted_user_ids, get_net_traffic_log_entries
 from app.traffic.log import compute_net_traffic_counts
 from app.utils import display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
 
@@ -228,6 +223,9 @@ async def close_net_and_notify(
     traffic_log_entries_for_ics309 = []
     if net.ics309_enabled:
         traffic_log_entries_for_ics309 = await get_net_traffic_log_entries(db, net_id)
+    # Every recipient is signed in, so the ICS-309 copy carries the accepted
+    # off-net entries (a guest's export does not, see nets_export.py).
+    off_net_entries = await get_accepted_off_net_entries(db, net_id)
 
     traffic_summary = await compute_net_traffic_counts(db, net_id) if net.traffic_enabled else None
 
@@ -285,19 +283,21 @@ async def close_net_and_notify(
                 'reported_at': format_time_for_net(to_display_tz(report.reported_at, tz), started_at_local, closed_at_local),
             })
 
-        traffic_rows_data = [
-            {
-                'time': format_time_for_net(to_display_tz(entry.occurred_at, tz), started_at_local, closed_at_local),
-                'from_station': traffic_from_station(entry.form, entry),
-                'to_station': traffic_to_station(entry),
-                'message': format_traffic_ics309_message(entry.form, entry),
-            }
-            for entry in traffic_log_entries_for_ics309
-        ]
+        # The ICS-309 email's log rows, from the same builder as the export.
+        ics309_rows = build_ics309_rows(
+            check_ins=sorted_check_ins,
+            chat_messages=chat_messages,
+            traffic_entries=traffic_log_entries_for_ics309,
+            off_net_entries=off_net_entries,
+            muted_user_ids=muted_user_ids,
+            tz=tz,
+            started_at=started_at_local,
+            closed_at=closed_at_local,
+        )
 
         started_at_str = started_at_local.strftime("%Y-%m-%d %H:%M:%S") if started_at_local else "N/A"
         closed_at_str = closed_at_local.strftime("%Y-%m-%d %H:%M:%S") if closed_at_local else "N/A"
-        return check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data, traffic_rows_data
+        return check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data, ics309_rows
 
     # Cache built payloads by tz key so recipients sharing a display preference
     # (the common case: everyone on UTC/no-timezone-set) don't redo the work.
@@ -392,19 +392,11 @@ async def close_net_and_notify(
             # Get unsubscribe token for compliance
             unsub_token = getattr(recipient, 'unsubscribe_token', None)
 
-            check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data, traffic_rows_data = log_payload_for(
+            check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data, ics309_rows = log_payload_for(
                 resolve_display_tz(recipient)
             )
 
             if use_ics309:
-                # Muted stations' chat rows are hidden from this served-agency
-                # copy only -- check_ins_data itself is untouched, and the
-                # plain net-log email below never sees this filtered list.
-                ics309_chat_messages = (
-                    [m for m in chat_messages_data if m.get('user_id') not in muted_user_ids]
-                    if muted_user_ids
-                    else chat_messages_data
-                )
                 await email_service.send_ics309_log(
                     email=email,
                     net_name=net.name,
@@ -414,9 +406,9 @@ async def close_net_and_notify(
                     check_ins=check_ins_data,
                     started_at=started_at_str,
                     closed_at=closed_at_str,
-                    chat_messages=ics309_chat_messages if ics309_chat_messages else None,
+                    log_entries=ics309_rows,
+                    message_count=len([m for m in chat_messages_data if m.get('callsign') != 'System']),
                     frequencies=freq_strings,
-                    traffic_log_rows=traffic_rows_data if traffic_rows_data else None,
                     unsubscribe_token=unsub_token
                 )
             else:

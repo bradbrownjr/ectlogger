@@ -1025,6 +1025,7 @@ write. These are the authoritative events:
 | `identity_verified_changed` | `routers/check_ins.py` — NCS/Logger confirmed or rejected a station's TOTP match on an authenticated net (`data.identity_verified` true/false); keeps every viewer's padlock icon live |
 | `traffic_logged` | `routers/traffic_forms.py` — a form was filed on this net (`net_id` set); the per-net Traffic panel refetches its list and summary. Only fires when the form has a net; a standalone form has no connection group to notify |
 | `traffic_log_changed` | `routers/traffic_log.py` — a chain-of-custody hop was appended to a form on this net (`net_id` set); the Traffic panel and the inbox badge refetch. Same not-fired-for-standalone-forms rule as `traffic_logged` |
+| `off_net_log_changed` | `routers/off_net_log.py` — an off-net log entry was added, changed, reviewed or deleted. Carries only `net_id`, never entry content, so it is safe for guest connections; `OffNetLogDialog.tsx` refetches what the viewer may see |
 | `ping` | `main.py` keepalive |
 
 **Client-originated (relayed)** — the socket handler in `main.py` sanitizes whatever a

@@ -10,6 +10,7 @@ that have fallen behind the code's own list of statuses and roles.
 Exits non-zero if anything is wrong, so it can gate a commit.
 """
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -202,6 +203,19 @@ def main():
         for url in re.findall(r"url:\s*(/docs/\S*)", nav.read_text(encoding="utf-8")):
             if url.rstrip("/") + "/" not in permalinks:
                 problems.append(f"_data/nav.yml: offers {url}, which no page claims")
+
+    # A changelog item's "docs" field is a "Learn more" link in the app and the
+    # What's New email, so it has to land on a page that exists.
+    changelog = REPO / "frontend" / "src" / "changelog.json"
+    if changelog.exists():
+        for entry in json.loads(changelog.read_text(encoding="utf-8")).get("entries", []):
+            for section in entry.get("sections", []):
+                for item in section.get("items", []):
+                    target = (item.get("docs") or "").split("#")[0]
+                    if target and target.rstrip("/") + "/" not in permalinks:
+                        problems.append(
+                            f"frontend/src/changelog.json: {entry.get('version')} links to {target}, which no page claims"
+                        )
 
     problems.extend(reference_drift())
 

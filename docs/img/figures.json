@@ -38,7 +38,7 @@
   "admins/branding-default-theme": {
     "path": "/docs/img/admins/branding-default-theme.png",
     "alt": "The Default Theme card on the Branding tab, with five named colour swatches -- ECTLogger Blue (currently selected, ticked), Ocean, Forest, Sunset, and Berry -- and a \"Set as System Default\" button outlined in red, greyed out because the selected swatch is already the default.\n",
-    "caption": "Applies only to visitors who have never picked a theme of their own in Profile → Settings.\n",
+    "caption": "Applies only to visitors who have never picked a theme of their own in Profile \u2192 Settings.\n",
     "page": "/docs/admins/branding-and-themes/"
   },
   "admins/branding-logo": {
@@ -139,7 +139,7 @@
   },
   "net-control/close-net-dialog": {
     "path": "/docs/img/net-control/close-net-dialog.png",
-    "alt": "The Close Net confirmation dialog: \"Are you sure you want to close this net? This will end the session and send log emails to subscribers,\" with the Close Net button outlined in red.\n",
+    "alt": "The Close Net confirmation dialog: \"Are you sure you want to close this net? This will end the session and send log emails to subscribers,\" with a notice that 1 off-net entry is awaiting review, and Cancel, Review, Accept all and close, and Close anyway buttons. Close anyway is outlined in red.\n",
     "caption": "There is no scheduled undo for this -- see Closing the net for what to do if you close one by mistake.",
     "page": "/docs/net-control/closing-the-net/"
   },
@@ -220,6 +220,24 @@
     "alt": "The \"Role: NCS\" toolbar button, outlined in red, with the tooltip \"Acting as NCS -- click to step down to Standard\".\n",
     "caption": "This toggles your own active/standard status on the NCS role you already hold -- it never grants NCS for the first time.",
     "page": "/docs/net-control/roles-and-stepping-away/"
+  },
+  "net-control/off-net-add-entry": {
+    "path": "/docs/img/net-control/off-net-add-entry.png",
+    "alt": "The Add entry form filled in for a Winlink message: From station K1CAMP, To Harbor County EMA, Channel Winlink, What happened \"Sent the shelter supply request,\" and a Message ID. A note below says net control reviews the entry before it goes on the ICS-309.\n",
+    "caption": "A station logging its own activity. Net control reviews the entry before it goes on the ICS-309.",
+    "page": "/docs/net-control/off-net-log/"
+  },
+  "net-control/off-net-log-dialog": {
+    "path": "/docs/img/net-control/off-net-log-dialog.png",
+    "alt": "The Off-net log dialog as Net Control sees it: a notice that 1 entry is awaiting review with an Accept all button, two entries marked On the log, and K1CAMP's Winlink entry to Harbor County EMA marked Awaiting review with Accept and Reject buttons.\n",
+    "caption": "Net control sees every entry, and accepts or rejects the ones stations logged themselves.",
+    "page": "/docs/net-control/off-net-log/"
+  },
+  "net-control/off-net-toolbar": {
+    "path": "/docs/img/net-control/off-net-toolbar.png",
+    "alt": "The net toolbar with the Off-net button outlined in red, between Traffic and Announcements.\n",
+    "caption": "The Off-net button sits with the other views of the net on the toolbar.",
+    "page": "/docs/net-control/off-net-log/"
   },
   "net-control/panel-window-controls": {
     "path": "/docs/img/net-control/panel-window-controls.png",

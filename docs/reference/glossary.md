@@ -4,7 +4,7 @@ summary: Words this site uses in a particular way, including a few that mean som
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-18
+revised: 2026-10-22
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/glossary/
@@ -48,7 +48,10 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 : FEMA's General Message form, one of the formal traffic types ECTLogger can log and export alongside the ARRL Radiogram and RRI strips.
 
 **ICS-309**
-: FEMA's Communications Log form, and the format a net's closure log can be exported in, listing every check-in and message in a standard incident-management layout instead of ECTLogger's plain log.
+: FEMA's Communications Log form, and the format a net's closure log can be exported in, listing every check-in and message in a standard incident-management layout instead of ECTLogger's plain log. It also lists traffic handled on the net and accepted off-net log entries.
+
+**Off-net log**
+: A net's record of what its stations did away from the net, such as a check-in to another net or a Winlink message sent to another county. Each accepted entry is a line on the net's ICS-309. See [Logging off-net activity](/docs/net-control/off-net-log/).
 
 **Lobby**
 : The staging state a net sits in before it officially starts. Stations can check in while a net is in the lobby, but the net isn't yet ACTIVE. A lobby can be opened by a human or, if the schedule allows it, automatically ahead of the scheduled start time.

@@ -253,6 +253,50 @@ export const coverageSiteApi = {
 
 // Drill plan for one net (routers/drill_plans.py). get 404s when the net
 // has none; `background` marks the page's refresh poll.
+// Off-net log: a station's activity away from the net, for its ICS-309
+// (backend routers/off_net_log.py). A station's own entry waits for review.
+export interface OffNetLogEntryPayload {
+  occurred_at: string;
+  from_station?: string | null;
+  to_station: string;
+  channel?: string | null;
+  message: string;
+  message_id?: string | null;
+}
+
+export interface OffNetLogEntry extends OffNetLogEntryPayload {
+  id: number;
+  net_id: number;
+  from_station: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  entered_by_user_id: number | null;
+  entered_by_callsign: string | null;
+  reviewed_by_callsign: string | null;
+  reviewed_at: string | null;
+  can_edit: boolean;
+  can_review: boolean;
+}
+
+export interface OffNetLogList {
+  entries: OffNetLogEntry[];
+  can_add: boolean;
+  adds_accepted: boolean;
+  can_review: boolean;
+  own_callsign: string | null;
+  pending_count: number;
+}
+
+export const offNetLogApi = {
+  list: (netId: number) => api.get<OffNetLogList>(`/nets/${netId}/off-net-log`),
+  add: (netId: number, data: OffNetLogEntryPayload) => api.post<OffNetLogEntry>(`/nets/${netId}/off-net-log`, data),
+  update: (netId: number, entryId: number, data: OffNetLogEntryPayload) =>
+    api.put<OffNetLogEntry>(`/nets/${netId}/off-net-log/${entryId}`, data),
+  review: (netId: number, entryId: number, status: 'accepted' | 'rejected') =>
+    api.post<OffNetLogEntry>(`/nets/${netId}/off-net-log/${entryId}/review`, { status }),
+  acceptPending: (netId: number) => api.post<{ accepted: number }>(`/nets/${netId}/off-net-log/accept-pending`),
+  remove: (netId: number, entryId: number) => api.delete(`/nets/${netId}/off-net-log/${entryId}`),
+};
+
 export const drillPlanApi = {
   get: (netId: number, background = false) =>
     api.get(`/nets/${netId}/drill-plan`, background ? BACKGROUND_REQUEST_CONFIG : undefined),

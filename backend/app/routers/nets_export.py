@@ -32,15 +32,10 @@ from app.services.csv_import import (
     local_naive_to_utc,
     process_csv_rows,
 )
+from app.services.ics309_log import build_ics309_rows, get_accepted_off_net_entries
 from app.services.net_closure import close_net_and_notify
 from app.traffic.formatters import format_form
-from app.traffic.ics309 import (
-    format_traffic_ics309_message,
-    get_ics309_muted_user_ids,
-    get_net_traffic_log_entries,
-    traffic_from_station,
-    traffic_to_station,
-)
+from app.traffic.ics309 import get_ics309_muted_user_ids, get_net_traffic_log_entries
 from app.traffic.rri_strip import make_nts_safe
 from app.utils import GUEST_REDACTED_CHECK_IN_FIELDS, display_callsign, format_time_for_net, redact_contact_info, resolve_display_tz, to_display_tz
 
@@ -480,53 +475,23 @@ async def _build_ics309_data(db: AsyncSession, net: Net, current_user: Optional[
         else set()
     )
 
-    # Build log entries combining check-ins and chat
-    log_entries = []
-
-    # Add check-ins
-    for check_in in sorted(net.check_ins, key=lambda x: x.checked_in_at):
-        location_text = redact_contact_info(check_in.location) if redact else check_in.location
-        weather_text = redact_contact_info(check_in.weather_observation) if redact else check_in.weather_observation
-        location_info = f" from {location_text}" if location_text else ""
-        weather_info = f" | WX: {weather_text}" if weather_text else ""
-
-        log_entries.append({
-            'time': format_time_for_net(to_display_tz(check_in.checked_in_at, tz), display_started_at, display_closed_at),
-            'from_station': check_in.callsign,
-            'to_station': 'NET',
-            'message': f"Check-in{location_info}{weather_info}"
-        })
-
-    # Add chat messages (non-system)
-    for msg in chat_messages:
-        if msg.user_id is not None and msg.user_id in muted_user_ids:
-            continue
-        callsign = msg.user.callsign if msg.user and msg.user.callsign else ('System' if msg.is_system else 'Unknown')
-        if callsign != 'System':
-            log_entries.append({
-                'time': format_time_for_net(to_display_tz(msg.created_at, tz), display_started_at, display_closed_at),
-                'from_station': callsign,
-                'to_station': 'NET',
-                'message': redact_contact_info(msg.message) if redact else msg.message
-            })
-
-    # Add Assisted Traffic Handling rows -- metadata only, never the message
-    # body (Form.field_values / normalized_text). Only surfaced on the
-    # ICS-309 format itself, gated on the net's ics309_enabled toggle so a
-    # net that never opted into ICS-309 doesn't leak traffic metadata into
-    # this export either. See TRAFFIC-HANDLING-DESIGN.md D3's "ICS-309
-    # consequence" and app/traffic/ics309.py.
-    if net.ics309_enabled:
-        traffic_entries = await get_net_traffic_log_entries(db, net.id)
-        for entry in traffic_entries:
-            log_entries.append({
-                'time': format_time_for_net(to_display_tz(entry.occurred_at, tz), display_started_at, display_closed_at),
-                'from_station': traffic_from_station(entry.form, entry),
-                'to_station': traffic_to_station(entry),
-                'message': format_traffic_ics309_message(entry.form, entry),
-            })
-
-    log_entries.sort(key=lambda x: x.get('time', ''))
+    # Traffic rows are metadata only, never the message body, and only on a
+    # net that opted into ICS-309 (TRAFFIC-HANDLING-DESIGN.md D3's "ICS-309
+    # consequence"). Off-net entries are left out of a guest's copy: they are
+    # the team's own record and can name a site that's shown only to staff.
+    traffic_entries = await get_net_traffic_log_entries(db, net.id) if net.ics309_enabled else []
+    off_net_entries = await get_accepted_off_net_entries(db, net.id) if current_user else []
+    log_entries = build_ics309_rows(
+        check_ins=net.check_ins,
+        chat_messages=chat_messages,
+        traffic_entries=traffic_entries,
+        off_net_entries=off_net_entries,
+        muted_user_ids=muted_user_ids,
+        tz=tz,
+        started_at=display_started_at,
+        closed_at=display_closed_at,
+        redact=redact,
+    )
 
     return {
         'incident_name': net.name,

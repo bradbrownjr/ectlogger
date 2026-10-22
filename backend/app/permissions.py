@@ -330,6 +330,21 @@ def may_run_drill(a: NetAccess) -> bool:
     )
 
 
+def may_log_off_net(a: NetAccess) -> bool:
+    """Adding to the net's off-net log for any station, and having the entry
+    count straight away. Net control staff, who also enter the ones called in
+    over the air. A station checked into the net may log its own activity
+    without this rule; that entry waits for may_review_off_net_log."""
+    return _manager(a) or bool(a.active_roles & {"NCS", "LOGGER", "RELAY"})
+
+
+def may_review_off_net_log(a: NetAccess) -> bool:
+    """Accepting, rejecting, editing or deleting any off-net log entry. The
+    people who close the net, since what they accept is what its ICS-309
+    says (may_close_net)."""
+    return may_close_net(a)
+
+
 def net_actions(a: NetAccess) -> Dict[str, bool]:
     """Every per-action rule for one NetAccess, keyed as NetResponse.actions
     (schemas.NetActions) sends them to the app."""
@@ -344,6 +359,8 @@ def net_actions(a: NetAccess) -> Dict[str, bool]:
         "email_subscribers": may_email_net_subscribers(a),
         "record_coverage": may_record_coverage(a),
         "run_drill": may_run_drill(a),
+        "log_off_net": may_log_off_net(a),
+        "review_off_net_log": may_review_off_net_log(a),
     }
 
 
