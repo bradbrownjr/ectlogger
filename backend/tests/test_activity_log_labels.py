@@ -14,7 +14,8 @@ LABELS = BACKEND.parent / "frontend" / "src" / "utils" / "activityLog.ts"
 
 # Literal actions passed to record_event / record_net_event /
 # record_schedule_event, including the two picked by a conditional.
-ACTION = re.compile(r'"((?:auth|user|net|schedule|check_in|chat|off_net_log|admin|frequency|contact|backup)\.[a-z_]+)"')
+# Any "group.name" literal, so an action under a brand-new group is caught too.
+ACTION = re.compile(r'"([a-z_]+\.[a-z_]+)"')
 CALL = re.compile(r"record_(?:net_|schedule_)?event\(\s*db,\s*(.+?),", re.S)
 
 

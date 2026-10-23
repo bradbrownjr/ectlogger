@@ -28,6 +28,7 @@ class AuditEventResponse(BaseModel):
     actor_label: Optional[str]
     ip: Optional[str]
     user_agent: Optional[str]
+    location: Optional[str]
     target_type: Optional[str]
     target_id: Optional[int]
     target_label: Optional[str]
@@ -58,7 +59,7 @@ def _response(event: AuditEvent) -> AuditEventResponse:
     return AuditEventResponse(
         id=event.id, created_at=event.created_at, action=event.action,
         actor_user_id=event.actor_user_id, actor_label=event.actor_label,
-        ip=event.ip, user_agent=event.user_agent,
+        ip=event.ip, user_agent=event.user_agent, location=event.location,
         target_type=event.target_type, target_id=event.target_id, target_label=event.target_label,
         subject_user_id=event.subject_user_id, net_id=event.net_id, template_id=event.template_id,
         details=details,

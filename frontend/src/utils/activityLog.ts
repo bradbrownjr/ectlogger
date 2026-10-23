@@ -12,6 +12,7 @@ export interface ActivityEvent {
   actor_label: string | null;
   ip: string | null;
   user_agent: string | null;
+  location: string | null;
   target_type: string | null;
   target_id: number | null;
   target_label: string | null;
@@ -23,6 +24,7 @@ export interface ActivityEvent {
 
 /** The filter groups, in the order the filter menu lists them. */
 export const ACTION_GROUPS: { prefix: string; label: string }[] = [
+  { prefix: 'alert.', label: 'Security alerts' },
   { prefix: 'auth.', label: 'Sign-ins' },
   { prefix: 'user.', label: 'Accounts' },
   { prefix: 'net.', label: 'Nets' },
@@ -37,6 +39,9 @@ export const ACTION_GROUPS: { prefix: string; label: string }[] = [
 ];
 
 export const ACTION_LABELS: Record<string, string> = {
+  'alert.failed_sign_ins': 'Failed sign-in alert sent',
+  'alert.muted_often': 'Muted-by-others alert sent',
+
   'auth.signed_in': 'Signed in',
   'auth.password_failed': 'Wrong password',
   'auth.mfa_failed': 'Wrong two-factor code',
@@ -92,6 +97,8 @@ export const ACTION_LABELS: Record<string, string> = {
   'chat.message_deleted': "Someone else's chat message deleted",
   'chat.station_muted': 'Station muted for everyone',
   'chat.station_unmuted': 'Station unmuted for everyone',
+  'chat.muted_by_peer': 'Muted by another station',
+  'chat.unmuted_by_peer': 'Unmuted by another station',
   'off_net_log.deleted': 'Off-net log entry deleted',
 
   'admin.settings_changed': 'Site settings changed',

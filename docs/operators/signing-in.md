@@ -118,6 +118,15 @@ Worth turning on if your account can do damage: you run a net, you own a schedul
 
 Admin accounts are the exception: an admin cannot disable or replace their own two-factor authentication, because an admin who could turn it off on demand would make it optional in practice. Another admin resets it for them.
 
+## If you get a failed sign-in email
+
+When several wrong passwords are typed for your account in a short time, or one wrong two-factor code, ECTLogger emails you a list of the attempts with the time, the internet address, its approximate location, and the browser. Your instance's admins get a copy.
+
+If it was you, nothing needs doing. If it wasn't:
+
+- **Wrong passwords:** nobody got in. Set a strong password you don't use anywhere else, and turn on two-factor authentication if you haven't.
+- **A wrong two-factor code:** whoever it was typed your **correct password**. Change your password now. Two-factor authentication is what stopped them.
+
 ## If you lose your authenticator
 
 Work down this list:

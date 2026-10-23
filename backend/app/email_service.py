@@ -13,6 +13,7 @@ Implementation lives in:
   email/schedule_access.py — send_early_access_request, send_early_access_granted
   email/frequency_requests.py — send_frequency_change_request
   email/team_invites.py  — send_team_invite, send_callsign_claimed, send_callsign_claim_held
+  email/security_alerts.py — send_failed_sign_in_alert, send_muted_often_alert
   email/traffic.py       — send_traffic_reminder, send_traffic_hxb_final_notice,
                             send_traffic_stale_digest
 """
@@ -27,6 +28,7 @@ from app.email.base import (
     send_email_with_binary_attachment,
 )
 from app.email.digest import send_feedback_email, send_whats_new_email
+from app.email.security_alerts import send_failed_sign_in_alert, send_muted_often_alert
 from app.email.schedule_access import send_early_access_granted, send_early_access_request
 from app.email.frequency_requests import send_frequency_change_request
 from app.email.team_invites import send_callsign_claim_held, send_callsign_claimed, send_team_invite
@@ -62,6 +64,8 @@ class EmailService:
     send_password_changed = staticmethod(send_password_changed)
     send_email_change_notice = staticmethod(send_email_change_notice)
     send_email_change_link = staticmethod(send_email_change_link)
+    send_failed_sign_in_alert = staticmethod(send_failed_sign_in_alert)
+    send_muted_often_alert = staticmethod(send_muted_often_alert)
     send_net_notification = staticmethod(send_net_notification)
     send_net_invitation = staticmethod(send_net_invitation)
     send_net_cancellation = staticmethod(send_net_cancellation)

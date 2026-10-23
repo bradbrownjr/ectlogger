@@ -67,7 +67,11 @@ ECTLogger keeps an activity log of actions that matter for security and moderati
 
 It exists so that an account taken over by someone else, or a person causing trouble under several accounts, can be traced and stopped. Only the instance's administrators can see it. Routine activity such as checking in or chatting is not added to it.
 
-The IP address and browser are cleared from an entry after one year, and the entry itself is deleted after three years. If your account is deleted, the log keeps the callsign it had on entries that already exist, so the record of what happened isn't lost.
+Each address is also given an approximate location (a city and region) from a database kept on the server itself, [DB-IP](https://db-ip.com)'s free IP to City Lite. No address is sent to anyone to look it up. When several wrong passwords are typed for your account, you and the administrators get an email listing those attempts with their addresses and locations.
+
+Muting another station in chat for yourself is recorded without your name or address: the log keeps only that the station was muted, on which net, and a code that lets the administrators see how many *different* people have muted it, not who.
+
+The IP address, location, and browser are cleared from an entry after one year, and the entry itself is deleted after three years. If your account is deleted, the log keeps the callsign it had on entries that already exist, so the record of what happened isn't lost.
 
 ## Gravatar
 

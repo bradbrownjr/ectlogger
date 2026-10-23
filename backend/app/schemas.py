@@ -1624,6 +1624,13 @@ class AppSettingsResponse(BaseModel):
     # Avatars — when false no Gravatar URL is issued, so no browser contacts
     # gravatar.com. Uploaded profile photos are unaffected.
     gravatar_enabled: bool = True
+    # Security alerts (app/security_alerts.py)
+    signin_alert_enabled: bool = True
+    signin_alert_threshold: int = 5
+    signin_alert_window_minutes: int = 15
+    mute_alert_enabled: bool = True
+    mute_alert_threshold: int = 3
+    mute_alert_window_days: int = 30
 
     class Config:
         from_attributes = True
@@ -1654,6 +1661,13 @@ class AppSettingsUpdate(BaseModel):
     custom_theme: Optional[CustomTheme] = None
     # Avatars
     gravatar_enabled: Optional[bool] = None
+    # Security alerts
+    signin_alert_enabled: Optional[bool] = None
+    signin_alert_threshold: Optional[int] = Field(None, ge=1, le=50)
+    signin_alert_window_minutes: Optional[int] = Field(None, ge=1, le=1440)
+    mute_alert_enabled: Optional[bool] = None
+    mute_alert_threshold: Optional[int] = Field(None, ge=1, le=100)
+    mute_alert_window_days: Optional[int] = Field(None, ge=1, le=365)
 
     @field_validator('default_theme')
     @classmethod

@@ -66,7 +66,11 @@ const Admin: React.FC = () => {
   // Incremented when a user is created from the Contacts tab (invite), so UsersTab re-fetches
   const [usersRefreshTrigger, setUsersRefreshTrigger] = useState(0);
   // The account the Activity tab is narrowed to ("Show activity" on a user row).
-  const [activityPerson, setActivityPerson] = useState<ActivityPerson | null>(null);
+  // Also set from the link in a security alert email: ?tab=activity&user=<id>&label=<callsign>.
+  const [activityPerson, setActivityPerson] = useState<ActivityPerson | null>(() => {
+    const id = Number(searchParams.get('user'));
+    return id ? { id, label: searchParams.get('label') || `Account ${id}` } : null;
+  });
 
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();

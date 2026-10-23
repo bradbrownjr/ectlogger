@@ -4,7 +4,7 @@ summary: Running your own ECTLogger instance: installation, deployment behind a 
 kind: Explanation
 audience: Server operators
 owner: KC1JMH
-revised: 2026-09-18
+revised: 2026-10-23
 review_by: 2027-09-18
 applies_to: ECTLogger, self-hosted
 permalink: /docs/self-hosting/
@@ -53,6 +53,8 @@ Be honest about the commitment. An instance needs TLS that renews, email that ge
 **[Email deliverability](/docs/EMAIL-DELIVERABILITY/)** — SPF, DKIM, DMARC, and the reasons a magic link ends up in somebody's junk folder. The single most common source of "I cannot log in".
 
 **[Logging](/docs/LOGGING/)** — log levels, what gets written where, and what to turn up when something is wrong.
+
+**IP locations** — the activity log and security alerts show an approximate location for each address, from [DB-IP](https://db-ip.com)'s free IP to City Lite database (CC BY 4.0). The server downloads it from `download.db-ip.com` once a month, about 60 MB compressed and 130 MB on disk, into `backend/data/geoip/`. Set `GEOIP_AUTO_DOWNLOAD=false` in `backend/.env` on a server that can't reach the internet and place the `.mmdb` file there yourself, or point `GEOIP_DB_PATH` at it. Without the file, everything works and locations are simply blank. Back up `backend/data/` as usual; the file itself can always be downloaded again.
 
 ## Security
 

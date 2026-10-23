@@ -23,7 +23,8 @@ Only admins can see it. Net managers and Net Control can't, so when one of them 
 - **Admin actions on accounts:** edits, role changes, bans and unbans, password and two-factor resets, early schedule access, reverted callsign takeovers, deletions, and emails sent to all users.
 - **Nets:** closing, cancelling, restoring, archiving, unarchiving, and deleting, including the ones ECTLogger does by itself (an idle net closed automatically, an old net archived when its schedule's next one is created). Those show **Automatic** in the **Who** column.
 - **Net and schedule staff:** net roles given and removed, Claim NCS, schedule staff and NCS rotation changes, co-manager changes, a schedule handed to a new manager, and merged or deleted schedules.
-- **Moderation:** a check-in deleted, somebody else's chat message deleted (with what it said), a station muted or unmuted for everyone, and an off-net log entry deleted.
+- **Moderation:** a check-in deleted, somebody else's chat message deleted (with what it said), a station muted or unmuted for everyone, a station muted by another participant for themselves, and an off-net log entry deleted. A participant's own mute shows **Another station** in the **Who** column and no address: whom somebody chooses not to read is their business, so it is counted but never named.
+- **Security alerts:** every [alert email](/docs/admins/security-and-mfa/#security-alerts) that went out, for failed sign-ins or a station muted by several people.
 - **The admin panel itself:** site settings, the logo, check-in fields, frequencies and contacts deleted, and every backup setting, key, destination, and download.
 
 Routine net activity is not here. Check-ins and chat are already the net's own record, in its log.
@@ -32,7 +33,7 @@ Routine net activity is not here. Check-ins and chat are already the net's own r
 
 1. Open the admin panel and choose the **Activity** tab.
 2. Type a callsign, a net or schedule name, or any word from the details into the search box. To see one kind of thing, pick it from **Show**, such as **Nets** or **Sign-ins**.
-3. Read across the row: **When**, **Who**, **What** it was done to, the **Details**, and **From**, the address it came from. Hover over an address to see which browser it was.
+3. Read across the row: **When**, **Who**, **What** it was done to, the **Details**, and **From**, the address it came from with its approximate location underneath. Hover over an address to see which browser it was.
 
 Anything underlined in a row narrows the list to it. Click a person to see everything they did and everything done to their account, a net or schedule name to see its whole history, or an address to see everything that came from it. Each one shows as a chip above the list; click its **×** to remove it.
 
@@ -53,7 +54,8 @@ Read it with care. A household, a club station, or a whole mobile carrier's cust
 ## What surprises people
 
 - **A deleted net or account still shows up.** The entry keeps the name it had, so "who deleted the Tuesday net" still has an answer after the net is gone. A deleted account shows its last callsign without a link.
-- **Entries are kept for three years, and addresses for one.** After a year, the address and browser are cleared from an entry and the rest stays. After three years the entry itself is removed. These limits are set in the software, not in the admin panel, and the [privacy policy](/docs/PRIVACY/) tells users about them.
+- **Locations are approximate.** They come from DB-IP's free database, kept on the server, so no address is ever sent anywhere to look it up. A city can be off by a long way, a mobile phone often shows its carrier's city rather than yours, and a private or unknown address shows none. The credit to DB-IP under the list is required by its license.
+- **Entries are kept for three years, and addresses for one.** After a year, the address, location, and browser are cleared from an entry and the rest stays. After three years the entry itself is removed. These limits are set in the software, not in the admin panel, and the [privacy policy](/docs/PRIVACY/) tells users about them.
 - **Account edits from before 23 October 2026 are here too**, from the record the Edit User dialog already kept. Nothing else was recorded before that date.
 
 ## Next

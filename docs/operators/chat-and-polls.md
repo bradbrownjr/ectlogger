@@ -38,7 +38,7 @@ Hovering over someone else's message shows a small row of emoji reactions. Click
 
 Hovering your own message shows an edit pencil (text messages only; an uploaded image can't be rewritten). Editing replaces the message in place and marks it "(edited)"; there's no version history, because the point is a corrected net log, not a paper trail of typos.
 
-Hovering anyone else's message shows a mute icon: **mute this station**, for you only. It hides that callsign's messages in your own view of this one net. Nobody else is affected, and it doesn't touch the net's actual log or export. A banner above the chat shows how many stations you (or, on a net with staff-applied mutes, anyone) currently have muted, with a manage list to undo it. If Net Control has muted someone for the whole net (a moderation action, not something a participant can do), you won't be told who did it, only that the station is muted.
+Hovering anyone else's message shows a mute icon: **mute this station**, for you only. It hides that callsign's messages in your own view of this one net. Nobody else is affected, and it doesn't touch the net's actual log or export. A banner above the chat shows how many stations you (or, on a net with staff-applied mutes, anyone) currently have muted, with a manage list to undo it. If Net Control has muted someone for the whole net (a moderation action, not something a participant can do), you won't be told who did it, only that the station is muted. When several different people mute the same station, the instance's admins are told how many, never who.
 
 ## Topic of the Week and the poll
 

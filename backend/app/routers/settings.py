@@ -93,6 +93,12 @@ def _build_settings_response(settings: AppSettings) -> AppSettingsResponse:
         custom_theme=CustomTheme(**json.loads(settings.custom_theme_json)) if settings.custom_theme_json else None,
         custom_logo_url=settings.custom_logo_url,
         gravatar_enabled=settings.gravatar_enabled if settings.gravatar_enabled is not None else True,
+        signin_alert_enabled=settings.signin_alert_enabled is not False,
+        signin_alert_threshold=settings.signin_alert_threshold or 5,
+        signin_alert_window_minutes=settings.signin_alert_window_minutes or 15,
+        mute_alert_enabled=settings.mute_alert_enabled is not False,
+        mute_alert_threshold=settings.mute_alert_threshold or 3,
+        mute_alert_window_days=settings.mute_alert_window_days or 30,
     )
 
 
@@ -176,6 +182,15 @@ async def update_settings(
         # get_avatar_url() is called from a synchronous serializer with no DB
         # session, so it reads an in-process cache that has to be refreshed here.
         set_gravatar_enabled(settings_update.gravatar_enabled)
+
+    # Security alerts (app/security_alerts.py)
+    for field in (
+        'signin_alert_enabled', 'signin_alert_threshold', 'signin_alert_window_minutes',
+        'mute_alert_enabled', 'mute_alert_threshold', 'mute_alert_window_days',
+    ):
+        value = getattr(settings_update, field)
+        if value is not None:
+            setattr(settings, field, value)
 
     after = _settings_snapshot(settings)
     changes = {k: [before[k], after[k]] for k in after if before[k] != after[k]}

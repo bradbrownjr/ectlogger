@@ -4,7 +4,7 @@ summary: Every message ECTLogger sends, what triggers it, who gets it, and how t
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-19
+revised: 2026-10-23
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/emails/
@@ -24,6 +24,8 @@ Every one of these is read directly from the sending code, not from memory. Most
 | Password changed | You change your own password, or an admin resets it for you | The account's email | Nothing to turn off — a security notice, sent regardless of your email preferences. |
 | Confirm your new email | You ask to change your sign-in email from Profile > Security | The new address | Nothing to turn off. The link works for 24 hours, and nothing changes unless it is opened. |
 | Email changed | Your sign-in email changes, by your own confirmed request or by an admin | Both the old and the new address | Nothing to turn off — a security notice, sent regardless of your email preferences. |
+| Failed sign-ins | Several wrong passwords for an account in a short time, or one wrong two-factor code (numbers set on the admin Security tab). At most once per account per period. | The account's owner and every admin | An admin can turn the alert off for the whole instance; there is no per-person switch, since it's a security notice. |
+| Station muted by several people | That many different people have muted one station in chat within the period set on the admin Security tab | Every admin. Never the muted station | An admin turns it off on the Security tab |
 | Team invitation | A schedule's manager or co-manager adds you to its staff by callsign and gives your email address, or sends the invitation later | The address they entered | Nothing to turn off, since you have no account yet. Each manager can send at most 25 invitations a day, and one address gets at most 3 a day. |
 | Callsign joined the team | An operator on your schedule's team by callsign takes over that spot, by signing in with the address you invited or because a co-manager linked them | The schedule's manager | Sent regardless of your email preferences, so you always know who took a spot |
 | Check this sign-up | Someone signs up with a callsign on your team without signing in at an address you invited, so nothing is handed over until you link them. Sent once per person and schedule. | The schedule's manager | Sent regardless of your email preferences, as above |

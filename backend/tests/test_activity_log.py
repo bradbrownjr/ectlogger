@@ -241,7 +241,10 @@ async def test_email_change_needs_the_two_factor_code_when_enabled(client, db, o
                            json={"new_email": "new@example.com", "totp_code": pyotp.TOTP(secret).now()},
                            headers=auth_headers(owner))
     assert ok.status_code == 200
-    assert [e.action for e in await _events(db)] == ["auth.mfa_failed", "user.email_change_requested"]
+    # A wrong two-factor code alerts at once (app/security_alerts.py).
+    assert [e.action for e in await _events(db)] == [
+        "auth.mfa_failed", "alert.failed_sign_ins", "user.email_change_requested",
+    ]
 
 
 @pytest.mark.asyncio

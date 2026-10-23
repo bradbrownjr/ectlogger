@@ -1418,6 +1418,9 @@ class AuditEvent(Base):
     actor_label = Column(String(255), nullable=True)
     ip = Column(String(64), nullable=True, index=True)
     user_agent = Column(String(255), nullable=True)
+    # Where the address was at the time, from the local GeoIP file
+    # (app/geoip.py): "City, Region, CC". Cleared along with ip.
+    location = Column(String(120), nullable=True)
     # What it was done to.
     target_type = Column(String(32), nullable=True)  # user, net, schedule, check_in, chat_message, ...
     target_id = Column(Integer, nullable=True)
@@ -1474,6 +1477,17 @@ class AppSettings(Base):
     # or privacy-restricted networks (EOC, hospital, agency). Uploaded profile
     # photos are unaffected; only the third-party lookup is disabled.
     gravatar_enabled = Column(Boolean, default=True)
+
+    # Security alerts (app/security_alerts.py). Failed sign-ins email the
+    # account's owner and every admin; a wrong two-factor code alerts on
+    # the first one, since it means the password was right. Being muted by
+    # this many different people emails admins only.
+    signin_alert_enabled = Column(Boolean, default=True)
+    signin_alert_threshold = Column(Integer, default=5)
+    signin_alert_window_minutes = Column(Integer, default=15)
+    mute_alert_enabled = Column(Boolean, default=True)
+    mute_alert_threshold = Column(Integer, default=3)
+    mute_alert_window_days = Column(Integer, default=30)
 
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

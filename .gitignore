@@ -83,3 +83,8 @@ backend/.restore-*/
 backend/.env.from-backup
 backend/*.pre-restore-*
 backend/database-*.sql
+
+# GeoIP database (app/geoip.py), downloaded monthly, ~130 MB
+backend/data/geoip/
+*.mmdb
+*.mmdb.gz

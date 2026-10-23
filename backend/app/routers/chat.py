@@ -13,7 +13,8 @@ from typing import List, Optional
 from PIL import Image
 
 from app.database import get_db
-from app.audit import record_net_event, user_label
+from app.audit import private_actor_code, record_net_event, user_label
+from app.security_alerts import check_mutes
 from app.models import ChatMessage, ChatMute, ChatNetMute, ChatReaction, ChatImage, CheckIn, Net, NetStatus, User
 from app.schemas import (
     ChatMessageCreate,
@@ -630,8 +631,15 @@ async def mute_station(
     if not mute:
         mute = ChatMute(net_id=net_id, muter_user_id=current_user.id, muted_user_id=body.muted_user_id)
         db.add(mute)
+        # A personal mute is the muter's own business: logged without who
+        # or from where, only a code that lets the mute alert count
+        # different people (security_alerts.check_mutes).
+        net = await _get_net_or_404(db, net_id)
+        record_net_event(db, "chat.muted_by_peer", None, net, subject=target_user, private=True,
+                         details={"station": user_label(target_user), "muter": private_actor_code(current_user.id)})
         await db.commit()
         await db.refresh(mute)
+        await check_mutes(db, target_user)
 
     return ChatMuteResponse(muted_user_id=mute.muted_user_id, callsign=target_user.callsign, created_at=mute.created_at)
 
@@ -653,6 +661,8 @@ async def unmute_station(
     )
     mute = result.scalar_one_or_none()
     if mute:
+        net = await _get_net_or_404(db, net_id)
+        record_net_event(db, "chat.unmuted_by_peer", None, net, subject_user_id=muted_user_id, private=True)
         await db.delete(mute)
         await db.commit()
     return None
@@ -754,6 +764,7 @@ async def net_mute_station(
     record_net_event(db, "chat.station_muted", current_user, net, subject=target_user,
                      details={"station": user_label(target_user)})
     await db.commit()
+    await check_mutes(db, target_user)
     await db.refresh(mute)
 
     response = ChatNetMuteResponse(

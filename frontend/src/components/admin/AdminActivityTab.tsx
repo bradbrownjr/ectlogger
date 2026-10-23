@@ -290,11 +290,19 @@ const AdminActivityTab: React.FC<Props> = ({ showSnackbar, person, onPersonChang
                   {/* From: the browser shows on hover; clicking the address narrows to it */}
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
                     {event.ip ? (
-                      <Tooltip title={event.user_agent || ''}>
-                        <Link component="button" onClick={() => setIp(event.ip)}>
-                          {event.ip}
-                        </Link>
-                      </Tooltip>
+                      <>
+                        <Tooltip title={event.user_agent || ''}>
+                          <Link component="button" onClick={() => setIp(event.ip)}>
+                            {event.ip}
+                          </Link>
+                        </Tooltip>
+                        {/* Approximate, from the local DB-IP file (credited below the list) */}
+                        {event.location && (
+                          <Typography variant="body2" color="text.secondary">
+                            {event.location}
+                          </Typography>
+                        )}
+                      </>
                     ) : (
                       <Typography variant="body2" color="text.secondary" component="span">
                         Not recorded
@@ -316,6 +324,13 @@ const AdminActivityTab: React.FC<Props> = ({ showSnackbar, person, onPersonChang
         onRowsPerPageChange={(e) => setPageSize(parseInt(e.target.value, 10))}
         rowsPerPageOptions={PAGE_SIZES}
       />
+      {/* Required by the DB-IP City Lite license (CC BY 4.0) wherever locations show */}
+      <Typography variant="caption" color="text.secondary">
+        Locations are approximate.{' '}
+        <Link href="https://db-ip.com" target="_blank" rel="noopener noreferrer">
+          IP Geolocation by DB-IP
+        </Link>
+      </Typography>
     </Box>
   );
 };

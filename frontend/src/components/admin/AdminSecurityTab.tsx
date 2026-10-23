@@ -27,6 +27,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import api from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 
@@ -79,6 +80,17 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
   });
   const [sessionSettingsSaving, setSessionSettingsSaving] = useState(false);
 
+  // Security alerts (backend app/security_alerts.py)
+  const [alertSettings, setAlertSettings] = useState({
+    signin_alert_enabled: true,
+    signin_alert_threshold: 5,
+    signin_alert_window_minutes: 15,
+    mute_alert_enabled: true,
+    mute_alert_threshold: 3,
+    mute_alert_window_days: 30,
+  });
+  const [alertSettingsSaving, setAlertSettingsSaving] = useState(false);
+
   // Avatar privacy: master switch for third-party Gravatar lookups.
   const [gravatarEnabled, setGravatarEnabled] = useState(true);
   const [gravatarSaving, setGravatarSaving] = useState(false);
@@ -109,6 +121,14 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
         session_rolling_renewal: response.data.session_rolling_renewal ?? true,
       });
       setGravatarEnabled(response.data.gravatar_enabled ?? true);
+      setAlertSettings({
+        signin_alert_enabled: response.data.signin_alert_enabled ?? true,
+        signin_alert_threshold: response.data.signin_alert_threshold ?? 5,
+        signin_alert_window_minutes: response.data.signin_alert_window_minutes ?? 15,
+        mute_alert_enabled: response.data.mute_alert_enabled ?? true,
+        mute_alert_threshold: response.data.mute_alert_threshold ?? 3,
+        mute_alert_window_days: response.data.mute_alert_window_days ?? 30,
+      });
     } catch (error) {
       console.error('Failed to fetch settings:', error);
     } finally {
@@ -157,6 +177,22 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
       setSessionSettingsSaving(false);
     }
   };
+
+  const handleSaveAlertSettings = async () => {
+    setAlertSettingsSaving(true);
+    try {
+      await api.put('/settings', alertSettings);
+      showSnackbar('Security alert settings saved', 'success');
+    } catch (error: any) {
+      showSnackbar(getErrorMessage(error, 'Failed to save security alert settings'), 'error');
+    } finally {
+      setAlertSettingsSaving(false);
+    }
+  };
+
+  // A whole number in [min, max] from a number field, for the alert settings.
+  const bounded = (value: string, min: number, max: number) =>
+    Math.min(max, Math.max(min, parseInt(value) || min));
 
   const handleSaveGravatar = async (enabled: boolean) => {
     setGravatarSaving(true);
@@ -546,6 +582,100 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
                     startIcon={sessionSettingsSaving ? <CircularProgress size={20} /> : null}
                   >
                     {sessionSettingsSaving ? 'Saving...' : 'Save Settings'}
+                  </Button>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* ========== SECURITY ALERTS CARD ========== */}
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                <NotificationsActiveIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+                Security Alerts
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Emails sent when the activity log shows trouble. Each alert goes out at most once per account per period.
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {/* Failed sign-ins: the account's owner and every admin */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography variant="body1">Failed sign-in alerts</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Emails the account's owner and every admin, with each attempt's address and approximate location. A wrong two-factor code alerts on the first one, because it means the password was right.
+                    </Typography>
+                  </Box>
+                  <Switch
+                    checked={alertSettings.signin_alert_enabled}
+                    onChange={(e) => setAlertSettings({ ...alertSettings, signin_alert_enabled: e.target.checked })}
+                    inputProps={{ 'aria-label': 'Failed sign-in alerts' }}
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <TextField
+                    label="Wrong passwords"
+                    type="number"
+                    value={alertSettings.signin_alert_threshold}
+                    onChange={(e) => setAlertSettings({ ...alertSettings, signin_alert_threshold: bounded(e.target.value, 1, 50) })}
+                    inputProps={{ min: 1, max: 50 }}
+                    disabled={!alertSettings.signin_alert_enabled}
+                    sx={{ flex: '1 1 200px' }}
+                  />
+                  <TextField
+                    label="Within (minutes)"
+                    type="number"
+                    value={alertSettings.signin_alert_window_minutes}
+                    onChange={(e) => setAlertSettings({ ...alertSettings, signin_alert_window_minutes: bounded(e.target.value, 1, 1440) })}
+                    inputProps={{ min: 1, max: 1440 }}
+                    disabled={!alertSettings.signin_alert_enabled}
+                    sx={{ flex: '1 1 200px' }}
+                  />
+                </Box>
+
+                {/* Muted by others: admins only, never the muted station */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography variant="body1">Muted-by-others alerts</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Emails admins when this many different people have muted one station in chat, counting net-wide mutes by net control. The station is never told, and personal mutes are counted without saying who.
+                    </Typography>
+                  </Box>
+                  <Switch
+                    checked={alertSettings.mute_alert_enabled}
+                    onChange={(e) => setAlertSettings({ ...alertSettings, mute_alert_enabled: e.target.checked })}
+                    inputProps={{ 'aria-label': 'Muted-by-others alerts' }}
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <TextField
+                    label="Different people"
+                    type="number"
+                    value={alertSettings.mute_alert_threshold}
+                    onChange={(e) => setAlertSettings({ ...alertSettings, mute_alert_threshold: bounded(e.target.value, 1, 100) })}
+                    inputProps={{ min: 1, max: 100 }}
+                    disabled={!alertSettings.mute_alert_enabled}
+                    sx={{ flex: '1 1 200px' }}
+                  />
+                  <TextField
+                    label="Within (days)"
+                    type="number"
+                    value={alertSettings.mute_alert_window_days}
+                    onChange={(e) => setAlertSettings({ ...alertSettings, mute_alert_window_days: bounded(e.target.value, 1, 365) })}
+                    inputProps={{ min: 1, max: 365 }}
+                    disabled={!alertSettings.mute_alert_enabled}
+                    sx={{ flex: '1 1 200px' }}
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleSaveAlertSettings}
+                    disabled={alertSettingsSaving}
+                    startIcon={alertSettingsSaving ? <CircularProgress size={20} /> : null}
+                  >
+                    {alertSettingsSaving ? 'Saving...' : 'Save Settings'}
                   </Button>
                 </Box>
               </Box>

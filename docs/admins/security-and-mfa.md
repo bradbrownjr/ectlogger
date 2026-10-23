@@ -4,7 +4,7 @@ summary: Two-factor enrollment and reset, failed-login lockouts, session length,
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-10-23
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/security-and-mfa/
@@ -49,6 +49,15 @@ The same Users tab row has a **Reset password** icon, for someone who's locked o
 ## Failed-login lockouts
 
 Five wrong password attempts in a row locks that account out for 15 minutes. This threshold is fixed in the software rather than something you can tune from this tab; it exists alongside, not instead of, the IP-level protection below.
+
+## Security alerts
+
+The **Security Alerts** card sends email when the [activity log](/docs/admins/activity-log/) shows trouble. Each kind has its own switch and its own numbers, and each goes out at most once per account per period, so somebody hammering at an account can't flood anyone's inbox.
+
+- **Failed sign-in alerts** — when an account collects this many wrong passwords or two-factor codes within this many minutes, its owner and every admin get an email listing each attempt with its time, internet address, approximate location, and browser. The default is 5 within 15 minutes, matching the lockout above. A wrong two-factor code alerts on the very first one, because it means whoever typed it had the right password. The owner's copy tells them what to do if it wasn't them.
+- **Muted-by-others alerts** — when this many different people have muted one station in chat within this many days, every admin gets an email. The default is 3 within 30 days. Both kinds of mute count: a participant muting a station for themselves, and Net Control muting one for everyone. The muted station is never told. Personal mutes are a participant's own business, so the email and the activity log give the count and the nets, never who.
+
+Click **Save Settings** on the card to apply changes.
 
 ## Fail2Ban status
 

@@ -32,6 +32,7 @@ from app.config import settings
 from app.logger import logger
 from app.security import get_client_ip
 from app.audit import record_event, user_label
+from app.security_alerts import check_failed_sign_ins
 from app.services.account_email import (
     apply_email_change, create_email_change_token, email_in_use, read_email_change_token,
 )
@@ -244,6 +245,7 @@ async def _record_mfa_failure(db: AsyncSession, user: User, totp_code: Optional[
     if totp_code:
         record_event(db, "auth.mfa_failed", user, details={"method": method})
         await db.commit()
+        await check_failed_sign_ins(db, user, mfa=True)
 
 
 def _require_non_admin_mfa_self_service(user: User):
@@ -469,6 +471,7 @@ async def password_login(
             # trace, and logging it would store whatever was typed.
             record_event(db, "auth.password_failed", user, details={"locked_out": locked} if locked else None)
             await db.commit()
+            await check_failed_sign_ins(db, user, mfa=False)
         logger.auth_failure("Invalid password login", client_ip, email=payload.identifier)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=GENERIC_LOGIN_ERROR)
 
@@ -549,6 +552,7 @@ async def request_email_change(
     if current_user.mfa_enabled and await _resolve_mfa(db, current_user, payload.totp_code) != "ok":
         record_event(db, "auth.mfa_failed", current_user, details={"method": "email change"})
         await db.commit()
+        await check_failed_sign_ins(db, current_user, mfa=True)
         raise HTTPException(status_code=401, detail="That two-factor code is not valid.")
     if await email_in_use(db, new_email, current_user.id):
         raise HTTPException(status_code=409, detail="That email is already used by another account.")

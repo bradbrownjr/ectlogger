@@ -4,7 +4,7 @@ summary: Muting a station for yourself, muting one for everyone, and what the mu
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-10-23
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/chat-moderation/
@@ -25,6 +25,8 @@ Anyone can do this, on any message that isn't their own. Hover the message and c
 </figure>
 
 A plain click hides that station's messages from your own view of this net's chat, for the rest of the net. It's entirely client-side filtering on your end — the messages still arrive, they're just not shown to you. Nobody else's view changes, the muted station is never told, and the net's exported chat log is completely unaffected.
+
+Each mute of either kind is counted. When several different people have muted the same station, the instance's admins get an email with the count and the nets, but a personal mute never says who did it. That's how a station disrupting nets across a whole instance gets noticed by someone who can act on it.
 
 ## Muting a station for everyone
 

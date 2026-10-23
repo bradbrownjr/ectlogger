@@ -75,6 +75,15 @@ class Settings(BaseSettings):
     #   "off"      - nothing does; for installs that back up their own volumes
     backup_scheduler: str = "cron"
 
+    # GeoIP (app/geoip.py): the approximate location of an address in the
+    # activity log and security alerts, from DB-IP's free City Lite file,
+    # read locally so no address is ever sent anywhere. GEOIP_DB_PATH
+    # defaults to backend/data/geoip/dbip-city-lite.mmdb. GEOIP_AUTO_DOWNLOAD
+    # fetches it monthly; turn it off on a server that can't reach
+    # download.db-ip.com and place the file by hand.
+    geoip_db_path: Optional[str] = None
+    geoip_auto_download: bool = True
+
     # Deployment (used by start.sh, not the app itself)
     skip_vite: bool = False  # Set to true when Caddy serves static files
     

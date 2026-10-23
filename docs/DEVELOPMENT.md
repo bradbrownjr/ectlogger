@@ -635,6 +635,37 @@ a link sent to the old address still signing in to the account. Self-service cha
 signed token to the new address. The token carries the old address, which makes it
 single-use. Both steps refuse while an admin's Email padlock is on.
 
+### Security alerts and IP locations
+
+`app/security_alerts.py` emails on patterns in the activity log, with thresholds in
+`AppSettings.signin_alert_*` / `mute_alert_*` (migration 089, Admin > Security).
+
+- **`check_failed_sign_ins(db, user, mfa)`** runs after an `auth.password_failed` or
+  `auth.mfa_failed` event is committed. It counts both actions for the account in
+  the window and emails the owner and every admin. A two-factor failure (`mfa=True`)
+  alerts on the first, since the password was right.
+- **`check_mutes(db, muted)`** runs after a personal or net-wide mute is committed,
+  counts *different* people, and emails admins only. Never the muted station: a
+  net-wide mute is a shadow mute.
+- **Throttling is an event too.** Each alert writes `alert.failed_sign_ins` /
+  `alert.muted_often` for the subject, and no second alert goes out while one exists
+  inside the window. No separate state table.
+- **Personal mutes are logged with `private=True`**, which drops the actor, IP and
+  browser (the tab shows "Another station"). The muter is stored only as
+  `audit.private_actor_code(user_id)`, an HMAC of the id under `SECRET_KEY`, so
+  distinct people can be counted without naming anyone (Brad, 2026-10-23). Net-wide
+  mutes are staff moderation and keep their actor; `check_mutes` turns that actor
+  into the same code so one person counts once across both kinds.
+
+`app/geoip.py` gives every event a `location` ("City, Region, CC") at write time from
+DB-IP's IP to City Lite `.mmdb` (CC BY 4.0, read with `maxminddb`). The lookup is
+local, so no address leaves the server. The file lives at `backend/data/geoip/`
+(gitignored, `GEOIP_DB_PATH` overrides) and `AuditPruneService` refreshes it when it
+is over 32 days old, unless `GEOIP_AUTO_DOWNLOAD=false`. A missing file means blank
+locations, never an error. The license requires the "IP Geolocation by DB-IP" link
+wherever locations are shown (`geoip.ATTRIBUTION_HTML`, and the caption under the
+Activity tab). Pruning clears `location` together with `ip`.
+
 ---
 
 ## Database Migrations

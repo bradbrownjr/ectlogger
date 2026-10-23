@@ -10,14 +10,16 @@ what, or touches an account's sign-in (sign-ins, failed attempts, password,
 two-factor, profile and email changes). Routine net activity does not;
 check-ins and chat already record themselves.
 
-Retention: rows are kept AUDIT_RETENTION_DAYS, and their IP address and
-browser are blanked after AUDIT_IP_RETENTION_DAYS. GDPR sets no fixed period
+Retention: rows are kept AUDIT_RETENTION_DAYS, and their IP address,
+location and browser are blanked after AUDIT_IP_RETENTION_DAYS. GDPR sets no fixed period
 for security logs; CNIL's 2021 logging recommendation (deliberation
 2021-122) suggests 6-12 months for ordinary logs and up to 3 years where
 misuse has to be traced, which is the case here (repeat bad actors).
 Decided with Brad 2026-10-23.
 """
 import asyncio
+import hashlib
+import hmac
 import json
 from contextvars import ContextVar
 from datetime import datetime, timedelta, timezone
@@ -26,6 +28,8 @@ from typing import Any, Dict, Iterable, Optional, Tuple
 from sqlalchemy import delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import geoip
+from app.config import settings
 from app.models import AuditEvent, User
 
 AUDIT_RETENTION_DAYS = 3 * 365
@@ -40,6 +44,17 @@ _request_origin: ContextVar[Tuple[Optional[str], Optional[str]]] = ContextVar(
 
 def set_request_origin(ip: Optional[str], user_agent: Optional[str]) -> None:
     _request_origin.set((ip, (user_agent or None) and user_agent[:255]))
+
+
+PRIVATE_ACTOR_LABEL = "Another station"
+
+
+def private_actor_code(user_id: int) -> str:
+    """A stand-in for a private actor (record_event's private=True): the same
+    for every action by one account, so distinct people can be counted, and
+    useless for finding out who without the server's secret key."""
+    digest = hmac.new(settings.secret_key.encode(), f"audit-actor:{user_id}".encode(), hashlib.sha256)
+    return digest.hexdigest()[:16]
 
 
 def user_label(user: Optional[User]) -> Optional[str]:
@@ -63,14 +78,22 @@ def record_event(
     net_id: Optional[int] = None,
     template_id: Optional[int] = None,
     details: Optional[Dict[str, Any]] = None,
+    private: bool = False,
 ) -> AuditEvent:
     """Add one event to the session. The caller commits.
 
     subject is the person the action was about when that isn't the actor;
     pass the User, or subject_user_id when only the id is at hand. A user
     target is its own subject.
+
+    private=True records the action without who did it or from where (no
+    actor, address, or browser), for a choice that is the actor's own
+    business: a personal chat mute. Use private_actor_code in details when
+    distinct actors still need counting.
     """
-    ip, user_agent = _request_origin.get()
+    ip, user_agent = (None, None) if private else _request_origin.get()
+    if private:
+        actor, actor_label = None, PRIVATE_ACTOR_LABEL
     if subject is not None:
         subject_user_id = subject.id
     if target_type == "user" and subject_user_id is None:
@@ -81,6 +104,7 @@ def record_event(
         actor_label=actor_label or user_label(actor),
         ip=ip,
         user_agent=user_agent,
+        location=geoip.lookup(ip),
         target_type=target_type,
         target_id=target_id,
         target_label=target_label,
@@ -148,14 +172,15 @@ async def prune_audit_events(db: AsyncSession, now: Optional[datetime] = None) -
             AuditEvent.created_at < now - timedelta(days=AUDIT_IP_RETENTION_DAYS),
             (AuditEvent.ip.isnot(None)) | (AuditEvent.user_agent.isnot(None)),
         )
-        .values(ip=None, user_agent=None)
+        .values(ip=None, user_agent=None, location=None)
     )
     await db.commit()
     return deleted.rowcount or 0, blanked.rowcount or 0
 
 
 class AuditPruneService:
-    """Runs prune_audit_events once a day in the web service."""
+    """Once a day in the web service: prune_audit_events, and refresh the
+    GeoIP file when it is a month old (geoip.refresh_database)."""
 
     INTERVAL_SECONDS = 24 * 3600
 
@@ -188,6 +213,10 @@ class AuditPruneService:
                     logger.info("AUDIT", f"Pruned {deleted} activity log rows, blanked addresses on {blanked}")
             except Exception as exc:
                 logger.error("AUDIT", f"Activity log pruning failed: {exc}")
+            try:
+                await geoip.refresh_database()
+            except Exception as exc:
+                logger.error("GEOIP", f"GeoIP refresh failed: {exc}")
             await asyncio.sleep(self.INTERVAL_SECONDS)
 
 
