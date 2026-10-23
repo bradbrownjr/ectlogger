@@ -271,6 +271,7 @@ def test_migration_088_copies_admin_audit_log_and_drops_it(tmp_path):
     conn.execute("CREATE TABLE admin_audit_log (id INTEGER PRIMARY KEY, admin_id INTEGER, target_user_id INTEGER, "
                  "field TEXT, old_value TEXT, new_value TEXT, created_at DATETIME)")
     conn.execute("INSERT INTO admin_audit_log VALUES (1, 1, 2, 'name', 'Old', 'New', '2026-09-01 12:00:00')")
+    conn.execute("INSERT INTO admin_audit_log VALUES (2, 1, 2, 'callsigns', '[\"NEIL\"]', '[]', '2026-09-01 12:00:00')")
     conn.commit()
     conn.close()
 
@@ -283,9 +284,13 @@ def test_migration_088_copies_admin_audit_log_and_drops_it(tmp_path):
 
     conn = sqlite3.connect(db_path)
     rows = conn.execute("SELECT action, actor_user_id, actor_label, target_label, subject_user_id, details, created_at "
-                        "FROM audit_events").fetchall()
-    assert rows == [("user.admin_edited", 1, "KC1JMH", "NB9D", 2,
-                     json.dumps({"changes": {"name": ["Old", "New"]}}), "2026-09-01 12:00:00")]
+                        "FROM audit_events ORDER BY id").fetchall()
+    assert rows == [
+        ("user.admin_edited", 1, "KC1JMH", "NB9D", 2,
+         json.dumps({"changes": {"name": ["Old", "New"]}}), "2026-09-01 12:00:00"),
+        ("user.admin_edited", 1, "KC1JMH", "NB9D", 2,
+         json.dumps({"changes": {"callsigns": [["NEIL"], []]}}), "2026-09-01 12:00:00"),
+    ]
     assert conn.execute("SELECT name FROM sqlite_master WHERE name='admin_audit_log'").fetchone() is None
 
 

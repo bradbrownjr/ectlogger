@@ -17,6 +17,17 @@ import os
 import sqlite3
 
 
+def _value(text):
+    """The old table kept lists (callsigns, locked_fields) as JSON text;
+    new events store them as lists, so decode them to match."""
+    if isinstance(text, str) and text.startswith("["):
+        try:
+            return json.loads(text)
+        except ValueError:
+            pass
+    return text
+
+
 def migrate(db_path: str = None):
     if db_path is None:
         db_path = os.path.join(os.path.dirname(__file__), '..', 'ectlogger.db')
@@ -68,7 +79,7 @@ def migrate(db_path: str = None):
                        VALUES (?, 'user.admin_edited', ?, ?, 'user', ?, ?, ?, ?)""",
                     (created_at, admin_id, admin_cs or admin_email, target_id,
                      target_cs or target_email, target_id,
-                     json.dumps({"changes": {field: [old_value, new_value]}})),
+                     json.dumps({"changes": {field: [_value(old_value), _value(new_value)]}})),
                 )
             cursor.execute("DROP TABLE admin_audit_log")
             print(f"Copied {len(rows)} admin_audit_log rows into audit_events and dropped admin_audit_log.")
