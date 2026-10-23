@@ -2039,9 +2039,10 @@ const NetView: React.FC = () => {
               <Paper sx={{ border: 1, borderColor: 'divider', borderTop: 0, borderRadius: '0 0 4px 4px', p: 1, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
                 <Table size="small">
                   <TableBody>
-                  <TableRow sx={{ '& .MuiTableCell-root': { border: 0, py: 0.25 } }}>
+                  {/* Tight cell padding: MUI's default 16px per side spent most of
+                      the row on gaps, leaving the inputs too narrow to read */}
+                  <TableRow sx={{ '& .MuiTableCell-root': { border: 0, py: 0.25, px: 0.5 } }}>
                     <TableCell>{checkIns.length + 1}</TableCell>
-                    <TableCell>➕</TableCell>
                     <TableCell>
                       <TextField
                         size="small"
@@ -2325,7 +2326,6 @@ const NetView: React.FC = () => {
                         sx={{ width: 70 }}
                       />
                     </TableCell>
-                    <TableCell>-</TableCell>
                     <TableCell>
                       <Select
                         size="small"
