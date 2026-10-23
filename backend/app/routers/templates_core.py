@@ -61,6 +61,21 @@ async def is_active_co_manager(db: AsyncSession, template_id: int, user_id: int)
     return result.scalar_one_or_none() is not None
 
 
+async def is_owner_or_co_manager(db: AsyncSession, template: NetTemplate, user: User) -> bool:
+    """The schedule's manager or an active co-manager, without the admin bypass."""
+    return template.owner_id == user.id or await is_active_co_manager(db, template.id, user.id)
+
+
+async def may_administer_schedule(db: AsyncSession, template: NetTemplate, user: User) -> bool:
+    """Delete, merge, or hand over a schedule: its manager, an active
+    co-manager, or an admin. Plain staff can run and edit a schedule but not
+    destroy it. NetTemplateResponse.is_owner_or_co_manager sends the same
+    answer (minus the admin bypass) to the Schedule page's Merge and Delete
+    buttons; until 2026-10-23 those checked manager-or-admin only, so a
+    co-manager the server allowed never saw them."""
+    return user.role == UserRole.ADMIN or await is_owner_or_co_manager(db, template, user)
+
+
 # Code sent in a 403's detail when the account-age or net-participation
 # requirement refused a new schedule. The app keys off it to offer "Request
 # early access" (POST /templates/early-access-request). The daily limit does
@@ -316,7 +331,7 @@ async def create_template(
     # different user via template_data.owner_id above, in which case the
     # creator themselves is not actually that template's owner or staff.
     is_owner_or_staff = await check_template_staff_access(db, template, current_user)
-    return NetTemplateResponse.from_orm(template, subscriber_count=0, is_subscribed=False, can_manage=True, can_create_net=True, is_owner_or_staff=is_owner_or_staff, signed_in=True)
+    return NetTemplateResponse.from_orm(template, subscriber_count=0, is_subscribed=False, can_manage=True, can_create_net=True, is_owner_or_staff=is_owner_or_staff, signed_in=True, is_owner_or_co_manager=await is_owner_or_co_manager(db, template, current_user))
 
 
 async def _template_response_for_viewer(
@@ -337,6 +352,7 @@ async def _template_response_for_viewer(
     is_subscribed = False
     can_manage = False
     is_owner_or_staff = False
+    owner_or_co_manager = False
     if current_user:
         subscription_result = await db.execute(
             select(NetTemplateSubscription)
@@ -352,6 +368,7 @@ async def _template_response_for_viewer(
         # Same, minus the admin bypass -- see check_template_staff_access's
         # docstring for why the frontend needs this reported separately.
         is_owner_or_staff = await check_template_staff_access(db, template, current_user)
+        owner_or_co_manager = await is_owner_or_co_manager(db, template, current_user)
 
     return NetTemplateResponse.from_orm(
         template,
@@ -362,6 +379,7 @@ async def _template_response_for_viewer(
         can_manage=can_manage,
         can_create_net=can_manage,  # Same permission - owner, admin, or NCS staff
         is_owner_or_staff=is_owner_or_staff,
+        is_owner_or_co_manager=owner_or_co_manager,
         signed_in=current_user is not None,
     )
 
@@ -535,10 +553,7 @@ async def update_template(
 
     # Update owner if provided (owner/admin/co-manager can transfer ownership)
     if template_data.owner_id is not None and template_data.owner_id != template.owner_id:
-        is_admin = current_user.role == UserRole.ADMIN
-        is_owner = template.owner_id == current_user.id
-        is_co_manager = await is_active_co_manager(db, template.id, current_user.id)
-        if not (is_admin or is_owner or is_co_manager):
+        if not await may_administer_schedule(db, template, current_user):
             raise HTTPException(
                 status_code=403,
                 detail="Only the schedule owner, a co-manager, or an admin can transfer ownership",
@@ -604,7 +619,7 @@ async def update_template(
     # rather than assumed true (an admin editing a template they aren't
     # actually owner/staff of is exactly the case this field exists for).
     is_owner_or_staff = await check_template_staff_access(db, template, current_user)
-    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=True, can_create_net=True, is_owner_or_staff=is_owner_or_staff, signed_in=True)
+    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=True, can_create_net=True, is_owner_or_staff=is_owner_or_staff, signed_in=True, is_owner_or_co_manager=await is_owner_or_co_manager(db, template, current_user))
 
 
 @router.post("/{template_id}/logo", response_model=NetTemplateResponse)
@@ -695,10 +710,7 @@ async def delete_template(
     # Deletion is restricted to owner/co-manager/admin.
     # Active staff and NCS rotation members can manage schedule settings
     # but should not be able to permanently destroy a schedule.
-    is_owner = template.owner_id == current_user.id
-    is_admin = current_user.role == UserRole.ADMIN
-    is_co_manager = await is_active_co_manager(db, template.id, current_user.id)
-    if not (is_owner or is_admin or is_co_manager):
+    if not await may_administer_schedule(db, template, current_user):
         raise HTTPException(status_code=403, detail="Only the schedule owner, a co-manager, or an admin can delete a schedule")
     
     await db.delete(template)

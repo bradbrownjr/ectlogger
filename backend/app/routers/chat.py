@@ -13,7 +13,7 @@ from typing import List, Optional
 from PIL import Image
 
 from app.database import get_db
-from app.models import ChatMessage, ChatMute, ChatNetMute, ChatReaction, ChatImage, CheckIn, Net, User
+from app.models import ChatMessage, ChatMute, ChatNetMute, ChatReaction, ChatImage, CheckIn, Net, NetStatus, User
 from app.schemas import (
     ChatMessageCreate,
     ChatMessageEdit,
@@ -189,6 +189,36 @@ async def _broadcast_chat_message(db: AsyncSession, net_id: int, chat_message: C
     )
 
 
+def chat_is_open(net: Net, now: Optional[datetime] = None) -> bool:
+    """Whether stations may still write in this net's chat: always until the
+    net closes, never once it's archived, and after closing only within the
+    net's "Keep chat open after closing" window (chat_grace_period_minutes).
+
+    The same rule Chat.tsx uses to disable the message box. Until 2026-10-23
+    only the browser applied it, so the server took messages on a closed net
+    at any time."""
+    if net.status == NetStatus.ARCHIVED:
+        return False
+    if net.status != NetStatus.CLOSED:
+        return True
+    if not net.chat_grace_period_minutes or not net.closed_at:
+        return False
+    closed_at = net.closed_at if net.closed_at.tzinfo else net.closed_at.replace(tzinfo=UTC)
+    return (now or datetime.now(UTC)) < closed_at + timedelta(minutes=net.chat_grace_period_minutes)
+
+
+async def _require_chat_open(db: AsyncSession, net_id: int) -> Net:
+    """The net, or 404; 403 once its chat has closed (see chat_is_open).
+    Sending, editing, reacting and uploading images all go through this.
+    Deleting doesn't, so staff can still remove spam after the net."""
+    net = (await db.execute(select(Net).where(Net.id == net_id))).scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    if not chat_is_open(net):
+        raise HTTPException(status_code=403, detail="Chat is closed for this net")
+    return net
+
+
 @router.post("/nets/{net_id}/messages", response_model=ChatMessageResponse, status_code=status.HTTP_201_CREATED)
 async def create_message(
     net_id: int,
@@ -201,11 +231,7 @@ async def create_message(
     Body: `message` (required), `reply_to_message_id` (optional, must be
     another message in this same net). Returns the created ChatMessageResponse
     and broadcasts it as `chat_message`."""
-    # Verify net exists
-    result = await db.execute(select(Net).where(Net.id == net_id))
-    net = result.scalar_one_or_none()
-    if not net:
-        raise HTTPException(status_code=404, detail="Net not found")
+    await _require_chat_open(db, net_id)
 
     # A reply may only quote a message from the same net, or one net's chat
     # could quote another's into its log.
@@ -278,6 +304,7 @@ async def edit_message(
     rewriting someone else's words would leave that station credited in the net
     log with wording they never sent. Removing a message doesn't misattribute
     anything; changing one does."""
+    await _require_chat_open(db, net_id)
     result = await db.execute(
         select(ChatMessage).where(
             ChatMessage.id == message_id,
@@ -388,6 +415,7 @@ async def add_reaction(
     emoji = body.get('emoji', '')
     if emoji not in ALLOWED_EMOJIS:
         raise HTTPException(status_code=400, detail="Emoji not allowed")
+    await _require_chat_open(db, net_id)
 
     # Verify message belongs to net
     result = await db.execute(
@@ -437,10 +465,7 @@ async def upload_chat_image(
     db: AsyncSession = Depends(get_db)
 ):
     """Upload a pasted chat image, generate thumbnail, and return marker payload."""
-    # Verify net exists
-    result = await db.execute(select(Net).where(Net.id == net_id))
-    if not result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Net not found")
+    await _require_chat_open(db, net_id)
 
     if image.content_type not in ALLOWED_IMAGE_MIME:
         raise HTTPException(status_code=400, detail="Unsupported image type")

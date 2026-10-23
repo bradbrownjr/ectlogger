@@ -65,7 +65,7 @@ The summary shows how many nets, new subscribers, staff, and rotation members wi
 
 The master schedule keeps its own settings. Where another schedule's settings differ, such as its night and time, its check-in fields, or its script, they're listed under **Settings that differ** and are dropped. Copy anything you want to keep onto the master schedule before merging.
 
-The other schedules are deleted, and a merge can't be undone. Only a schedule's manager or an admin can merge it.
+The other schedules are deleted, and a merge can't be undone. A schedule's manager, its co-managers, and admins can merge it.
 
 <figure>
   <img src="/docs/img/net-managers/merge-schedules.png"

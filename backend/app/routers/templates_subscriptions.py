@@ -27,7 +27,7 @@ from app.schemas import (
     NetTemplateSubscriptionResponse,
 )
 
-from app.routers.templates_core import is_active_co_manager
+from app.routers.templates_core import may_administer_schedule
 
 router = APIRouter()
 
@@ -109,10 +109,7 @@ async def list_template_subscriptions(
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
 
-    is_admin = current_user.role == UserRole.ADMIN
-    is_owner = template.owner_id == current_user.id
-    is_co_manager = await is_active_co_manager(db, template.id, current_user.id)
-    if not (is_admin or is_owner or is_co_manager):
+    if not await may_administer_schedule(db, template, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to view subscriptions")
 
     result = await db.execute(
@@ -359,11 +356,7 @@ async def email_template_subscribers(
         raise HTTPException(status_code=404, detail="Template not found")
     
     # Check permissions - admin, template owner, or active template co-manager.
-    is_admin = current_user.role == UserRole.ADMIN
-    is_owner = template.owner_id == current_user.id
-    is_co_manager = await is_active_co_manager(db, template_id, current_user.id)
-
-    if not (is_admin or is_owner or is_co_manager):
+    if not await may_administer_schedule(db, template, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to send emails for this template")
 
     recipient_group = (email_data.get('recipient_group') or 'subscribers').strip().lower()

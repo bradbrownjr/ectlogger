@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { useNavigate } from 'react-router-dom';
@@ -75,6 +75,7 @@ import ScheduleCalendar from '../components/scheduler/ScheduleCalendar';
 import { useFavorites } from '../hooks/useFavorites';
 import useAccountSortOrder from '../hooks/useAccountSortOrder';
 import { formatFrequencyList } from '../utils/frequencyList';
+import { describeMergeConflicts } from '../utils/mergeConflicts';
 
 const Scheduler: React.FC = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -192,7 +193,6 @@ const Scheduler: React.FC = () => {
     }
   };
 
-  const isOwner = (schedule: Schedule) => user?.id === schedule.owner_id;
   const isAdmin = user?.role === 'admin';
   // In admin simulation mode, use the non-admin permission flag so buttons
   // reflect what a real user would see -- same reasoning and pattern as
@@ -206,10 +206,12 @@ const Scheduler: React.FC = () => {
     simulateRegularUser ? (schedule.is_owner_or_staff ?? false) : (schedule.can_manage ?? false);
 
   // ========== MERGE MODE HELPERS ==========
-  /** Can the current user merge this template? (admin or owner only) */
+  /** Can the current user merge or delete this schedule? Its manager, an
+   *  active co-manager, or an admin: templates_core.may_administer_schedule,
+   *  which the server checks for both. */
   const canMerge = useCallback((schedule: Schedule) => {
-    return isAdmin || (user?.id === schedule.owner_id);
-  }, [isAdmin, user?.id]);
+    return isAdmin || !!schedule.is_owner_or_co_manager;
+  }, [isAdmin]);
 
   /** Number of templates the user could merge */
   const mergeableCount = schedules.filter(canMerge).length;
@@ -262,6 +264,16 @@ const Scheduler: React.FC = () => {
     const sourceIds = Array.from(mergeSelected).filter(id => id !== newTargetId);
     await fetchMergePreview(newTargetId, sourceIds);
   };
+
+  // The preview's differences in words (utils/mergeConflicts.ts)
+  const mergeConflictRows = useMemo(() => describeMergeConflicts(
+    mergePreview?.conflicts ?? [],
+    mergeTargetId,
+    (id) => {
+      const schedule = schedules.find((s) => s.id === id);
+      return schedule ? formatSchedule(schedule) : undefined;
+    },
+  ), [mergePreview, mergeTargetId, schedules]);
 
   const handleConfirmMerge = async () => {
     if (!mergeTargetId) return;
@@ -351,7 +363,7 @@ const Scheduler: React.FC = () => {
       onToggleFavorite={toggleFavorite}
       isAuthenticated={isAuthenticated}
       canManage={!!(canManageSchedule(schedule) || isAdmin)}
-      isOwnerOrAdmin={isOwner(schedule) || isAdmin}
+      canAdminister={canMerge(schedule)}
       onCreateNet={() => handleCreateNetFromSchedule(schedule.id)}
       onOpenRotationModal={() => handleOpenRotationModal(schedule)}
       onSubscribe={() => handleSubscribe(schedule.id)}
@@ -526,9 +538,9 @@ const Scheduler: React.FC = () => {
                     </Tooltip>
                   </>
                 )}
-                {/* Delete is restricted to owner and admin only — staff/NCS */}
-                {/* rotation members can manage a schedule but not destroy it. */}
-                {(isOwner(schedule) || isAdmin) && (
+                {/* Delete is for the manager, co-managers and admins only — */}
+                {/* staff/NCS rotation members can run a schedule but not destroy it. */}
+                {canMerge(schedule) && (
                   <Tooltip title="Delete">
                     <IconButton size="small" color="error" onClick={() => handleDelete(schedule.id)}>
                       <DeleteIcon fontSize="small" />
@@ -892,14 +904,17 @@ const Scheduler: React.FC = () => {
                     <WarningAmberIcon fontSize="small" /> Settings that differ (source values will be lost):
                   </Typography>
                   <Box sx={{ bgcolor: 'warning.light', borderRadius: 1, p: 1.5, mb: 2, opacity: 0.9 }}>
-                    {mergePreview.conflicts.map((c: any, i: number) => (
-                      <Box key={i} sx={{ mb: i < mergePreview.conflicts.length - 1 ? 1 : 0 }}>
+                    {mergeConflictRows.map((c, i) => (
+                      <Box key={i} sx={{ mb: i < mergeConflictRows.length - 1 ? 1 : 0 }}>
                         <Typography variant="body2" fontWeight="medium">
-                          {c.field} — from "{c.source_template_name}"
+                          {c.field} — from "{c.sourceName}"
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" component="div">
-                          Master: {c.target_value} · Source: {c.source_value}
-                        </Typography>
+                        {/* Shows when the values fit on a line (not the check-in fields) */}
+                        {c.masterValue !== null && (
+                          <Typography variant="caption" color="text.secondary" component="div">
+                            Master: {c.masterValue} · Source: {c.sourceValue}
+                          </Typography>
+                        )}
                       </Box>
                     ))}
                   </Box>

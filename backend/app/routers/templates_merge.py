@@ -15,7 +15,6 @@ from app.models import (
     TemplateStaff,
     TopicHistory,
     User,
-    UserRole,
 )
 from app.routers.ncs_rotation import resync_pending_duty_ncs
 from app.routers.ncs_schedule import stamp_rotation_anchor
@@ -26,7 +25,7 @@ from app.schemas import (
     TemplateMergeResponse,
 )
 
-from app.routers.templates_core import is_active_co_manager
+from app.routers.templates_core import may_administer_schedule
 
 router = APIRouter()
 
@@ -40,9 +39,7 @@ def _person_key(user_id, callsign):
 
 async def _check_merge_permission(template: NetTemplate, user: User, db: AsyncSession) -> bool:
     """Only admin, template owner, or active co-manager can merge."""
-    if user.role == UserRole.ADMIN or template.owner_id == user.id:
-        return True
-    return await is_active_co_manager(db, template.id, user.id)
+    return await may_administer_schedule(db, template, user)
 
 
 def _compare_template_fields(target: NetTemplate, source: NetTemplate) -> list:
@@ -78,6 +75,7 @@ def _compare_template_fields(target: NetTemplate, source: NetTemplate) -> list:
                 target_value=t_display,
                 source_value=s_display,
                 source_template_name=source.name,
+                source_template_id=source.id,
             ))
     return conflicts
 
@@ -410,9 +408,7 @@ async def list_linkable_nets(
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
 
-    is_admin = current_user.role == UserRole.ADMIN
-    is_co_manager = await is_active_co_manager(db, template.id, current_user.id)
-    if not (is_admin or template.owner_id == current_user.id or is_co_manager):
+    if not await may_administer_schedule(db, template, current_user):
         raise HTTPException(
             status_code=403,
             detail="Only the schedule owner, a co-manager, or an admin can link nets to this schedule",

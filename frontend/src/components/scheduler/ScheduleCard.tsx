@@ -63,6 +63,9 @@ export interface Schedule {
   // can_manage/can_create_net stay true for a simulating admin regardless,
   // since they're computed from that admin's REAL (unmasked) identity.
   is_owner_or_staff?: boolean;
+  // The schedule's manager or an active co-manager, no admin bypass: may
+  // merge or delete it (templates_core.may_administer_schedule).
+  is_owner_or_co_manager?: boolean;
   schedule_type?: string;
   schedule_config?: {
     day_of_week?: number;
@@ -164,8 +167,9 @@ interface ScheduleCardProps {
   isAuthenticated: boolean;
   /** Whether the current user can manage (edit) this schedule (pre-computed by parent). */
   canManage: boolean;
-  /** Whether the current user is the owner or an admin (pre-computed by parent). */
-  isOwnerOrAdmin: boolean;
+  /** Whether the current user may delete or merge this schedule: its manager,
+   *  a co-manager, or an admin (pre-computed by parent). */
+  canAdminister: boolean;
   onCreateNet: () => void;
   onOpenRotationModal: () => void;
   onSubscribe: () => void;
@@ -182,7 +186,7 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
   onToggleFavorite,
   isAuthenticated,
   canManage,
-  isOwnerOrAdmin,
+  canAdminister,
   onCreateNet,
   onOpenRotationModal,
   onSubscribe,
@@ -328,7 +332,7 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
             Create leads (primary action, left-aligned like it was before
             the row split), then Edit, then Delete last as the most
             destructive action. */}
-        {(canManage || isOwnerOrAdmin || schedule.can_create_net) && (
+        {(canManage || canAdminister || schedule.can_create_net) && (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 0.5 }}>
             {schedule.can_create_net && (
               <CardActionButton
@@ -347,8 +351,8 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
                 onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}
               />
             )}
-            {/* Delete is restricted to owner and admin only */}
-            {isOwnerOrAdmin && (
+            {/* Delete is for the manager, co-managers and admins only */}
+            {canAdminister && (
               <CardActionButton
                 icon={<DeleteIcon />}
                 label="Delete"

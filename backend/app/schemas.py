@@ -939,9 +939,12 @@ class NetTemplateResponse(NetTemplateBase):
     # check_template_staff_access(). Mirrors NetResponse.is_owner_or_ncs;
     # used by the frontend's admin "View as Regular User" simulation.
     is_owner_or_staff: bool = False
+    # The schedule's manager or an active co-manager, no admin bypass:
+    # templates_core.may_administer_schedule, for the Merge and Delete buttons.
+    is_owner_or_co_manager: bool = False
 
     @classmethod
-    def from_orm(cls, template, subscriber_count: int = 0, is_subscribed: bool = False, owner_callsign: str = None, owner_name: str = None, can_manage: bool = False, can_create_net: bool = False, is_owner_or_staff: bool = False, signed_in: bool = False):
+    def from_orm(cls, template, subscriber_count: int = 0, is_subscribed: bool = False, owner_callsign: str = None, owner_name: str = None, can_manage: bool = False, can_create_net: bool = False, is_owner_or_staff: bool = False, signed_in: bool = False, is_owner_or_co_manager: bool = False):
         import json
         data = {
             'id': template.id,
@@ -990,7 +993,8 @@ class NetTemplateResponse(NetTemplateBase):
             'is_subscribed': is_subscribed,
             'can_manage': can_manage,
             'can_create_net': can_create_net,
-            'is_owner_or_staff': is_owner_or_staff
+            'is_owner_or_staff': is_owner_or_staff,
+            'is_owner_or_co_manager': is_owner_or_co_manager,
         }
         return cls(**data)
 
@@ -1026,6 +1030,7 @@ class TemplateMergeConflict(BaseModel):
     target_value: Optional[str] = None
     source_value: Optional[str] = None
     source_template_name: str
+    source_template_id: Optional[int] = None
 
 
 class TemplateMergePreview(BaseModel):
