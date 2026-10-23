@@ -4,8 +4,8 @@ summary: The check-in form, which fields are required, and what happens the mome
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-10-04
-review_by: 2027-09-19
+revised: 2026-10-23
+review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/checking-in/
 ---
@@ -33,6 +33,7 @@ You can also open the same form later from the net's toolbar.
 **Callsign** is the only field every net requires. Beyond that, what you see depends on what the net's manager turned on:
 
 - **Name**, **Location**, **Spotter #** (SKYWARN number), **Weather Observation**, **Power Src**, **Power**, and **Notes** are each independently switched on or off, and independently required or optional, per net. A field that's off simply doesn't appear.
+- On a net with sites, such as the shelters of an ARES deployment, a **Site** box comes first: pick where you're operating from (one of the net's sites, **Home**, **Field Deployed**, or **Traveling**). Picking a site fills in Location with the site's place; your usual town is kept for next time.
 - If the net has a **Topic of the Week** or a **poll** running, the question shows above a text field for your answer, right in this same dialog.
 - On a net with more than one working frequency, an **Available Frequencies** picker lets you say which ones you can reach, which is mainly useful on SKYWARN nets that ask spotters to confirm coverage on more than one repeater.
 - Some nets add their own custom fields on top of the standard set (a text box, a number, or a dropdown), defined by whoever set up the net.

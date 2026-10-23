@@ -27,6 +27,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { canHearApi, coverageSiteApi } from '../../services/api';
 import { CoverageAccess, CoverageContact, CoverageSite, coverageFrequencies, infrastructureSites, reportingSites, stationSiteName } from '../../utils/coverageSites';
+import { POSITION_OPTIONS } from '../../utils/stationPlace';
 
 // ========== "WHO CAN THIS STATION HEAR?" COVERAGE REPORTING DIALOG ==========
 // Phase 2 of the "can hear" inter-station propagation logging feature (see
@@ -51,7 +52,8 @@ import { CoverageAccess, CoverageContact, CoverageSite, coverageFrequencies, inf
 // save: the parent's canHearReports list refreshes from the can_hear_changed
 // WebSocket broadcast, which every viewer (including the saver) receives.
 
-const OPERATING_POSITION_OPTIONS = ['Home', 'Field Deployed'];
+// Positions with no site, shared with the check-in form's Site box.
+const OPERATING_POSITION_OPTIONS = POSITION_OPTIONS;
 
 // One editable row of "Outside the net" - a station reached that never
 // checked in (a neighboring county's EOC). Saved as a whole set per reporting

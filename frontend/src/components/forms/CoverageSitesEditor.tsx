@@ -29,9 +29,13 @@ import { SiteDraft, draftNameAndLocation, newSiteDraft } from '../../utils/siteD
 import ImportSitesDialog from './ImportSitesDialog';
 
 // ========== COVERAGE SITES EDITOR ==========
-// The net's list of sites for a coverage drill (an ARES SET): the shelters,
-// PODs and offices teams report from, and the repeaters and nodes they try to
-// get into. Shown under coverage logging on the net form (create-net/BasicInfoTab).
+// The net's list of sites: the shelters, PODs, offices or aid stations
+// stations deploy to, picked in the check-in form's Site box and grouped on
+// the Sites board. On a coverage drill (an ARES SET) also the repeaters and
+// nodes teams try to get into, and the primary sites every other site should
+// reach; those two only mean something with coverage logging on, so they are
+// offered only then (`coverage`). Its own section of the net form
+// (create-net/BasicInfoTab).
 // Each site is typed as one line, "Name, Town, ST" or "Name GRID", and split
 // as you type so a mistake shows before it's saved
 // (utils/coverageSites.ts::parseSiteLine).
@@ -54,6 +58,8 @@ interface CoverageSitesEditorProps {
   // The saved net's id; importing needs one.
   netId?: number;
   disabled?: boolean;
+  // Coverage logging is on: offer repeaters/nodes and the Primary star.
+  coverage?: boolean;
 }
 
 const PAGE = 50;
@@ -64,7 +70,7 @@ const frequencyText = (f: CoverageSitesEditorProps['frequencies'][number]) =>
 const draftText = (d: SiteDraft) =>
   [d.line, d.address, d.notes, ...Object.values(d.details || {})].join(' ').toLowerCase();
 
-const CoverageSitesEditor: React.FC<CoverageSitesEditorProps> = ({ sites, setSites, frequencies, netId, disabled }) => {
+const CoverageSitesEditor: React.FC<CoverageSitesEditorProps> = ({ sites, setSites, frequencies, netId, disabled, coverage }) => {
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<SiteType | 'all'>('all');
   const [shown, setShown] = useState(PAGE);
@@ -97,9 +103,10 @@ const CoverageSitesEditor: React.FC<CoverageSitesEditorProps> = ({ sites, setSit
     <Box>
       <Typography variant="subtitle2">Sites</Typography>
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-        For a drill that tests where you can reach, not who: the offices, shelters and other sites teams operate
-        from, and the repeaters and nodes they try. Type each as <strong>Name, Town, ST</strong> or{' '}
-        <strong>Name</strong> plus a grid square. Star the offices every other site should reach, and tick{' '}
+        The places stations deploy to, such as shelters, offices or aid stations. Net control picks one in the
+        Site box when checking a station in, and the Sites board shows who is at each.
+        {coverage && ' For coverage logging, also add the repeaters and nodes teams try, and star the offices every other site should reach.'}
+        {' '}Type each as <strong>Name, Town, ST</strong> or <strong>Name</strong> plus a grid square, and tick{' '}
         <strong>Supported</strong> for the sites your teams staff. Other sites, and every site's address, notes and
         other details, are shown only to net staff.
       </Typography>
@@ -178,9 +185,12 @@ const CoverageSitesEditor: React.FC<CoverageSitesEditorProps> = ({ sites, setSit
                   disabled={disabled}
                   onChange={(e) => update(site.key, { site_type: e.target.value as SiteType })}
                 >
-                  {(Object.keys(SITE_TYPE_LABELS) as SiteType[]).map((t) => (
-                    <MenuItem key={t} value={t}>{SITE_TYPE_LABELS[t]}</MenuItem>
-                  ))}
+                  {/* Repeaters and nodes only with coverage logging (or one already set) */}
+                  {(Object.keys(SITE_TYPE_LABELS) as SiteType[])
+                    .filter((t) => coverage || t !== 'infrastructure' || infrastructure)
+                    .map((t) => (
+                      <MenuItem key={t} value={t}>{SITE_TYPE_LABELS[t]}</MenuItem>
+                    ))}
                 </Select>
               </FormControl>
               {/* Primary and Supported (or a repeater's frequency), then the row's buttons: one line, even on a phone */}
@@ -203,6 +213,8 @@ const CoverageSitesEditor: React.FC<CoverageSitesEditorProps> = ({ sites, setSit
                 </FormControl>
               ) : (
                 <>
+                  {/* Primary: the sites every other one should reach, a coverage question */}
+                  {(coverage || site.is_primary) && (
                   <FormControlLabel
                     sx={{ mr: 0, ml: 0 }}
                     componentsProps={{ typography: { variant: 'body2' } }}
@@ -218,6 +230,7 @@ const CoverageSitesEditor: React.FC<CoverageSitesEditorProps> = ({ sites, setSit
                     }
                     label="Primary"
                   />
+                  )}
                   <FormControlLabel
                     sx={{ mr: 0, ml: 0 }}
                     componentsProps={{ typography: { variant: 'body2' } }}

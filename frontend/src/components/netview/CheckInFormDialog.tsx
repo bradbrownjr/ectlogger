@@ -20,7 +20,7 @@ import type { UseDialogResult } from '../../hooks/useDialog';
 import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING, FIELD_SPAM_WARNING } from '../../utils/nameFieldGuard';
 import api from '../../services/api';
 import { isFieldShown } from '../../utils/checkInFields';
-import SiteLocationField from './SiteLocationField';
+import SiteField, { netHasSites } from './SiteField';
 import type { CoverageSite } from '../../utils/coverageSites';
 
 // ========== CHECK-IN FORM DIALOG ==========
@@ -51,9 +51,10 @@ export interface CheckInFormState {
   // to 'standard' -- see the fail-safe history in schemas.py's
   // CheckInCreate.self_role_choice.
   self_role_choice?: 'standard' | 'ncs' | 'logger';
-  // The coverage site the station is at, picked from the Location field on
-  // a net with sites (SiteLocationField). Absent otherwise.
+  // Where the station is, picked from the Site box on a net with sites
+  // (SiteField, utils/stationPlace.ts). Absent otherwise.
   coverage_site_id?: number | null;
+  operating_position?: string | null;
 }
 
 interface CheckInFormDialogProps {
@@ -86,8 +87,10 @@ interface CheckInFormDialogProps {
   // self-check-in answers stay consistent with staff-entered ones (see the
   // identical pattern in NetView.tsx's inline check-in rows).
   pollResponses?: string[];
-  // The net's coverage sites, offered in the Location field.
+  // The net's sites, offered in the Site box.
   coverageSites?: CoverageSite[];
+  // The station's usual town, which picking Home in the Site box fills in.
+  savedTown?: string;
 }
 
 const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
@@ -108,6 +111,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
   pollQuestion,
   pollResponses,
   coverageSites = [],
+  savedTown,
 }) => {
   // Which check-in fields currently reject a URL/email-looking value --
   // admin-configurable per field (Admin > Check-in Fields > Spam Guard),
@@ -214,18 +218,26 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
             />
           )}
 
-          {fieldConfig?.location?.enabled && (
-            <SiteLocationField
+          {/* Site, ahead of Location, on a net with sites */}
+          {netHasSites(coverageSites) && (
+            <SiteField
               sites={coverageSites}
+              form={checkInForm}
+              setForm={setCheckInForm}
+              savedTown={savedTown}
+              textFieldProps={{ label: 'Site', fullWidth: true, helperText: 'Where you are operating from' }}
+            />
+          )}
+
+          {fieldConfig?.location?.enabled && (
+            <TextField
+              label="Location"
               value={checkInForm.location}
-              onChange={(location, coverageSiteId) => setCheckInForm((prev) => ({ ...prev, location, coverage_site_id: coverageSiteId }))}
-              textFieldProps={{
-                label: 'Location',
-                fullWidth: true,
-                required: fieldConfig.location.required,
-                error: isSpammy('location', checkInForm.location),
-                helperText: isSpammy('location', checkInForm.location) ? FIELD_SPAM_WARNING : undefined,
-              }}
+              onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
+              fullWidth
+              required={fieldConfig.location.required}
+              error={isSpammy('location', checkInForm.location)}
+              helperText={isSpammy('location', checkInForm.location) ? FIELD_SPAM_WARNING : undefined}
             />
           )}
 

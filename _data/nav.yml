@@ -58,6 +58,8 @@
       url: /docs/net-control/the-net-control-desk/
     - title: Logging check-ins
       url: /docs/net-control/logging-check-ins/
+    - title: Stations at sites
+      url: /docs/net-control/stations-at-sites/
     - title: Speed entry
       url: /docs/net-control/speed-entry/
     - title: Frequencies and multiple net controls
@@ -100,6 +102,8 @@
       url: /docs/net-managers/reports-and-exports/
     - title: Importing check-ins
       url: /docs/net-managers/importing-check-ins/
+    - title: Sites
+      url: /docs/net-managers/sites/
     - title: Coverage drills by site
       url: /docs/net-managers/coverage-drills/
     - title: Drill plans

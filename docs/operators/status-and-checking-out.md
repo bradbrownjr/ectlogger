@@ -4,8 +4,8 @@ summary: The eight station statuses, what a recheck actually does, and why check
 kind: Explanation
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-25
-review_by: 2027-09-19
+revised: 2026-10-23
+review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/status-and-checking-out/
 ---
@@ -71,6 +71,8 @@ These badges only appear while a station is in the plain Checked in state. If an
 ## The recheck marker isn't a status either
 
 If you check in, then later check in again under the same callsign, ECTLogger doesn't silently update your existing row. It adds a brand new row, timestamped when the recheck happened, and links it back to your first check-in. That matters for the same reason a net log matters at all: NCS wants to know *when* a station rechecked, on what frequency, and how many times, not just that they're currently present.
+
+One recheck does change your earlier row. On a net with sites, checking in from a different site than your current check-in (a different shelter, Home, or Traveling) checks your earlier check-in out, because you can't be in two places at once. A recheck from the same place on another frequency leaves both rows checked in.
 
 By default the check-in list shows every one of those rows, and marks the newest one for a given callsign with a recheck (circular arrows) icon instead of the usual check mark, tooltip "Re-checked into the net." That's what you're seeing when the legend shows a "Recheck" entry: a flag on one particular row, not an eighth status alongside the eight above. If the list is getting long with a station's earlier rows all still visible, there's a small icon in the corner of the table's header that toggles **Hide duplicate rows (show latest per station)**. Turning it on collapses the view down to just each callsign's most recent row; turning it back off ("Show all rows, including re-checks") brings the full history back. Nothing is deleted either way; it's purely a display filter.
 

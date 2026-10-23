@@ -114,7 +114,7 @@
             {
               "text": "Coverage: Import sites from a spreadsheet — Load an EMA's shelter or distribution point list from Excel or CSV. Match its columns to name, address, town, coordinates and notes, and choose the type for the whole list. Mark the sites your teams will staff; the rest of the list, and every site's address, contacts and capacity, are shown only to net staff.",
               "userImpact": true,
-              "docs": "/docs/net-managers/coverage-drills/#import-an-emergency-management-agencys-site-list"
+              "docs": "/docs/net-managers/sites/#import-an-emergency-management-agencys-site-list"
             }
           ]
         },

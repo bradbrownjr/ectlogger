@@ -92,5 +92,8 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 **Schedule**
 : A recurring template (called a `NetTemplate` internally) that a net can be created from. The rotation, staff list, default settings, and recurrence rule all live on the schedule, not on any one net it produces.
 
+**Site**
+: A place a net's stations deploy to, such as a shelter, an EOC or an aid station, set up by the net's manager. Net control picks one in the check-in form's Site box (along with Home, Field Deployed, and Traveling), and checking a station in at a different one checks it out of the first. See [Sites](/docs/net-managers/sites/) and [Stations at sites](/docs/net-control/stations-at-sites/).
+
 **Traffic**
 : Formal message handling (Radiograms, ICS-213s, and RRI strips) logged, relayed, and tracked through delivery on a net that has the traffic feature turned on. See [Emails we send](/docs/reference/emails/) for the reminder emails that come with it.

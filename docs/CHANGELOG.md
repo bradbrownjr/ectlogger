@@ -56,7 +56,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Coverage: Drills by site** — For exercises such as the SET, list a net's shelters, offices, repeaters and nodes, and star the primary offices. Stations pick their site at check-in. Coverage then shows whether each site reached each primary office, which repeaters and nodes it got into, and the counties and outside stations it reached. The net report and closing email include the same summary. [Learn more](/docs/net-managers/coverage-drills/)
 * **Drills: Exercise plan** — Write a drill's scenario, objectives and schedule on the net, with prepared ICS-213s assigned to the sites that send them. Print the plan and a packet for each site, mark messages sent and received during the drill, and rate each objective afterward. [Learn more](/docs/net-managers/drill-plans/)
-* **Coverage: Import sites from a spreadsheet** — Load an EMA's shelter or distribution point list from Excel or CSV. Match its columns to name, address, town, coordinates and notes, and choose the type for the whole list. Mark the sites your teams will staff; the rest of the list, and every site's address, contacts and capacity, are shown only to net staff. [Learn more](/docs/net-managers/coverage-drills/#import-an-emergency-management-agencys-site-list)
+* **Coverage: Import sites from a spreadsheet** — Load an EMA's shelter or distribution point list from Excel or CSV. Match its columns to name, address, town, coordinates and notes, and choose the type for the whole list. Mark the sites your teams will staff; the rest of the list, and every site's address, contacts and capacity, are shown only to net staff. [Learn more](/docs/net-managers/sites/#import-an-emergency-management-agencys-site-list)
 
 ## Improvements
 

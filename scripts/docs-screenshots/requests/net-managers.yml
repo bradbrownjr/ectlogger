@@ -360,7 +360,7 @@ shots:
   # ---------- Coverage drills (docs/net-managers/coverage-drills.md) ----------
   - id: coverage-sites-editor
     section: net-managers
-    page: /docs/net-managers/coverage-drills/
+    page: /docs/net-managers/sites/
     route: /nets/{{net:set}}/edit
     as: W1PINE
     viewport:
@@ -368,6 +368,8 @@ shots:
       height: 2400
     wait_for: 'button:has-text("Add site")'
     steps:
+      # The sites load after the form; wait for the third one.
+      - wait_for: 'button[aria-label="Address and notes"] >> nth=2'
       # Naples Shelter, the third site. A plain click waits forever on
       # this button, so open it from the page.
       - evaluate: 'document.querySelectorAll(''button[aria-label="Address and notes"]'')[2].click()'
@@ -381,7 +383,7 @@ shots:
       - selector: 'label:has-text("Supported") >> nth=2'
         style: box
     alt: >
-      The Sites list under coverage logging in the net's settings, with a
+      The Sites list in the net's settings, with a
       search box, a type filter and an Import button above it. Each row has
       the site typed as one line, such as Naples Shelter, Naples, ME, then
       its type, a Primary star and a Supported tick. Naples Shelter is
@@ -395,7 +397,7 @@ shots:
 
   - id: coverage-sites-import
     section: net-managers
-    page: /docs/net-managers/coverage-drills/
+    page: /docs/net-managers/sites/
     route: /nets/{{net:set}}/edit
     as: W1PINE
     viewport:

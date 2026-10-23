@@ -16,6 +16,7 @@ from app.utils import display_callsign, looks_like_email_or_url
 from app.permissions import check_net_permission, is_eligible_for_logger_self_grant, is_eligible_for_ncs_auto_grant
 from app.auth import decrypt_mfa_secret, current_totp_codes
 from app.services.live_location import live_location_for_check_in
+from app.services.station_place import TRAVELING, is_home_position, keeps_saved_location, place_key, place_label
 
 logger = logging.getLogger(__name__)
 
@@ -247,15 +248,17 @@ async def create_check_in(
                 detail=f"Invalid frequency IDs: {invalid_freqs}. Must be from net's prescribed frequencies."
             )
     
-    # A site picked at check-in places the station there. With no location
-    # typed, the site's own place stands in for it, so the map pin and the
-    # "rechecked from ..." message show the shelter. That matters most on a
-    # recheck, which would otherwise reuse the first visit's location.
+    # ========== WHERE THE STATION IS ==========
+    # The Site box sends one of the net's sites (whose name becomes the
+    # operating position, as the can-hear dialog records it), a position
+    # with no site ("Home", "Field Deployed"), or nothing. A Mobile status
+    # means traveling. See services/station_place.py.
+    status_in = check_in_data.status or StationStatus.CHECKED_IN
     if check_in_data.coverage_site_id is not None:
         site = await coverage_site_for_net(db, net_id, check_in_data.coverage_site_id, current_user)
-        if not (check_in_data.location or '').strip():
-            from app.services.site_coverage import site_line
-            check_in_data.location = site_line(site.name, site.location)[:200]
+        check_in_data.operating_position = site.name[:50]
+    elif check_in_data.operating_position is not None:
+        check_in_data.operating_position = check_in_data.operating_position.strip()[:50] or None
 
     # Check if this is a recheck (user previously checked in to this net)
     # Find the root (original) check-in for this callsign to use as parent_check_in_id,
@@ -269,31 +272,65 @@ async def create_check_in(
     existing_check_ins = result.scalars().all()
     root_check_in = next((ci for ci in existing_check_ins if ci.parent_check_in_id is None), None)
     is_recheck = root_check_in is not None
-
-    # A recheck is meaningful in two cases: the station has checked out and is
-    # rechecking in later, or the station is still checked in but is now being
-    # logged on a different frequency — e.g. a coverage check on the repeater
-    # followed by a simplex net, where NCS needs a timestamped record that the
-    # station was also reached on the second frequency. Otherwise this is a
-    # duplicate check-in attempt (self or NCS/logger re-adding someone already
-    # logged in on the same frequency), so reject it instead of creating a
-    # second live row.
     latest_check_in = existing_check_ins[-1] if existing_check_ins else None
+    live_check_ins = [ci for ci in existing_check_ins if ci.status != StationStatus.CHECKED_OUT]
+    latest_live = live_check_ins[-1] if live_check_ins else None
+
+    def _place_of(row):
+        return place_key(row.coverage_site_id, row.operating_position, row.status)
+
+    # A recheck with no place given is at the same place as before, the way
+    # a blank location has always meant "same as before". Not after
+    # traveling: a station arriving off the road is somewhere new.
+    new_place = place_key(check_in_data.coverage_site_id, check_in_data.operating_position, status_in)
+    if new_place is None and latest_check_in is not None and latest_check_in.status != StationStatus.MOBILE:
+        check_in_data.coverage_site_id = latest_check_in.coverage_site_id
+        check_in_data.operating_position = latest_check_in.operating_position
+        new_place = place_key(check_in_data.coverage_site_id, check_in_data.operating_position, status_in)
+
+    # Nobody can be in two places at once. A station still checked in that
+    # is logged somewhere new has left where it was, though it may have
+    # forgotten to check out, so its live rows are checked out below.
+    old_place = _place_of(latest_live) if latest_live else None
+    moved = latest_live is not None and new_place is not None and new_place != old_place
+
+    # Otherwise a recheck is meaningful in two cases: the station has
+    # checked out and is rechecking in later, or the station is still
+    # checked in but is now being logged on a different frequency, e.g. a
+    # coverage check on the repeater followed by a simplex net, where NCS
+    # needs a timestamped record that the station was also reached on the
+    # second frequency (both rows stay live: same place, two frequencies).
+    # Anything else is a duplicate check-in attempt (self or NCS/logger
+    # re-adding someone already logged in), so reject it instead of
+    # creating a second live row.
     frequency_changed = (
         latest_check_in is not None
         and check_in_data.frequency_id is not None
         and check_in_data.frequency_id != latest_check_in.frequency_id
     )
-    if (
-        latest_check_in
-        and latest_check_in.status != StationStatus.CHECKED_OUT
-        and not frequency_changed
-    ):
+    if latest_live and not frequency_changed and not moved:
         raise HTTPException(
             status_code=400,
             detail=f"{check_in_data.callsign} is already checked in"
         )
-    
+
+    # Location: what was typed; else, at the same place as last time, the
+    # last location; else a site's own place (so the map pin and the chat
+    # message show the shelter); else, at home, the station's saved town.
+    location = (check_in_data.location or '').strip()
+    if not location and latest_check_in is not None and new_place == _place_of(latest_check_in):
+        location = latest_check_in.location or ''
+    if not location and check_in_data.coverage_site_id is not None:
+        place_site = await db.get(CoverageSite, check_in_data.coverage_site_id)
+        if place_site is not None:
+            from app.services.site_coverage import site_line
+            location = site_line(place_site.name, place_site.location)[:200]
+    if not location and is_home_position(check_in_data.operating_position):
+        saved = (await db.execute(
+            select(Contact.location).where(Contact.callsign == check_in_data.callsign)
+        )).scalar_one_or_none()
+        location = saved or ''
+
     # Every check-in — whether first or re-check — creates a new row.
     # Re-checks link back to the root (original) check-in via parent_check_in_id.
     available_frequencies_json = json.dumps(available_freq_ids)
@@ -301,22 +338,20 @@ async def create_check_in(
 
     if is_recheck:
         # Track location change for system message
-        location_changed = (
-            root_check_in.location
-            and check_in_data.location
-            and root_check_in.location != check_in_data.location
+        location_changed = bool(
+            latest_check_in.location
+            and location
+            and latest_check_in.location != location
         )
-        new_location = check_in_data.location or root_check_in.location
+        new_location = location
 
         check_in = CheckIn(
             net_id=net_id,
             user_id=linked_user_id,
             callsign=check_in_data.callsign,
             name=check_in_data.name or root_check_in.name,
-            location=check_in_data.location or root_check_in.location,
-            grid_square=live_location_for_check_in(
-                matching_user, check_in_data.location or root_check_in.location
-            ),
+            location=location,
+            grid_square=live_location_for_check_in(matching_user, location),
             skywarn_number=check_in_data.skywarn_number,
             weather_observation=check_in_data.weather_observation,
             power_source=check_in_data.power_source,
@@ -329,22 +364,23 @@ async def create_check_in(
             frequency_id=check_in_data.frequency_id,
             available_frequencies=available_frequencies_json,
             coverage_site_id=check_in_data.coverage_site_id,
+            operating_position=check_in_data.operating_position,
             is_recheck=True,
             parent_check_in_id=root_check_in.id,
             checked_in_by_id=current_user.id,
-            status=check_in_data.status or StationStatus.CHECKED_IN,
+            status=status_in,
         )
     else:
         location_changed = False
-        new_location = check_in_data.location
+        new_location = location
 
         check_in = CheckIn(
             net_id=net_id,
             user_id=linked_user_id,
             callsign=check_in_data.callsign,
             name=check_in_data.name,
-            location=check_in_data.location,
-            grid_square=live_location_for_check_in(matching_user, check_in_data.location),
+            location=location,
+            grid_square=live_location_for_check_in(matching_user, location),
             skywarn_number=check_in_data.skywarn_number,
             weather_observation=check_in_data.weather_observation,
             power_source=check_in_data.power_source,
@@ -357,13 +393,31 @@ async def create_check_in(
             frequency_id=check_in_data.frequency_id,
             available_frequencies=available_frequencies_json,
             coverage_site_id=check_in_data.coverage_site_id,
+            operating_position=check_in_data.operating_position,
             is_recheck=False,
             parent_check_in_id=None,
             checked_in_by_id=current_user.id,
-            status=check_in_data.status or StationStatus.CHECKED_IN,
+            status=status_in,
         )
     db.add(check_in)
-    
+
+    # Labels for the chat message, read before the moved rows change.
+    moved_from_label = None
+    if moved:
+        site_names = dict((await db.execute(
+            select(CoverageSite.id, CoverageSite.name).where(CoverageSite.net_id == net_id)
+        )).all())
+        moved_from_label = place_label(
+            latest_live.coverage_site_id, latest_live.operating_position, latest_live.status, site_names,
+        )
+        moved_to_label = place_label(
+            check_in_data.coverage_site_id, check_in_data.operating_position, status_in, site_names,
+        )
+        checkout_time = datetime.now(UTC)
+        for row in live_check_ins:
+            row.status = StationStatus.CHECKED_OUT
+            row.checked_out_at = checkout_time
+
     await db.commit()
     await db.refresh(check_in)
 
@@ -386,14 +440,20 @@ async def create_check_in(
 
     # Post system message for check-in activity
     from app.main import post_system_message, manager as ws_manager
-    if is_recheck:
+    if moved:
+        moved_from = f"checked out of {moved_from_label}" if moved_from_label else "checked out of their earlier check-in"
+        if new_place == TRAVELING:
+            await post_system_message(net_id, f"{check_in_data.callsign} is traveling ({moved_from}){ci_suffix}", db)
+        else:
+            await post_system_message(net_id, f"{check_in_data.callsign} has rechecked from {moved_to_label} ({moved_from}){ci_suffix}", db)
+    elif is_recheck:
         if location_changed:
             await post_system_message(net_id, f"{check_in_data.callsign} has rechecked from {new_location}{ci_suffix}", db)
         else:
             await post_system_message(net_id, f"{check_in_data.callsign} has rechecked{ci_suffix}", db)
     else:
-        if check_in_data.location:
-            await post_system_message(net_id, f"{check_in_data.callsign} has checked in from {check_in_data.location}{ci_suffix}", db)
+        if location:
+            await post_system_message(net_id, f"{check_in_data.callsign} has checked in from {location}{ci_suffix}", db)
         else:
             await post_system_message(net_id, f"{check_in_data.callsign} has checked in{ci_suffix}", db)
 
@@ -435,12 +495,15 @@ async def create_check_in(
     
     # Auto-create or update the shared Contact record for callsign history.
     # Skipped only for a registered user who tracks location via browser
-    # geolocation — see _sync_contact_location.
+    # geolocation — see _sync_contact_location. A station away from where
+    # it usually is (at a site, traveling, deployed) keeps its saved town:
+    # tonight's location must not become what its next net fills in.
     await _sync_contact_location(
         db,
         callsign=check_in.callsign,
         name=check_in.name,
-        location=check_in.location,
+        location=check_in.location if keeps_saved_location(
+            check_in.coverage_site_id, check_in.operating_position, check_in.status) else None,
         skywarn_number=check_in.skywarn_number,
         matching_user=matching_user,
     )
@@ -614,8 +677,15 @@ async def update_check_in(
     
     old_callsign = check_in.callsign
 
+    # The Site box: a site's name is its operating position, and a position
+    # sent without a site ("Home") takes the row off any site. Same pairing
+    # create_check_in and the can-hear dialog record.
     if update_data.get('coverage_site_id') is not None:
-        await coverage_site_for_net(db, check_in.net_id, update_data['coverage_site_id'], current_user)
+        site = await coverage_site_for_net(db, check_in.net_id, update_data['coverage_site_id'], current_user)
+        update_data['operating_position'] = site.name[:50]
+    elif 'operating_position' in update_data:
+        update_data['operating_position'] = (update_data['operating_position'] or '').strip()[:50] or None
+        update_data['coverage_site_id'] = None
 
     # Update remaining fields
     for field, value in update_data.items():
@@ -673,7 +743,10 @@ async def update_check_in(
     # (e.g. NCS correcting a station's location inline). Without this, a
     # correction only ever lived on this one check-in row and the station's
     # app-wide history kept the stale value.
-    if 'location' in update_data:
+    # Not for a row away from the station's usual place (see create_check_in).
+    if 'location' in update_data and keeps_saved_location(
+        check_in.coverage_site_id, check_in.operating_position, check_in.status,
+    ):
         matching_user = await _find_user_by_callsign(db, check_in.callsign)
         await _sync_contact_location(
             db,

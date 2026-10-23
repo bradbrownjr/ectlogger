@@ -28,7 +28,7 @@ import CheckInTable from '../components/netview/CheckInTable';
 import CanHearDialog from '../components/netview/CanHearDialog';
 import SiteCoverageView from '../components/netview/SiteCoverageView';
 import { useSiteCoverage } from '../hooks/useSiteCoverage';
-import SiteLocationField from '../components/netview/SiteLocationField';
+import SiteField, { netHasSites } from '../components/netview/SiteField';
 import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
 import { getCheckInActions, type LookupFilled } from '../components/netview/checkInActions';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
@@ -597,15 +597,20 @@ const NetPaneWindow: React.FC = () => {
             {net?.field_config?.name?.enabled && (
               <TextField size="small" value={checkInForm.name} onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })} placeholder="Name" autoComplete="off" sx={{ width: 120 }} />
             )}
-            {net?.field_config?.location?.enabled && (
+            {/* Site, ahead of Location, on a net with sites */}
+            {netHasSites(siteCoverage.sites) && (
               <Box sx={{ width: 150 }}>
-                <SiteLocationField
+                <SiteField
                   sites={siteCoverage.sites}
-                  value={checkInForm.location}
-                  onChange={(location, coverageSiteId) => setCheckInForm((prev: any) => ({ ...prev, location, coverage_site_id: coverageSiteId }))}
-                  textFieldProps={{ size: 'small', placeholder: siteCoverage.sites.length > 0 ? 'Location or site' : 'Location', fullWidth: true }}
+                  form={checkInForm}
+                  setForm={setCheckInForm}
+                  savedTown={lookupFilledRef.current.location}
+                  textFieldProps={{ size: 'small', placeholder: 'Site', fullWidth: true }}
                 />
               </Box>
+            )}
+            {net?.field_config?.location?.enabled && (
+              <TextField size="small" value={checkInForm.location} onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })} placeholder="Location" sx={{ width: 150 }} />
             )}
             {net?.field_config?.skywarn_number?.enabled && (
               <TextField size="small" value={checkInForm.skywarn_number} onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })} placeholder="Spotter #" sx={{ width: 100 }} />

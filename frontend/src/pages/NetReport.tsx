@@ -152,7 +152,10 @@ import ReportFooter from '../components/report/ReportFooter';
 import SocialSummaryImages, { SocialRosterRow, SOCIAL_PAGE_WIDTH_PX } from '../components/report/SocialSummaryImages';
 import CoverageReport, { CanHearReportEntry } from '../components/netview/CoverageReport';
 import SiteCoverageView from '../components/netview/SiteCoverageView';
-import { EMPTY_SITE_COVERAGE, SiteCoverageSummary } from '../utils/coverageSites';
+import { CoverageSite, EMPTY_SITE_COVERAGE, SiteCoverageSummary } from '../utils/coverageSites';
+import { buildSiteBoard } from '../utils/stationPlace';
+import { SiteGroups } from '../components/netview/SitesBoard';
+import { netHasSites } from '../components/netview/SiteField';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
 
 // ========== INTERFACES ==========
@@ -261,6 +264,8 @@ const NetReport: React.FC = () => {
   const [pollResults, setPollResults] = useState<PollResult[]>([]);
   const [canHearReports, setCanHearReports] = useState<CanHearReportEntry[]>([]);
   const [siteCoverage, setSiteCoverage] = useState<SiteCoverageSummary>(EMPTY_SITE_COVERAGE);
+  // The net's sites, for the Sites section (any net may have them).
+  const [sites, setSites] = useState<CoverageSite[]>([]);
   const [ics309LogData, setIcs309LogData] = useState<Ics309LogData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -336,7 +341,10 @@ const NetReport: React.FC = () => {
           canHearApi.list(parseInt(netId)),
           netApi.getIcs309Log(parseInt(netId)),
         ]);
-        // Coverage by site: only on a coverage net, and never fatal to the report.
+        // Sites on any net; coverage by site only on a coverage net. Never fatal to the report.
+        coverageSiteApi.listSites(parseInt(netId))
+          .then((res) => setSites(res.data))
+          .catch((e) => console.error('Failed to fetch sites:', e));
         if (netRes.data.propagation_logging_enabled) {
           coverageSiteApi.summary(parseInt(netId))
             .then((res) => setSiteCoverage(res.data))
@@ -480,6 +488,13 @@ const NetReport: React.FC = () => {
   };
 
   // Compute dual-map data (memoized) - must be before any early returns to satisfy React hooks rules
+  // The Sites section: on a net with sites, once somebody was placed.
+  const siteBoard = useMemo(() => {
+    if (!netHasSites(sites)) return [];
+    const groups = buildSiteBoard(checkIns as any[], sites, false);
+    return groups.some((g) => g.kind !== 'none') ? groups : [];
+  }, [checkIns, sites]);
+
   const dualMapData = useMemo(() => {
     if (mappedCheckIns.length < 3) return null;
     const pts = mappedCheckIns.map(m => ({ lat: m.parsedLocation.lat, lon: m.parsedLocation.lon }));
@@ -1474,6 +1489,18 @@ const NetReport: React.FC = () => {
 
             <Paper variant="outlined" sx={{ p: 2, mb: 3, overflowX: 'auto' }}>
               <ICS309PrintView id="net-report-ics309-view" data={ics309LogData} />
+            </Paper>
+          </>
+        )}
+
+        {/* ========== SECTION 9A: SITES (nets with sites) ========== */}
+        {/* Who was at each site, home or deployed over the whole net: every
+            check-in row, so a station that moved shows at each place. */}
+        {siteBoard.length > 0 && (
+          <>
+            <ReportSectionTitle sx={{ mb: 1 }}>Sites</ReportSectionTitle>
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <SiteGroups groups={siteBoard} dense />
             </Paper>
           </>
         )}

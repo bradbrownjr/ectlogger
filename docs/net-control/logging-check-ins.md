@@ -24,6 +24,8 @@ On a phone or a narrow window, NCS and Logger also get an always-available colla
 
 When you type a callsign into the check-in form and move on to the next field, ECTLogger fills in that station's Name, Location, and Spotter # from their profile, or from their past check-ins if they have no account. A station using location awareness gets the town its GPS position is in, such as `Waterboro, ME`, rather than a grid square; hover over the location in the check-in list to see the grid. If you correct the callsign, the new station's details replace the ones filled in for the old one, but anything you typed yourself is left alone. Only fields this net shows are ever filled. A field the net has turned off is never filled in or sent, so something in a station's profile you can't see can never stop you from saving the check-in.
 
+On a net with [sites](/docs/net-managers/sites/), the form has a **Site** box ahead of Location for where the station is tonight: a shelter, Home, Field Deployed, or Traveling. [Stations at sites](/docs/net-control/stations-at-sites/) covers it, and what happens when a station checks in from somewhere new.
+
 ## Spotting stations who check themselves in
 
 While you're running a net by voice, stations can also check themselves in from the app without calling. So you don't miss them, a station's own check-in flashes its row gold for a couple of seconds when it arrives. A check-in you or another logger typed in doesn't flash, and neither does your own.
@@ -72,7 +74,7 @@ If you fix a guest row's callsign, a role on it follows the correction. If the c
 
 ## Rechecks
 
-If a callsign that's already on the list checks in again, that's a **recheck**, not an error: it adds a second row rather than overwriting the first. [Station statuses](/docs/reference/station-statuses/) covers exactly how that shows up and how to collapse duplicate rows if you'd rather see one line per callsign.
+If a callsign that's already on the list checks in again, that's a **recheck**, not an error: it adds a second row rather than overwriting the first. On a net with sites, a recheck from a different site also checks the station out of the old one; see [Stations at sites](/docs/net-control/stations-at-sites/#when-a-station-moves). [Station statuses](/docs/reference/station-statuses/) covers exactly how that shows up and how to collapse duplicate rows if you'd rather see one line per callsign.
 
 ## Next
 

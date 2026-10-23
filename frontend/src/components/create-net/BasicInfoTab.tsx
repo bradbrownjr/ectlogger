@@ -385,18 +385,22 @@ const BasicInfoTab: React.FC = () => {
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
                   When disabled, only Net Control, Logger, and Relay can record 'can hear' reports; regular stations won't see the action.
                 </Typography>
-                {/* Coverage drill sites: shelters, offices, repeaters and nodes */}
-                <Box sx={{ mt: 2 }}>
-                  <CoverageSitesEditor
-                    sites={coverageSites}
-                    setSites={setCoverageSites}
-                    frequencies={frequencies.filter((f) => f.id != null && selectedFrequencyIds.includes(f.id))}
-                    netId={isEditMode && netId ? Number(netId) : undefined}
-                    disabled={isInfoMode}
-                  />
-                </Box>
               </Box>
             )}
+          </Box>
+
+          {/* ========== SITES ========== */}
+          {/* Any net may have sites (shelters, aid stations); coverage logging
+              adds repeaters/nodes and primary sites to the same list. */}
+          <Box sx={{ mt: 2 }}>
+            <CoverageSitesEditor
+              sites={coverageSites}
+              setSites={setCoverageSites}
+              frequencies={frequencies.filter((f) => f.id != null && selectedFrequencyIds.includes(f.id))}
+              netId={isEditMode && netId ? Number(netId) : undefined}
+              disabled={isInfoMode}
+              coverage={propagationLoggingEnabled}
+            />
           </Box>
 
           <Box sx={{ mt: 2 }}>

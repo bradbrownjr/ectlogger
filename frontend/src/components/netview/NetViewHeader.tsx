@@ -63,6 +63,7 @@ import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import CellTowerIcon from '@mui/icons-material/CellTower';
+import PlaceIcon from '@mui/icons-material/Place';
 import type { UseDialogResult } from '../../hooks/useDialog';
 import ImageLightbox from '../ImageLightbox';
 import { NetActions } from '../../utils/netActions';
@@ -224,6 +225,9 @@ interface NetViewHeaderProps {
   // plus NCS/logger/owner/admin, derived in NetView.tsx (canViewNetTraffic).
   canViewTraffic: boolean;
   offNetLog: UseDialogResult;
+  // The Sites board (SitesBoard.tsx), offered on a net with sites
+  sitesBoard: UseDialogResult;
+  hasSites: boolean;
   // Signed in, and checked in or net control staff (derived in NetView.tsx)
   canUseOffNetLog: boolean;
   script: UseDialogResult;
@@ -346,6 +350,8 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   traffic,
   canViewTraffic,
   offNetLog,
+  sitesBoard,
+  hasSites,
   canUseOffNetLog,
   script,
   scheduleAnnouncements,
@@ -445,6 +451,15 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       visible: checkInsCount > 0,
       Icon: MapIcon, color: theme.palette.primary.main, label: 'Map',
       tooltip: 'View check-in locations on map', onClick: map.onToggle,
+    },
+    {
+      // Who is at each site right now. Any status, like Map: a closed
+      // net's board shows where everyone was when it ended.
+      key: 'sites', group: 'info', priority: 3,
+      visible: hasSites && checkInsCount > 0,
+      Icon: PlaceIcon, color: theme.palette.primary.main, label: 'Sites',
+      tooltip: 'See who is at each site', onClick: sitesBoard.onToggle,
+      active: sitesBoard.open, activeTone: 'primary',
     },
     {
       // No other gate beyond the net-level toggle - matches the inline
