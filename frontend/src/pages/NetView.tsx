@@ -1907,6 +1907,8 @@ const NetView: React.FC = () => {
                 canReportCanHear={canReportCanHear}
                 canHearReporterCheckInIds={canHearReporterCheckInIds}
                 onOpenCanHearDialog={setCanHearDialogCheckInId}
+                sites={siteCoverage.sites}
+                onInlineValuesChange={setInlineEditValues}
                 onOpenIdentityVerify={setIdentityVerifyCheckIn}
                 highlightedCheckInIds={sneakInHighlightIds}
               />
@@ -2800,6 +2802,8 @@ const NetView: React.FC = () => {
                 canReportCanHear={canReportCanHear}
                 canHearReporterCheckInIds={canHearReporterCheckInIds}
                 onOpenCanHearDialog={setCanHearDialogCheckInId}
+                sites={siteCoverage.sites}
+                onInlineValuesChange={setInlineEditValues}
                 onOpenIdentityVerify={setIdentityVerifyCheckIn}
                 highlightedCheckInIds={sneakInHighlightIds}
               />

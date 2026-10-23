@@ -244,3 +244,31 @@ async def test_net_log_email_renders_the_sites_section(monkeypatch):
         site_roster=[{"place": "Bonny Eagle HS", "detail": "Standish, ME", "callsigns": "KC1HILL"}],
     )
     assert "Sites" in captured["html"] and "Bonny Eagle HS" in captured["html"] and "KC1HILL" in captured["html"]
+
+
+@pytest.mark.asyncio
+async def test_correcting_a_site_in_place_moves_nothing_and_home_gets_the_saved_town(client, db, owner):
+    """A site picked by mistake is corrected on the row itself: no check-out,
+    no second row, and Home brings back the station's usual town."""
+    net, simplex, _ = await _net(db, owner)
+    ema, shelter = await _sites(client, net, owner)
+    db.add(Contact(callsign="KC1HILL", location="Gorham, ME"))
+    await db.commit()
+    row = (await _check_in(client, net, owner, coverage_site_id=shelter["id"], frequency_id=simplex.id)).json()
+
+    fixed = await client.put(f"/api/check-ins/check-ins/{row['id']}",
+                             json={"coverage_site_id": ema["id"], "location": "Windham EMA, Windham, ME"},
+                             headers=auth_headers(owner))
+    assert fixed.status_code == 200
+    assert fixed.json()["operating_position"] == "Windham EMA"
+    home = await client.put(f"/api/check-ins/check-ins/{row['id']}",
+                            json={"coverage_site_id": None, "operating_position": "Home", "location": ""},
+                            headers=auth_headers(owner))
+    assert home.json()["location"] == "Gorham, ME"
+    rows = await _rows(db, net)
+    assert len(rows) == 1 and rows[0].status == StationStatus.CHECKED_IN
+    # The correction to a site never taught the station's saved town the shelter.
+    contact = (await db.execute(
+        select(Contact).where(Contact.callsign == "KC1HILL").execution_options(populate_existing=True)
+    )).scalar_one()
+    assert contact.location == "Gorham, ME"

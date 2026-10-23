@@ -221,3 +221,36 @@ describe('handleCallsignLookup', () => {
     expect(h.formNow()).toMatchObject({ name: 'Carol', location: 'Mobile on Route 302' });
   });
 });
+
+// ========== INLINE SITE CORRECTION ==========
+// The Site cell saves with the rest of the row, but only when the place
+// changed: an ordinary edit (a misheard name) must never rewrite the site.
+describe('handleSaveInlineEdit — Site', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+  const AT_SHELTER = { id: 7, callsign: 'KC1HILL', status: 'checked_in', coverage_site_id: 2, operating_position: 'Naples Shelter', location: 'Naples Shelter, Naples, ME' };
+  const editing = (values: any) => harness([{ ...AT_SHELTER }], {
+    inlineEditingId: 7,
+    inlineEditValues: { callsign: 'KC1HILL', name: '', location: AT_SHELTER.location, coverage_site_id: 2, operating_position: 'Naples Shelter', status: 'checked_in', ...values },
+  });
+
+  it('sends a corrected site', async () => {
+    (checkInApi.update as any).mockResolvedValue({ data: { ...AT_SHELTER, coverage_site_id: 1 } });
+    await editing({ coverage_site_id: 1, operating_position: 'Windham EMA' }).actions.handleSaveInlineEdit();
+    expect((checkInApi.update as any).mock.calls[0][1]).toMatchObject({ coverage_site_id: 1, operating_position: 'Windham EMA' });
+    expect((checkInApi.update as any).mock.calls[0][1]).not.toHaveProperty('status');
+  });
+
+  it('leaves the site alone on an ordinary edit', async () => {
+    (checkInApi.update as any).mockResolvedValue({ data: AT_SHELTER });
+    await editing({ name: 'Priya' }).actions.handleSaveInlineEdit();
+    const sent = (checkInApi.update as any).mock.calls[0][1];
+    expect(sent).not.toHaveProperty('coverage_site_id');
+    expect(sent).not.toHaveProperty('operating_position');
+  });
+
+  it('Traveling sends the Mobile status with it', async () => {
+    (checkInApi.update as any).mockResolvedValue({ data: { ...AT_SHELTER, status: 'mobile' } });
+    await editing({ coverage_site_id: null, operating_position: '', status: 'mobile' }).actions.handleSaveInlineEdit();
+    expect((checkInApi.update as any).mock.calls[0][1]).toMatchObject({ status: 'mobile', coverage_site_id: null });
+  });
+});

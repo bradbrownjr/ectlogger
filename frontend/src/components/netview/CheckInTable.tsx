@@ -31,6 +31,9 @@ import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
 import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS, useOffscreenArrivalIndicator } from './sneakInHighlight';
 import OffscreenArrivalArrow from './OffscreenArrivalArrow';
 import CheckInLocation from './CheckInLocation';
+import SiteField, { netHasSites } from './SiteField';
+import { CoverageSite } from '../../utils/coverageSites';
+import { placeChoice, placeChoiceLabel } from '../../utils/stationPlace';
 import HandRaisedIndicator from './HandRaisedIndicator';
 import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
 import { findCheckInRole, roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
@@ -109,6 +112,13 @@ interface CheckInTableProps {
   // Authenticated nets (net.authenticated): opens IdentityVerifyDialog for a
   // row's padlock icon. Optional so existing callers aren't forced to wire it.
   onOpenIdentityVerify?: (checkIn: any) => void;
+  // The net's sites. On a net with any, a Site column sits ahead of
+  // Location, editable in place like the other cells (SiteField), so a site
+  // picked by mistake is fixed without re-entering the check-in.
+  sites?: CoverageSite[];
+  // Replaces the inline edit values at once: picking a site also changes
+  // Location and, for Traveling, the status (utils/stationPlace.ts).
+  onInlineValuesChange?: (updater: (prev: any) => any) => void;
 }
 
 const CheckInTable: React.FC<CheckInTableProps> = ({
@@ -156,7 +166,10 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   onOpenCanHearDialog,
   highlightedCheckInIds,
   onOpenIdentityVerify,
+  sites = [],
+  onInlineValuesChange,
 }) => {
+  const showSite = netHasSites(sites);
   // Frozen (sticky) trailing column: Actions and the hide-duplicates/detach
   // icons share a single pinned column at the right edge so per-row controls
   // stay reachable on wide nets or narrow screens, with no dead space between
@@ -253,6 +266,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Callsign *</TableCell>
                       {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Name {net.field_config.name.required && '*'}</TableCell>}
+                      {showSite && <TableCell sx={{ whiteSpace: 'nowrap' }}>Site</TableCell>}
                       {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Location {net.field_config.location.required && '*'}</TableCell>}
                       {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
                       {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
@@ -345,6 +359,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     const hasFrequencyChips = net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0;
                     let columnCount = 5; // #, Status, Callsign, Time, Actions (merged with pop-out icon column)
                     if (net?.field_config?.name?.enabled) columnCount++;
+                    if (showSite) columnCount++;
                     if (net?.field_config?.location?.enabled) columnCount++;
                     if (net?.field_config?.skywarn_number?.enabled) columnCount++;
                     if (net?.field_config?.weather_observation?.enabled) columnCount++;
@@ -636,6 +651,34 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                               />
                             </Tooltip>
                           ) : checkIn.name}
+                        </TableCell>
+                      )}
+                      {/* Site cell - inline editable (nets with sites only) */}
+                      {showSite && (
+                        <TableCell data-field="site" sx={{ minWidth: isInlineEditing ? 150 : undefined }}>
+                          {isInlineEditing && onInlineValuesChange ? (
+                            <SiteField
+                              sites={sites}
+                              form={inlineEditValues}
+                              setForm={onInlineValuesChange}
+                              compact
+                              textFieldProps={{
+                                size: 'small',
+                                placeholder: 'Site',
+                                autoFocus: inlineEditFocusField === 'site',
+                                onBlur: handleInlineBlur,
+                                // Enter saves and Escape cancels, like every other cell, except
+                                // while the list is open: then Enter picks a site and Escape
+                                // closes the list (the list marks those keys handled).
+                                onKeyDown: (e) => { if (!e.defaultPrevented) handleInlineKeyDown(e); },
+                                inputProps: { style: { padding: '4px 8px' } },
+                                fullWidth: true,
+                              }}
+                            />
+                          ) : (() => {
+                            const choice = placeChoice(checkIn);
+                            return choice ? placeChoiceLabel(choice, sites) : null;
+                          })()}
                         </TableCell>
                       )}
                       {/* Location cell - inline editable */}

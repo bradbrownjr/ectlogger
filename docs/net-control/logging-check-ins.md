@@ -52,7 +52,7 @@ Click anywhere on a check-in's row (Callsign, Name, Location, whatever's shown) 
 - **Escape** cancels and puts the row back the way it was.
 - **Tab** moves between fields normally, so you can correct several fields in one pass without reaching for the mouse.
 
-This is the tool for fixing a callsign you misheard, correcting a location, or updating anything else about a check-in after the fact. There's no separate "edit" mode or dialog to hunt for. A corrected callsign also moves the row to that station's account, or makes it a guest row if the new callsign has none, so a station first logged with a typo can still be made NCS or Logger from the list.
+This is the tool for fixing a callsign you misheard, correcting a location or a site, or updating anything else about a check-in after the fact. There's no separate "edit" mode or dialog to hunt for. A corrected callsign also moves the row to that station's account, or makes it a guest row if the new callsign has none, so a station first logged with a typo can still be made NCS or Logger from the list.
 
 The one exception is the station's round picture (its avatar) beside the callsign. Clicking that opens the station's profile instead, so you can look someone up without opening the row for editing.
 

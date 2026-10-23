@@ -75,6 +75,7 @@ function SiteField<T extends { coverage_site_id?: number | null; operating_posit
         );
       }}
       autoHighlight
+      size={textFieldProps?.size === 'small' ? 'small' : 'medium'}
       forcePopupIcon={!compact}
       fullWidth={textFieldProps?.fullWidth}
       PopperComponent={SiteListPopper}

@@ -691,6 +691,14 @@ async def update_check_in(
     for field, value in update_data.items():
         setattr(check_in, field, value)
 
+    # Corrected to Home with no location given: the station's saved town,
+    # as create_check_in does. (Moving off a site clears the site's place.)
+    if 'operating_position' in update_data and is_home_position(check_in.operating_position) \
+            and not (check_in.location or '').strip():
+        check_in.location = (await db.execute(
+            select(Contact.location).where(Contact.callsign == check_in.callsign)
+        )).scalar_one_or_none() or ''
+
     # A corrected callsign is a different station, so the row follows the new
     # callsign's account, the same lookup create_check_in does. Without this,
     # a row first logged with a typo stayed a guest row forever, and roles

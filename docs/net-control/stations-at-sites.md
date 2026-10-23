@@ -14,7 +14,7 @@ permalink: /docs/net-control/stations-at-sites/
 
 On a net whose manager has added [sites](/docs/net-managers/sites/), such as the shelters of an ARES deployment or the aid stations of a race, the check-in form has a **Site** box ahead of **Location**. It records where the station is tonight, separately from where it usually is, and the toolbar's **Sites** board shows every station grouped by it.
 
-A net without sites has no Site box and no Sites button.
+A net without sites has no Site box, no Site column, and no Sites button.
 
 ## Check a station in at a site
 
@@ -54,7 +54,9 @@ A station that went Traveling and is checked in again with no site is refused as
 
 ### Fixing a site picked by mistake
 
-There is no Site box when you edit a row in place. If you picked the wrong site, delete that check-in (see [Logging check-ins](/docs/net-control/logging-check-ins/#deleting-a-check-in)) and check the station in again at the right one. Checking it in again without deleting would record a move that never happened.
+On a net with sites the check-in list has a **Site** column ahead of Location. Click a station's site to open the row for editing, pick the right one, and press **Enter** or click away, the same as fixing any other cell (see [Editing a row in place](/docs/net-control/logging-check-ins/#editing-a-row-in-place)). Location changes to match.
+
+A correction is not a move: nothing is checked out and no second row is added. Use it when the site was wrong, and check the station in again when it really went somewhere else, so the log shows when it moved.
 
 ## The Sites board
 
