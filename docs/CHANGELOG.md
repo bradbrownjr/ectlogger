@@ -20,18 +20,23 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
+* **Net View: Participants-only nets** — A net can now be marked Participants only, for the stations taking part in an event or incident such as a drill's deployed teams. It shows a red label beside its status, and the check-in form asks anyone else to listen without checking in, while self check-in stays open for volunteers. If someone checks in anyway, net control can remove and block them: their check-ins come off the net, their chat is muted, and they can't check back in. [Learn more](/docs/net-control/logging-check-ins/#removing-and-blocking-a-station)
 * **Security: Activity log for admins** — Admins can now see who deleted a net, changed a role, or changed an account, with the date, the internet address and its approximate location. Open it from Admin > Activity, or from "Show activity" on any person in the Users list, to answer "who did this?" in seconds. [Learn more](/docs/admins/activity-log/)
 * **Security: Sign-in and moderation alerts** — When someone types several wrong passwords for your account, or one wrong two-factor code, you and the admins get an email listing each attempt and where it came from, so a break-in attempt doesn't go unnoticed. Admins are also told when several different people have muted the same station in chat, without naming who muted it. Both are set on Admin > Security. [Learn more](/docs/admins/security-and-mfa/#security-alerts)
 * **Security: Change your sign-in email** — You can now change the address you sign in with from Profile > Security, confirmed by a link sent to the new address, so losing a mailbox or getting a new callsign no longer means asking an admin. Your old address is told about the change, and it can no longer sign you in. [Learn more](/docs/operators/signing-in/#change-your-sign-in-email)
 
 ## Improvements
 
+* **Net View: Net Info shows the whole net at a glance** — Net Info now opens a card with the net's logo, description, schedule, frequencies, manager and staff, and links to its website and reports, and it stays available once the lobby opens or the net starts. [Learn more](/docs/operators/finding-a-net/#learning-about-a-net)
+* **Edit Net: Show only the selected frequencies** — A Selected only switch above the frequency list hides the frequencies the net doesn't use, so you can check a net's frequencies without scrolling the whole list. [Learn more](/docs/net-managers/creating-a-net/#communication-plan)
 * **Check-in: Sites on any net** — Any net can now have a list of sites, such as shelters, aid stations and checkpoints, without turning on coverage logging. Each check-in gets a Site box next to Location with those sites plus Home, and the net shows a board of who is at each site, at home, or mobile. Logging someone at a site doesn't change the usual town that fills in for them on your other nets. [Learn more](/docs/net-managers/sites/)
 * **Check-in: Moving stations check out automatically** — When a station checks in again from a different place, their earlier check-in is checked out for them, since nobody can be in two places at once. Before, NCS had to check them out by hand before the new check-in would go through. [Learn more](/docs/net-control/stations-at-sites/#when-a-station-moves)
 * **Net View: More room in the check-in row** — The fields in the row where NCS and Loggers enter new check-ins sit closer together and the decorative + is gone, so the boxes are wider and you can see what you're typing.
 
 ## Bug Fixes
 
+* **Net View: Action buttons cover the whole check-in** — On a net with several frequencies, a check-in's action buttons and its colour now cover its frequency line too, instead of stopping halfway down the check-in.
+* **Check-in: Renamed fields show their new name** — When an admin renames a check-in field, such as Power to Power (W), the check-in row, the check-in list, the check-in form and the closing email now use the new name. Before, they kept the old one.
 * **Schedules: Merging and deleting schedules** — A schedule's co-managers can now merge and delete it as the schedule's manager can, and when a merge can't go ahead, the message says which nets are in the way. [Learn more](/docs/net-managers/recurring-schedules/#merging-schedules)
 
 ---

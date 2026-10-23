@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { fieldLabel } from '../../utils/checkInFields';
 import {
   Box,
   Table,
@@ -36,6 +37,8 @@ import { findCheckInRole, roleMatchesCheckIn, StationRole } from '../../utils/st
 type NcsColor = { bg: string; border: string; text: string } | null;
 
 interface CheckInMobileListProps {
+  // The site's field list, for each built-in field's heading (utils/checkInFields.ts::fieldLabel).
+  fieldDefinitions?: { name: string; label?: string | null }[];
   net: any;
   filteredCheckIns: any[];
   // Account and callsign-only roles merged (utils/stationRoles.ts).
@@ -91,6 +94,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
   canManageCheckIns,
   getNcsColor,
   getEnabledCustomFields,
+  fieldDefinitions,
   isFieldRequired,
   getStatusIcon,
   getStatusLabel,
@@ -187,13 +191,13 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
             <TableCell sx={{ whiteSpace: 'nowrap' }}>#</TableCell>
             <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>
             <TableCell sx={{ whiteSpace: 'nowrap' }}>Callsign *</TableCell>
-            {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Name {net.field_config.name.required && '*'}</TableCell>}
-            {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Location {net.field_config.location.required && '*'}</TableCell>}
-            {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
-            {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
-            {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power Src {net.field_config.power_source.required && '*'}</TableCell>}
-            {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power {net.field_config.power.required && '*'}</TableCell>}
-            {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Notes {net.field_config.notes.required && '*'}</TableCell>}
+            {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'name')} {net.field_config.name.required && '*'}</TableCell>}
+            {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'location')} {net.field_config.location.required && '*'}</TableCell>}
+            {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'skywarn_number')} {net.field_config.skywarn_number.required && '*'}</TableCell>}
+            {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'weather_observation')} {net.field_config.weather_observation.required && '*'}</TableCell>}
+            {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'power_source')} {net.field_config.power_source.required && '*'}</TableCell>}
+            {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'power')} {net.field_config.power.required && '*'}</TableCell>}
+            {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'notes')} {net.field_config.notes.required && '*'}</TableCell>}
             {getEnabledCustomFields().map((field) => (
               <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>
                 {field.label} {isFieldRequired(field.name) && '*'}

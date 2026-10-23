@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { fieldLabel } from '../utils/checkInFields';
 import { useDeleteCheckInPrompt } from '../hooks/useDeleteCheckInPrompt';
 import { formatFrequencyDisplay } from '../utils/frequencyList';
 import { useParams } from 'react-router-dom';
@@ -416,6 +417,9 @@ const NetPaneWindow: React.FC = () => {
     return null;
   };
 
+  // A built-in field's label, as the admin named it (utils/checkInFields.ts).
+  const labelOf = (name: string) => fieldLabel(fieldDefinitions as any[], name);
+
   const getEnabledCustomFields = () => {
     return (fieldDefinitions as any[]).filter((field: any) =>
       !field.is_builtin && net?.field_config?.[field.name]?.enabled
@@ -489,6 +493,7 @@ const NetPaneWindow: React.FC = () => {
         getNcsColor={getNcsColor}
         getNcsColorForFrequency={getNcsColorForFrequency}
         getEnabledCustomFields={getEnabledCustomFields}
+        fieldDefinitions={fieldDefinitions as any[]}
         isFieldRequired={isFieldRequired}
         formatFrequencyDisplay={formatFrequencyDisplay}
         getStatusIcon={getStatusIcon}
@@ -592,7 +597,7 @@ const NetPaneWindow: React.FC = () => {
               required
             />
             {net?.field_config?.name?.enabled && (
-              <TextField size="small" value={checkInForm.name} onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })} placeholder="Name" autoComplete="off" sx={{ width: 120 }} />
+              <TextField size="small" value={checkInForm.name} onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })} placeholder={labelOf('name')} autoComplete="off" sx={{ width: 120 }} />
             )}
             {/* Site, ahead of Location, on a net with sites */}
             {netHasSites(siteCoverage.sites) && (
@@ -607,13 +612,13 @@ const NetPaneWindow: React.FC = () => {
               </Box>
             )}
             {net?.field_config?.location?.enabled && (
-              <TextField size="small" value={checkInForm.location} onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })} placeholder="Location" sx={{ width: 150 }} />
+              <TextField size="small" value={checkInForm.location} onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })} placeholder={labelOf('location')} sx={{ width: 150 }} />
             )}
             {net?.field_config?.skywarn_number?.enabled && (
-              <TextField size="small" value={checkInForm.skywarn_number} onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })} placeholder="Spotter #" sx={{ width: 100 }} />
+              <TextField size="small" value={checkInForm.skywarn_number} onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })} placeholder={labelOf('skywarn_number')} sx={{ width: 100 }} />
             )}
             {net?.field_config?.notes?.enabled && (
-              <TextField size="small" value={checkInForm.notes} onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })} placeholder="Notes" sx={{ flex: 1, minWidth: 150 }} />
+              <TextField size="small" value={checkInForm.notes} onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })} placeholder={labelOf('notes')} sx={{ flex: 1, minWidth: 150 }} />
             )}
             {net?.topic_of_week_enabled && (
               <Autocomplete

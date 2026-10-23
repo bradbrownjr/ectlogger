@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { fieldLabel } from '../utils/checkInFields';
 import { useDeleteCheckInPrompt } from '../hooks/useDeleteCheckInPrompt';
 import { formatFrequencyDisplay } from '../utils/frequencyList';
 import useDialog from '../hooks/useDialog';
@@ -1352,6 +1353,9 @@ const NetView: React.FC = () => {
   const handleDelete = () => archiveDeleteConfirm.onOpen();
 
   // Get custom fields (non-builtin) that are enabled for this net
+  // A built-in field's label, as the admin named it (utils/checkInFields.ts).
+  const labelOf = (name: string) => fieldLabel(fieldDefinitions as any[], name);
+
   const getEnabledCustomFields = (): FieldDefinition[] => {
     return (fieldDefinitions as FieldDefinition[]).filter((field: FieldDefinition) =>
       !field.is_builtin &&
@@ -1889,6 +1893,7 @@ const NetView: React.FC = () => {
                 getNcsColor={getNcsColor}
                 getNcsColorForFrequency={getNcsColorForFrequency}
                 getEnabledCustomFields={getEnabledCustomFields}
+                fieldDefinitions={fieldDefinitions as any[]}
                 isFieldRequired={isFieldRequired}
                 formatFrequencyDisplay={formatFrequencyDisplay}
                 getStatusIcon={getStatusIcon}
@@ -1932,6 +1937,7 @@ const NetView: React.FC = () => {
               canManageCheckIns={canManageCheckIns}
               getNcsColor={getNcsColor}
               getEnabledCustomFields={getEnabledCustomFields}
+              fieldDefinitions={fieldDefinitions as any[]}
               isFieldRequired={isFieldRequired}
               getStatusIcon={getStatusIcon}
               getStatusLabel={getStatusLabel}
@@ -2084,7 +2090,7 @@ const NetView: React.FC = () => {
                               handleCheckIn();
                             }
                           }}
-                          placeholder="Name"
+                          placeholder={labelOf('name')}
                           autoComplete="off"
                           inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
@@ -2118,7 +2124,7 @@ const NetView: React.FC = () => {
                               handleCheckIn();
                             }
                           }}
-                          placeholder="Location"
+                          placeholder={labelOf('location')}
                           inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.location.required}
@@ -2137,7 +2143,7 @@ const NetView: React.FC = () => {
                               handleCheckIn();
                             }
                           }}
-                          placeholder="Spotter #"
+                          placeholder={labelOf('skywarn_number')}
                           inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.skywarn_number.required}
@@ -2156,7 +2162,7 @@ const NetView: React.FC = () => {
                               handleCheckIn();
                             }
                           }}
-                          placeholder="Weather"
+                          placeholder={labelOf('weather_observation')}
                           inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.weather_observation.required}
@@ -2175,7 +2181,7 @@ const NetView: React.FC = () => {
                               handleCheckIn();
                             }
                           }}
-                          placeholder="Pwr Src"
+                          placeholder={labelOf('power_source')}
                           inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.power_source.required}
@@ -2194,7 +2200,7 @@ const NetView: React.FC = () => {
                               handleCheckIn();
                             }
                           }}
-                          placeholder="Power"
+                          placeholder={labelOf('power')}
                           inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.power.required}
@@ -2213,7 +2219,7 @@ const NetView: React.FC = () => {
                               handleCheckIn();
                             }
                           }}
-                          placeholder="Notes"
+                          placeholder={labelOf('notes')}
                           inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.notes.required}
@@ -2433,10 +2439,9 @@ const NetView: React.FC = () => {
                   {net?.field_config?.name?.enabled && (
                     <TextField
                       size="small"
-                      label="Name"
+                      label={labelOf('name')}
                       value={checkInForm.name}
                       onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
-                      placeholder="Name"
                       autoComplete="off"
                       fullWidth
                       required={net.field_config.name.required}
@@ -2457,10 +2462,9 @@ const NetView: React.FC = () => {
                   {net?.field_config?.location?.enabled && (
                     <TextField
                       size="small"
-                      label="Location"
+                      label={labelOf('location')}
                       value={checkInForm.location}
                       onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
-                      placeholder="Location"
                       fullWidth
                       required={net.field_config.location.required}
                     />
@@ -2469,10 +2473,9 @@ const NetView: React.FC = () => {
                   {net?.field_config?.skywarn_number?.enabled && (
                     <TextField
                       size="small"
-                      label="Spotter #"
+                      label={labelOf('skywarn_number')}
                       value={checkInForm.skywarn_number}
                       onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
-                      placeholder="Spotter #"
                       fullWidth
                       required={net.field_config.skywarn_number.required}
                     />
@@ -2481,10 +2484,9 @@ const NetView: React.FC = () => {
                   {net?.field_config?.weather_observation?.enabled && (
                     <TextField
                       size="small"
-                      label="Weather"
+                      label={labelOf('weather_observation')}
                       value={checkInForm.weather_observation}
                       onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
-                      placeholder="Weather observation"
                       fullWidth
                       multiline
                       rows={2}
@@ -2495,10 +2497,9 @@ const NetView: React.FC = () => {
                   {net?.field_config?.power_source?.enabled && (
                     <TextField
                       size="small"
-                      label="Power Src"
+                      label={labelOf('power_source')}
                       value={checkInForm.power_source}
                       onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
-                      placeholder="Power source"
                       fullWidth
                       required={net.field_config.power_source.required}
                     />
@@ -2507,7 +2508,7 @@ const NetView: React.FC = () => {
                   {net?.field_config?.power?.enabled && (
                     <TextField
                       size="small"
-                      label="Power"
+                      label={labelOf('power')}
                       value={checkInForm.power}
                       onChange={(e) => setCheckInForm({ ...checkInForm, power: e.target.value })}
                       placeholder="Power output"
@@ -2519,10 +2520,9 @@ const NetView: React.FC = () => {
                   {net?.field_config?.notes?.enabled && (
                     <TextField
                       size="small"
-                      label="Notes"
+                      label={labelOf('notes')}
                       value={checkInForm.notes}
                       onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
-                      placeholder="Notes"
                       fullWidth
                       multiline
                       rows={2}
@@ -2784,6 +2784,7 @@ const NetView: React.FC = () => {
                 getNcsColor={getNcsColor}
                 getNcsColorForFrequency={getNcsColorForFrequency}
                 getEnabledCustomFields={getEnabledCustomFields}
+                fieldDefinitions={fieldDefinitions as any[]}
                 isFieldRequired={isFieldRequired}
                 formatFrequencyDisplay={formatFrequencyDisplay}
                 getStatusIcon={getStatusIcon}
@@ -2864,7 +2865,7 @@ const NetView: React.FC = () => {
                       required
                     />
                     {net?.field_config?.name?.enabled && (
-                      <TextField size="small" value={checkInForm.name} onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })} placeholder="Name" autoComplete="off" sx={{ width: 120 }} />
+                      <TextField size="small" value={checkInForm.name} onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })} placeholder={labelOf('name')} autoComplete="off" sx={{ width: 120 }} />
                     )}
                     {/* Site, ahead of Location, on a net with sites */}
                     {netHasSites(siteCoverage.sites) && (
@@ -2879,13 +2880,13 @@ const NetView: React.FC = () => {
                       </Box>
                     )}
                     {net?.field_config?.location?.enabled && (
-                      <TextField size="small" value={checkInForm.location} onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })} placeholder="Location" sx={{ width: 150 }} />
+                      <TextField size="small" value={checkInForm.location} onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })} placeholder={labelOf('location')} sx={{ width: 150 }} />
                     )}
                     {net?.field_config?.skywarn_number?.enabled && (
-                      <TextField size="small" value={checkInForm.skywarn_number} onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })} placeholder="Spotter #" sx={{ width: 100 }} />
+                      <TextField size="small" value={checkInForm.skywarn_number} onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })} placeholder={labelOf('skywarn_number')} sx={{ width: 100 }} />
                     )}
                     {net?.field_config?.notes?.enabled && (
-                      <TextField size="small" value={checkInForm.notes} onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })} placeholder="Notes" sx={{ flex: 1, minWidth: 150 }} />
+                      <TextField size="small" value={checkInForm.notes} onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })} placeholder={labelOf('notes')} sx={{ flex: 1, minWidth: 150 }} />
                     )}
                     {net?.topic_of_week_enabled && (
                       <Tooltip title={net.topic_of_week_prompt ? `Topic of the Week: ${net.topic_of_week_prompt}` : ''}>
@@ -3007,6 +3008,7 @@ const NetView: React.FC = () => {
         savedTown={lookupFilledRef.current.location || selfCheckInLocation}
         dialog={checkInDialog}
         participantsOnly={!!net?.participants_only}
+        fieldDefinitions={fieldDefinitions as any[]}
         netName={net?.name}
         fieldConfig={net?.field_config}
         frequencies={net?.frequencies}

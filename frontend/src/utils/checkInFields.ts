@@ -39,3 +39,25 @@ export function withOnlyShownFields<T extends Record<string, any>>(values: T, fi
   }
   return result as T;
 }
+
+// ========== WHAT EACH FIELD IS CALLED ==========
+// The admin can rename a built-in field (Admin > Check-in fields: "Power"
+// to "Power (W)"); the field list (/settings/fields, loaded by useNetData)
+// carries that label. Every heading, label and placeholder for a built-in
+// field goes through fieldLabel. Each one used to type its own wording, so
+// a rename never reached the net (2026-10-23). The backend's closing email
+// does the same (services/field_labels.py).
+export const DEFAULT_FIELD_LABELS: Record<string, string> = {
+  name: 'Name',
+  location: 'Location',
+  skywarn_number: 'Spotter #',
+  weather_observation: 'Weather',
+  power_source: 'Power Src',
+  power: 'Power',
+  feedback: 'Feedback',
+  notes: 'Notes',
+};
+
+export function fieldLabel(fieldDefinitions: { name: string; label?: string | null }[] | null | undefined, name: string): string {
+  return fieldDefinitions?.find((f) => f.name === name)?.label || DEFAULT_FIELD_LABELS[name] || name;
+}

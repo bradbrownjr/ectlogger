@@ -4,6 +4,7 @@ import io
 from jinja2 import Template
 
 from app.config import settings
+from app.services.field_labels import DEFAULT_FIELD_LABELS
 from app.email.logo_svg import LOGO_SVG
 from app.email.base import (
     get_unsubscribe_footer,
@@ -29,6 +30,7 @@ async def send_net_log(
     coverage_edges: list = None,
     site_coverage: dict = None,
     site_roster: list = None,
+    field_labels: dict = None,
     traffic_enabled: bool = False,
     traffic_summary: dict = None,
     unsubscribe_token: str = None
@@ -273,14 +275,14 @@ async def send_net_log(
                     <tr>
                         <th>Time</th>
                         <th>Callsign</th>
-                        {% if show_name %}<th>Name</th>{% endif %}
-                        {% if show_location %}<th>Location</th>{% endif %}
+                        {% if show_name %}<th>{{ labels.name }}</th>{% endif %}
+                        {% if show_location %}<th>{{ labels.location }}</th>{% endif %}
                         {% if has_frequencies %}<th>Frequencies</th>{% endif %}
-                        {% if show_skywarn %}<th>Spotter #</th>{% endif %}
-                        {% if show_weather %}<th>Weather</th>{% endif %}
-                        {% if show_power_source %}<th>Power Src</th>{% endif %}
-                        {% if show_power %}<th>Power</th>{% endif %}
-                        {% if show_notes %}<th>Notes</th>{% endif %}
+                        {% if show_skywarn %}<th>{{ labels.skywarn_number }}</th>{% endif %}
+                        {% if show_weather %}<th>{{ labels.weather_observation }}</th>{% endif %}
+                        {% if show_power_source %}<th>{{ labels.power_source }}</th>{% endif %}
+                        {% if show_power %}<th>{{ labels.power }}</th>{% endif %}
+                        {% if show_notes %}<th>{{ labels.notes }}</th>{% endif %}
                         {% if topic_enabled %}<th>Topic</th>{% endif %}
                         {% if poll_enabled %}<th>Poll</th>{% endif %}
                     </tr>
@@ -322,6 +324,8 @@ async def send_net_log(
     # Calculate total poll responses for percentage
     total_poll_responses = sum(count for _, count in poll_results) if poll_results else 0
     
+    # The admin's wording for each built-in field (services/field_labels.py).
+    labels = {**DEFAULT_FIELD_LABELS, **(field_labels or {})}
     html_content = html_template.render(
         app_name=settings.app_name,
         net_name=net_name,
@@ -339,6 +343,7 @@ async def send_net_log(
         show_power_source=is_enabled('power_source'),
         show_power=is_enabled('power'),
         show_notes=is_enabled('notes'),
+        labels=labels,
         topic_enabled=topic_of_week_enabled,
         topic_prompt=topic_of_week_prompt,
         poll_enabled=poll_enabled,
@@ -360,23 +365,25 @@ async def send_net_log(
     writer = csv.writer(output)
     
     # Build header row based on enabled fields
+    # Same headings as the email's table above. (The detailed CSV below keeps
+    # fixed column names, which the CSV import matches on.)
     headers = ["Check-in Time", "Callsign"]
     if is_enabled('name'):
-        headers.append("Name")
+        headers.append(labels["name"])
     if is_enabled('location'):
-        headers.append("Location")
+        headers.append(labels["location"])
     if has_frequencies:
         headers.append("Frequencies")
     if is_enabled('skywarn_number'):
-        headers.append("Spotter #")
+        headers.append(labels["skywarn_number"])
     if is_enabled('weather_observation'):
-        headers.append("Weather Observation")
+        headers.append(labels["weather_observation"])
     if is_enabled('power_source'):
-        headers.append("Power Src")
+        headers.append(labels["power_source"])
     if is_enabled('power'):
-        headers.append("Power")
+        headers.append(labels["power"])
     if is_enabled('notes'):
-        headers.append("Notes")
+        headers.append(labels["notes"])
     if topic_of_week_enabled:
         headers.append(topic_of_week_prompt or "Topic")
     if poll_enabled:
