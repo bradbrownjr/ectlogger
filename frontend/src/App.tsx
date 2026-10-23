@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 type PaletteMode = 'light' | 'dark';
 import { CssBaseline, Box } from '@mui/material';
@@ -153,6 +153,13 @@ const getDesignTokens = (mode: PaletteMode, themeKey: string, customTheme: Theme
   };
 };
 
+// The read-only Net info page was retired for the Net info card (2026-10-23);
+// an old link or bookmark opens the net with the card showing.
+const NetInfoRedirect: React.FC = () => {
+  const { netId } = useParams();
+  return <Navigate to={`/nets/${netId}?info=1`} replace />;
+};
+
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
@@ -202,7 +209,7 @@ const AppRoutes: React.FC = () => {
               </PrivateRoute>
             }
           />
-          <Route path="/nets/:netId/info" element={<CreateNet />} />
+          <Route path="/nets/:netId/info" element={<NetInfoRedirect />} />
           <Route path="/nets/:netId/report" element={<NetReport />} />
           <Route
             path="/nets/:netId/drill-plan"

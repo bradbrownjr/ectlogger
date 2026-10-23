@@ -1,4 +1,5 @@
-import { callsignRoleApi, checkInApi, netApi, netRoleApi, userApi } from '../../services/api';
+import { callsignRoleApi, checkInApi, netApi, netBlockApi, netRoleApi, userApi } from '../../services/api';
+import type { DeleteCheckInChoice } from '../../hooks/useDeleteCheckInPrompt';
 import { roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
 import api from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
@@ -57,6 +58,9 @@ export interface CheckInActionsDeps {
 
   fetchCheckIns: () => Promise<void>;
   fetchNetRoles: () => Promise<void>;
+  // Confirms a delete, and for net control offers Remove and block
+  // (hooks/useDeleteCheckInPrompt.tsx).
+  askDelete: (checkIn: { callsign: string }) => Promise<DeleteCheckInChoice>;
 }
 
 export interface CheckInActions {
@@ -83,7 +87,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef, lookupFilledRef,
     setCheckInForm, setToastMessage, setInlineEditingId, setInlineEditFocusField,
     setInlineEditValues, setCheckIns, setActiveSpeakerId, setNet, setFilteredFrequencyIds,
-    fetchCheckIns, fetchNetRoles,
+    fetchCheckIns, fetchNetRoles, askDelete,
   } = deps;
 
   // Look up user info by callsign and auto-fill form fields (for NCS).
@@ -289,15 +293,26 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
   };
 
   const handleDeleteCheckIn = async (checkInId: number) => {
-    if (!confirm('Delete this check-in entry?')) return;
+    const checkIn = checkIns.find((ci: any) => ci.id === checkInId);
+    if (!checkIn) return;
+    const choice = await askDelete(checkIn);
+    if (!choice) return;
     try {
+      if (choice === 'block') {
+        // The server removes every row under the callsign; drop them here too.
+        await netBlockApi.block(Number(netId), checkInId);
+        const callsign = String(checkIn.callsign).toUpperCase();
+        setCheckIns((prev: any[]) => prev.filter(ci => String(ci.callsign).toUpperCase() !== callsign));
+        setToastMessage(`${checkIn.callsign} removed and blocked from this net`);
+        return;
+      }
       await checkInApi.delete(checkInId);
       // Drop the row locally rather than re-reading the list; the server's
       // check_in_deleted broadcast does the same for every other client.
       setCheckIns((prev: any[]) => prev.filter(ci => ci.id !== checkInId));
     } catch (error) {
       console.error('Failed to delete check-in:', error);
-      setToastMessage('Failed to delete check-in');
+      setToastMessage(getErrorMessage(error, 'Failed to delete check-in'));
     }
   };
 

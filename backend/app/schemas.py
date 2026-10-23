@@ -613,6 +613,8 @@ class NetBase(BaseModel):
     poll_question: Optional[str] = Field(None, max_length=500)
     # Lets NCS/Logger reveal a station's current TOTP code to confirm identity
     authenticated: Optional[bool] = False
+    # For the stations taking part only (models.Net.participants_only)
+    participants_only: Optional[bool] = False
     # Scheduled start time for countdown display
     scheduled_start_time: Optional[datetime] = None
 
@@ -656,6 +658,7 @@ class NetUpdate(BaseModel):
     poll_enabled: Optional[bool] = None
     poll_question: Optional[str] = Field(None, max_length=500)
     authenticated: Optional[bool] = None
+    participants_only: Optional[bool] = None
     # Scheduled start time for countdown display
     scheduled_start_time: Optional[datetime] = None
     # Allow NCS/admin to adjust actual start/end timestamps
@@ -688,6 +691,7 @@ class NetActions(BaseModel):
     run_drill: bool = False          # Drill plan: read it, mark messages sent
     log_off_net: bool = False        # Off-net log: add for any station, no review
     review_off_net_log: bool = False # Off-net log: accept, reject, edit any entry
+    block_station: bool = False      # Remove and block a station from the net
 
 
 class NetResponse(NetBase):
@@ -803,6 +807,7 @@ class NetResponse(NetBase):
             'poll_enabled': net.poll_enabled or False,
             'poll_question': net.poll_question,
             'authenticated': net.authenticated or False,
+            'participants_only': net.participants_only or False,
             'scheduled_start_time': net.scheduled_start_time,
             'started_at': net.started_at,
             'closed_at': net.closed_at,
@@ -871,6 +876,7 @@ class NetTemplateBase(BaseModel):
     poll_enabled: Optional[bool] = False
     poll_question: Optional[str] = Field(None, max_length=500)
     authenticated: Optional[bool] = False
+    participants_only: Optional[bool] = False
 
 
 class NetTemplateCreate(NetTemplateBase):
@@ -913,6 +919,7 @@ class NetTemplateUpdate(BaseModel):
     poll_enabled: Optional[bool] = None
     poll_question: Optional[str] = Field(None, max_length=500)
     authenticated: Optional[bool] = None
+    participants_only: Optional[bool] = None
 
 
 class NetTemplateResponse(NetTemplateBase):
@@ -986,6 +993,7 @@ class NetTemplateResponse(NetTemplateBase):
             'poll_enabled': template.poll_enabled or False,
             'poll_question': template.poll_question,
             'authenticated': template.authenticated or False,
+            'participants_only': template.participants_only or False,
             'is_active': template.is_active,
             'created_at': template.created_at,
             'frequencies': [FrequencyResponse.model_validate(f) for f in template.frequencies],
@@ -1932,6 +1940,20 @@ class CalendarOccurrence(BaseModel):
 class TemplateStaffCreate(PlaceholderInvite):
     """Request to add a staff member: an account, or a callsign with no
     account yet (optionally with an address to invite them at)."""
+
+
+class NetBlockCreate(BaseModel):
+    """Remove the station on this check-in from the net and block it."""
+    check_in_id: int
+
+
+class NetBlockResponse(BaseModel):
+    id: int
+    net_id: int
+    callsign: str
+    user_id: Optional[int] = None
+    blocked_by_callsign: Optional[str] = None
+    created_at: Optional[datetime] = None
 
 
 class TemplateStaffResponse(BaseModel):

@@ -93,6 +93,7 @@ async def create_net(
         poll_enabled=net_data.poll_enabled or False,
         poll_question=net_data.poll_question,
         authenticated=net_data.authenticated or False,
+        participants_only=net_data.participants_only or False,
         scheduled_start_time=net_data.scheduled_start_time,
     )
     db.add(net)

@@ -15,13 +15,16 @@ import {
   FormControlLabel,
   Radio,
   Typography,
+  Alert,
 } from '@mui/material';
+import LockPersonIcon from '@mui/icons-material/LockPerson';
 import type { UseDialogResult } from '../../hooks/useDialog';
 import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING, FIELD_SPAM_WARNING } from '../../utils/nameFieldGuard';
 import api from '../../services/api';
 import { isFieldShown } from '../../utils/checkInFields';
 import SiteField, { netHasSites } from './SiteField';
 import type { CoverageSite } from '../../utils/coverageSites';
+import { PARTICIPANTS_ONLY_HINT } from './ParticipantsOnlyChip';
 
 // ========== CHECK-IN FORM DIALOG ==========
 // The "Check In to {net}" modal. Renders the dynamic check-in form (fields shown
@@ -59,6 +62,8 @@ export interface CheckInFormState {
 
 interface CheckInFormDialogProps {
   dialog: UseDialogResult;
+  // A participants-only net (Net.participants_only): says so above the form.
+  participantsOnly?: boolean;
   netName: string | undefined;
   fieldConfig: any;
   frequencies: any[] | undefined;
@@ -95,6 +100,7 @@ interface CheckInFormDialogProps {
 
 const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
   dialog,
+  participantsOnly,
   netName,
   fieldConfig,
   frequencies,
@@ -174,6 +180,12 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
       <DialogTitle>Check In to {netName}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          {/* Shows on a participants-only net: a notice, not a gate */}
+          {participantsOnly && (
+            <Alert severity="error" variant="outlined" icon={<LockPersonIcon />}>
+              <strong>Participants only.</strong> {PARTICIPANTS_ONLY_HINT}
+            </Alert>
+          )}
           <TextField
             label="Callsign"
             value={checkInForm.callsign}

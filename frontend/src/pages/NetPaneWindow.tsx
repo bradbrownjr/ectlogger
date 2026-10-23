@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useDeleteCheckInPrompt } from '../hooks/useDeleteCheckInPrompt';
+import { formatFrequencyDisplay } from '../utils/frequencyList';
 import { useParams } from 'react-router-dom';
 import {
   Autocomplete,
@@ -122,6 +124,8 @@ const NetPaneWindow: React.FC = () => {
     pollResponses, topicResponses,
     fetchNet, fetchCheckIns, fetchNetRoles, fetchNetStats,
   } = useNetData(netId);
+  // Delete confirmation, with Remove and block for net control.
+  const deletePrompt = useDeleteCheckInPrompt(getNetActions(net, simulateRegularUser).block_station);
   const siteCoverage = useSiteCoverage(netId ? Number(netId) : null, !!net?.propagation_logging_enabled);
 
   // Which check-ins are currently mid-flash for having self-checked-in
@@ -420,15 +424,6 @@ const NetPaneWindow: React.FC = () => {
 
   const isFieldRequired = (fieldName: string) => net?.field_config?.[fieldName]?.required ?? false;
 
-  const formatFrequencyDisplay = (freq: any) => {
-    if (!freq) return '';
-    if (freq.frequency) {
-      return `${freq.frequency} MHz${freq.mode ? ` (${freq.mode})` : ''}`;
-    }
-    const label = freq.channel || freq.talkgroup || 'Digital';
-    return freq.mode ? `${label} ${freq.mode}` : label;
-  };
-
   const hasAnyRelayedBy = checkIns.some((ci: any) => ci.relayed_by);
 
   const {
@@ -448,7 +443,7 @@ const NetPaneWindow: React.FC = () => {
     checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef, lookupFilledRef,
     setCheckInForm, setToastMessage, setInlineEditingId, setInlineEditFocusField,
     setInlineEditValues, setCheckIns, setActiveSpeakerId, setNet, setFilteredFrequencyIds,
-    fetchCheckIns, fetchNetRoles,
+    fetchCheckIns, fetchNetRoles, askDelete: deletePrompt.ask,
   });
 
   const filteredCheckIns = checkIns.filter((checkIn: any) => {
@@ -663,6 +658,7 @@ const NetPaneWindow: React.FC = () => {
         </Paper>
       )}
 
+      {deletePrompt.dialog}
       <Snackbar open={toastMessage !== ''} autoHideDuration={6000} onClose={() => setToastMessage('')} message={toastMessage} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} />
     </Box>
   );

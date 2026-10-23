@@ -44,7 +44,6 @@ const NCSStaffTab: React.FC = () => {
     currentUser,
     netId,
     isEditMode,
-    isInfoMode,
     templateId,
   } = useCreateNetContext();
   const scheduleManaged = isEditMode && !!templateId;
@@ -212,7 +211,7 @@ const NCSStaffTab: React.FC = () => {
       )}
 
       {/* Net from a schedule: open its Staff dialog instead of editing here */}
-      {scheduleManaged && !isInfoMode && (
+      {scheduleManaged && (
         <Box sx={{ mb: 2 }}>
           <ScheduleStaffButton templateId={templateId!} onClosed={() => { fetchNetRoles(); fetchScheduleStaff(); }} />
         </Box>
@@ -226,7 +225,7 @@ const NCSStaffTab: React.FC = () => {
       )}
 
       {/* Add NCS autocomplete (ad hoc nets, and new nets) */}
-      {!isInfoMode && !scheduleManaged && (
+      {!scheduleManaged && (
         <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
           <Autocomplete
             options={availableUsers}
@@ -270,7 +269,7 @@ const NCSStaffTab: React.FC = () => {
                     </Typography>
                   }
                 />
-                {!isInfoMode && !scheduleManaged && role.id > 0 && (
+                {!scheduleManaged && role.id > 0 && (
                   <ListItemSecondaryAction>
                     <IconButton size="small" color="error" onClick={() => handleRemoveExistingNCS(role.id)}>
                       <DeleteIcon fontSize="small" />

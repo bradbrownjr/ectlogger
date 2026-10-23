@@ -18,3 +18,16 @@ export function formatFrequencyList(frequencies: FrequencyLike[]): string {
     .filter((s) => s)
     .join(', ');
 }
+
+// One frequency as the check-in table's chips show it: "147.090 MHz (FM)",
+// or for a digital mode with no frequency its channel or talkgroup
+// ("UFB YSF", "NEDECON TG7123 DMR"). Shared by the net view, its pop-out
+// window and Net Info.
+export function formatFrequencyDisplay(freq: any): string {
+  if (!freq) return '';
+  if (freq.frequency) {
+    return `${freq.frequency} MHz${freq.mode ? ` (${freq.mode})` : ''}`;
+  }
+  const label = freq.channel || freq.talkgroup || 'Digital';
+  return freq.mode ? `${label} ${freq.mode}` : label;
+}

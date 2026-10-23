@@ -16,6 +16,7 @@ from app.utils import display_callsign, looks_like_email_or_url
 from app.permissions import check_net_permission, is_eligible_for_logger_self_grant, is_eligible_for_ncs_auto_grant
 from app.auth import decrypt_mfa_secret, current_totp_codes
 from app.services.live_location import live_location_for_check_in
+from app.services.net_blocks import blocked_on_net
 from app.services.station_place import TRAVELING, is_home_position, keeps_saved_location, place_key, place_label
 
 logger = logging.getLogger(__name__)
@@ -210,6 +211,17 @@ async def create_check_in(
         )
         if not self_grant_eligible:
             raise HTTPException(status_code=403, detail="Self check-in is disabled for this net. Please check in with Net Control.")
+
+    # A station net control removed and blocked (routers/net_blocks.py)
+    # can't check itself, or anyone else, back in: matched by callsign and
+    # by account. Net control can still check it in by hand.
+    blocked_callsigns, blocked_users = await blocked_on_net(db, net_id)
+    if (blocked_callsigns or blocked_users) and (
+        check_in_data.callsign.strip().upper() in blocked_callsigns
+        or current_user.id in blocked_users
+        or (linked_user_id is not None and linked_user_id in blocked_users)
+    ) and not await check_net_permission(db, net, current_user, ["NCS", "LOGGER"]):
+        raise HTTPException(status_code=403, detail="Net control has removed this station from this net.")
 
     # Validate and process frequency_id
     # First check if current user is NCS with a claimed frequency

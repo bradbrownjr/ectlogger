@@ -302,6 +302,23 @@ export const offNetLogApi = {
   remove: (netId: number, entryId: number) => api.delete(`/nets/${netId}/off-net-log/${entryId}`),
 };
 
+// Stations net control removed from a net and blocked from checking back in
+// (backend routers/net_blocks.py).
+export interface NetBlock {
+  id: number;
+  net_id: number;
+  callsign: string;
+  user_id: number | null;
+  blocked_by_callsign: string | null;
+  created_at: string | null;
+}
+
+export const netBlockApi = {
+  list: (netId: number) => api.get<NetBlock[]>(`/nets/${netId}/blocks`),
+  block: (netId: number, checkInId: number) => api.post<NetBlock>(`/nets/${netId}/blocks`, { check_in_id: checkInId }),
+  unblock: (netId: number, blockId: number) => api.delete(`/nets/${netId}/blocks/${blockId}`),
+};
+
 export const drillPlanApi = {
   get: (netId: number, background = false) =>
     api.get(`/nets/${netId}/drill-plan`, background ? BACKGROUND_REQUEST_CONFIG : undefined),

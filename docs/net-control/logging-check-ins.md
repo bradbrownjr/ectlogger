@@ -1,6 +1,6 @@
 ---
 title: Logging check-ins
-summary: Adding a station, editing a row in place, fixing a misheard callsign, and logging a station with no account.
+summary: Adding a station, editing a row in place, fixing a misheard callsign, removing and blocking a station that shouldn't be on the net, and logging a station with no account.
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
@@ -12,7 +12,7 @@ permalink: /docs/net-control/logging-check-ins/
 
 # Logging check-ins
 
-Whoever holds NCS, Logger, or Relay on a net can add a check-in for any callsign, edit one in place, or delete one outright. This page covers all three, plus the one case that trips people up: logging a station over the air that has never used ECTLogger at all.
+Whoever holds NCS or Logger on a net can add a check-in for any callsign, edit one in place, or delete one outright. This page covers all three, plus the one case that trips people up: logging a station over the air that has never used ECTLogger at all.
 
 ## Adding a station who calls in over the air
 
@@ -59,6 +59,25 @@ The one exception is the station's round picture (its avatar) beside the callsig
 ## Deleting a check-in
 
 Each row has a delete action that asks you to confirm before it removes the row. This is a real delete, not a status change, so use it for a genuine mistake (a duplicate entry, a callsign typed into the wrong net), not for a station leaving the net. A station that's done for the night should be checked out instead (see [Status, rechecks, and checking out](/docs/operators/status-and-checking-out/)), since checking out keeps their participation in the log and on the map; deleting removes the row entirely.
+
+### Removing and blocking a station
+
+Sometimes a station checks in that shouldn't be on the net at all, such as someone who isn't part of a drill checking into its [participants-only](/docs/net-managers/creating-a-net/#basic-info) net. Deleting the row doesn't stop them checking straight back in, so the delete prompt offers a second button:
+
+1. Click the station's delete action.
+2. Click **Remove and block**.
+
+ECTLogger then:
+
+- removes every check-in under that callsign from this net,
+- mutes the station's chat for everyone on the net (see [Chat moderation](/docs/net-control/chat-moderation/#muting-a-station-for-everyone)),
+- refuses the station's own check-ins on this net from then on, under that callsign or any other on the same account, with "Net control has removed this station from this net."
+
+You can still check the station in yourself if it turns out to belong. A block only covers this one net: the schedule's next net starts clean.
+
+To lift a block, open **Net info** on the toolbar. Net control sees a **Blocked from this net** list there; click **Unblock** beside the callsign. That also lifts the chat mute. The removed check-ins don't come back.
+
+Removing and blocking is for the net's NCS and Logger, its manager, and admins.
 
 ## Logging a station with no ECTLogger account
 

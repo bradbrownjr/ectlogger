@@ -6,13 +6,14 @@ vi.mock('../../services/api', () => ({
   default: { delete: vi.fn(), post: vi.fn(), get: vi.fn() },
   checkInApi: { update: vi.fn(), create: vi.fn(), delete: vi.fn(), toggleHand: vi.fn(), list: vi.fn() },
   netApi: { setActiveFrequency: vi.fn() },
+  netBlockApi: { block: vi.fn(), list: vi.fn(), unblock: vi.fn() },
   netRoleApi: { claimFrequency: vi.fn() },
   callsignRoleApi: { assign: vi.fn(), remove: vi.fn(), list: vi.fn() },
   userApi: { lookupByCallsign: vi.fn() },
 }));
 
 import { getCheckInActions } from './checkInActions';
-import { callsignRoleApi, checkInApi, userApi } from '../../services/api';
+import { callsignRoleApi, checkInApi, netBlockApi, userApi } from '../../services/api';
 
 // ========== TEST HARNESS ==========
 // Mirrors NetView's state wiring closely enough to observe what the operator
@@ -51,6 +52,7 @@ function harness(initialRows: any[], overrides: any = {}) {
     setFilteredFrequencyIds: vi.fn(),
     fetchCheckIns: vi.fn(async () => {}),
     fetchNetRoles: vi.fn(async () => {}),
+    askDelete: vi.fn(async () => 'delete'),
     ...overrides,
   } as any);
 
@@ -252,5 +254,40 @@ describe('handleSaveInlineEdit — Site', () => {
     (checkInApi.update as any).mockResolvedValue({ data: { ...AT_SHELTER, status: 'mobile' } });
     await editing({ coverage_site_id: null, operating_position: '', status: 'mobile' }).actions.handleSaveInlineEdit();
     expect((checkInApi.update as any).mock.calls[0][1]).toMatchObject({ status: 'mobile', coverage_site_id: null });
+  });
+});
+
+// ========== Delete, and Remove and block ==========
+// The prompt's answer decides: nothing, one row deleted, or every row under
+// the callsign removed and the station blocked.
+describe('handleDeleteCheckIn', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+  const ROWS = [
+    { id: 1, callsign: 'NB9D', status: 'checked_out' },
+    { id: 2, callsign: 'nb9d', status: 'checked_in' },
+    { id: 3, callsign: 'KC1HILL', status: 'checked_in' },
+  ];
+
+  it('does nothing when cancelled', async () => {
+    const h = harness(ROWS, { askDelete: vi.fn(async () => null) });
+    await h.actions.handleDeleteCheckIn(2);
+    expect(checkInApi.delete).not.toHaveBeenCalled();
+    expect(h.rowsNow()).toHaveLength(3);
+  });
+
+  it('deletes only that row', async () => {
+    (checkInApi.delete as any).mockResolvedValue({});
+    const h = harness(ROWS, { askDelete: vi.fn(async () => 'delete') });
+    await h.actions.handleDeleteCheckIn(2);
+    expect(h.rowsNow().map((r: any) => r.id)).toEqual([1, 3]);
+  });
+
+  it('remove and block drops every row under the callsign', async () => {
+    (netBlockApi.block as any).mockResolvedValue({ data: {} });
+    const h = harness(ROWS, { askDelete: vi.fn(async () => 'block') });
+    await h.actions.handleDeleteCheckIn(2);
+    expect(netBlockApi.block).toHaveBeenCalledWith(1, 2);
+    expect(h.rowsNow().map((r: any) => r.id)).toEqual([3]);
+    expect(checkInApi.delete).not.toHaveBeenCalled();
   });
 });

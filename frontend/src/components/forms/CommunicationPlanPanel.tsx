@@ -23,6 +23,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -123,11 +125,14 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
   const [deleteTarget, setDeleteTarget] = useState<FrequencyItem | null>(null);
   const [changeRequest, setChangeRequest] = useState<FrequencyChangeRequest | null>(null);
   const [frequencyFilter, setFrequencyFilter] = useState('');
+  // Narrows the shared list to this net's or schedule's own frequencies.
+  const [selectedOnly, setSelectedOnly] = useState(false);
   const [frequencySortField, setFrequencySortField] = useState<FrequencySortField>('mode');
   const [frequencySortDirection, setFrequencySortDirection] = useState<SortDirection>('asc');
 
   // ---- Filtering and sorting ----
   const filteredFrequencies = frequencies.filter((freq: FrequencyItem) => {
+    if (selectedOnly && !(freq.id != null && selectedFrequencyIds.includes(freq.id))) return false;
     if (!frequencyFilter) return true;
     const s = frequencyFilter.toLowerCase();
     return (
@@ -403,7 +408,7 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
       </Typography>
 
       {/* ========== FREQUENCY FILTER ========== */}
-      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
         <TextField
           size="small" placeholder="Filter frequencies..." value={frequencyFilter}
           onChange={(e) => setFrequencyFilter(e.target.value)}
@@ -419,7 +424,12 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
             ),
           }}
         />
-        <Typography variant="body2" color="text.secondary">
+        <FormControlLabel
+          control={<Switch size="small" checked={selectedOnly} onChange={(e) => setSelectedOnly(e.target.checked)} />}
+          label="Selected only"
+          sx={{ mr: 0, whiteSpace: 'nowrap' }}
+        />
+        <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
           {filteredFrequencies.length} of {frequencies.length}
         </Typography>
       </Box>

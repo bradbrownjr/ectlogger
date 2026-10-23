@@ -345,6 +345,13 @@ def may_review_off_net_log(a: NetAccess) -> bool:
     return may_close_net(a)
 
 
+def may_block_station(a: NetAccess) -> bool:
+    """Removing a station from the net and barring it from checking itself
+    back in (routers/net_blocks.py). The people who delete check-ins and
+    net-mute chat: the net's managers and its active NCS and Logger."""
+    return _manager(a) or bool(a.active_roles & {"NCS", "LOGGER"})
+
+
 def net_actions(a: NetAccess) -> Dict[str, bool]:
     """Every per-action rule for one NetAccess, keyed as NetResponse.actions
     (schemas.NetActions) sends them to the app."""
@@ -361,6 +368,7 @@ def net_actions(a: NetAccess) -> Dict[str, bool]:
         "run_drill": may_run_drill(a),
         "log_off_net": may_log_off_net(a),
         "review_off_net_log": may_review_off_net_log(a),
+        "block_station": may_block_station(a),
     }
 
 

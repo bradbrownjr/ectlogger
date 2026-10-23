@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -56,14 +56,12 @@ function TabPanel({ children, value, index, ...other }: TabPanelProps) {
 
 const CreateNet: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
-  const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const isEditMode = !!netId;
   // Edit Net's own use of a frequency doesn't stop whoever added it from fixing it
   const frequencyContext = netId ? { net_id: parseInt(netId) } : undefined;
-  const isInfoMode = location.pathname.endsWith('/info');
 
   // ---- UI state ----
   const [activeTab, setActiveTab] = useState(0);
@@ -106,6 +104,7 @@ const CreateNet: React.FC = () => {
   const [chatGracePeriodEnabled, setChatGracePeriodEnabled] = useState(false);
   const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
   const [selfCheckinEnabled, setSelfCheckinEnabled] = useState(true);
+  const [participantsOnly, setParticipantsOnly] = useState(false);
   // Auto-open lobby: inherited from the schedule when the net was created, and
   // overridable here for this net alone. Off by default.
   const [autoLobbyEnabled, setAutoLobbyEnabled] = useState(false);
@@ -203,21 +202,6 @@ const CreateNet: React.FC = () => {
     try {
       const response = await netApi.get(parseInt(netId));
       const net = response.data;
-      // Net Info is a read-only render of this same form, and shows
-      // config fields (rotation, custom fields, ICS-309 settings) that
-      // aren't meant for standard/guest visitors — direct-URL access is
-      // blocked the same way the toolbar button is hidden from them.
-      // user?.role (from useAuth(), already masked by simulateRegularUser)
-      // plus net.is_owner_or_ncs (never carries the admin bypass) -- NOT
-      // net.can_manage alone, which is computed from the real/unmasked
-      // identity and so stays true for an admin using "View as Regular
-      // User" regardless of that toggle. A real (non-simulating) admin
-      // still passes via the explicit role check, same as everywhere else
-      // this pattern appears.
-      if (isInfoMode && user?.role !== 'admin' && !net.is_owner_or_ncs) {
-        navigate(`/nets/${netId}`, { replace: true });
-        return;
-      }
       setNetStatus(net.status);
       setName(net.name);
       setDescription(net.description || '');
@@ -249,6 +233,7 @@ const CreateNet: React.FC = () => {
       setChatGracePeriodEnabled(!!grace);
       if (grace) setChatGracePeriodMinutes(grace);
       setSelfCheckinEnabled(net.self_checkin_enabled !== false);
+      setParticipantsOnly(net.participants_only || false);
       const autoLobby = net.auto_lobby_minutes;
       setAutoLobbyEnabled(!!autoLobby);
       if (autoLobby) setAutoLobbyMinutes(autoLobby);
@@ -365,6 +350,7 @@ const CreateNet: React.FC = () => {
     mobile_priority_sort: mobilePrioritySort,
     chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
     self_checkin_enabled: selfCheckinEnabled,
+    participants_only: participantsOnly,
     auto_lobby_minutes: autoLobbyEnabled ? autoLobbyMinutes : null,
     auto_close_after_minutes: autoCloseEnabled ? autoCloseAfterMinutes : null,
     topic_of_week_enabled: topicOfWeekEnabled,
@@ -457,8 +443,8 @@ const CreateNet: React.FC = () => {
     }
   };
 
-  // Correct the actual start/end times (independent of the main form save,
-  // since this is available on the read-only Net Info page too)
+  // Correct the actual start/end times (saved on their own, independent of
+  // the main form save)
   const handleSaveTimes = async () => {
     if (!netId) return;
     try {
@@ -477,7 +463,6 @@ const CreateNet: React.FC = () => {
   const contextValue: CreateNetContextValue = {
     netId,
     isEditMode,
-    isInfoMode,
     currentUser: user,
     name, setName,
     description, setDescription,
@@ -500,6 +485,7 @@ const CreateNet: React.FC = () => {
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
     selfCheckinEnabled, setSelfCheckinEnabled,
+    participantsOnly, setParticipantsOnly,
     autoLobbyEnabled, setAutoLobbyEnabled,
     autoLobbyMinutes, setAutoLobbyMinutes,
     autoCloseEnabled, setAutoCloseEnabled,
@@ -529,7 +515,7 @@ const CreateNet: React.FC = () => {
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4, pb: 12 }}>
         <Paper sx={{ p: { xs: 2, sm: 3 } }}>
           <Typography variant="h4" component="h1" gutterBottom>
-            {isInfoMode ? 'Net Information' : isEditMode ? 'Edit Net' : 'Create New Net'}
+            {isEditMode ? 'Edit Net' : 'Create New Net'}
           </Typography>
 
           {/* Shown once, above the tabs, so it's visible no matter which tab an
@@ -537,7 +523,7 @@ const CreateNet: React.FC = () => {
               or a wrong setting still needs fixing), but its log and any
               close-out notifications already went out, so a change here updates
               the record only. */}
-          {isEditMode && !isInfoMode && (netStatus === 'closed' || netStatus === 'archived') && (
+          {isEditMode && (netStatus === 'closed' || netStatus === 'archived') && (
             <Alert severity="info" sx={{ mb: 2 }}>
               This net is {netStatus}, and its log has already gone out to anyone subscribed.
               Changes made here update the record for future reference only — they won't be
@@ -602,11 +588,11 @@ const CreateNet: React.FC = () => {
                   Announcements{scheduleName ? ` (every net from ${scheduleName})` : ''}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {canEditSchedule && !isInfoMode
+                  {canEditSchedule
                     ? 'Saved to the schedule, so every net from it and the Schedule page show the same text.'
                     : 'Set on the schedule. Only its managers and staff can change it.'}
                 </Typography>
-                {canEditSchedule && !isInfoMode ? (
+                {canEditSchedule ? (
                   <AnnouncementsPanel
                     announcements={scheduleAnnouncements}
                     setAnnouncements={setScheduleAnnouncements}
@@ -656,10 +642,10 @@ const CreateNet: React.FC = () => {
 
           {/* ========== ACTION BUTTONS ========== */}
           <FormWizardFooter
-            cancelLabel={isInfoMode ? 'Back' : 'Cancel'}
-            onCancel={() => navigate(isEditMode || isInfoMode ? `/nets/${netId}` : '/dashboard')}
+            cancelLabel="Cancel"
+            onCancel={() => navigate(isEditMode ? `/nets/${netId}` : '/dashboard')}
             onPrevious={activeTab > 0 ? () => setActiveTab(activeTab - 1) : undefined}
-            onNext={!isInfoMode && activeTab < 4 ? () => setActiveTab(activeTab + 1) : undefined}
+            onNext={activeTab < 4 ? () => setActiveTab(activeTab + 1) : undefined}
             nextDisabled={!canProceedFromTab(activeTab)}
             nextHint={
               activeTab === 2 && selectedFrequencyIds.length === 0 ? 'Select at least one frequency to continue'
@@ -667,34 +653,30 @@ const CreateNet: React.FC = () => {
                 : null
             }
           >
-            {!isInfoMode && (
-              <>
-                {/* Save for this Net: persists changes to the current net only.
-                    The schedule (template) is left alone so per-session edits
-                    don't accidentally rewrite the schedule's defaults. */}
-                <Button
-                  variant="contained"
-                  onClick={handleCreateNet}
-                  disabled={!name || selectedFrequencyIds.length === 0}
-                  startIcon={<SaveIcon />}
-                >
-                  {isEditMode ? 'Save for this Net' : 'Create Net'}
-                </Button>
-                {/* Save to Schedule: only available when editing a net created from a schedule.
-                    Saves this net and pushes editable fields back to the parent schedule so future nets inherit them.
-                    Backend enforces permission (owner/admin/staff/rotation). */}
-                {isEditMode && templateId && (
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => setSaveToScheduleConfirmOpen(true)}
-                    disabled={!name || selectedFrequencyIds.length === 0 || savingToSchedule}
-                    startIcon={<SaveIcon />}
-                  >
-                    Save to Schedule
-                  </Button>
-                )}
-              </>
+            {/* Save for this Net: persists changes to the current net only.
+                The schedule (template) is left alone so per-session edits
+                don't accidentally rewrite the schedule's defaults. */}
+            <Button
+              variant="contained"
+              onClick={handleCreateNet}
+              disabled={!name || selectedFrequencyIds.length === 0}
+              startIcon={<SaveIcon />}
+            >
+              {isEditMode ? 'Save for this Net' : 'Create Net'}
+            </Button>
+            {/* Save to Schedule: only available when editing a net created from a schedule.
+                Saves this net and pushes editable fields back to the parent schedule so future nets inherit them.
+                Backend enforces permission (owner/admin/staff/rotation). */}
+            {isEditMode && templateId && (
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => setSaveToScheduleConfirmOpen(true)}
+                disabled={!name || selectedFrequencyIds.length === 0 || savingToSchedule}
+                startIcon={<SaveIcon />}
+              >
+                Save to Schedule
+              </Button>
             )}
           </FormWizardFooter>
         </Paper>

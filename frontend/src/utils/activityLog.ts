@@ -94,6 +94,8 @@ export const ACTION_LABELS: Record<string, string> = {
   'schedule.rotation_cleared': 'NCS rotation cleared',
 
   'check_in.deleted': 'Check-in deleted',
+  'net.station_blocked': 'Station removed and blocked from the net',
+  'net.station_unblocked': 'Station unblocked',
   'chat.message_deleted': "Someone else's chat message deleted",
   'chat.station_muted': 'Station muted for everyone',
   'chat.station_unmuted': 'Station unmuted for everyone',

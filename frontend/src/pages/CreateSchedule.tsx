@@ -97,6 +97,7 @@ const CreateSchedule: React.FC = () => {
   const [chatGracePeriodEnabled, setChatGracePeriodEnabled] = useState(false);
   const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
   const [selfCheckinEnabled, setSelfCheckinEnabled] = useState(true);
+  const [participantsOnly, setParticipantsOnly] = useState(false);
   // Auto-open lobby is off by default; existing schedules keep their current behavior
   const [autoLobbyEnabled, setAutoLobbyEnabled] = useState(false);
   const [autoLobbyMinutes, setAutoLobbyMinutes] = useState(15);
@@ -231,6 +232,7 @@ const CreateSchedule: React.FC = () => {
       setChatGracePeriodEnabled(!!grace);
       if (grace) setChatGracePeriodMinutes(grace);
       setSelfCheckinEnabled(schedule.self_checkin_enabled !== false);
+      setParticipantsOnly(schedule.participants_only || false);
       const autoLobby = schedule.auto_lobby_minutes;
       setAutoLobbyEnabled(!!autoLobby);
       if (autoLobby) setAutoLobbyMinutes(autoLobby);
@@ -320,6 +322,7 @@ const CreateSchedule: React.FC = () => {
       mobile_priority_sort: mobilePrioritySort,
       chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
       self_checkin_enabled: selfCheckinEnabled,
+      participants_only: participantsOnly,
       auto_lobby_minutes: effectiveAutoLobbyMinutes,
       auto_close_after_minutes: autoCloseEnabled ? autoCloseAfterMinutes : null,
       topic_of_week_enabled: topicOfWeekEnabled,
@@ -402,6 +405,7 @@ const CreateSchedule: React.FC = () => {
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
     selfCheckinEnabled, setSelfCheckinEnabled,
+    participantsOnly, setParticipantsOnly,
     autoLobbyEnabled, setAutoLobbyEnabled,
     autoLobbyMinutes, setAutoLobbyMinutes,
     autoCloseEnabled, setAutoCloseEnabled,

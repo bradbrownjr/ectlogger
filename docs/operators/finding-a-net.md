@@ -38,6 +38,10 @@ By default, nets are sorted with Active and Lobby first (most recently started a
 
 Open any Active or Lobby net and, if you're signed in and haven't checked in yet, a banner offers to check you in on the spot; see [Checking in](/docs/operators/checking-in/). You can dismiss it and just watch instead; nothing about viewing a net requires joining it.
 
+## Learning about a net
+
+Click **Net info** on the net's toolbar for a card about the net: its logo and description, when it runs, its frequencies, its manager, NCS and staff, and links to its website, its schedule's subscribe page, and, once it has closed, its report and statistics. Click a callsign on the card to see that operator's profile. Net info is there before, during and after the net, whether or not you're signed in.
+
 ## Sharing a net with someone who has no account
 
 Anyone can open a net without signing in, so you can send a net's link to someone who hasn't joined yet: a prospective member, a served agency, or a family member who wants to follow along. Copy the address from your browser's address bar while the net is open. It looks like `https://app.ectlogger.us/nets/` followed by the net's number.

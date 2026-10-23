@@ -870,13 +870,19 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           rendered (matching the header's always-present merged cell) so
                           table columns stay aligned even on a row where neither canManage
                           nor "own check-in" applies; the cell is simply empty then. */}
+                      {/* Spans the frequency chips row too, so the buttons and the row's
+                          color cover the whole check-in rather than stopping above its chips.
+                          '&&' outranks the row's own td rule that drops the bottom border
+                          and padding when chips follow. */}
                       <TableCell
+                        rowSpan={hasFrequencyChips ? 2 : 1}
                         sx={{
                           position: 'sticky',
                           right: 0,
                           zIndex: 1,
                           ...stickyCellSx,
                           boxShadow: stickyShadow,
+                          ...(hasFrequencyChips && { '&&': { borderBottom: 1, borderColor: 'divider', pb: 0.75 } }),
                         }}
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -948,22 +954,17 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     </TableRow>
                     {/* Frequency chips row - only show if net has multiple frequencies */}
                     {hasFrequencyChips && (
-                      <TableRow sx={{ 
-                        backgroundColor: checkIn.id === activeSpeakerId 
-                          ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
-                          : checkIn.status === 'checked_out' 
-                          ? 'action.disabledBackground' 
-                          : isNcsUser && ncsColor ? ncsColor.bg
-                          : isOnActiveFrequency
-                          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
-                          : 'transparent',
-                        opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
+                      <TableRow sx={{
+                        // Same color and fading as the row above, so the two read as one check-in.
+                        backgroundColor: rowBgColor,
+                        opacity: isPriorRow ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
                         // Add left border for NCS users
                         ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
                           borderLeft: `3px solid ${ncsColor.border}`,
                         }),
                       }}>
-                        <TableCell colSpan={columnCount} sx={{ pt: 0, pb: 0.5, borderBottom: 1, borderColor: 'divider' }}>
+                        {/* One column short: the Actions cell above spans into this row. */}
+                        <TableCell colSpan={columnCount - 1} sx={{ pt: 0, pb: 0.5, borderBottom: 1, borderColor: 'divider' }}>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', pl: 4 }}>
                             {checkIn.available_frequencies!.map((freqId: number) => {
                               const freq = net.frequencies.find((f: any) => f.id === freqId);

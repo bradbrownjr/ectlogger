@@ -242,6 +242,12 @@ class Net(Base):
     # station's own account to have MFA enrolled; unenrolled stations just show
     # as unverified. See app/auth.py::current_totp_codes.
     authenticated = Column(Boolean, default=False)
+    # A net for the stations taking part in an event or incident (a drill's
+    # deployed teams), not for everyone listening. Self check-in stays open,
+    # since nobody knows ahead of time who will volunteer; the net shows a
+    # "Participants only" chip and the check-in form says so, and net control
+    # removes anyone else with NetBlock. Not enforcement on its own.
+    participants_only = Column(Boolean, default=False)
 
     # Auto-open lobby: minutes before scheduled_start_time that the scheduler
     # moves this net to LOBBY on its own. Null = disabled (the default). Copied
@@ -333,6 +339,7 @@ class NetTemplate(Base):
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
     self_checkin_enabled = Column(Boolean, default=True)  # If False, nets from this schedule accept only NCS/logger-entered check-ins
     authenticated = Column(Boolean, default=False)  # Seeds Net.authenticated for nets created from this template
+    participants_only = Column(Boolean, default=False)  # Seeds Net.participants_only
     # Default auto-open-lobby offset for nets created from this schedule, in
     # minutes before the scheduled start. Null = disabled (the default).
     auto_lobby_minutes = Column(Integer, nullable=True)
@@ -1111,6 +1118,29 @@ class ChatMute(Base):
     net = relationship("Net")
     muter = relationship("User", foreign_keys=[muter_user_id])
     muted = relationship("User", foreign_keys=[muted_user_id])
+
+
+class NetBlock(Base):
+    """A station net control removed from one net and barred from checking
+    itself back in (routers/net_blocks.py). Matched by callsign, and by
+    account when the station has one, so a blocked operator can't return
+    under another of their callsigns. Net control can still check the
+    station in by hand. Scoped to one net: the schedule's next net starts
+    clean, like ChatNetMute, which blocking also applies."""
+    __tablename__ = "net_blocks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False, index=True)
+    callsign = Column(String(20), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    blocked_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('net_id', 'callsign', name='uq_net_block'),
+    )
+
+    blocked_by = relationship("User", foreign_keys=[blocked_by_user_id])
 
 
 class ChatNetMute(Base):

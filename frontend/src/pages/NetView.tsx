@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useDeleteCheckInPrompt } from '../hooks/useDeleteCheckInPrompt';
+import { formatFrequencyDisplay } from '../utils/frequencyList';
 import useDialog from '../hooks/useDialog';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { useNetWebSocket } from '../hooks/useNetWebSocket';
@@ -81,6 +83,8 @@ import TopicHistory from '../components/TopicHistory';
 import OffNetLogDialog from '../components/netview/OffNetLogDialog';
 import FloatingWindow from '../components/FloatingWindow';
 import UserProfileDialog from '../components/UserProfileDialog';
+import NetInfoDialog from '../components/netview/NetInfoDialog';
+import { PARTICIPANTS_ONLY_HINT } from '../components/netview/ParticipantsOnlyChip';
 import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
 import CanHearDialog from '../components/netview/CanHearDialog';
 import { useSiteCoverage } from '../hooks/useSiteCoverage';
@@ -252,6 +256,7 @@ const NetView: React.FC = () => {
   const topicHistory = useDialog();
   const offNetLog = useDialog();
   const sitesBoard = useDialog();
+  const netInfo = useDialog();
   const importDialog = useDialog();
   const [highlightCheckIn, setHighlightCheckIn] = useState(false);
   const [highlightStartNet, setHighlightStartNet] = useState(false);
@@ -373,6 +378,8 @@ const NetView: React.FC = () => {
   // Auto-start ref to prevent multiple go-live triggers
   const autoStartTriggeredRef = useRef(false);
   const { user, isAuthenticated, simulateRegularUser } = useAuth();
+  // Delete confirmation, with Remove and block for net control.
+  const deletePrompt = useDeleteCheckInPrompt(getNetActions(net, simulateRegularUser).block_station);
   const { gridSquare, town } = useLocation();
   // Location pre-filled into the user's own check-in: with location awareness
   // on, the town their GPS position is in (net control reads it on the air),
@@ -538,6 +545,15 @@ const NetView: React.FC = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [net?.id, net?.is_owner_or_ncs, user?.id]); // Re-check when server permissions arrive
+
+  // ?info=1 opens the Net info card: where the retired /nets/{id}/info page
+  // now sends an old link or bookmark (App.tsx).
+  useEffect(() => {
+    if (!net || searchParams.get('info') !== '1') return;
+    setSearchParams(prev => { prev.delete('info'); return prev; }, { replace: true });
+    netInfo.onOpen();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [net?.id]);
 
   // Auto-open the check-in dialog when ?check_in=1 is present (from the reminder
   // and net-starting email buttons).
@@ -1368,18 +1384,6 @@ const NetView: React.FC = () => {
     return user.callsign || '';
   };
 
-  const formatFrequencyDisplay = (freq: any) => {
-    if (!freq) return '';
-    if (freq.frequency) {
-      return `${freq.frequency} MHz${freq.mode ? ` (${freq.mode})` : ''}`;
-    }
-    // Digital mode without frequency (DMR/YSF)
-    // For YSF: show channel name (e.g., "UFB YSF")
-    // For DMR: show talkgroup (e.g., "NEDECON TG7123 DMR")
-    const label = freq.channel || freq.talkgroup || 'Digital';
-    return freq.mode ? `${label} ${freq.mode}` : label;
-  };
-
   // Compute the latest checked_in_at per callsign (for graying prior rows)
   // Must be above all early returns so hook count never changes between renders.
   const latestCheckedInAtByCallsign = React.useMemo(() => {
@@ -1534,7 +1538,7 @@ const NetView: React.FC = () => {
     checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef, lookupFilledRef,
     setCheckInForm, setToastMessage, setInlineEditingId, setInlineEditFocusField,
     setInlineEditValues, setCheckIns, setActiveSpeakerId, setNet, setFilteredFrequencyIds,
-    fetchCheckIns, fetchNetRoles,
+    fetchCheckIns, fetchNetRoles, askDelete: deletePrompt.ask,
   });
 
   // Filter check-ins based on search query AND frequency filter
@@ -1726,7 +1730,6 @@ const NetView: React.FC = () => {
       <NetViewHeader
         net={net}
         netId={netId}
-        canManage={canManage}
         actions={actions}
         canManageCheckIns={canManageCheckIns}
         canStartNet={canStartNet}
@@ -1762,6 +1765,7 @@ const NetView: React.FC = () => {
         canViewTraffic={canOpenTraffic}
         offNetLog={offNetLog}
         sitesBoard={sitesBoard}
+        netInfo={netInfo}
         hasSites={netHasSites(siteCoverage.sites)}
         canUseOffNetLog={canUseOffNetLog}
         script={script}
@@ -3002,6 +3006,7 @@ const NetView: React.FC = () => {
         coverageSites={siteCoverage.sites}
         savedTown={lookupFilledRef.current.location || selfCheckInLocation}
         dialog={checkInDialog}
+        participantsOnly={!!net?.participants_only}
         netName={net?.name}
         fieldConfig={net?.field_config}
         frequencies={net?.frequencies}
@@ -3152,6 +3157,23 @@ const NetView: React.FC = () => {
       )}
 
 
+      {/* ========== DELETE CHECK-IN PROMPT (with Remove and block) ========== */}
+      {deletePrompt.dialog}
+
+      {/* ========== NET INFO CARD ========== */}
+      <NetInfoDialog
+        open={netInfo.open}
+        onClose={netInfo.onClose}
+        net={net}
+        canEdit={actions.edit}
+        canBlock={actions.block_station}
+        preferUtc={user?.prefer_utc || false}
+        onOpenProfile={(userId, callsign) => {
+          if (userId) { setProfileCallsign(null); setProfileUserId(userId); }
+          else { setProfileUserId(null); setProfileCallsign(callsign); }
+        }}
+      />
+
       {/* ========== WHO IS THIS? PROFILE POPUP ========== */}
       <UserProfileDialog
         userId={profileUserId}
@@ -3224,6 +3246,11 @@ const NetView: React.FC = () => {
             <Typography variant="body2">
               {net?.status === 'lobby' ? 'The lobby is open! Would you like to check in?' : 'This net is active. Would you like to check in?'}
             </Typography>
+            {net?.participants_only && (
+              <Typography variant="caption" sx={{ display: 'block', fontWeight: 600 }}>
+                Participants only: {PARTICIPANTS_ONLY_HINT}
+              </Typography>
+            )}
             {net?.self_checkin_enabled === false && (
               // This prompt only ever opens for staff when self check-in is off (see the
               // effect above) -- everyone else never reaches this Snackbar, so no extra

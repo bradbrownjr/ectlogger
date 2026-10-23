@@ -574,7 +574,7 @@ Chat panel header land on the same top edge again.
   own row below the toolbar. This consolidation — not a separate chip row — is
   what lets the table/chat panel headers line up. There is deliberately **no
   edit-times pencil here**: actual start/end time correction lives in the
-  Basic Info tab of Edit net (active nets) and Net info (closed/archived), where
+  Basic Info tab of Edit net, where
   it sits with the rest of the net's fields instead of hiding behind an
   unlabelled icon among read-only chips.
 - On mobile the chip cluster **wraps** onto additional lines rather than forcing
@@ -606,15 +606,16 @@ despite its reporting action. Topics opens a read-only prior-topics list to
 everyone (with a new-tab link to the originating net for each entry, so
 browsing history doesn't lose your place in the currently-open net); the
 "Add Historical Topic" control inside that dialog is staff-only
-(`canManage`). Net info (a read-only render of the net's configuration
-form — rotation, custom fields, ICS-309 settings) is staff-only outright
-(`canManage && !isActiveOrLobby` — hidden while Edit net covers the same
-ground) since it exposes editable-looking config that isn't meant for
-standard/guest visitors. The `/nets/:netId/info` route itself (unlike
-`/edit`) has no `PrivateRoute` wrapper, so direct-URL access is guarded in
-`CreateNet.tsx`: if `net.can_manage` comes back `false` for the current
-user (or lack thereof), info mode redirects to the net view instead of
-rendering the form.
+(`canManage`). Net info opens a card for the net (`NetInfoDialog.tsx`),
+shaped like the operator profile popup: logo, name, status, description,
+when it runs, its frequencies, its manager, NCS and staff, and links to the
+website, subscribe page, report and Edit. Everyone sees it at every status,
+guests included, so it shows only what is already public. It replaced a
+read-only render of the Edit Net form at `/nets/:netId/info` (2026-10-23),
+which was staff-only and hidden once the lobby opened; that route now
+redirects to `/nets/:netId?info=1`, which opens the card. The card also
+lists the stations blocked from the net, with Unblock, for whoever may
+block (`actions.block_station`).
 
 **Management group** (right) — Start net, Edit net, Roles, Claim NCS, Raise
 hand (hidden for the acting NCS — doesn't make sense to raise a hand to get
