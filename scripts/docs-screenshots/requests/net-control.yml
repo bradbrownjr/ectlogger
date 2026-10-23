@@ -644,7 +644,7 @@ shots:
   # ---------- Coverage drills (docs/net-managers/coverage-drills.md) ----------
   - id: check-in-at-a-site
     section: net-control
-    page: /docs/net-managers/coverage-drills/
+    page: /docs/net-control/stations-at-sites/
     route: /nets/{{net:set}}
     as: W1PINE
     mobile: true
@@ -654,24 +654,44 @@ shots:
     wait_for: 'table:visible tbody tr'
     steps:
       - click: 'h6:has-text("New Check-in")'
-      - wait_for: 'input[placeholder="Location or site"]:visible'
-      - click: 'input[placeholder="Location or site"]:visible'
+      - wait_for: 'div.MuiAutocomplete-root:has(label:text-is("Site")) input:visible'
+      - click: 'div.MuiAutocomplete-root:has(label:text-is("Site")) input:visible'
       - wait_for: '.MuiAutocomplete-popper'
     element:
       - 'div.MuiPaper-root:has(> div > h6:has-text("New Check-in"))'
       - '.MuiAutocomplete-popper'
     pad: 12
     annotate:
-      - selector: 'input[placeholder="Location or site"]:visible'
+      - selector: 'div.MuiAutocomplete-root:has(label:text-is("Site")) input:visible'
         style: box
     alt: >
-      The New Check-in form on a phone, with its Location box outlined
-      in red and open on a list of the net's sites, grouped by type:
-      under Official office, Example County EOC, Windham, ME; North
-      Office, Bridgton, ME; and Gray Weather Office FN43rv; under
-      Shelter, Naples Shelter, Naples, ME, and Freeport Shelter,
-      Freeport, ME.
-    caption: On a net with sites, Location offers them. Picking one puts the station at that site.
+      The New Check-in form on a phone, with its Site box outlined in red
+      and open on its list: Home, Field Deployed and Traveling under Other
+      places, then the net's sites grouped by type, each with its town,
+      starting with Example County EOC, Windham, ME under Official office.
+    caption: Site comes before Location, so a shelter is picked from the list rather than typed into Location.
+
+  - id: sites-board
+    section: net-control
+    page: /docs/net-control/stations-at-sites/
+    route: /nets/{{net:set}}
+    as: W1PINE
+    viewport:
+      width: 1440
+      height: 900
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="See who is at each site"]'
+      - wait_for: 'div.react-draggable:has(h3)'
+      - wait: 400
+    element:
+      - 'div.react-draggable:has(h3)'
+    pad: 8
+    alt: >
+      The Sites board, listing the stations checked in on the SET net under
+      where each one is: the net's sites in order, each with its town and a
+      count of stations, then the stations at home.
+    caption: Who is where right now. A site nobody has reached says so.
 
   - id: can-hear-dialog-site
     section: net-control

@@ -84,7 +84,8 @@ import UserProfileDialog from '../components/UserProfileDialog';
 import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
 import CanHearDialog from '../components/netview/CanHearDialog';
 import { useSiteCoverage } from '../hooks/useSiteCoverage';
-import SiteLocationField from '../components/netview/SiteLocationField';
+import SiteField, { netHasSites } from '../components/netview/SiteField';
+import SitesBoard from '../components/netview/SitesBoard';
 import EditTopicResponseDialog from '../components/netview/EditTopicResponseDialog';
 import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import { watchZoomAwarePopovers } from '../utils/zoomAwarePopovers';
@@ -250,6 +251,7 @@ const NetView: React.FC = () => {
   const scheduleAnnouncements = usePersistedDialog(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_OPEN);
   const topicHistory = useDialog();
   const offNetLog = useDialog();
+  const sitesBoard = useDialog();
   const importDialog = useDialog();
   const [highlightCheckIn, setHighlightCheckIn] = useState(false);
   const [highlightStartNet, setHighlightStartNet] = useState(false);
@@ -1759,6 +1761,8 @@ const NetView: React.FC = () => {
         traffic={traffic}
         canViewTraffic={canOpenTraffic}
         offNetLog={offNetLog}
+        sitesBoard={sitesBoard}
+        hasSites={netHasSites(siteCoverage.sites)}
         canUseOffNetLog={canUseOffNetLog}
         script={script}
         scheduleAnnouncements={scheduleAnnouncements}
@@ -1903,6 +1907,8 @@ const NetView: React.FC = () => {
                 canReportCanHear={canReportCanHear}
                 canHearReporterCheckInIds={canHearReporterCheckInIds}
                 onOpenCanHearDialog={setCanHearDialogCheckInId}
+                sites={siteCoverage.sites}
+                onInlineValuesChange={setInlineEditValues}
                 onOpenIdentityVerify={setIdentityVerifyCheckIn}
                 highlightedCheckInIds={sneakInHighlightIds}
               />
@@ -2043,7 +2049,8 @@ const NetView: React.FC = () => {
                       the row on gaps, leaving the inputs too narrow to read */}
                   <TableRow sx={{ '& .MuiTableCell-root': { border: 0, py: 0.25, px: 0.5 } }}>
                     <TableCell>{checkIns.length + 1}</TableCell>
-                    <TableCell>
+                    {/* Callsign keeps room for a full portable call even when the row is crowded */}
+                    <TableCell sx={{ minWidth: 110 }}>
                       <TextField
                         size="small"
                         value={checkInForm.callsign}
@@ -2081,26 +2088,36 @@ const NetView: React.FC = () => {
                         />
                       </TableCell>
                     )}
+                    {/* Site, ahead of Location, on a net with sites. No Enter-to-submit:
+                        Enter picks the highlighted site (same as the poll box below). */}
+                    {netHasSites(siteCoverage.sites) && (
+                      <TableCell sx={{ minWidth: 150 }}>
+                        <SiteField
+                          sites={siteCoverage.sites}
+                          form={checkInForm}
+                          setForm={setCheckInForm}
+                          savedTown={lookupFilledRef.current.location}
+                          compact
+                          textFieldProps={{ size: 'small', placeholder: 'Site', inputProps: { style: { fontSize: '0.875rem' } }, fullWidth: true }}
+                        />
+                      </TableCell>
+                    )}
                     {net?.field_config?.location?.enabled && (
                       <TableCell>
-                        {/* Offers the net's coverage sites, when it has any */}
-                        <SiteLocationField
-                          sites={siteCoverage.sites}
+                        <TextField
+                          size="small"
                           value={checkInForm.location}
-                          onChange={(location, coverageSiteId) => setCheckInForm((prev) => ({ ...prev, location, coverage_site_id: coverageSiteId }))}
-                          textFieldProps={{
-                            size: 'small',
-                            onKeyDown: (e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleCheckIn();
-                              }
-                            },
-                            placeholder: siteCoverage.sites.length > 0 ? 'Location or site' : 'Location',
-                            inputProps: { style: { fontSize: '0.875rem' } },
-                            fullWidth: true,
-                            required: net.field_config.location.required,
+                          onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleCheckIn();
+                            }
                           }}
+                          placeholder="Location"
+                          inputProps={{ style: { fontSize: '0.875rem' } }}
+                          fullWidth
+                          required={net.field_config.location.required}
                         />
                       </TableCell>
                     )}
@@ -2422,18 +2439,26 @@ const NetView: React.FC = () => {
                     />
                   )}
                   
-                  {net?.field_config?.location?.enabled && (
-                    <SiteLocationField
+                  {/* Site, ahead of Location, on a net with sites */}
+                  {netHasSites(siteCoverage.sites) && (
+                    <SiteField
                       sites={siteCoverage.sites}
+                      form={checkInForm}
+                      setForm={setCheckInForm}
+                      savedTown={lookupFilledRef.current.location}
+                      textFieldProps={{ size: 'small', label: 'Site', fullWidth: true }}
+                    />
+                  )}
+
+                  {net?.field_config?.location?.enabled && (
+                    <TextField
+                      size="small"
+                      label="Location"
                       value={checkInForm.location}
-                      onChange={(location, coverageSiteId) => setCheckInForm((prev) => ({ ...prev, location, coverage_site_id: coverageSiteId }))}
-                      textFieldProps={{
-                        size: 'small',
-                        label: 'Location',
-                        placeholder: siteCoverage.sites.length > 0 ? 'Location or site' : 'Location',
-                        fullWidth: true,
-                        required: net.field_config.location.required,
-                      }}
+                      onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
+                      placeholder="Location"
+                      fullWidth
+                      required={net.field_config.location.required}
                     />
                   )}
                   
@@ -2777,6 +2802,8 @@ const NetView: React.FC = () => {
                 canReportCanHear={canReportCanHear}
                 canHearReporterCheckInIds={canHearReporterCheckInIds}
                 onOpenCanHearDialog={setCanHearDialogCheckInId}
+                sites={siteCoverage.sites}
+                onInlineValuesChange={setInlineEditValues}
                 onOpenIdentityVerify={setIdentityVerifyCheckIn}
                 highlightedCheckInIds={sneakInHighlightIds}
               />
@@ -2835,15 +2862,20 @@ const NetView: React.FC = () => {
                     {net?.field_config?.name?.enabled && (
                       <TextField size="small" value={checkInForm.name} onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })} placeholder="Name" autoComplete="off" sx={{ width: 120 }} />
                     )}
-                    {net?.field_config?.location?.enabled && (
+                    {/* Site, ahead of Location, on a net with sites */}
+                    {netHasSites(siteCoverage.sites) && (
                       <Box sx={{ width: 150 }}>
-                        <SiteLocationField
+                        <SiteField
                           sites={siteCoverage.sites}
-                          value={checkInForm.location}
-                          onChange={(location, coverageSiteId) => setCheckInForm((prev) => ({ ...prev, location, coverage_site_id: coverageSiteId }))}
-                          textFieldProps={{ size: 'small', placeholder: siteCoverage.sites.length > 0 ? 'Location or site' : 'Location', fullWidth: true }}
+                          form={checkInForm}
+                          setForm={setCheckInForm}
+                          savedTown={lookupFilledRef.current.location}
+                          textFieldProps={{ size: 'small', placeholder: 'Site', fullWidth: true }}
                         />
                       </Box>
+                    )}
+                    {net?.field_config?.location?.enabled && (
+                      <TextField size="small" value={checkInForm.location} onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })} placeholder="Location" sx={{ width: 150 }} />
                     )}
                     {net?.field_config?.skywarn_number?.enabled && (
                       <TextField size="small" value={checkInForm.skywarn_number} onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })} placeholder="Spotter #" sx={{ width: 100 }} />
@@ -2968,6 +3000,7 @@ const NetView: React.FC = () => {
       {/* Check-In Dialog for Regular Users */}
       <CheckInFormDialog
         coverageSites={siteCoverage.sites}
+        savedTown={lookupFilledRef.current.location || selfCheckInLocation}
         dialog={checkInDialog}
         netName={net?.name}
         fieldConfig={net?.field_config}
@@ -3085,6 +3118,15 @@ const NetView: React.FC = () => {
           onPopOut={handlePopOutScheduleAnnouncements}
         />
       )}
+
+      {/* ========== SITES BOARD ========== */}
+      {/* Toolbar "Sites" button; floating, beside the check-in table */}
+      <SitesBoard
+        open={sitesBoard.open}
+        onClose={sitesBoard.onClose}
+        checkIns={checkIns}
+        sites={siteCoverage.sites}
+      />
 
       {/* ========== OFF-NET LOG DIALOG ========== */}
       {/* Toolbar "Off-net" button, and Review from the close dialog */}

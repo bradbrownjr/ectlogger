@@ -4,8 +4,8 @@ summary: All eight station statuses, what each looks like on the check-in list, 
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-25
-review_by: 2027-09-19
+revised: 2026-10-23
+review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/station-statuses/
 ---
@@ -47,7 +47,9 @@ A recheck is what happens when a callsign that is already checked into the net c
 
 If you'd rather see one row per callsign, the check-in list has a **"Hide duplicate rows"** toggle (off by default, remembered per browser) that shows only the most recent row for each callsign and hides the earlier ones. Turning it off again (its tooltip reads "Show all rows (including re-checks)") brings every row back, recheck history included.
 
-Checking out is the one exception to rows being independent: setting any row for a callsign to Out sets every other row for that same callsign in the net to Out as well, original check-in and every recheck together, not just the row you clicked.
+Checking out is one exception to rows being independent: setting any row for a callsign to Out sets every other row for that same callsign in the net to Out as well, original check-in and every recheck together, not just the row you clicked.
+
+A recheck from a different site is the other: on a net with [sites](/docs/net-managers/sites/), checking a station in at a different site, Home, or Traveling than its live check-in sets that earlier check-in to Out, since a station can't be in two places at once. A recheck from the same place on a different frequency leaves both rows as they are. See [Stations at sites](/docs/net-control/stations-at-sites/#when-a-station-moves).
 
 What matters is understanding that "Recheck" is a marker on one specific row describing what just happened to that callsign, not a ninth entry in the status list above, and not something that quietly replaces an earlier row unless you've asked the list to collapse them.
 

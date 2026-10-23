@@ -139,9 +139,9 @@
   },
   "net-control/check-in-at-a-site": {
     "path": "/docs/img/net-control/check-in-at-a-site.png",
-    "alt": "The New Check-in form on a phone, with its Location box outlined in red and open on a list of the net's sites, grouped by type: under Official office, Example County EOC, Windham, ME; North Office, Bridgton, ME; and Gray Weather Office FN43rv; under Shelter, Naples Shelter, Naples, ME, and Freeport Shelter, Freeport, ME.\n",
-    "caption": "On a net with sites, Location offers them. Picking one puts the station at that site.",
-    "page": "/docs/net-managers/coverage-drills/"
+    "alt": "The New Check-in form on a phone, with its Site box outlined in red and open on its list: Home, Field Deployed and Traveling under Other places, then the net's sites grouped by type, each with its town, starting with Example County EOC, Windham, ME under Official office.\n",
+    "caption": "Site comes before Location, so a shelter is picked from the list rather than typed into Location.",
+    "page": "/docs/net-control/stations-at-sites/"
   },
   "net-control/close-net-dialog": {
     "path": "/docs/img/net-control/close-net-dialog.png",
@@ -275,6 +275,12 @@
     "caption": "Every site against the primary offices: two-way, through a relay, one-way only, or no path.\n",
     "page": "/docs/net-managers/coverage-drills/"
   },
+  "net-control/sites-board": {
+    "path": "/docs/img/net-control/sites-board.png",
+    "alt": "The Sites board, listing the stations checked in on the SET net under where each one is: the net's sites in order, each with its town and a count of stations, then the stations at home.\n",
+    "caption": "Who is where right now. A site nobody has reached says so.",
+    "page": "/docs/net-control/stations-at-sites/"
+  },
   "net-control/toolbar-speed-entry": {
     "path": "/docs/img/net-control/toolbar-speed-entry.png",
     "alt": "The left end of the net control toolbar, with the leftmost button, labelled \"Bulk add\", outlined in red. Search, Map, Traffic, Off-net, Announcements, Notes, Topics, and Stats follow.\n",
@@ -301,15 +307,15 @@
   },
   "net-managers/coverage-sites-editor": {
     "path": "/docs/img/net-managers/coverage-sites-editor.png",
-    "alt": "The Sites list under coverage logging in the net's settings, with a search box, a type filter and an Import button above it. Each row has the site typed as one line, such as Naples Shelter, Naples, ME, then its type, a Primary star and a Supported tick. Naples Shelter is opened to show its address, its notes, and the columns kept from the EMA's list: emergency and long-term capacity, generator, and plan status. Its Supported tick is outlined in red. The schools and PODs further down, imported from the EMA's lists, are not ticked.\n",
+    "alt": "The Sites list in the net's settings, with a search box, a type filter and an Import button above it. Each row has the site typed as one line, such as Naples Shelter, Naples, ME, then its type, a Primary star and a Supported tick. Naples Shelter is opened to show its address, its notes, and the columns kept from the EMA's list: emergency and long-term capacity, generator, and plan status. Its Supported tick is outlined in red. The schools and PODs further down, imported from the EMA's lists, are not ticked.\n",
     "caption": "Tick Supported for the sites your teams staff. Open a site to see its address, notes and the rest of its row from the EMA's list.\n",
-    "page": "/docs/net-managers/coverage-drills/"
+    "page": "/docs/net-managers/sites/"
   },
   "net-managers/coverage-sites-import": {
     "path": "/docs/img/net-managers/coverage-sites-import.png",
     "alt": "The Import sites dialog with a CSV of points of distribution loaded. Headings are on row 2, under the list's title. The columns are matched as Name to SITE NAME, Address to LOCATION, Town to CITY, Latitude to LAT., Longitude to LONG. and Notes to POC, Notes, with ME typed as the state for every site. Type for every site, outlined in red, is Point of distribution (POD), and Our teams staff every site on this list is unticked. The preview reads 6 sites read: 4 new, 2 already on the net's list will be updated, and shows the first five with their place, address and coordinates.\n",
     "caption": "Match the list's columns, choose its type, and check the preview before importing.\n",
-    "page": "/docs/net-managers/coverage-drills/"
+    "page": "/docs/net-managers/sites/"
   },
   "net-managers/create-net-frequencies": {
     "path": "/docs/img/net-managers/create-net-frequencies.png",

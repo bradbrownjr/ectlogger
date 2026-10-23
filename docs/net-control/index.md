@@ -37,6 +37,8 @@ Two things are worth doing once, in advance, rather than discovering mid-net:
 
 **[Logging check-ins](/docs/net-control/logging-check-ins/)** — Adding a station, editing a row in place, fixing a callsign you misheard, and logging a station with no account.
 
+**[Stations at sites](/docs/net-control/stations-at-sites/)** — Checking a station in at a shelter or aid station, what happens when it moves, and the Sites board that shows who is where.
+
 **[Speed entry](/docs/net-control/speed-entry/)** — Taking a string of callsigns as fast as they are called, and cleaning up afterward. What the syntax accepts.
 
 **[Frequencies and multiple net controls](/docs/net-control/frequencies-and-multi-ncs/)** — Several frequencies on one net, showing which one you are working, and more than one net control desk at once. This is the part built for multi-band ARES and SKYWARN operations.

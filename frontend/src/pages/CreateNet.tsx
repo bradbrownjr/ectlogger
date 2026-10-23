@@ -232,15 +232,13 @@ const CreateNet: React.FC = () => {
       setAuthenticated(net.authenticated || false);
       setSelfCanHearEnabled(net.self_can_hear_enabled !== false);
       setCoverageExcludedFrequencyIds(net.coverage_excluded_frequency_ids || []);
-      if (net.propagation_logging_enabled) {
-        try {
-          const sitesRes = await coverageSiteApi.listSites(parseInt(netId));
-          const drafts = sitesRes.data.map(siteToDraft);
-          setCoverageSites(drafts);
-          setLoadedCoverageSites(JSON.stringify(draftsToPayload(drafts)));
-        } catch (error) {
-          console.error('Failed to load coverage sites:', error);
-        }
+      try {
+        const sitesRes = await coverageSiteApi.listSites(parseInt(netId));
+        const drafts = sitesRes.data.map(siteToDraft);
+        setCoverageSites(drafts);
+        setLoadedCoverageSites(JSON.stringify(draftsToPayload(drafts)));
+      } catch (error) {
+        console.error('Failed to load coverage sites:', error);
       }
       setTrafficEnabled(net.traffic_enabled || false);
       setTrafficFormTypes(net.traffic_form_types || []);
@@ -379,7 +377,6 @@ const CreateNet: React.FC = () => {
   // after it, since a new net has no id until it's created. Skipped when
   // nothing changed, so an edit never rewrites them needlessly.
   const saveCoverageSites = async (id: number) => {
-    if (!propagationLoggingEnabled) return;
     const payload = draftsToPayload(coverageSites);
     if (JSON.stringify(payload) === loadedCoverageSites) return;
     await coverageSiteApi.saveSites(id, payload);

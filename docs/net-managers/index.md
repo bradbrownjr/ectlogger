@@ -48,6 +48,8 @@ Create a net or a recurring schedule, decide who is allowed to run it and in wha
 
 **[Importing check-ins](/docs/net-managers/importing-check-ins/)** — Bringing a net that ran on paper or in another program into ECTLogger, row by row, with its real times, so it counts toward everyone's attendance.
 
+**[Sites](/docs/net-managers/sites/)** — The shelters, offices or aid stations a net's stations deploy to: adding them, importing an agency's list, and who gets to see it.
+
 **[Coverage drills by site](/docs/net-managers/coverage-drills/)** — Setting up an exercise such as the ARES Simulated Emergency Test, which tests where you can reach rather than who: sites, primary offices, repeaters and nodes, and the results afterward.
 
 **[Drill plans](/docs/net-managers/drill-plans/)** — Writing an exercise plan on a net: objectives, a schedule of events, and prepared ICS-213s for each site, with a printed packet per site and results for the hot wash.

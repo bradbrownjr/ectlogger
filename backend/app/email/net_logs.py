@@ -28,6 +28,7 @@ async def send_net_log(
     propagation_logging_enabled: bool = False,
     coverage_edges: list = None,
     site_coverage: dict = None,
+    site_roster: list = None,
     traffic_enabled: bool = False,
     traffic_summary: dict = None,
     unsubscribe_token: str = None
@@ -170,6 +171,20 @@ async def send_net_log(
                             <td>{{ pair.frequency_label or '—' }}</td>
                             <td>{{ pair.reported_at }}</td>
                         </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% if site_roster %}
+            <div class="poll-section" style="background-color: #e8f5e9; border-left: 4px solid #2e7d32;">
+                <h3>📍 Sites</h3>
+                <table>
+                    <thead><tr><th>Where</th><th>Stations</th></tr></thead>
+                    <tbody>
+                        {% for row in site_roster %}
+                        <tr><td>{{ (row.place)|e }}{% if row.detail %}<br><small>{{ (row.detail)|e }}</small>{% endif %}</td><td>{{ (row.callsigns)|e }}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -333,6 +348,7 @@ async def send_net_log(
         propagation_enabled=propagation_logging_enabled,
         coverage_pairs=coverage_pairs,
         site_coverage=site_coverage,
+        site_roster=site_roster,
         traffic_enabled=traffic_enabled,
         traffic_summary=traffic_summary,
         traffic_total=sum(traffic_summary.values()) if traffic_summary else 0,

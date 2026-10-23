@@ -26,6 +26,8 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
+* **Check-in: Sites on any net** — Any net can now have a list of sites, such as shelters, aid stations and checkpoints, without turning on coverage logging. Each check-in gets a Site box next to Location with those sites plus Home, and the net shows a board of who is at each site, at home, or mobile. Logging someone at a site doesn't change the usual town that fills in for them on your other nets. [Learn more](/docs/net-managers/sites/)
+* **Check-in: Moving stations check out automatically** — When a station checks in again from a different place, their earlier check-in is checked out for them, since nobody can be in two places at once. Before, NCS had to check them out by hand before the new check-in would go through. [Learn more](/docs/net-control/stations-at-sites/#when-a-station-moves)
 * **Net View: More room in the check-in row** — The fields in the row where NCS and Loggers enter new check-ins sit closer together and the decorative + is gone, so the boxes are wider and you can see what you're typing.
 
 ## Bug Fixes
@@ -56,7 +58,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Coverage: Drills by site** — For exercises such as the SET, list a net's shelters, offices, repeaters and nodes, and star the primary offices. Stations pick their site at check-in. Coverage then shows whether each site reached each primary office, which repeaters and nodes it got into, and the counties and outside stations it reached. The net report and closing email include the same summary. [Learn more](/docs/net-managers/coverage-drills/)
 * **Drills: Exercise plan** — Write a drill's scenario, objectives and schedule on the net, with prepared ICS-213s assigned to the sites that send them. Print the plan and a packet for each site, mark messages sent and received during the drill, and rate each objective afterward. [Learn more](/docs/net-managers/drill-plans/)
-* **Coverage: Import sites from a spreadsheet** — Load an EMA's shelter or distribution point list from Excel or CSV. Match its columns to name, address, town, coordinates and notes, and choose the type for the whole list. Mark the sites your teams will staff; the rest of the list, and every site's address, contacts and capacity, are shown only to net staff. [Learn more](/docs/net-managers/coverage-drills/#import-an-emergency-management-agencys-site-list)
+* **Coverage: Import sites from a spreadsheet** — Load an EMA's shelter or distribution point list from Excel or CSV. Match its columns to name, address, town, coordinates and notes, and choose the type for the whole list. Mark the sites your teams will staff; the rest of the list, and every site's address, contacts and capacity, are shown only to net staff. [Learn more](/docs/net-managers/sites/#import-an-emergency-management-agencys-site-list)
 
 ## Improvements
 

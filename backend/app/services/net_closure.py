@@ -204,6 +204,17 @@ async def close_net_and_notify(
         )
         can_hear_reports = can_hear_result.scalars().all()
 
+    # Who was at each site, home or deployed: any net with sites, coverage
+    # logging or not. Empty when nobody was placed anywhere.
+    from app.models import CoverageSite
+    from app.services.station_place import build_site_roster
+    reporting_sites = (await db.execute(
+        select(CoverageSite.id, CoverageSite.name, CoverageSite.location)
+        .where(CoverageSite.net_id == net_id, CoverageSite.site_type != "infrastructure")
+        .order_by(CoverageSite.sort_order, CoverageSite.id)
+    )).all()
+    site_roster = build_site_roster([tuple(r) for r in reporting_sites], sorted_check_ins) if reporting_sites else []
+
     # Coverage by site and contacts outside the net: tz-independent, so built
     # once. None on an ordinary coverage net with neither.
     site_coverage = None
@@ -429,6 +440,7 @@ async def close_net_and_notify(
                     propagation_logging_enabled=net.propagation_logging_enabled,
                     coverage_edges=coverage_edges_data,
                     site_coverage=site_coverage,
+                    site_roster=site_roster,
                     traffic_enabled=net.traffic_enabled,
                     traffic_summary=traffic_summary,
                     unsubscribe_token=unsub_token

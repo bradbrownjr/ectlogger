@@ -3,6 +3,7 @@ import { roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
 import api from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import { isFieldShown, withOnlyShownFields } from '../../utils/checkInFields';
+import { placeChoice } from '../../utils/stationPlace';
 
 // ========== CHECK-IN ACTIONS ==========
 // The check-in row action handlers: create/edit/delete a check-in, change
@@ -320,6 +321,10 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       topic_response: checkIn.topic_response || '',
       poll_response: checkIn.poll_response || '',
       custom_fields: checkIn.custom_fields || {},
+      // The Site cell (nets with sites); saved only if the place changed.
+      coverage_site_id: checkIn.coverage_site_id ?? null,
+      operating_position: checkIn.operating_position || '',
+      status: checkIn.status,
     });
   };
 
@@ -348,6 +353,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         custom_fields: inlineEditValues.custom_fields,
         // Keep existing frequency settings
         available_frequency_ids: checkIn.available_frequencies || [],
+        ...placeEdit(checkIn, inlineEditValues),
       }, net?.field_config));
       setInlineEditingId(null);
       setInlineEditValues({});
@@ -360,6 +366,19 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       console.error('Failed to update check-in:', error);
       setToastMessage(getErrorMessage(error, 'Failed to update check-in'));
     }
+  };
+
+  // A corrected Site: sent only when the place changed, so an ordinary edit
+  // never touches it. The backend pairs coverage_site_id and
+  // operating_position (routers/check_ins.py::update_check_in). Traveling is
+  // the Mobile status, so a change to or from it sends the status too.
+  const placeEdit = (checkIn: any, values: any) => {
+    if (!('operating_position' in values) || placeChoice(values) === placeChoice(checkIn)) return {};
+    return {
+      coverage_site_id: values.coverage_site_id ?? null,
+      operating_position: values.operating_position || '',
+      ...(values.status !== checkIn.status ? { status: values.status } : {}),
+    };
   };
 
   // Cancel inline edit
