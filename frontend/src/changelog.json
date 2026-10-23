@@ -1,8 +1,8 @@
 {
-  "version": "2026.10.22b",
+  "version": "2026.10.22c",
   "entries": [
     {
-      "version": "2026.10.22b",
+      "version": "2026.10.22c",
       "date": "2026-10-22",
       "sections": [
         {
@@ -35,6 +35,11 @@
             },
             {
               "text": "Edit Net: Schedule staff shown — The Net Staff tab listed only who holds NCS, so a net from a schedule looked as if it had no staff. It now lists the schedule's staff too.",
+              "docs": "/docs/net-managers/creating-a-net/"
+            },
+            {
+              "text": "Edit Net: Save to Schedule saves this net too — Save to Schedule changed only the schedule, so the net you were editing kept its old settings. It now saves both.",
+              "userImpact": true,
               "docs": "/docs/net-managers/creating-a-net/"
             }
           ]

@@ -28,6 +28,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Edit Net: Open lobby on a net with no start time** — A net's Edit page hid the Enable lobby switch when the net had no start time, so a one-time net saved without one could never offer Open lobby. The switch is there now, as on the schedule form. [Learn more](/docs/net-managers/lobby-and-auto-close/)
 * **Edit Net: Schedule staff shown** — The Net Staff tab listed only who holds NCS, so a net from a schedule looked as if it had no staff. It now lists the schedule's staff too. [Learn more](/docs/net-managers/creating-a-net/)
+* **Edit Net: Save to Schedule saves this net too** — Save to Schedule changed only the schedule, so the net you were editing kept its old settings. It now saves both. [Learn more](/docs/net-managers/creating-a-net/)
 
 ---
 
