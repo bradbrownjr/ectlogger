@@ -24,9 +24,9 @@ Both of these exist to take a chore off a human's plate at exactly the moment th
 
 A net that hasn't started shows two buttons on its toolbar and on its card:
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/net-managers/open-lobby-and-start.png"
-       alt="The toolbar of a net that has not started, with two buttons outlined in red at its left: Open lobby, with an open-door icon, and Start net, with a play icon.">
+       alt="The toolbar of a net that has not started, with two buttons outlined in red at its left: Open lobby, with an open-door icon, and Start net, with a play icon. Net info, Import, and Edit net follow.">
   <figcaption>Before the scheduled start, a net offers both Open lobby and Start net.</figcaption>
 </figure>
 

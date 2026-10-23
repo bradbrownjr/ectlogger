@@ -11,6 +11,14 @@ shots:
     route: /profile
     as: KC1HILL
     wait_for: 'form:visible'
+    # The tabs and the form, not the whole window; tall enough to reach Save.
+    viewport:
+      width: 1440
+      height: 1600
+    element:
+      - '.MuiTabs-root'
+      - 'form'
+    pad: 12
     alt: >
       The Profile page's Profile tab, showing the Name, Amateur Radio Call
       Sign, GMRS Call Sign, SKYWARN Spotter Number, and Default Location
@@ -27,7 +35,7 @@ shots:
     # empty background below them. The alt text deliberately names no count:
     # it said "three net cards" while the seed had four.
     viewport:
-      width: 1440
+      width: 1000
       height: 700
     wait_for: '.MuiChip-root:visible'
     alt: >
@@ -57,6 +65,10 @@ shots:
     section: operators
     page: /docs/operators/finding-a-net/
     route: /scheduler
+    # 1000 wide so the figure reads at full size in the docs column.
+    viewport:
+      width: 1000
+      height: 1000
     as: KC1HILL
     wait_for: 'button[aria-label="calendar view"]:visible'
     steps:
@@ -168,6 +180,10 @@ shots:
     section: operators
     page: /docs/operators/status-and-checking-out/
     route: /nets/{{net:active}}
+    # 1000 wide so the figure reads at full size in the docs column.
+    viewport:
+      width: 1000
+      height: 1000
     as: KC1HILL
     wait_for: 'table:visible tbody tr'
     steps:
@@ -250,6 +266,10 @@ shots:
     section: operators
     page: /docs/operators/location-and-the-map/
     route: /nets/{{net:active}}
+    # 1000 wide so the figure reads at full size in the docs column.
+    viewport:
+      width: 1000
+      height: 1000
     as: KC1HILL
     wait_for: 'table:visible tbody tr'
     steps:
@@ -272,8 +292,11 @@ shots:
     route: /nets/{{net:active}}
     as: KC1HILL
     wait_for: 'table:visible tbody tr'
-    element: 'header'
-    pad: 4
+    # The menu items, not the whole 1440px header.
+    element:
+      - 'header >> text=Nets'
+      - 'header >> text=Help'
+    pad: 12
     annotate:
       - selector: 'header >> text=Traffic'
         style: box
@@ -287,6 +310,10 @@ shots:
     section: operators
     page: /docs/operators/filing-traffic/
     route: /traffic
+    # 1000 wide so the figure reads at full size in the docs column.
+    viewport:
+      width: 1000
+      height: 1000
     as: KC1HILL
     wait_for: 'body:visible'
     steps:
@@ -305,7 +332,7 @@ shots:
     route: /profile
     as: KC1HILL
     viewport:
-      width: 1440
+      width: 1000
       height: 700
     wait_for: '[aria-label="profile tabs"]:visible'
     steps:
@@ -320,6 +347,10 @@ shots:
     section: operators
     page: /docs/operators/your-statistics/
     route: /statistics/schedules/{{template:weekly}}
+    # 1000 wide so the figure reads at full size in the docs column.
+    viewport:
+      width: 1000
+      height: 1000
     as: KC1HILL
     wait_for: 'table:visible'
     steps:
@@ -519,3 +550,50 @@ shots:
       showing a marker for each station KC1HILL has heard from home, and a
       note below that the map only shows stations they heard.
     caption: Every station you've heard from home, across every net, on one map.
+
+  # ========== Profile photo ==========
+  - id: profile-photo-crop
+    section: operators
+    page: /docs/operators/account-and-profile/
+    route: /profile
+    as: KC1HILL
+    wait_for: 'form:visible'
+    steps:
+      # The fixture is a drawn radio tower, not anyone's face.
+      - upload:
+          selector: 'input[type=file][accept*="image"]'
+          file: scripts/docs-screenshots/fixtures/example-profile-photo.jpg
+          mime_type: image/jpeg
+      - wait_for: '.MuiDialog-paper:has-text("Crop Profile Photo")'
+      - wait: 600
+    element: '.MuiDialog-paper'
+    pad: 12
+    annotate:
+      - selector: '.MuiDialog-paper button:has-text("Crop & Upload")'
+        style: box
+    alt: >
+      The Crop Profile Photo window, with a photo of a radio tower on a hill
+      inside a circular crop guide, a Zoom slider below it, and Cancel and
+      Crop & Upload buttons. Crop & Upload is outlined in red.
+    caption: Position the photo in the circle, then Crop & Upload. Only what's inside the square is saved.
+
+  # ========== Prior topics ==========
+  - id: prior-topics
+    section: operators
+    page: /docs/operators/chat-and-polls/
+    route: /nets/{{net:active}}
+    as: KC1HILL
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="View prior topics"] button'
+      - wait_for: '.MuiDialog-paper:has-text("Prior Topics")'
+      # The list loads after the dialog opens; wait for a seeded topic.
+      - wait_for: '.MuiDialog-paper >> text=go-kit'
+      - wait: 400
+    element: '.MuiDialog-paper'
+    pad: 12
+    alt: >
+      The Prior Topics dialog for a weekly net: a search box, then five
+      topics, newest first, with their dates on the left. The newest, asked on
+      a net still in ECTLogger, has an open-in-new-tab link to that net.
+    caption: Prior topics, newest first. A topic asked on a net in ECTLogger links back to it.

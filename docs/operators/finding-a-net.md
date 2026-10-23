@@ -4,8 +4,8 @@ summary: The dashboard, what each net status means, the Schedule page's calendar
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-10-13
-review_by: 2027-09-19
+revised: 2026-10-23
+review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/finding-a-net/
 ---
@@ -37,6 +37,18 @@ By default, nets are sorted with Active and Lobby first (most recently started a
 ## Landing on a net you haven't joined
 
 Open any Active or Lobby net and, if you're signed in and haven't checked in yet, a banner offers to check you in on the spot; see [Checking in](/docs/operators/checking-in/). You can dismiss it and just watch instead; nothing about viewing a net requires joining it.
+
+## Sharing a net with someone who has no account
+
+Anyone can open a net without signing in, so you can send a net's link to someone who hasn't joined yet: a prospective member, a served agency, or a family member who wants to follow along. Copy the address from your browser's address bar while the net is open. It looks like `https://app.ectlogger.us/nets/` followed by the net's number.
+
+A visitor who isn't signed in sees the net as it happens: the check-in list, chat, the map, and the results of a poll or topic. They can't check in or send a chat message until they sign in. Some things are left out for them:
+
+- Phone numbers and email addresses typed into check-in notes or chat are hidden.
+- Net managers and net control show with their callsign and first name only.
+- The [off-net log](/docs/net-control/off-net-log/) and any coverage sites net control hasn't put to use are not shown.
+
+A closed net's report page works the same way; see [Reports, ICS-309, and exports](/docs/net-managers/reports-and-exports/#the-net-report-page).
 
 ## Finding a net that already happened
 

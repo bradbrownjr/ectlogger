@@ -24,7 +24,7 @@ There are two ways in, and which one you get depends on your role, not on the ne
 
 **The Traffic section in the top navigation bar** is the one you will use. It is always there, for every signed-in operator, and it is where your own traffic lives regardless of which net it came from.
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/operators/traffic-nav-item.png"
        alt="The top navigation bar, with the Traffic item outlined in red, between Schedule and Stats."
   >

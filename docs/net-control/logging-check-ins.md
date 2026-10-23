@@ -4,8 +4,8 @@ summary: Adding a station, editing a row in place, fixing a misheard callsign, a
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-19
-review_by: 2027-09-19
+revised: 2026-10-23
+review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/logging-check-ins/
 ---
@@ -23,6 +23,18 @@ There's a second, narrower way in, worth knowing about because it's easy to miss
 On a phone or a narrow window, NCS and Logger also get an always-available collapsible **New Check-in** panel above the check-in list, which stays reachable regardless of your own check-in status.
 
 When you type a callsign into the check-in form and move on to the next field, ECTLogger fills in that station's Name, Location, and Spotter # from their profile, or from their past check-ins if they have no account. A station using location awareness gets the town its GPS position is in, such as `Waterboro, ME`, rather than a grid square; hover over the location in the check-in list to see the grid. If you correct the callsign, the new station's details replace the ones filled in for the old one, but anything you typed yourself is left alone. Only fields this net shows are ever filled. A field the net has turned off is never filled in or sent, so something in a station's profile you can't see can never stop you from saving the check-in.
+
+## Spotting stations who check themselves in
+
+While you're running a net by voice, stations can also check themselves in from the app without calling. So you don't miss them, a station's own check-in flashes its row gold for a couple of seconds when it arrives. A check-in you or another logger typed in doesn't flash, and neither does your own.
+
+If the new row lands outside the part of the list you can see, a round arrow button appears at the top or bottom edge of the list, pointing toward it. Click it to scroll the station into view; it goes away once you've seen the row.
+
+Every viewer sees the flash, not just net control, and nothing flashes when you first open or reload the net.
+
+### Who's online
+
+A station with an ECTLogger account has a small dot on its avatar: green while they have the net open, grey when they don't. A station with no dot has no account, such as a station you logged by voice, so it has no profile to open. Click an avatar for that station's profile popup; see [Your account and profile](/docs/operators/account-and-profile/#what-other-people-see-about-you).
 
 ## Editing a row in place
 

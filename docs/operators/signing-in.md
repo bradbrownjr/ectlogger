@@ -48,7 +48,7 @@ A magic link needs a working inbox, and there are nights when you don't have one
 2. Type the password you want into **Password**, and again into **Confirm Password**. If you already have one, that first field reads **New Password** and there's a **Current Password** above it to fill in first.
 3. Click **Set Password**, or **Change Password** if you're replacing one.
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/operators/security-password-card.png"
        alt="The Password section of the Profile page's Security tab, with Current Password, New Password, and Confirm Password fields and the Change Password button outlined in red below them.">
   <figcaption>A password is a fallback, not a replacement. The magic link keeps working whether you set one or not.</figcaption>
@@ -58,7 +58,7 @@ It has to be at least 12 characters and contain a lowercase letter, an uppercase
 
 To use it, click **Sign in with a password instead** at the bottom of the sign-in page. That swaps the single email field for **Callsign or Email** and **Password**. Either your callsign or your email address works in the first one. **Use a magic link instead** switches back.
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/operators/login-password-link.png"
        alt="The ECTLogger sign-in page, with the Sign in with a password instead link outlined in red below the Send Magic Link button.">
   <figcaption>Easy to miss, because most people never need it. It is at the bottom of the sign-in page.</figcaption>
@@ -77,7 +77,7 @@ Worth turning on if your account can do damage: you run a net, you own a schedul
 3. Type the six-digit code your app now shows into **Verification Code** and click **Confirm**.
 4. ECTLogger shows eight one-time backup codes. Save them, then click **I've Saved These Codes**.
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/operators/security-two-factor-setup.png"
        alt="The Two-Factor Authentication section of the Security tab, explaining that it adds a 6-digit code from an authenticator app, with the Set Up Two-Factor Authentication button outlined in red.">
   <figcaption>Directly below the password section on the same tab.</figcaption>

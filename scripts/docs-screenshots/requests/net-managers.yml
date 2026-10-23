@@ -19,6 +19,10 @@ shots:
     section: net-managers
     page: /docs/net-managers/creating-a-net/
     route: /nets/{{net:active}}/edit
+    # 1000 wide so the figure reads at full size in the docs column.
+    viewport:
+      width: 1000
+      height: 1000
     as: W1PINE
     wait_for: 'div[aria-label="net configuration tabs"]'
     element: 'div[aria-label="net configuration tabs"]'
@@ -32,6 +36,10 @@ shots:
     section: net-managers
     page: /docs/net-managers/creating-a-net/
     route: /nets/{{net:active}}/edit
+    # 1000 wide so the figure reads at full size in the docs column.
+    viewport:
+      width: 1000
+      height: 1000
     as: W1PINE
     wait_for: 'div[aria-label="net configuration tabs"]'
     steps:
@@ -122,6 +130,10 @@ shots:
     section: net-managers
     page: /docs/net-managers/scripts-and-announcements/
     route: /nets/{{net:active}}/edit
+    # 1000 wide so the figure reads at full size in the docs column.
+    viewport:
+      width: 1000
+      height: 1000
     as: W1PINE
     wait_for: 'div[aria-label="net configuration tabs"]'
     steps:
@@ -163,6 +175,10 @@ shots:
     section: net-managers
     page: /docs/net-managers/lobby-and-auto-close/
     route: /nets/{{net:scheduled}}/edit
+    # 1000 wide so the figure reads at full size in the docs column.
+    viewport:
+      width: 1000
+      height: 1000
     as: W1PORT
     wait_for: 'label:has-text("Close this net automatically after inactivity")'
     # The wrapping Box, not the label: the explanatory line under each switch is
@@ -186,8 +202,12 @@ shots:
     # Tooltips (and so aria-labels) of the two pre-start buttons. The net is
     # scheduled for later, which is when Open lobby is offered.
     wait_for: 'span[aria-label="Open the lobby so stations can check in and chat before the net starts"]'
-    element: 'div:has(> span[aria-label="Start the net now"])'
-    pad: 0
+    # The buttons, not the whole toolbar row: the row is 1440px wide and the
+    # buttons fill less than half of it, which rendered the figure at 0.29x.
+    element:
+      - 'span[aria-label="Open the lobby so stations can check in and chat before the net starts"]'
+      - 'span[aria-label="Edit net settings"]'
+    pad: 6
     annotate:
       - selector: 'span[aria-label="Open the lobby so stations can check in and chat before the net starts"]'
         style: box
@@ -196,7 +216,7 @@ shots:
     alt: >
       The toolbar of a net that has not started, with two buttons outlined in
       red at its left: Open lobby, with an open-door icon, and Start net, with
-      a play icon.
+      a play icon. Net info, Import, and Edit net follow.
     caption: Before the scheduled start, a net offers both Open lobby and Start net.
 
   # ========== Cancelling, archiving, and restoring ==========
@@ -344,7 +364,7 @@ shots:
     route: /nets/{{net:set}}/edit
     as: W1PINE
     viewport:
-      width: 1280
+      width: 1000
       height: 2400
     wait_for: 'button:has-text("Add site")'
     steps:
@@ -420,7 +440,7 @@ shots:
     route: /nets/{{net:set}}/drill-plan
     as: W1PINE
     viewport:
-      width: 1280
+      width: 1000
       height: 3200
     wait_for: 'button:has-text("Edit")'
     steps:
@@ -448,7 +468,7 @@ shots:
     route: /nets/{{net:set}}/drill-plan
     as: W1PINE
     viewport:
-      width: 1280
+      width: 1000
       height: 2400
     wait_for: '[data-drill-event="3"]'
     element:
@@ -491,3 +511,53 @@ shots:
       the note that they are added at the end with the incident name filled
       in, and Include objective results is unticked.
     caption: Print the whole plan, or a packet for one site.
+
+  # ---------- Emailing staff or subscribers (net-staff-and-rotation.md) ----------
+  - id: email-staff-dialog
+    section: net-managers
+    page: /docs/net-managers/net-staff-and-rotation/
+    route: /scheduler
+    as: W1PINE
+    wait_for: 'button:has-text("Staff")'
+    steps:
+      - click: 'button:has-text("Staff")'
+      - wait_for: '.MuiDialog-paper button:has-text("Email")'
+      - click: '.MuiDialog-paper button:has-text("Email")'
+      - wait_for: '.MuiDialog-paper:has-text("Send Email")'
+      - wait: 400
+    element: '.MuiDialog-paper:has-text("Send Email")'
+    pad: 12
+    annotate:
+      - selector: '.MuiDialog-paper:has-text("Send Email") .MuiFormControl-root:has(#email-recipient-group-label)'
+        style: box
+        # Clear of the field's floating "To" label.
+        pad: 12
+    alt: >
+      The Email Staff dialog for a weekly net, with To set to Net Staff, then
+      empty Subject and Message fields, and Cancel and Send Email buttons. The
+      To field is outlined in red.
+    caption: Choose Net Staff, Net Subscribers, or both under To.
+
+  # ---------- Merging schedules (recurring-schedules.md) ----------
+  - id: merge-schedules
+    section: net-managers
+    page: /docs/net-managers/recurring-schedules/
+    route: /scheduler
+    # The admin, the only seeded account that manages two schedules.
+    as: W1DEMO
+    wait_for: 'button[aria-label="merge schedules"]'
+    steps:
+      - click: 'button[aria-label="merge schedules"]'
+      - click: ':nth-match(.MuiCheckbox-root input, 1)'
+      - click: ':nth-match(.MuiCheckbox-root input, 2)'
+      - click: 'button:has-text("Merge Selected")'
+      - wait_for: '.MuiDialog-paper:has-text("Merge summary")'
+      - wait: 500
+    element: '.MuiDialog-paper'
+    pad: 12
+    alt: >
+      The Merge Schedules dialog: a choice of master schedule between two
+      schedules, a Merge summary of the nets, subscribers, staff, and rotation
+      members moving to it, and a list of settings that differ, which will be
+      lost.
+    caption: The summary and the list of settings that differ come before anything is merged.

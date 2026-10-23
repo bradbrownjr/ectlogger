@@ -130,6 +130,15 @@ def reference_drift():
     return problems
 
 
+def heading_ids(path):
+    """The anchors kramdown gives a page's headings: lower case, punctuation
+    dropped, spaces to hyphens. A renamed heading breaks every link to it."""
+    ids = set()
+    for heading in re.findall(r"^#{1,6}\s+(.+?)\s*$", path.read_text(encoding="utf-8"), re.M):
+        ids.add(re.sub(r"[^\w\- ]", "", heading.lower()).replace(" ", "-"))
+    return ids
+
+
 def main():
     problems = []
     permalinks = {}
@@ -211,10 +220,16 @@ def main():
         for entry in json.loads(changelog.read_text(encoding="utf-8")).get("entries", []):
             for section in entry.get("sections", []):
                 for item in section.get("items", []):
-                    target = (item.get("docs") or "").split("#")[0]
-                    if target and target.rstrip("/") + "/" not in permalinks:
+                    target, _, anchor = (item.get("docs") or "").partition("#")
+                    page = permalinks.get(target.rstrip("/") + "/") if target else None
+                    if target and page is None:
                         problems.append(
                             f"frontend/src/changelog.json: {entry.get('version')} links to {target}, which no page claims"
+                        )
+                    elif anchor and anchor not in heading_ids(REPO / page):
+                        problems.append(
+                            f"frontend/src/changelog.json: {entry.get('version')} links to {target}#{anchor}, "
+                            "which is not a heading on that page"
                         )
 
     problems.extend(reference_drift())

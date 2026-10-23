@@ -262,8 +262,12 @@ callout must never rely on its color alone to say what it is (WCAG 1.4.1).
 </figure>
 ```
 
-Add `class="control-figure"` for a partial capture of one control, so it
-renders at its own size instead of stretched to the column.
+Every figure fills the column. **Capture only what the figure is about**: the
+column is 804px wide on a 1440px screen, so a capture wider than 1000px shrinks
+the app's text below about 80% of its size, and a full-width toolbar strip
+became unreadable at 0.29x. `capture.mjs` refuses a capture over 1000px unless
+its shot sets `wide: true`, which is for the few figures whose point is the
+whole screen. A figure the column still shrinks opens full size when clicked.
 
 Wide tables go in `<div class="table-scroll" markdown="1"> ... </div>`.
 Kramdown does not parse Markdown inside block HTML without `markdown="1"`.

@@ -24,7 +24,7 @@ Go to the site. You can look around without signing in: you land on the list of 
 
 Type your email address and click **Send Magic Link**.
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/start/login-magic-link.png"
        alt="The ECTLogger sign-in page, with an Email Address field filled in and the Send Magic Link button outlined in red below it.">
   <figcaption>One field and one button. There is no account to create first.</figcaption>
@@ -68,7 +68,7 @@ If the list is long, click the filter button (the funnel icon near the top right
 
 The net has a toolbar across the top. Click **Check in**, over on the right of it.
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/start/checkin-toolbar-button.png"
        alt="The net toolbar, with the Check in button outlined in red among the Search, Map, Announcements, Notes, Topics, and Stats buttons.">
   <figcaption>The net toolbar. What is on it depends on whether you are checked in yet.</figcaption>
@@ -76,7 +76,7 @@ The net has a toolbar across the top. Click **Check in**, over on the right of i
 
 A dialog opens with your callsign already filled in. Every other field is optional unless this net's manager has asked for it.
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/operators/check-in-dialog.png"
        alt="The Check In dialog, with the Check In button outlined in red at the bottom right of the form. Only the Callsign field is required by default.">
   <figcaption>Only the callsign is required by default. Some nets ask for more, and those fields are marked.</figcaption>
@@ -104,7 +104,7 @@ A few things worth knowing before you close the tab:
 - **Or use the toolbar, which is quicker.** Now that you are checked in, the toolbar has grown **Step away** and **Just listening** buttons, which set those same two statuses in one click without you finding your row at all. Each one toggles: click it again to come back. There is a **Raise hand** button there too, for when you want Net Control to notice you without changing your status.
 - **Check out when you leave.** Click **Check out** in the toolbar. It does not remove you from the log or the map, it just tells Net Control not to wait for you.
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/operators/self-status-toolbar.png"
        alt="The right-hand end of the net toolbar once you are checked in: a highlighted Lower hand button, then Step away and Just listening both outlined in red, then Check out in red.">
   <figcaption>The right-hand end of the same toolbar, once you are on the list. Check in has been replaced by the buttons that act on your own row.</figcaption>

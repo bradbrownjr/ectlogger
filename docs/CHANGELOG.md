@@ -359,7 +359,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
-* **Check-in: Sneak-in arrival arrow now clears** — The off-screen arrival arrow could get stuck on screen, scroll away from the edge it was supposed to stay pinned to, and didn't respond to clicks. It now disappears once you've seen the new check-in, stays pinned to the table's visible edge while you scroll, and clicking it jumps you straight to the row, pointing up or down depending on which way it actually is.
+* **Check-in: Sneak-in arrival arrow now clears** — The off-screen arrival arrow could get stuck on screen, scroll away from the edge it was supposed to stay pinned to, and didn't respond to clicks. It now disappears once you've seen the new check-in, stays pinned to the table's visible edge while you scroll, and clicking it jumps you straight to the row, pointing up or down depending on which way it actually is. [Learn more](/docs/net-control/logging-check-ins/#spotting-stations-who-check-themselves-in)
 * **Profile & Check-in: Name field also catches links** — The warning that flags an email address in the Name field now also catches web links, so a URL doesn't end up shown on the public check-in list either.
 
 ---
@@ -368,7 +368,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Check-in: Sneak-in arrival alert** — When a station checks itself in without NCS or Logger typing it in, its row briefly flashes gold so you notice the new arrival even if you're running the net mostly by voice. If it lands below what you're currently viewing, a small arrow fades in at the bottom of the table to point you there.
+* **Check-in: Sneak-in arrival alert** — When a station checks itself in without NCS or Logger typing it in, its row briefly flashes gold so you notice the new arrival even if you're running the net mostly by voice. If it lands below what you're currently viewing, a small arrow fades in at the bottom of the table to point you there. [Learn more](/docs/net-control/logging-check-ins/#spotting-stations-who-check-themselves-in)
 * **Net View: Just Listening button** — Mark yourself as monitoring only with one click from the toolbar, instead of typing "just listening" into the Topic of the Week answer or check-in notes. [Learn more](/docs/operators/status-and-checking-out/)
 * **Chat: Edit, @mention, and reply** — Fix a typo or a wrong frequency by editing your own message in place (marked "(edited)"), tag a station with @callsign so the message flashes on their screen instead of scrolling past, and quote a message to reply to it, which tags the original sender the same way. [Learn more](/docs/operators/chat-and-polls/)
 
@@ -511,7 +511,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Net View: Share a net without an account** — Send someone a net's link and they can view it, no sign-in needed, so you can show a prospective member how ECT Logger works before they join. Any phone number or email address in check-in notes or chat stays hidden from them.
+* **Net View: Share a net without an account** — Send someone a net's link and they can view it, no sign-in needed, so you can show a prospective member how ECT Logger works before they join. Any phone number or email address in check-in notes or chat stays hidden from them. [Learn more](/docs/operators/finding-a-net/#sharing-a-net-with-someone-who-has-no-account)
 
 ## Improvements
 
@@ -763,7 +763,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Mobile: Less scrolling to reach the net** — The Activity Log now starts collapsed on a phone so the check-in list and chat are within reach, and it remembers that separately from your desktop setting. A busy net's status chips now wrap onto extra lines instead of forcing the whole page to scroll sideways.
 
-* **Net View: Prior topics link back to their net** — Each entry in the prior-topics list now opens the net it came from in a new tab, so you can look through past topics without losing your place in the net you have open.
+* **Net View: Prior topics link back to their net** — Each entry in the prior-topics list now opens the net it came from in a new tab, so you can look through past topics without losing your place in the net you have open. [Learn more](/docs/operators/chat-and-polls/#prior-topics)
 
 ## Bug Fixes
 
@@ -816,7 +816,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Net View: Guests can now see poll results and topic answers** — Visitors who aren't signed in can now see poll results, topic-of-the-week responses, and properly labeled check-in fields, matching the same public view already available for check-ins and chat.
+* **Net View: Guests can now see poll results and topic answers** — Visitors who aren't signed in can now see poll results, topic-of-the-week responses, and properly labeled check-in fields, matching the same public view already available for check-ins and chat. [Learn more](/docs/operators/finding-a-net/#sharing-a-net-with-someone-who-has-no-account)
 
 ---
 
@@ -842,7 +842,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Submit Feedback** — Authenticated users can report bugs or request features directly from the Help menu. Submissions are emailed to every admin on the instance, with the submitter's callsign, name, and email included so admins can follow up. Rate-limited to 5 submissions per IP per hour. [Learn more](/docs/about/getting-help/#report-a-bug-or-ask-for-a-feature)
 
-* **Guided walkthrough** — A step-through tour covers the main app areas (Dashboard, Net View, Scheduler, Statistics, Profile, and the Help menu itself). Launches automatically for new users on their first login and can be relaunched at any time from Help.
+* **Guided walkthrough** — A step-through tour covers the main app areas (Dashboard, Net View, Scheduler, Statistics, Profile, and the Help menu itself). Launches automatically for new users on their first login and can be relaunched at any time from Help. [Learn more](/docs/start/first-check-in/)
 
 * **About: Honorable Mentions** — The About dialog recognizes operators who shaped ECTLogger through bug reports and feature requests: AA1GM (Joel Huntress), KC1UIX (David Lounsbury), W1BKW (Brian Wall), W1MTW (Mark Carlson).
 
@@ -934,11 +934,11 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Check-in List: Who is this?** — Click any avatar in the check-in list to see that operator's callsign, name, role in the current net, total check-ins, and the nets they attend most often.
+* **Check-in List: Who is this?** — Click any avatar in the check-in list to see that operator's callsign, name, role in the current net, total check-ins, and the nets they attend most often. [Learn more](/docs/operators/account-and-profile/#what-other-people-see-about-you)
 
-* **Net Settings: Post-close chat grace period** — Enable a 15, 30, or 60 minute window after closing a net during which chat remains open, so participants can finish off-air conversations before it goes read-only.
+* **Net Settings: Post-close chat grace period** — Enable a 15, 30, or 60 minute window after closing a net during which chat remains open, so participants can finish off-air conversations before it goes read-only. [Learn more](/docs/operators/chat-and-polls/#chat-after-the-net-closes)
 
-* **Net View: Presence dots on avatars** — Registered users now show a green dot when online and a gray dot when offline, so you can instantly tell who has a viewable profile versus a guest check-in.
+* **Net View: Presence dots on avatars** — Registered users now show a green dot when online and a gray dot when offline, so you can instantly tell who has a viewable profile versus a guest check-in. [Learn more](/docs/net-control/logging-check-ins/#whos-online)
 
 * **Net View: Clickable avatars in chat and Net Staff dialog** — Click any avatar in the chat panel or the Net Staff dialog to open that operator's profile popup.
 
@@ -962,7 +962,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Dashboard: Active nets from a starred schedule automatically sort to the top** — If you've starred a schedule, any net running from it will float to the top of the active nets list too. You can also star or unstar directly from the net card.
+* **Dashboard: Active nets from a starred schedule automatically sort to the top** — If you've starred a schedule, any net running from it will float to the top of the active nets list too. You can also star or unstar directly from the net card. [Learn more](/docs/operators/finding-a-net/#starring-a-net-you-check-into-often)
 
 ---
 
@@ -1003,7 +1003,7 @@ All notable changes to ECTLogger are documented here.
 ## Improvements
 
 * **Net View: Floating windows remember scroll position after minimize** — The Net Script and Announcements windows now restore to the exact position you were reading when you minimize and reopen them, so you don't lose your place mid-net.
-* **Prior Topics: Redesigned with date-left layout, search, and pagination** — The topic history dialog now shows dates on the left of each row for quick scanning, includes a keyword search bar, and paginates at 25 rows per page.
+* **Prior Topics: Redesigned with date-left layout, search, and pagination** — The topic history dialog now shows dates on the left of each row for quick scanning, includes a keyword search bar, and paginates at 25 rows per page. [Learn more](/docs/operators/chat-and-polls/#prior-topics)
 * **Schedule: Template list now paginates at 25 per page** — Large schedule lists page through 25 at a time rather than rendering an unbounded scroll.
 * **Admin: Contacts list now paginates at 25 per page** — The contacts tab now pages at 25 rows, consistent with the users tab.
 
@@ -1081,7 +1081,7 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Avatar menu in the nav bar** — The callsign text in the nav bar has been replaced with your avatar. Clicking it opens a menu with Profile, Personal Stats, Admin (if applicable), Dark/Light mode toggle, and Logout — consolidating controls that were previously scattered across the top bar. On mobile, the same items appear at the bottom of the slide-out drawer.
-* **In-browser crop and zoom for profile photos** — After selecting a photo, a dialog lets you drag to position and scroll or pinch to zoom before uploading. Only the cropped square is sent to the server, so portrait, landscape, and oddly-framed photos always produce a clean avatar.
+* **In-browser crop and zoom for profile photos** — After selecting a photo, a dialog lets you drag to position and scroll or pinch to zoom before uploading. Only the cropped square is sent to the server, so portrait, landscape, and oddly-framed photos always produce a clean avatar. [Learn more](/docs/operators/account-and-profile/#your-profile-photo)
 * **Session settings configurable in Admin panel** — Admins can now set session lifetime and toggle rolling renewal in Admin → Security → Session Settings, without editing server config files. [Learn more](/docs/admins/security-and-mfa/#session-length)
 * **NCS check-in prompt now offers a role choice** — NCS operators who haven't yet checked in now see two buttons in the check-in prompt: "Check In as NCS" and "Check In as Participant". Both open the standard check-in dialog. Previously, clicking "Check In" scrolled down to the inline NCS entry form, which was confusing for operators who just wanted to observe before joining.
 * **NCS role toggle in toolbar** — NCS operators can now step down to participant (or back up to NCS) using the crown icon in the toolbar. Stepping down removes the NCS badge and management controls for that session without losing the permanent role assignment. Stepping back up restores full NCS status. The button only appears for operators with an NCS assignment who are checked in. The last active NCS on an active net cannot step down. [Learn more](/docs/net-control/roles-and-stepping-away/#stepping-down-and-stepping-away)
@@ -1108,7 +1108,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Subscriber visibility for managers** — Admins, schedule managers, and co-managers can now view the schedule subscriber list directly in the Net Staff tab, including callsign, name, and email for users who subscribed via the bell or reminder prompt.
 * **Tabbed Net Staff modal** — The Net Staff dialog opened from the purple people icon is now organized into dedicated tabs: **Net Control Stations**, **Rotation Order**, **Schedule**, and **Subscribers**.
-* **Role-gated email actions in Net Staff modal** — Added **Email Staff**, **Email Subscribers**, and **Email ALL** actions for admins, net managers, and co-managers/co-owners to quickly notify the right groups about cancellations, schedule changes, and net topics.
+* **Role-gated email actions in Net Staff modal** — Added **Email Staff**, **Email Subscribers**, and **Email ALL** actions for admins, net managers, and co-managers/co-owners to quickly notify the right groups about cancellations, schedule changes, and net topics. [Learn more](/docs/net-managers/net-staff-and-rotation/#emailing-your-staff-or-subscribers)
 
 ## Notes
 
@@ -1312,7 +1312,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Merge Schedules** — Combine multiple net schedules into a single master schedule. All child nets, subscribers, staff, NCS rotation members, topic history, and schedule overrides are moved to the master. Source schedules are permanently deleted. Accessible via the merge (⑂) button on the Scheduler page. Only admins and schedule owners can merge.
+* **Merge Schedules** — Combine multiple net schedules into a single master schedule. All child nets, subscribers, staff, NCS rotation members, topic history, and schedule overrides are moved to the master. Source schedules are permanently deleted. Accessible via the merge (⑂) button on the Scheduler page. Only admins and schedule owners can merge. [Learn more](/docs/net-managers/recurring-schedules/#merging-schedules)
 
 ---
 
@@ -1388,7 +1388,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Per-user Chat System Messages Toggle** - Users can now hide or show system (activity) messages in the chat using a toolbar icon located to the left of the pop-out button; the preference is saved to the user's profile and persists across sessions.
 * **Announcements / General Traffic** - Nets now have a dedicated "Announcements" field separate from the net script. This provides a running list of upcoming events, club announcements, and general traffic items for NCS to reference during the net. Visible to all users via a megaphone icon button in the net toolbar. Supports Markdown formatting and can be opened in a floating window or new tab. Can be edited when creating or editing a net (new "Announcements" tab in net configuration). [Learn more](/docs/net-managers/scripts-and-announcements/#standing-announcements)
-* **Prior Topics Log** - Track previously used "Topic of the Week" prompts to avoid repetition. When a net closes with a topic enabled, the topic is automatically logged to history. A history icon button appears in the net toolbar (for nets created from templates) to view all past topics with dates. Helps NCS staff rotate topics and avoid reusing recent ones.
+* **Prior Topics Log** - Track previously used "Topic of the Week" prompts to avoid repetition. When a net closes with a topic enabled, the topic is automatically logged to history. A history icon button appears in the net toolbar (for nets created from templates) to view all past topics with dates. Helps NCS staff rotate topics and avoid reusing recent ones. [Learn more](/docs/operators/chat-and-polls/#prior-topics)
 * **Audio Stream URL** - Nets can now include a direct audio stream URL (Shoutcast, Broadcastify, etc.). A speaker icon appears in the net toolbar for easy listening. Works for both authenticated users and guests. [Learn more](/docs/net-managers/creating-a-net/)
 * **Unarchive from Archived List** - Added unarchive button directly to the Archived Nets dialog on the Dashboard (no need to open the net first) [Learn more](/docs/net-managers/cancelling-and-archiving/)
 * **In-App Changelog** - New floating info button shows recent changes with unread indicator

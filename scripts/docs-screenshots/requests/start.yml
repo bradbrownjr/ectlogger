@@ -61,9 +61,12 @@ shots:
     # toolbar as a first-time reader sees it.
     as: N1DUNE
     wait_for: 'table:visible tbody tr'
-    element: 'div:has(> span[aria-label="Check into net"])'
-    # The toolbar sits flush under the frequency chips, so any padding above
-    # it slices a row of chips into the figure.
+    # From the first button to the check-in button, not the whole 1440px
+    # toolbar row. The toolbar sits flush under the frequency chips, so any
+    # padding above it slices a row of chips into the figure.
+    element:
+      - 'span[aria-label="Search check-ins"]'
+      - 'span[aria-label="Check into net"]'
     pad: 0
     annotate:
       - selector: 'span[aria-label="Check into net"]'
@@ -143,15 +146,17 @@ shots:
     # aria-label, is "Start the net now". This net is scheduled for later, so
     # Open lobby shows to its left.
     wait_for: 'span[aria-label="Start the net now"]'
-    element: 'div:has(> span[aria-label="Start the net now"])'
-    pad: 0
+    # The buttons, not the whole 1440px toolbar row (see open-lobby-and-start).
+    element:
+      - 'span[aria-label="Open the lobby so stations can check in and chat before the net starts"]'
+      - 'span[aria-label="Edit net settings"]'
+    pad: 6
     annotate:
       - selector: 'span[aria-label="Start the net now"]'
         style: box
     alt: >
       The net toolbar on a net that has not started, with the Start net button
-      outlined in red, next to Open lobby and alongside Net info, Import,
-      Edit net, and Roles.
+      outlined in red, between Open lobby and Net info, Import, and Edit net.
     caption: >
       Start net starts the net. A net scheduled for later also shows Open lobby
       beside it.

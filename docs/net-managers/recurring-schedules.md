@@ -5,7 +5,7 @@ kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
 revised: 2026-10-22
-review_by: 2027-09-19
+review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/recurring-schedules/
 ---
@@ -51,6 +51,27 @@ Net staff, the rotation, and subscribers are never copied onto the net as a one-
 Anyone can subscribe to a schedule from its **Subscribe** button in the Scheduler, or from the same button on the dashboard card of any net the schedule created, which is the same bell used for "notify me" elsewhere in ECTLogger. A subscriber can opt into the net starting, the net closing (with the log attached), and a reminder before it begins, each controlled from their own [profile](/docs/operators/account-and-profile/) notification settings, independent of whether they're staff. Net staff get their own operational reminder regardless of whether they've subscribed, since running the net is a duty, not a preference. Schedule owners and co-managers can see the subscriber list from the schedule's **Net Staff** dialog or the Staff tab.
 
 A schedule can also be followed as a calendar or RSS feed without subscribing at all; see [Feeds](/docs/reference/feeds/).
+
+## Merging schedules
+
+If one net ended up with two or more schedules (one made before and one after a change of night, say), merge them into one so its history, subscribers, and staff are all in one place.
+
+1. On the **Schedule** page, click the merge button at the bottom right. It appears when you manage at least two schedules.
+2. Tick each schedule to merge, then click **Merge Selected**.
+3. Under **Select the master schedule**, choose the one to keep. The others are merged into it.
+4. Read the **Merge summary**, then click **Merge**.
+
+The summary shows how many nets, new subscribers, staff, and rotation members will move to the master schedule. Everything else moves with them: schedule overrides and prior topics. Anyone already on the master schedule isn't added twice, and rotation members from the other schedules join the end of its rotation.
+
+The master schedule keeps its own settings. Where another schedule's settings differ, such as its night and time, its check-in fields, or its script, they're listed under **Settings that differ** and are dropped. Copy anything you want to keep onto the master schedule before merging.
+
+The other schedules are deleted, and a merge can't be undone. Only a schedule's manager or an admin can merge it.
+
+<figure>
+  <img src="/docs/img/net-managers/merge-schedules.png"
+       alt="The Merge Schedules dialog: a choice of master schedule between two schedules, a Merge summary of the nets, subscribers, staff, and rotation members moving to it, and a list of settings that differ, which will be lost.">
+  <figcaption>The summary and the list of settings that differ come before anything is merged.</figcaption>
+</figure>
 
 ## Related
 

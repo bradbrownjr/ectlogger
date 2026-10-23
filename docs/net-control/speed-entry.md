@@ -16,7 +16,7 @@ When check-ins are coming in faster than you can click through a form for each o
 
 <figure>
   <img src="/docs/img/net-control/toolbar-speed-entry.png"
-       alt="The net control toolbar, with the leftmost button, labelled &quot;Bulk add&quot;, outlined in red. The rest of the row reads Search, Map, Traffic, Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS, Step away, Just listening, Check out, Close net.">
+       alt="The left end of the net control toolbar, with the leftmost button, labelled &quot;Bulk add&quot;, outlined in red. Search, Map, Traffic, Off-net, Announcements, Notes, Topics, and Stats follow.">
   <figcaption>The Bulk add button, leftmost in the net control toolbar.</figcaption>
 </figure>
 

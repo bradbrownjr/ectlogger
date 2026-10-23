@@ -11,7 +11,8 @@
  *
  * Usage:
  *   node capture.mjs                     capture everything in shots.yml
- *   node capture.mjs --only checking-in  capture shots whose id contains that
+ *   node capture.mjs --only checking-in  capture shots whose id contains that (a
+ *                                        comma-separated list for several)
  *   node capture.mjs --section operators capture one section
  *   node capture.mjs --list              print the manifest and exit
  *   node capture.mjs --keep-open         leave the browser context open on error
@@ -41,6 +42,10 @@ const REPO = resolve(HERE, '..', '..');
 // there, and this deployment reports ws://0.0.0.0:3000/ — the address it binds
 // on inside its own container, which is not reachable from here. Handing it the
 // WebSocket URL directly skips that lookup.
+// Widest capture, in CSS pixels, that still reads at about 80% of the app's
+// own size in the docs column. See the check before page.screenshot.
+const MAX_FIGURE_WIDTH = 1000;
+
 const BROWSERLESS_URL = process.env.BROWSERLESS_URL
   || 'ws://10.6.26.2:3000?token=nosi2QszI5M9eN';
 
@@ -120,7 +125,9 @@ if (sectionFilter && sectionFilter !== true) {
   shots = shots.filter((s) => s.section === sectionFilter);
 }
 if (onlyFilter && onlyFilter !== true) {
-  shots = shots.filter((s) => s.id.includes(onlyFilter));
+  // A comma-separated list re-captures several shots in one run.
+  const wanted = String(onlyFilter).split(',').map((w) => w.trim()).filter(Boolean);
+  shots = shots.filter((s) => wanted.some((w) => s.id.includes(w)));
 }
 
 if (listOnly) {
@@ -678,6 +685,20 @@ async function capture(browser, shot) {
       // overflow: hidden on its root, which silently truncates a full-page
       // capture to one screen; those shots use a tall viewport instead.
       options.fullPage = true;
+    }
+
+    // Readability: the docs column is 804px wide on a 1440px screen, so a
+    // capture wider than MAX_FIGURE_WIDTH CSS pixels shrinks the app's text
+    // below about 80% of its real size. Until 2026-10-23 toolbar figures
+    // captured the whole 1440px toolbar and rendered at 0.29x, unreadable.
+    // Crop to what the figure is about (element), or capture at a narrower
+    // viewport. A figure whose point is the whole screen sets `wide: true`.
+    const capturedWidth = options.clip ? options.clip.width : geometryOf(shot).width;
+    if (capturedWidth > MAX_FIGURE_WIDTH && !shot.wide) {
+      throw new Error(
+        `Captures ${Math.round(capturedWidth)}px wide, over ${MAX_FIGURE_WIDTH}px: `
+        + 'crop it with element, narrow the viewport, or set wide: true',
+      );
     }
 
     await page.screenshot(options);

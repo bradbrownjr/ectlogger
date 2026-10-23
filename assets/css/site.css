@@ -278,18 +278,15 @@ figcaption {
   line-height: 1.5;
 }
 
-/* A partial capture of one control, shown at its natural size inside a
-   sentence-sized block rather than blown up to the column width.
+/* Every figure fills the column, up to its own 2x pixel width. There is no
+   smaller cap for partial captures: a "control-figure" class used to hold them
+   to 420px, which rendered a full-width toolbar capture at 0.29x and dialogs at
+   about half size (removed 2026-10-23). A small capture is still sharp at
+   column width, because it was taken at device scale 2.
 
-   min(), not a bare 420px: this selector is more specific than the `figure img`
-   rule above, so a plain `max-width: 420px` replaced the 100% cap rather than
-   adding to it. On a phone the article column is about 330px wide, so every
-   one of these figures hung 90px off the right edge and scrolled the whole
-   page sideways -- reported 2026-09-19 against the sign-in figure in the
-   first-check-in tutorial, which was the first figure a new reader ever met. */
-figure.control-figure img {
-  max-width: min(420px, 100%);
-}
+   A figure that still shrinks (a whole-screen capture marked wide) opens at
+   full size when clicked; see assets/js/figures.js. */
+figure a.figure-zoom { display: block; cursor: zoom-in; }
 
 /* ========== CALLOUTS ==========
    A shape and a word, never color alone (WCAG 1.4.1). */

@@ -105,6 +105,7 @@ async def _build(db_path: Path, out_path: Path):
         NCSRotationMember, FormDefinition, Form, TrafficAction, AppSettings,
         FieldDefinition, CanHearReport, CoverageSite, CoverageAccess, CoverageContact,
         DrillPlan, DrillObjective, DrillEvent, TrafficTestCategory, OffNetLogEntry,
+        TopicHistory,
     )
     from app.traffic.exercise import mark_exercise_text
     from app.auth import (
@@ -433,6 +434,22 @@ async def _build(db_path: Path, out_path: Path):
                            to_station="Harbor County EMA", channel="Winlink",
                            message="Sent the shelter status report", message_id="4QX7T2KDM8RA",
                            status="pending", entered_by_user_id=users["K1CAMP"].id),
+        ])
+        await db.commit()
+
+        # ---- prior topics: tonight's, and a few earlier weeks with no net of
+        # their own here (docs/operators/chat-and-polls.md, Prior topics) ----
+        db.add_all([
+            TopicHistory(template_id=template_ares.id, net_id=net_active.id, used_date=started_at,
+                         topic="What's in your go-kit that you'd never leave without?"),
+        ] + [
+            TopicHistory(template_id=template_ares.id, used_date=started_at - timedelta(weeks=n), topic=t)
+            for n, t in [
+                (1, "Which antenna would you put up first after a storm?"),
+                (2, "How do you keep a radio charged when the power is out?"),
+                (3, "What was your first contact on the air?"),
+                (4, "Which repeater do you rely on most, and why?"),
+            ]
         ])
         await db.commit()
 

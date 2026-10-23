@@ -23,6 +23,9 @@ defaults:
   # actually wants to show one overrides this with its own empty hide list.
   hide:
     - '.MuiSnackbar-root'
+    # The floating What's New button, bottom left. At a 1000px window it sits
+    # over the edge of the content cards, and no figure is about it.
+    - 'button[aria-label="What''s new"]'
 
   local_storage:
     # Light mode throughout. The repository made this call once already
@@ -36,6 +39,9 @@ shots:
     section: landing
     page: /
     route: /nets/{{net:active}}
+    # The whole screen is the point of this figure: allowed past the
+    # 1000px limit, and it opens full size when clicked in the docs.
+    wide: true
     as: W1PINE
     # ":visible" is Playwright's own pseudo-class, not CSS. The net view renders
     # a desktop table and a mobile one, only one of which is laid out, so every

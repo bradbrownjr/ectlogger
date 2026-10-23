@@ -25,7 +25,7 @@ Every account holds exactly one global role, shown as a colored chip in the Role
 
 Because NCS and Guest don't currently gate anything, the role you'll actually use day to day is Admin vs. User: promote someone to Admin when they need this panel, and leave everyone else as User.
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/admins/change-role-dialog.png"
        alt="The Edit User dialog, open for W1PINE, showing the Name, Callsign, and Email fields (each with its own padlock icon) followed by the rest of the profile fields and the Role picker.">
   <figcaption>Every profile field, and the role, live in one dialog. Changing the email is how you recover an account that lost access to the address it signed up with -- both the old and new address get notified. The padlock on each field stops the person from changing it themselves afterward.</figcaption>

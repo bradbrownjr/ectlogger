@@ -133,6 +133,7 @@ Then paste the figure into the page:
 | `with_online` | no | Callsigns to sign in and park on the same route first, so the app sees them as present |
 | `full_page` | no | Capture the scrolled page. Rarely right: the app shell sets `overflow: hidden` on its root, which truncates a full-page capture to one screen. Use a tall `viewport` instead |
 | `viewport` | no | `{width, height}`, default 1440x1000 |
+| `wide` | no | Allow a capture wider than 1000 CSS pixels. Only for a figure whose point is the whole screen; everything else crops with `element` or narrows the viewport, or its text is too small to read in the docs column |
 | `mobile` | no | Touch and mobile emulation, for the field pages |
 | `hide` | no | Selectors to make invisible, for anything that would date the figure |
 | `annotate` | no | Red boxes and underlines, described above |

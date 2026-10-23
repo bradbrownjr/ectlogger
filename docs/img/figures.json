@@ -38,7 +38,7 @@
   "admins/branding-default-theme": {
     "path": "/docs/img/admins/branding-default-theme.png",
     "alt": "The Default Theme card on the Branding tab, with five named colour swatches -- ECTLogger Blue (currently selected, ticked), Ocean, Forest, Sunset, and Berry -- and a \"Set as System Default\" button outlined in red, greyed out because the selected swatch is already the default.\n",
-    "caption": "Applies only to visitors who have never picked a theme of their own in Profile \u2192 Settings.\n",
+    "caption": "Applies only to visitors who have never picked a theme of their own in Profile → Settings.\n",
     "page": "/docs/admins/branding-and-themes/"
   },
   "admins/branding-logo": {
@@ -133,7 +133,7 @@
   },
   "net-control/check-in-at-a-site": {
     "path": "/docs/img/net-control/check-in-at-a-site.png",
-    "alt": "The New Check-in form on a phone, with its Location box outlined in red and open on a list of the net's sites: Example County EOC, Windham, ME; North Office, Bridgton, ME; Naples Shelter, Naples, ME; Freeport Shelter, Freeport, ME; and Gray Weather Office FN43rv.\n",
+    "alt": "The New Check-in form on a phone, with its Location box outlined in red and open on a list of the net's sites, grouped by type: under Official office, Example County EOC, Windham, ME; North Office, Bridgton, ME; and Gray Weather Office FN43rv; under Shelter, Naples Shelter, Naples, ME, and Freeport Shelter, Freeport, ME.\n",
     "caption": "On a net with sites, Location offers them. Picking one puts the station at that site.",
     "page": "/docs/net-managers/coverage-drills/"
   },
@@ -149,10 +149,16 @@
     "caption": "Once a net is closed, its exports are open to anyone who can see the net -- only Archive and Delete stay staff-only.",
     "page": "/docs/net-control/closing-the-net/"
   },
-  "net-control/command-bar-ncs": {
-    "path": "/docs/img/net-control/command-bar-ncs.png",
-    "alt": "The net control command bar as Net Control Station sees it on an active net, reading left to right: Bulk add, Search, Map, Traffic, Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS, Step away, Just listening, Check out, Close net.\n",
-    "caption": "Every button here is gated by who you are and what state the net is in -- a Standard participant, a Logger, and a Relay operator each see a different subset of this same row.\n",
+  "net-control/command-bar-info": {
+    "path": "/docs/img/net-control/command-bar-info.png",
+    "alt": "The information buttons of the net control command bar, left to right: Bulk add, Search, Map, Traffic, Off-net, Announcements, Notes, Topics, and Stats.\n",
+    "caption": "The information group, as Net Control sees it on an active net.",
+    "page": "/docs/net-control/the-net-control-desk/"
+  },
+  "net-control/command-bar-manage": {
+    "path": "/docs/img/net-control/command-bar-manage.png",
+    "alt": "The management buttons of the net control command bar, left to right: the Import icon (its label is dropped when the bar is full), Edit net, Roles, Role: NCS, Step away, Just listening, Check out, and Close net.\n",
+    "caption": "The management group. A Logger or Relay operator sees fewer of these.",
     "page": "/docs/net-control/the-net-control-desk/"
   },
   "net-control/coverage-map-overlay": {
@@ -265,7 +271,7 @@
   },
   "net-control/toolbar-speed-entry": {
     "path": "/docs/img/net-control/toolbar-speed-entry.png",
-    "alt": "The net control toolbar, with the leftmost button, labelled \"Bulk add\", outlined in red. The rest of the row reads Search, Map, Traffic, Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS, Step away, Just listening, Check out, Close net.\n",
+    "alt": "The left end of the net control toolbar, with the leftmost button, labelled \"Bulk add\", outlined in red. Search, Map, Traffic, Off-net, Announcements, Notes, Topics, and Stats follow.\n",
     "caption": "The Bulk add button, leftmost in the net control toolbar.",
     "page": "/docs/net-control/speed-entry/"
   },
@@ -335,11 +341,23 @@
     "caption": "Each prepared message shows where it is: not sent, sent, received, or delivered.\n",
     "page": "/docs/net-managers/drill-plans/"
   },
+  "net-managers/email-staff-dialog": {
+    "path": "/docs/img/net-managers/email-staff-dialog.png",
+    "alt": "The Email Staff dialog for a weekly net, with To set to Net Staff, then empty Subject and Message fields, and Cancel and Send Email buttons. The To field is outlined in red.\n",
+    "caption": "Choose Net Staff, Net Subscribers, or both under To.",
+    "page": "/docs/net-managers/net-staff-and-rotation/"
+  },
   "net-managers/lobby-and-close-toggles": {
     "path": "/docs/img/net-managers/lobby-and-close-toggles.png",
     "alt": "Two switches on the Edit Net Basic Info tab, both off: \"Open the lobby automatically before the net\" and \"Close this net automatically after inactivity,\" each with an explanatory line beneath it.\n",
     "caption": "Both settings are off by default on every net and every schedule.",
     "page": "/docs/net-managers/lobby-and-auto-close/"
+  },
+  "net-managers/merge-schedules": {
+    "path": "/docs/img/net-managers/merge-schedules.png",
+    "alt": "The Merge Schedules dialog: a choice of master schedule between two schedules, a Merge summary of the nets, subscribers, staff, and rotation members moving to it, and a list of settings that differ, which will be lost.\n",
+    "caption": "The summary and the list of settings that differ come before anything is merged.",
+    "page": "/docs/net-managers/recurring-schedules/"
   },
   "net-managers/net-export-toolbar": {
     "path": "/docs/img/net-managers/net-export-toolbar.png",
@@ -367,7 +385,7 @@
   },
   "net-managers/open-lobby-and-start": {
     "path": "/docs/img/net-managers/open-lobby-and-start.png",
-    "alt": "The toolbar of a net that has not started, with two buttons outlined in red at its left: Open lobby, with an open-door icon, and Start net, with a play icon.\n",
+    "alt": "The toolbar of a net that has not started, with two buttons outlined in red at its left: Open lobby, with an open-door icon, and Start net, with a play icon. Net info, Import, and Edit net follow.\n",
     "caption": "Before the scheduled start, a net offers both Open lobby and Start net.",
     "page": "/docs/net-managers/lobby-and-auto-close/"
   },
@@ -473,11 +491,23 @@
     "caption": "Other stations' rows are read-only on a phone; your own status is still yours to change.",
     "page": "/docs/operators/in-the-field/"
   },
+  "operators/prior-topics": {
+    "path": "/docs/img/operators/prior-topics.png",
+    "alt": "The Prior Topics dialog for a weekly net: a search box, then five topics, newest first, with their dates on the left. The newest, asked on a net still in ECTLogger, has an open-in-new-tab link to that net.\n",
+    "caption": "Prior topics, newest first. A topic asked on a net in ECTLogger links back to it.",
+    "page": "/docs/operators/chat-and-polls/"
+  },
   "operators/profile-coverage-map": {
     "path": "/docs/img/operators/profile-coverage-map.png",
     "alt": "The Coverage tab of the Profile page, headed Your Home Station Coverage, with a map of the lakes region and coast of southern Maine showing a marker for each station KC1HILL has heard from home, and a note below that the map only shows stations they heard.\n",
     "caption": "Every station you've heard from home, across every net, on one map.",
     "page": "/docs/operators/reporting-what-you-hear/"
+  },
+  "operators/profile-photo-crop": {
+    "path": "/docs/img/operators/profile-photo-crop.png",
+    "alt": "The Crop Profile Photo window, with a photo of a radio tower on a hill inside a circular crop guide, a Zoom slider below it, and Cancel and Crop & Upload buttons. Crop & Upload is outlined in red.\n",
+    "caption": "Position the photo in the circle, then Crop & Upload. Only what's inside the square is saved.",
+    "page": "/docs/operators/account-and-profile/"
   },
   "operators/schedule-calendar": {
     "path": "/docs/img/operators/schedule-calendar.png",
@@ -595,7 +625,7 @@
   },
   "start/start-net-button": {
     "path": "/docs/img/start/start-net-button.png",
-    "alt": "The net toolbar on a net that has not started, with the Start net button outlined in red, next to Open lobby and alongside Net info, Import, Edit net, and Roles.\n",
+    "alt": "The net toolbar on a net that has not started, with the Start net button outlined in red, between Open lobby and Net info, Import, and Edit net.\n",
     "caption": "Start net starts the net. A net scheduled for later also shows Open lobby beside it.\n",
     "page": "/docs/start/run-your-first-net/"
   }

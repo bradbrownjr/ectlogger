@@ -4,8 +4,8 @@ summary: Talking alongside the net without talking over it: replying, editing, m
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-19
-review_by: 2027-09-19
+revised: 2026-10-23
+review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/chat-and-polls/
 ---
@@ -45,6 +45,22 @@ Hovering anyone else's message shows a mute icon: **mute this station**, for you
 If a net has a **Topic of the Week** or a **poll** running, you don't answer it in chat. You answer it right in the [check-in form](/docs/operators/checking-in/), which shows the live question as context above a text field for your response. Results (a tally for a poll, a list of responses for a topic) are shown as a summary once the net closes.
 
 This is a separate feature from chat itself; the two happen to be enabled by the same kind of net (a community/club net rather than a formal traffic net), which is why they're covered on one page.
+
+### Prior topics
+
+A net from a schedule keeps a history of its topics. Once the net has check-ins, **Topics** on the net toolbar opens **Prior Topics**: every topic the schedule has used, newest first, with the date on the left and a search box to find an old one. A topic asked on a net in ECTLogger links to that net, which opens in a new tab so you don't lose your place.
+
+A topic goes into the history as soon as net control sets it, not only when the net closes. The net manager and the NCS can also edit or delete an entry, and **Add Historical Topic** records one from before the club used ECTLogger. An entry added for a date that's still ahead becomes the topic of that date's net. On the net's Edit page, the topic field offers the prior topics as suggestions, so it's easy to see whether a question has been asked before.
+
+<figure>
+  <img src="/docs/img/operators/prior-topics.png"
+       alt="The Prior Topics dialog for a weekly net: a search box, then five topics, newest first, with their dates on the left. The newest, asked on a net still in ECTLogger, has an open-in-new-tab link to that net.">
+  <figcaption>Prior topics, newest first. A topic asked on a net in ECTLogger links back to it.</figcaption>
+</figure>
+
+## Chat after the net closes
+
+Chat goes read-only when the net closes, so the record stops where the net did. A net manager can keep it open a little longer, for the conversations that carry on after the last station is logged: **Keep chat open after closing** on the net or schedule's settings, for 15, 30, or 60 minutes. While that window is open you can still send messages, and they're part of the net's chat like any other. When it ends, the box goes read-only on its own.
 
 ## Activity, separately from chat
 

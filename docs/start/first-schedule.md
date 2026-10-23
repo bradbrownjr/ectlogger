@@ -40,7 +40,7 @@ Click the **Schedule** tab.
 
 Set **Schedule Type** to **Weekly**, pick the **Day of Week**, and set the start time. The time is in your instance's local timezone, which is shown in the field's own label so there is no guessing.
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/start/schedule-recurrence.png"
        alt="The Schedule tab of the schedule form, with Schedule Type set to Weekly and outlined in red, and Day of Week and Time fields below it.">
   <figcaption>Weekly, a day, and a time. From here on, the net creates itself.</figcaption>

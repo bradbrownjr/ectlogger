@@ -4,8 +4,8 @@ summary: Who is allowed to run your net, adding operators who haven't signed up 
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-19
-review_by: 2027-09-19
+revised: 2026-10-23
+review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/net-staff-and-rotation/
 ---
@@ -81,6 +81,24 @@ The link is above the subscriber list in two places: the **Subscribers** tab of 
 Whoever opens the link sees the net's name, description, when it runs, and its frequencies, with one **Subscribe** button. Someone who isn't signed in gets **Sign in to subscribe** instead and is brought back to the same page afterward, which also works for a person creating their account on the spot. Opening the link never subscribes anybody by itself; they always click the button.
 
 The link doesn't expire and it isn't a secret. It shows nothing the public Schedule page doesn't already show, so it's safe to post in the open. A link to a schedule that has since been deactivated tells the visitor the net is no longer scheduled.
+
+## Emailing your staff or subscribers
+
+The **Staff** dialog, from a net or from its schedule, has an **Email** button for the schedule manager, co-managers, and admins. Pick who it goes to under **To**:
+
+- **Net Staff** - the schedule's manager and its active staff. On a net with no schedule, the net's manager and whoever holds NCS on it.
+- **Net Subscribers** - everyone subscribed to the schedule.
+- **Both Staff and Subscribers** - each person gets one copy, even if they're on both lists.
+
+Write a **Subject** and a **Message**, then click **Send Email** (or press Ctrl+Enter). The subject arrives with the net's name in front, and the email says who sent it. Only people who have email notifications turned on in their profile get it. When it's sent, the dialog says how many people it went to.
+
+A draft or scheduled net's card also has an **Email** button, which writes to that schedule's subscribers only. It's the quick way to tell everyone a net is cancelled or moved.
+
+<figure>
+  <img src="/docs/img/net-managers/email-staff-dialog.png"
+       alt="The Email Staff dialog for a weekly net, with To set to Net Staff, then empty Subject and Message fields, and Cancel and Send Email buttons. The To field is outlined in red.">
+  <figcaption>Choose Net Staff, Net Subscribers, or both under To.</figcaption>
+</figure>
 
 ## Related
 

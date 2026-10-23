@@ -4,8 +4,8 @@ summary: Every control on the net view, what it does, and which ones you'll actu
 kind: Explanation
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-25
-review_by: 2027-09-19
+revised: 2026-10-23
+review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/the-net-control-desk/
 ---
@@ -18,27 +18,37 @@ What you actually see depends on who you are. A Standard participant gets a hand
 
 ## The command bar
 
-<figure>
-  <img src="/docs/img/net-control/command-bar-ncs.png"
-       alt="The net control command bar as Net Control Station sees it on an active net, reading left to right: Bulk add, Search, Map, Traffic, Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS, Step away, Just listening, Check out, Close net.">
-  <figcaption>Every button here is gated by who you are and what state the net is in. A Standard participant, a Logger, and a Relay operator each see a different subset of this same row.</figcaption>
-</figure>
 
 The bar is two groups run together with a thin divider between them: information buttons on the left (things that show you something), and management buttons on the right (things that change the net or your own participation in it). On a narrow window the bar drops labels first, then moves whichever buttons matter least into a **More** menu, lowest-priority first. Nothing is ever hidden just because a phone-sized breakpoint says so, only because there's genuinely no room.
 
-Here's what each one does, grouped the way the toolbar groups them.
+Every button is gated by who you are and what state the net is in, so a Standard participant, a Logger, and a Relay operator each see a different part of the same row. Here's what each one does, grouped the way the toolbar groups them.
 
 ### Information (left side)
+
+<figure>
+  <img src="/docs/img/net-control/command-bar-info.png"
+       alt="The information buttons of the net control command bar, left to right: Bulk add, Search, Map, Traffic, Off-net, Announcements, Notes, Topics, and Stats.">
+  <figcaption>The information group, as Net Control sees it on an active net.</figcaption>
+</figure>
 
 - **Bulk add** — opens a box for entering one or many check-ins at once, fast. Also known as speed entry. Covered in full on [Speed entry](/docs/net-control/speed-entry/). Only NCS and Logger see it, and only once the net has at least one check-in.
 - **Search** — filters the check-in list by callsign, name, or location as you type. Doesn't touch the underlying data, just what's shown.
 - **Map** — plots every checked-in station with a location ECTLogger could parse, including ones already checked out. See [Location formats](/docs/reference/location-formats/) for what it can and can't read.
 - **Coverage** — station-to-station "who can hear whom" reports, if the net has coverage logging turned on. Not every net does. See [Station coverage](/docs/net-control/station-coverage/).
 - **Traffic** — opens the traffic panel for this net, if the net has formal traffic handling enabled and you're the net's manager, an admin, or hold an active NCS or Logger role. A Standard participant never sees this button, even on a traffic-enabled net. See [Handling traffic](/docs/net-control/handling-traffic/).
-- **Announcements** / **Notes** / **Topics** / **Stats** — read-only views of the schedule's announcements, this net's own notes, prior weeks' topic-of-the-week answers, and this net's statistics page.
+- **Off-net** — the [off-net log](/docs/net-control/off-net-log/), for contacts your stations make away from this net, such as a check-in on a state net or a Winlink message.
+- **Drill plan** — opens the net's [drill plan](/docs/net-managers/drill-plans/) in a new tab, when it has one.
+- **Script** / **Announcements** / **Notes** / **Topics** / **Stats** — read-only views of the net script, the schedule's announcements, this net's own notes, the schedule's [prior topics](/docs/operators/chat-and-polls/#prior-topics), and this net's statistics page.
+- **Paperwork** — saves the script, the schedule's announcements, and this net's notes as one PDF to print. See [Scripts, notes, and announcements](/docs/net-managers/scripts-and-announcements/).
 - **Audio** and **Website**, when the net has a stream URL or an info URL set, open those in a new tab.
 
 ### Management (right side)
+
+<figure>
+  <img src="/docs/img/net-control/command-bar-manage.png"
+       alt="The management buttons of the net control command bar, left to right: the Import icon (its label is dropped when the bar is full), Edit net, Roles, Role: NCS, Step away, Just listening, Check out, and Close net.">
+  <figcaption>The management group. A Logger or Relay operator sees fewer of these.</figcaption>
+</figure>
 
 - **Import** — backfills check-ins from a CSV, for a net that ran off-app or needs bulk correction. Shown to the net's manager, an admin, anyone currently acting as NCS, Logger, or Relay, and the schedule's net staff, whether or not they've taken a role on this occurrence yet. This is a net-manager-flavored tool; day-to-day logging almost never needs it.
 - **Edit net** — the net's settings form. Staff only, and it stays available even after the net closes, since a typo in the log sometimes isn't found until later.

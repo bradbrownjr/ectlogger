@@ -16,28 +16,41 @@
 
 shots:
   # ========== The net control desk (tour) ==========
-  - id: command-bar-ncs
+  # The command bar in two figures, one per group. The whole row is about
+  # 1400px wide, which rendered at 0.58x in the docs column; each group alone
+  # reads at full size. No single selector wraps a group (a plain flex Box,
+  # see NetViewHeader.tsx), so each clip is its first and last button.
+  - id: command-bar-info
     section: net-control
     page: /docs/net-control/the-net-control-desk/
     route: /nets/{{net:active}}
     as: W1PINE
     wait_for: 'table:visible tbody tr'
-    # No single selector wraps the whole command bar (it is a plain flex Box
-    # with no id/aria-label of its own -- see NetViewHeader.tsx), so the clip
-    # is the union of the row's first and last button, which spans the row.
     element:
       - 'span[aria-label="Bulk add multiple check-ins"]'
-      - 'span[aria-label="Close net"]'
-    pad: 10
+      - 'span[aria-label="Net statistics"]'
+    pad: 8
     alt: >
-      The net control command bar as Net Control Station sees it on an active
-      net, reading left to right: Bulk add, Search, Map, Traffic,
-      Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS,
-      Step away, Just listening, Check out, Close net.
-    caption: >
-      Every button here is gated by who you are and what state the net is in
-      -- a Standard participant, a Logger, and a Relay operator each see a
-      different subset of this same row.
+      The information buttons of the net control command bar, left to right:
+      Bulk add, Search, Map, Traffic, Off-net, Announcements, Notes, Topics,
+      and Stats.
+    caption: The information group, as Net Control sees it on an active net.
+
+  - id: command-bar-manage
+    section: net-control
+    page: /docs/net-control/the-net-control-desk/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    element:
+      - 'span[aria-label="Import check-ins from CSV"]'
+      - 'span[aria-label="Close net"]'
+    pad: 8
+    alt: >
+      The management buttons of the net control command bar, left to right:
+      the Import icon (its label is dropped when the bar is full), Edit net,
+      Roles, Role: NCS, Step away, Just listening, Check out, and Close net.
+    caption: The management group. A Logger or Relay operator sees fewer of these.
 
   - id: toolbar-speed-entry
     section: net-control
@@ -45,18 +58,19 @@ shots:
     route: /nets/{{net:active}}
     as: W1PINE
     wait_for: 'table:visible tbody tr'
+    # The information group only, not the whole ~1400px row (see
+    # command-bar-info).
     element:
       - 'span[aria-label="Bulk add multiple check-ins"]'
-      - 'span[aria-label="Close net"]'
-    pad: 10
+      - 'span[aria-label="Net statistics"]'
+    pad: 8
     annotate:
       - selector: 'span[aria-label="Bulk add multiple check-ins"]'
         style: box
     alt: >
-      The net control toolbar, with the leftmost button, labelled "Bulk add",
-      outlined in red. The rest of the row reads Search, Map, Traffic,
-      Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS,
-      Step away, Just listening, Check out, Close net.
+      The left end of the net control toolbar, with the leftmost button,
+      labelled "Bulk add", outlined in red. Search, Map, Traffic, Off-net,
+      Announcements, Notes, Topics, and Stats follow.
     caption: The Bulk add button, leftmost in the net control toolbar.
 
   # ========== Logging check-ins ==========
@@ -223,6 +237,9 @@ shots:
     # because the rest of this section's figures are taken from it and the
     # panel renders identically from either.
     route: /nets/{{net:active}}
+    # The whole screen is the point of this figure: allowed past the
+    # 1000px limit, and it opens full size when clicked in the docs.
+    wide: true
     as: W1PINE
     # Wider than the usual 1440 so the Traffic panel's own table has room for
     # its Disposition column; at 1440 the panel cuts the status chip in half.
@@ -371,7 +388,7 @@ shots:
     route: /nets/{{net:active}}/pane/check-ins
     as: W1PINE
     viewport:
-      width: 1100
+      width: 1000
       height: 750
     wait_for: 'table:visible tbody tr'
     alt: >
@@ -383,6 +400,9 @@ shots:
     section: net-control
     page: /docs/net-control/multiple-monitors/
     route: /nets/{{net:active}}
+    # The whole screen is the point of this figure: allowed past the
+    # 1000px limit, and it opens full size when clicked in the docs.
+    wide: true
     as: W1PINE
     # xl and up is the only width where the left dock column exists
     # (useLayoutTier.ts). Scale 1, or a 2400px-wide page becomes a 4800px PNG.
@@ -408,6 +428,9 @@ shots:
     section: net-control
     page: /docs/net-control/multiple-monitors/
     route: /nets/{{net:active}}
+    # The whole screen is the point of this figure: allowed past the
+    # 1000px limit, and it opens full size when clicked in the docs.
+    wide: true
     as: W1PINE
     viewport:
       width: 1440
@@ -567,6 +590,9 @@ shots:
     section: net-control
     page: /docs/net-control/station-coverage/
     route: /nets/{{net:coverage}}
+    # The whole screen is the point of this figure: allowed past the
+    # 1000px limit, and it opens full size when clicked in the docs.
+    wide: true
     as: W1PINE
     viewport:
       width: 1440
@@ -683,7 +709,7 @@ shots:
     route: /nets/{{net:set}}/pane/coverage
     as: W1PINE
     viewport:
-      width: 1280
+      width: 1000
       height: 1800
     wait_for: 'text=Reaching the primary sites'
     element:
@@ -708,7 +734,7 @@ shots:
     route: /nets/{{net:set}}/pane/coverage
     as: W1PINE
     viewport:
-      width: 1280
+      width: 1000
       height: 2400
     wait_for: '.leaflet-marker-icon:visible'
     steps:

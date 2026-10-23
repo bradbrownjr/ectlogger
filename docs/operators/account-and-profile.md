@@ -4,8 +4,8 @@ summary: Your callsign, your default location, your email preferences, and what 
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-29
-review_by: 2027-09-19
+revised: 2026-10-23
+review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/account-and-profile/
 ---
@@ -20,7 +20,7 @@ Type your email address on the sign-in page, click **Send Magic Link**, and clic
 
 You can also set a password as a fallback for when email delivery is down, and turn on two-factor authentication on top of either. Both live on the Profile page's **Security** tab, and both are covered in [signing in](/docs/operators/signing-in/).
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/operators/account-profile-tab.png"
        alt="The Profile page's Profile tab, showing the Name, Amateur Radio Call Sign, GMRS Call Sign, SKYWARN Spotter Number, and Default Location fields, with Save Changes at the bottom.">
   <figcaption>Your profile identity fields. Only Name is required.</figcaption>
@@ -47,6 +47,24 @@ If a field is greyed out with "Locked by an administrator" beneath it, an admin 
 
 **Notifications** tab is the email switchboard: a master switch, then per-event toggles for a subscribed net starting, a subscribed net closing (with the log attached, optionally as an [ICS-309](/docs/reference/emails/) form), a reminder an hour before a scheduled net, and an opt-in daily digest of what's new in ECTLogger.
 
+## Your profile photo
+
+Your photo appears next to your callsign in check-in lists and chat. Until you upload one, ECTLogger uses your [Gravatar](https://gravatar.com) if your email address has one, or else a circle with your initial. An administrator can turn Gravatar off for the whole site, in which case it's always your initial.
+
+To use a photo of your own:
+
+1. On the Profile page's **Profile** tab, click **Upload Photo** and pick a PNG, JPEG, or WebP image.
+2. A **Crop Profile Photo** window opens. Drag the photo to position it in the circle, and use the **Zoom** slider (or scroll, or pinch on a phone) to fill it.
+3. Click **Crop & Upload**.
+
+Only the cropped square is uploaded, so a tall phone photo doesn't arrive squashed or sideways. **Replace Photo** swaps it for another, and **Remove** goes back to Gravatar or your initial.
+
+<figure>
+  <img src="/docs/img/operators/profile-photo-crop.png"
+       alt="The Crop Profile Photo window, with a photo of a radio tower on a hill inside a circular crop guide, a Zoom slider below it, and Cancel and Crop &amp; Upload buttons. Crop &amp; Upload is outlined in red.">
+  <figcaption>Position the photo in the circle, then Crop &amp; Upload. Only what's inside the square is saved.</figcaption>
+</figure>
+
 ## What other people see about you
 
-Click any callsign or avatar in a check-in list, or a callsign in chat, and a popup shows your name, avatar, and (if you added one) your website link, plus a QRZ.com link built from your callsign automatically. This works even for a check-in with no ECTLogger account behind it (someone Net Control logged by voice); the popup then shows whatever name and callsign were entered, without account details like a website link. Net Control and Loggers click the avatar, since clicking a callsign opens the row for them to edit. See [Checking in](/docs/operators/checking-in/) for what a check-in with no account means.
+Click any callsign or avatar in a check-in list, or a callsign in chat, and a popup shows your name, avatar, and (if you added one) your website link, plus a QRZ.com link built from your callsign automatically. It also shows your role in the net you're both in, if you hold one, how many check-ins and nets you have, your most recent nets, and the nets you check into most. This works even for a check-in with no ECTLogger account behind it (someone Net Control logged by voice); the popup then shows whatever name and callsign were entered, without account details like a website link. Net Control and Loggers click the avatar, since clicking a callsign opens the row for them to edit. See [Checking in](/docs/operators/checking-in/) for what a check-in with no account means.

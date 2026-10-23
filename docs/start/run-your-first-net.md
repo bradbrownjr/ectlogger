@@ -26,7 +26,7 @@ The form has seven tabs across the top, because it is the same form used to set 
 
 On **Basic Info**, put something in **Schedule Name**. It is the net's name, whatever the label says. Call it what it is: "Thursday practice", "KC1HILL test net", whatever will make sense to you in a week's time.
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/start/create-net-name.png"
        alt="The Create Net form's Basic Info tab, with the Schedule Name field outlined in red at the top, above the Description and Info URL fields.">
   <figcaption>The name, and a frequency on the Communication Plan tab, are the only two things the form insists on.</figcaption>
@@ -44,9 +44,9 @@ Your net exists, but it is a draft. Nobody can check in yet.
 
 Click **Start net** on the toolbar.
 
-<figure class="control-figure">
+<figure>
   <img src="/docs/img/start/start-net-button.png"
-       alt="The net toolbar on a net that has not started, with the Start net button outlined in red, next to Open lobby and alongside Net info, Import, Edit net, and Roles.">
+       alt="The net toolbar on a net that has not started, with the Start net button outlined in red, between Open lobby and Net info, Import, and Edit net.">
   <figcaption>Start net starts the net. A net scheduled for later also shows Open lobby beside it.</figcaption>
 </figure>
 
