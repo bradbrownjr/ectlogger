@@ -474,6 +474,11 @@ shots:
     steps:
       - click: 'button:has-text("192.0.2.77") >> nth=0'
       - wait_for: 'text=accounts have used this address'
+      # The box above loads separately from the list. Wait for the list's own
+      # count, or the figure shows the unfiltered list mid-load, including
+      # this tool's sign-ins from the LAN.
+      - wait_for: 'text=3 entries'
+      - hover: 'input[placeholder^="Search callsigns"]'
     element: '[role="tabpanel"]:visible'
     pad: 8
     annotate:

@@ -628,6 +628,24 @@ async function capture(browser, shot) {
       await page.waitForTimeout(200);
     }
 
+    // Never publish a private network address. The demo backend records
+    // this tool's own sign-ins from the LAN it runs on (Brad's home subnet),
+    // and the first Activity figure went out showing them because it was
+    // captured before its filtered list had loaded (2026-10-23). Figures use
+    // the documentation ranges (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24).
+    const privateAddress = await page.evaluate(() => {
+      const match = document.body.innerText.match(
+        /\b(10\.\d{1,3}|192\.168|172\.(1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b/,
+      );
+      return match ? match[0] : null;
+    });
+    if (privateAddress) {
+      throw new Error(
+        `The page shows the private address ${privateAddress}. Figures are public: `
+        + 'wait for the view that shows only demo data, or hide the element.',
+      );
+    }
+
     const annotationBoxes = shot.annotate ? await annotate(page, shot.annotate) : [];
 
     const outPath = join(REPO, 'docs', 'img', shot.section, `${shot.id}.png`);
