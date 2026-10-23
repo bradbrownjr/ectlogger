@@ -17,7 +17,7 @@ from app.schemas import (
     Token, UserResponse, MagicLinkRequest, MagicLinkVerify, MagicLinkResend,
     PasswordLoginRequest, LoginResult, PasswordSetRequest,
     MfaSetupStartResult, MfaSetupConfirmRequest, MfaSetupConfirmResult,
-    MfaReplaceStartRequest, MfaDisableRequest,
+    MfaReplaceStartRequest, MfaDisableRequest, EmailChangeRequest, EmailChangeConfirm,
 )
 from app.auth import (
     create_access_token, create_magic_link_token, verify_magic_link_token,
@@ -31,6 +31,10 @@ from app.email_service import EmailService
 from app.config import settings
 from app.logger import logger
 from app.security import get_client_ip
+from app.audit import record_event, user_label
+from app.services.account_email import (
+    apply_email_change, create_email_change_token, email_in_use, read_email_change_token,
+)
 from app.utils import mask_email
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -152,6 +156,8 @@ async def get_or_create_user(db: AsyncSession, email: str, name: Optional[str], 
     )
     db.add(user)
     await db.flush()
+    record_event(db, "user.created", user, target_type="user", target_id=user.id,
+                 target_label=user_label(user))
     
     # Link the contact to the new user
     if contact and not contact.user_id and prefill_callsign:
@@ -229,6 +235,15 @@ async def _resolve_mfa(db: AsyncSession, user: User, totp_code: Optional[str]) -
     if totp_code and (verify_totp_code(secret, totp_code) or await _consume_backup_code(db, user, totp_code)):
         return "ok"
     return "mfa_required"
+
+
+async def _record_mfa_failure(db: AsyncSession, user: User, totp_code: Optional[str], method: str) -> None:
+    """Log a wrong two-factor code. "mfa_required" with no code is just the
+    first step of a normal sign-in (the page then asks for one), not a
+    failure."""
+    if totp_code:
+        record_event(db, "auth.mfa_failed", user, details={"method": method})
+        await db.commit()
 
 
 def _require_non_admin_mfa_self_service(user: User):
@@ -371,6 +386,9 @@ async def verify_magic_link(
     # Check if user is banned (is_active = False)
     if not user.is_active:
         logger.banned_access(user.email, client_ip)
+        record_event(db, "auth.banned_sign_in_refused", user, actor_label=user_label(user) or user.banned_callsign,
+                     details={"method": "email link"})
+        await db.commit()
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account has been locked. Please contact an administrator for assistance."
@@ -379,9 +397,12 @@ async def verify_magic_link(
     mfa_status = await _resolve_mfa(db, user, payload.totp_code)
     if mfa_status == "mfa_required":
         logger.auth_failure("Magic link valid, MFA code required", client_ip, email=user.email)
+        await _record_mfa_failure(db, user, payload.totp_code, "email link")
         return LoginResult(login_status="mfa_required")
 
     logger.auth_success(user.email, client_ip)
+    record_event(db, "auth.signed_in", user, details={"method": "email link"})
+    await db.commit()
 
     # Create access token using admin-configured lifetime
     lifetime_days, _ = await get_session_config(db)
@@ -416,6 +437,9 @@ async def password_login(
 
     if user and not user.is_active:
         logger.banned_access(user.email, client_ip)
+        record_event(db, "auth.banned_sign_in_refused", user, actor_label=user_label(user) or user.banned_callsign,
+                     details={"method": "password"})
+        await db.commit()
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account has been deactivated. Please contact an administrator."
@@ -438,8 +462,12 @@ async def password_login(
     if not user or not user.password_hash or not verify_password(payload.password, user.password_hash):
         if user:
             user.failed_password_attempts = (user.failed_password_attempts or 0) + 1
-            if user.failed_password_attempts >= MAX_FAILED_PASSWORD_ATTEMPTS:
+            locked = user.failed_password_attempts >= MAX_FAILED_PASSWORD_ATTEMPTS
+            if locked:
                 user.password_locked_until = datetime.now(timezone.utc) + timedelta(minutes=PASSWORD_LOCKOUT_MINUTES)
+            # Only for a real account: an unknown identifier names nobody to
+            # trace, and logging it would store whatever was typed.
+            record_event(db, "auth.password_failed", user, details={"locked_out": locked} if locked else None)
             await db.commit()
         logger.auth_failure("Invalid password login", client_ip, email=payload.identifier)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=GENERIC_LOGIN_ERROR)
@@ -451,9 +479,12 @@ async def password_login(
     mfa_status = await _resolve_mfa(db, user, payload.totp_code)
     if mfa_status == "mfa_required":
         logger.auth_failure("Password valid, MFA code required", client_ip, email=user.email)
+        await _record_mfa_failure(db, user, payload.totp_code, "password")
         return LoginResult(login_status="mfa_required")
 
     logger.auth_success(user.email, client_ip)
+    record_event(db, "auth.signed_in", user, details={"method": "password"})
+    await db.commit()
     lifetime_days, _ = await get_session_config(db)
     access_token = create_access_token(
         data={"sub": str(user.id)},
@@ -479,6 +510,8 @@ async def set_password(
         if not payload.current_password or not verify_password(payload.current_password, current_user.password_hash):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current password is incorrect")
 
+    record_event(db, "user.password_changed" if current_user.password_hash else "user.password_set", current_user,
+                 target_type="user", target_id=current_user.id, target_label=user_label(current_user))
     current_user.password_hash = hash_password(payload.new_password)
     current_user.failed_password_attempts = 0
     current_user.password_locked_until = None
@@ -488,6 +521,80 @@ async def set_password(
         await EmailService.send_password_changed(current_user.email)
 
     return {"success": True, "message": "Password updated."}
+
+
+# ========== EMAIL CHANGE ==========
+# See services/account_email.py for the rules. Every step lands in the
+# activity log: the request (with the address asked for), and the change.
+
+EMAIL_LOCKED_DETAIL = "Your email has been locked by an administrator and can't be changed here."
+
+@router.post("/email-change/request")
+@_limiter.limit("5/hour")
+async def request_email_change(
+    request: Request,
+    payload: EmailChangeRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email a confirmation link to the new address. Nothing changes until
+    it is opened. Needs a two-factor code when the account has two-factor."""
+    new_email = payload.new_email
+    # The admin padlock on Email (Admin Users "Edit User") applies here, the
+    # same as to every profile field (users.py::update_my_profile).
+    if 'email' in current_user.get_locked_fields():
+        raise HTTPException(status_code=403, detail=EMAIL_LOCKED_DETAIL)
+    if new_email == (current_user.email or "").lower():
+        raise HTTPException(status_code=400, detail="That is already your email address.")
+    if current_user.mfa_enabled and await _resolve_mfa(db, current_user, payload.totp_code) != "ok":
+        record_event(db, "auth.mfa_failed", current_user, details={"method": "email change"})
+        await db.commit()
+        raise HTTPException(status_code=401, detail="That two-factor code is not valid.")
+    if await email_in_use(db, new_email, current_user.id):
+        raise HTTPException(status_code=409, detail="That email is already used by another account.")
+
+    record_event(db, "user.email_change_requested", current_user, target_type="user",
+                 target_id=current_user.id, target_label=user_label(current_user),
+                 details={"from": current_user.email, "to": new_email})
+    await db.commit()
+    await EmailService.send_email_change_link(new_email, create_email_change_token(current_user, new_email))
+    return {"success": True, "message": f"We sent a confirmation link to {new_email}."}
+
+
+@router.post("/email-change/confirm")
+@_limiter.limit("20/minute")
+async def confirm_email_change(
+    request: Request,
+    payload: EmailChangeConfirm,
+    db: AsyncSession = Depends(get_db),
+):
+    """Apply a change from its emailed link. Needs no session: the link may
+    be opened on another device, and opening it is the proof."""
+    data = read_email_change_token(payload.token)
+    if not data:
+        raise HTTPException(status_code=400, detail="This link isn't valid or has expired. Ask for a new one from your profile.")
+    user = (await db.execute(select(User).where(User.id == data["uid"]))).scalar_one_or_none()
+    # The account's address must still be the one the link was made for:
+    # that makes each link single-use, and stops an older link undoing a
+    # newer change.
+    if not user or (user.email or "").lower() != (data["old"] or "").lower():
+        raise HTTPException(status_code=400, detail="This link has already been used, or your email has changed since it was sent.")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="This account is locked. Contact an administrator.")
+    # Checked again here: an admin may lock it after the link went out.
+    if 'email' in user.get_locked_fields():
+        raise HTTPException(status_code=403, detail=EMAIL_LOCKED_DETAIL)
+    new_email = data["new"]
+    if await email_in_use(db, new_email, user.id):
+        raise HTTPException(status_code=409, detail="That email is already used by another account.")
+
+    old_email = user.email
+    record_event(db, "user.email_changed", user, target_type="user", target_id=user.id,
+                 target_label=user_label(user), details={"changes": {"email": [old_email, new_email]}})
+    apply_email_change(user, new_email)
+    await db.commit()
+    await EmailService.send_email_change_notice(old_email, new_email, by_admin=False)
+    return {"success": True, "email": new_email}
 
 
 @router.post("/mfa/setup/start", response_model=MfaSetupStartResult)
@@ -527,6 +634,8 @@ async def mfa_setup_confirm(
     codes = generate_backup_codes()
     current_user.mfa_backup_codes = json.dumps([hash_backup_code(c) for c in codes])
     current_user.mfa_enabled = True
+    record_event(db, "user.mfa_enabled", current_user, target_type="user",
+                 target_id=current_user.id, target_label=user_label(current_user))
     await db.commit()
 
     return MfaSetupConfirmResult(backup_codes=codes)
@@ -572,6 +681,8 @@ async def mfa_replace_confirm(
     current_user.mfa_pending_secret_encrypted = None
     current_user.mfa_backup_codes = json.dumps([hash_backup_code(c) for c in codes])
     current_user.mfa_enabled = True
+    record_event(db, "user.mfa_replaced", current_user, target_type="user",
+                 target_id=current_user.id, target_label=user_label(current_user))
     await db.commit()
 
     return MfaSetupConfirmResult(backup_codes=codes)
@@ -593,6 +704,8 @@ async def mfa_disable(
     current_user.mfa_secret_encrypted = None
     current_user.mfa_backup_codes = None
     current_user.mfa_pending_secret_encrypted = None
+    record_event(db, "user.mfa_disabled", current_user, target_type="user",
+                 target_id=current_user.id, target_label=user_label(current_user))
     await db.commit()
 
     return {"success": True, "message": "Two-factor authentication disabled."}

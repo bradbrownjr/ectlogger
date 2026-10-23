@@ -12,6 +12,7 @@ from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
 from pydantic import BaseModel, Field
 
+from app.audit import record_net_event, user_label
 from app.models import Net, NetCallsignRole, NetRole, NetStatus, NetTemplateSubscription, TemplateStaff, User
 from app.permissions import (
     can_manage_net_roles,
@@ -87,6 +88,8 @@ async def assign_net_role(
     # Create role
     net_role = NetRole(net_id=net_id, user_id=user_id, role=role)
     db.add(net_role)
+    record_net_event(db, "net.role_assigned", current_user, net, subject=user,
+                     details={"role": role, "station": user_label(user)})
     await db.commit()
 
     # Broadcast role change via WebSocket
@@ -161,7 +164,9 @@ async def remove_net_role(
     result = await db.execute(select(User).where(User.id == role.user_id))
     user_to_remove = result.scalar_one_or_none()
     role_name = role.role
-    
+
+    record_net_event(db, "net.role_removed", current_user, net, subject_user_id=role.user_id,
+                     details={"role": role_name, "station": user_label(user_to_remove)})
     await db.delete(role)
     await db.commit()
 
@@ -269,6 +274,7 @@ async def assign_callsign_role(
         await db.delete(row)
     role = NetCallsignRole(net_id=net_id, callsign=callsign, role=role_name, assigned_by_id=current_user.id)
     db.add(role)
+    record_net_event(db, "net.role_assigned", current_user, net, details={"role": role_name, "station": callsign})
     await db.commit()
     await db.refresh(role)
 
@@ -301,6 +307,7 @@ async def remove_callsign_role(
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
     callsign, role_name = role.callsign, role.role
+    record_net_event(db, "net.role_removed", current_user, net, details={"role": role_name, "station": callsign})
     await db.delete(role)
     await db.commit()
 
@@ -362,6 +369,7 @@ async def claim_ncs_role(
     # Assign NCS role
     ncs_role = NetRole(net_id=net_id, user_id=current_user.id, role="NCS")
     db.add(ncs_role)
+    record_net_event(db, "net.ncs_claimed", current_user, net)
     await db.commit()
     
     # Post system message

@@ -18,6 +18,7 @@ from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
 from app.logger import logger
 from app.services.callsign_people import resolve_person
+from app.audit import record_schedule_event, user_label
 from app.models import (
     AppSettings,
     CheckIn,
@@ -564,6 +565,9 @@ async def update_template(
         new_owner = new_owner_result.scalar_one_or_none()
         if not new_owner:
             raise HTTPException(status_code=404, detail="New owner not found")
+        old_owner = (await db.execute(select(User).where(User.id == template.owner_id))).scalar_one_or_none()
+        record_schedule_event(db, "schedule.manager_changed", current_user, template, subject=new_owner,
+                              details={"from": user_label(old_owner), "to": user_label(new_owner)})
         template.owner_id = template_data.owner_id
     
     # Update frequencies if provided
@@ -713,6 +717,7 @@ async def delete_template(
     if not await may_administer_schedule(db, template, current_user):
         raise HTTPException(status_code=403, detail="Only the schedule owner, a co-manager, or an admin can delete a schedule")
     
+    record_schedule_event(db, "schedule.deleted", current_user, template)
     await db.delete(template)
     await db.commit()
 

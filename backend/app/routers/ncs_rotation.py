@@ -8,6 +8,7 @@ import json
 from pydantic import BaseModel, EmailStr
 
 from app.database import get_db
+from app.audit import record_schedule_event, user_label
 from app.models import (
     Net, NetCallsignRole, NetRole, NetStatus, NetTemplate, NCSRotationMember, NCSScheduleOverride, TeamInvite, User,
     NetTemplateSubscription, TemplateStaff
@@ -322,6 +323,13 @@ async def resync_pending_duty_ncs(
             )
 
 
+async def _station_label(db: AsyncSession, user_id: Optional[int], callsign: Optional[str]) -> Optional[str]:
+    """How a staff or rotation entry is named in the activity log."""
+    if user_id is not None:
+        return user_label((await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none())
+    return callsign
+
+
 @router.get("/members", response_model=List[NCSRotationMemberResponse])
 async def list_rotation_members(
     template_id: int,
@@ -378,6 +386,8 @@ async def add_rotation_member(
         position=max_position + 1
     )
     db.add(member)
+    record_schedule_event(db, "schedule.rotation_added", current_user, template, subject_user_id=person.user_id,
+                          details={"station": await _station_label(db, person.user_id, person.callsign)})
     # Roster composition changed -- restart the rotation from this point.
     stamp_rotation_anchor(template)
     await db.commit()
@@ -440,6 +450,8 @@ async def remove_rotation_member(
         )
     )
     
+    record_schedule_event(db, "schedule.rotation_removed", current_user, template, subject_user_id=member.user_id,
+                          details={"station": await _station_label(db, member.user_id, member.callsign)})
     await db.delete(member)
     # Roster composition changed -- restart the rotation from this point.
     stamp_rotation_anchor(template)
@@ -474,6 +486,7 @@ async def clear_all_rotation_members(
         )
     )
     
+    record_schedule_event(db, "schedule.rotation_cleared", current_user, template)
     # Roster composition changed -- whoever is added back starts the cycle fresh.
     stamp_rotation_anchor(template)
     await db.commit()
@@ -904,6 +917,8 @@ async def add_template_staff(
         callsign=person.callsign,
     )
     db.add(staff)
+    record_schedule_event(db, "schedule.staff_added", current_user, template, subject_user_id=person.user_id,
+                          details={"station": await _station_label(db, person.user_id, person.callsign)})
     await db.commit()
     invited = False
     if person.callsign and staff_data.invite_email:
@@ -943,7 +958,9 @@ async def remove_template_staff(
     staff = result.scalar_one_or_none()
     if not staff:
         raise HTTPException(status_code=404, detail="Staff member not found")
-    
+
+    record_schedule_event(db, "schedule.staff_removed", current_user, template, subject_user_id=staff.user_id,
+                          details={"station": await _station_label(db, staff.user_id, staff.callsign)})
     await db.delete(staff)
     await db.commit()
 
@@ -1003,6 +1020,14 @@ async def update_template_staff(
         await _require_team_manager(db, template, current_user, "change who is a co-manager")
 
     staff_row_id = staff.id
+    changes = {}
+    if next_is_active is not None and bool(next_is_active) != bool(staff.is_active):
+        changes["active"] = [bool(staff.is_active), bool(next_is_active)]
+    if next_is_co_manager is not None and bool(next_is_co_manager) != bool(staff.is_co_manager):
+        changes["co_manager"] = [bool(staff.is_co_manager), bool(next_is_co_manager)]
+    if changes:
+        record_schedule_event(db, "schedule.staff_changed", current_user, template, subject_user_id=staff.user_id,
+                              details={"station": user_label(staff.user) or staff.callsign, "changes": changes})
     if next_is_active is not None:
         staff.is_active = next_is_active
     if next_is_co_manager is not None:

@@ -17,6 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.audit import record_event, field_changes
 from app.auth import decrypt_mfa_secret, verify_totp_code
 from app.backup import keys, paths, process, runner, schedule
 from app.backup.targets import (
@@ -87,8 +88,12 @@ async def update_settings(body: BackupSettingsUpdate, db: AsyncSession = Depends
     if body.enabled and not row.enabled:
         row.enabled_at = runner.utcnow()
         row.overdue_alert_sent_at = None
-    for field, value in body.model_dump().items():
+    new_values = body.model_dump()
+    changes = field_changes(row, new_values, new_values.keys())
+    for field, value in new_values.items():
         setattr(row, field, value)
+    if changes:
+        record_event(db, "backup.settings_changed", admin, details={"changes": changes})
     await db.commit()
     logger.info("BACKUP", f"Backup settings changed by {admin.callsign or admin.email}")
     return await get_overview(db, admin)
@@ -110,6 +115,7 @@ async def set_key(body: BackupKeyRequest, db: AsyncSession = Depends(get_db),
                                          body.current_passphrase, body.replace)
     except (keys.BadPassphrase, ValueError) as exc:
         raise HTTPException(400, str(exc))
+    record_event(db, "backup.key_changed", admin, details={"action": action, "fingerprint": row.key_fingerprint})
     await db.commit()
     # Keep the (re)wrapped key beside the backups straight away, not only at
     # the next backup. An old key's file stays: older backups still need it.
@@ -119,11 +125,13 @@ async def set_key(body: BackupKeyRequest, db: AsyncSession = Depends(get_db),
 
 
 @router.get("/key/file")
-async def download_key_file(db: AsyncSession = Depends(get_db), _admin: User = Depends(get_admin_user)):
+async def download_key_file(db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
     """The passphrase-protected key file, to keep with an offline copy."""
     row = await runner.get_settings(db)
     if not row.key_wrapped_identity:
         raise HTTPException(404, "No backup key has been set.")
+    record_event(db, "backup.key_file_downloaded", admin, details={"fingerprint": row.key_fingerprint})
+    await db.commit()
     return Response(
         content=base64.b64decode(row.key_wrapped_identity),
         media_type="application/octet-stream",
@@ -210,6 +218,8 @@ async def download_run(run_id: int, body: BackupDownloadRequest, request: Reques
     who = admin.callsign or admin.email
     ip = get_client_ip(request)
     logger.info("BACKUP", f"{who} downloaded {run.filename}", ip=ip)
+    record_event(db, "backup.downloaded", admin, target_type="backup", target_id=run.id, target_label=run.filename)
+    await db.commit()
     await EmailService.send_backup_downloaded(await runner.admin_emails(db), who, run.filename, ip)
     return FileResponse(path, media_type="application/octet-stream", filename=run.filename)
 
@@ -291,6 +301,9 @@ async def create_target(body: BackupTargetCreate, db: AsyncSession = Depends(get
     else:
         target.secret_encrypted = encrypt_secret(body.secret_access_key)
     db.add(target)
+    await db.flush()
+    record_event(db, "backup.target_added", admin, target_type="backup_target", target_id=target.id,
+                 target_label=target.name, details={"kind": target.kind})
     await db.commit()
     await db.refresh(target)
     logger.info("BACKUP", f"{admin.callsign or admin.email} added backup target {target.name}")
@@ -299,11 +312,13 @@ async def create_target(body: BackupTargetCreate, db: AsyncSession = Depends(get
 
 @router.put("/targets/{target_id}", response_model=BackupTargetResponse)
 async def update_target(target_id: int, body: BackupTargetUpdate, db: AsyncSession = Depends(get_db),
-                        _admin: User = Depends(get_admin_user)):
+                        admin: User = Depends(get_admin_user)):
     target = await _get_target(db, target_id)
     _apply_config(target, body)
     if target.kind == "s3" and body.secret_access_key:
         target.secret_encrypted = encrypt_secret(body.secret_access_key)
+    record_event(db, "backup.target_changed", admin, target_type="backup_target", target_id=target.id,
+                 target_label=target.name, details={"config": _config_of(target), "enabled": target.enabled})
     await db.commit()
     return _target_response(target, (await _last_results(db)).get(target.id))
 
@@ -312,6 +327,8 @@ async def update_target(target_id: int, body: BackupTargetUpdate, db: AsyncSessi
 async def delete_target(target_id: int, db: AsyncSession = Depends(get_db),
                         admin: User = Depends(get_admin_user)):
     target = await _get_target(db, target_id)
+    record_event(db, "backup.target_removed", admin, target_type="backup_target", target_id=target.id,
+                 target_label=target.name)
     await db.delete(target)
     await db.commit()
     logger.info("BACKUP", f"{admin.callsign or admin.email} removed backup target {target.name}")
@@ -319,12 +336,14 @@ async def delete_target(target_id: int, db: AsyncSession = Depends(get_db),
 
 @router.post("/targets/{target_id}/regenerate-key", response_model=BackupTargetResponse)
 async def regenerate_target_key(target_id: int, db: AsyncSession = Depends(get_db),
-                                _admin: User = Depends(get_admin_user)):
+                                admin: User = Depends(get_admin_user)):
     target = await _get_target(db, target_id)
     if target.kind != "sftp":
         raise HTTPException(400, "Only SFTP targets have a key pair.")
     private, _public = generate_ssh_keypair("ectlogger-backup")
     target.secret_encrypted = encrypt_secret(private)
+    record_event(db, "backup.target_key_regenerated", admin, target_type="backup_target", target_id=target.id,
+                 target_label=target.name)
     await db.commit()
     return _target_response(target, None)
 
@@ -367,6 +386,8 @@ async def trust_host_key(target_id: int, body: BackupTrustHostKey, db: AsyncSess
     except Exception:
         raise HTTPException(400, "That is not a host key.")
     target.trusted_host_key = f"{parts[0]} {parts[1]}"
+    record_event(db, "backup.target_host_key_trusted", admin, target_type="backup_target", target_id=target.id,
+                 target_label=target.name, details={"fingerprint": fingerprint})
     await db.commit()
     logger.info("BACKUP", f"{admin.callsign or admin.email} trusted host key {fingerprint} for {target.name}")
     return _target_response(target, (await _last_results(db)).get(target.id))

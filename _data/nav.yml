@@ -130,6 +130,8 @@
       url: /docs/admins/contacts/
     - title: Backups
       url: /docs/admins/backups/
+    - title: The activity log
+      url: /docs/admins/activity-log/
 
 - title: Self-hosting
   url: /docs/self-hosting/

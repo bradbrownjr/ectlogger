@@ -1036,6 +1036,7 @@ async def _build(db_path: Path, out_path: Path):
         await db.commit()
 
         await _seed_backups(db, now, users["W1DEMO"])
+        await _seed_activity(db, now, users, net_closed, template_ares)
 
         # "key" is what scripts/docs-screenshots/capture.mjs matches a
         # {{net:...}} placeholder against first, so every net has an explicit
@@ -1157,6 +1158,47 @@ async def _seed_backups(db, now, admin):
         placeholder = directory / name
         with open(placeholder, "wb") as fh:
             fh.truncate(size)
+    await db.commit()
+
+
+async def _seed_activity(db, now, users, net_closed, template_ares):
+    """A week of the activity log (docs/admins/activity-log.md). Addresses
+    are from the documentation ranges (RFC 5737), never real ones. N1ROVE's
+    two wrong passwords and second account on the same address give the
+    "accounts seen from this address" box something to show."""
+    from app.models import AuditEvent
+
+    browser = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/131.0"
+    phone = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/604.1"
+
+    def event(minutes_ago, action, actor, ip, agent=browser, **kw):
+        user = users.get(actor) if actor else None
+        db.add(AuditEvent(
+            created_at=(now - timedelta(minutes=minutes_ago)).replace(tzinfo=None),
+            action=action, actor_user_id=user.id if user else None,
+            actor_label=actor, ip=ip, user_agent=agent if ip else None, **kw,
+        ))
+
+    closed = dict(target_type="net", target_id=net_closed.id, target_label=net_closed.name, net_id=net_closed.id)
+    event(7 * 1440 - 5, "auth.signed_in", "K1COVE", "203.0.113.24", details=json.dumps({"method": "email link"}))
+    event(7 * 1440 - 80, "net.closed", "K1COVE", "203.0.113.24", **closed)
+    event(6 * 1440, "check_in.deleted", "K1COVE", "203.0.113.24", subject_user_id=users["N1ROVE"].id,
+          details=json.dumps({"station": "N1ROVE"}), **closed)
+    event(3 * 1440, "schedule.staff_added", "W1PINE", "198.51.100.14",
+          target_type="schedule", target_id=template_ares.id, target_label=template_ares.name,
+          template_id=template_ares.id, subject_user_id=users["KC1HILL"].id,
+          details=json.dumps({"station": "KC1HILL"}))
+    event(2 * 1440, "user.profile_changed", "KC1HILL", "198.51.100.61", phone,
+          target_type="user", target_id=users["KC1HILL"].id, target_label="KC1HILL",
+          subject_user_id=users["KC1HILL"].id,
+          details=json.dumps({"changes": {"location": ["Bridgton, ME", "FN43ob"]}}))
+    event(95, "auth.password_failed", "N1ROVE", "192.0.2.77")
+    event(94, "auth.password_failed", "N1ROVE", "192.0.2.77")
+    event(90, "auth.signed_in", "N1DUNE", "192.0.2.77", details=json.dumps({"method": "email link"}))
+    # An earlier occurrence, no longer in the demo: an archived entry keeps its name.
+    event(60, "net.auto_archived", None, None, target_type="net", target_label=template_ares.name,
+          template_id=template_ares.id, details=json.dumps({"reason": "the schedule's next net was created"}))
+    event(20, "auth.signed_in", "W1DEMO", "203.0.113.5", details=json.dumps({"method": "password"}))
     await db.commit()
 
 

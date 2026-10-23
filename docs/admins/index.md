@@ -4,7 +4,7 @@ summary: The admin panel of a running instance: who gets in, what the check-in f
 kind: Explanation
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-09-18
+revised: 2026-10-23
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/
@@ -27,6 +27,7 @@ That last part is the reason this is its own path. "Administrator" gets used for
 - Set the security policy: lockouts, session length, and what MFA is required for
 - Decide which traffic form types the instance offers
 - Schedule encrypted backups of the whole instance and send copies off-site
+- See who deleted, cancelled, or changed a net, schedule, or account, and from what address
 
 ## Two things to know before you start
 
@@ -53,6 +54,8 @@ That last part is the reason this is its own path. "Administrator" gets used for
 **[The contact directory](/docs/admins/contacts/)** — The callsign directory the app builds as stations check in, what it is used for, and what it holds.
 
 **[Backups](/docs/admins/backups/)** — Setting the backup passphrase, the schedule, and off-site copies, and checking or downloading a backup.
+
+**[The activity log](/docs/admins/activity-log/)** — Who deleted, cancelled, or changed a net, schedule, or account, every sign-in and failed attempt, and from what address.
 
 ## Not here
 

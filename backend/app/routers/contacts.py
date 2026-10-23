@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List
 from app.database import get_db
+from app.audit import record_event, user_label
 from app.models import Contact, User
 from app.schemas import ContactCreate, ContactUpdate, ContactResponse
 from app.dependencies import get_admin_user
@@ -141,6 +142,8 @@ async def delete_contact(
         raise HTTPException(status_code=404, detail="Contact not found")
     
     await db.delete(contact)
+    record_event(db, "contact.deleted", current_user, target_type="contact", target_id=contact.id,
+                 target_label=contact.callsign or contact.email)
     await db.commit()
     return None
 
@@ -191,6 +194,9 @@ async def invite_contact(
     )
     db.add(new_user)
     await db.flush()  # Get the new user's ID
+    record_event(db, "user.created_by_admin", current_user, target_type="user",
+                 target_id=new_user.id, target_label=user_label(new_user),
+                 details={"from_contact": contact.callsign})
     
     # Link the contact to the new user
     contact.user_id = new_user.id

@@ -8,6 +8,7 @@ from PIL import Image, ImageOps
 import json
 
 from app.database import get_db
+from app.audit import record_event
 from app.models import AppSettings, User, UserRole, FieldDefinition
 from app.schemas import (
     AppSettingsResponse, AppSettingsUpdate, CustomTheme,
@@ -95,6 +96,15 @@ def _build_settings_response(settings: AppSettings) -> AppSettingsResponse:
     )
 
 
+def _settings_snapshot(settings: AppSettings) -> dict:
+    """Every setting's current value, for the activity log's before/after."""
+    return {
+        c.name: getattr(settings, c.name)
+        for c in AppSettings.__table__.columns
+        if c.name not in ("id", "updated_at")
+    }
+
+
 @router.put("", response_model=AppSettingsResponse)
 async def update_settings(
     settings_update: AppSettingsUpdate,
@@ -106,6 +116,7 @@ async def update_settings(
         raise HTTPException(status_code=403, detail="Admin access required")
 
     settings = await get_or_create_settings(db)
+    before = _settings_snapshot(settings)
 
     if settings_update.default_field_config is not None:
         settings.default_field_config = json.dumps(settings_update.default_field_config)
@@ -166,6 +177,11 @@ async def update_settings(
         # session, so it reads an in-process cache that has to be refreshed here.
         set_gravatar_enabled(settings_update.gravatar_enabled)
 
+    after = _settings_snapshot(settings)
+    changes = {k: [before[k], after[k]] for k in after if before[k] != after[k]}
+    if changes:
+        record_event(db, "admin.settings_changed", current_user, target_type="settings",
+                     target_label="Site settings", details={"changes": changes})
     await db.commit()
     await db.refresh(settings)
 
@@ -277,6 +293,7 @@ async def upload_logo(
 
     settings = await get_or_create_settings(db)
     settings.custom_logo_url = f"/api/logo/{dest.name}"
+    record_event(db, "admin.logo_changed", current_user, target_type="settings", target_label="Site logo")
     await db.commit()
     await db.refresh(settings)
 
@@ -294,6 +311,7 @@ async def delete_logo(
 
     settings = await get_or_create_settings(db)
     settings.custom_logo_url = None
+    record_event(db, "admin.logo_removed", current_user, target_type="settings", target_label="Site logo")
     await db.commit()
     await db.refresh(settings)
 
@@ -348,6 +366,8 @@ async def create_field_definition(
         is_builtin=False,
     )
     db.add(field)
+    await db.flush()
+    record_event(db, "admin.field_created", current_user, target_type="field", target_id=field.id, target_label=field.label)
     await db.commit()
     await db.refresh(field)
     
@@ -372,6 +392,8 @@ async def update_field_definition(
     if not field:
         raise HTTPException(status_code=404, detail="Field not found")
     
+    before = {c.name: getattr(field, c.name) for c in FieldDefinition.__table__.columns}
+
     # Update allowed fields
     if field_data.label is not None:
         field.label = field_data.label
@@ -391,7 +413,11 @@ async def update_field_definition(
         field.sort_order = field_data.sort_order
     if field_data.spam_guard_enabled is not None:
         field.spam_guard_enabled = field_data.spam_guard_enabled
-    
+
+    changes = {k: [v, getattr(field, k)] for k, v in before.items() if getattr(field, k) != v and k != "updated_at"}
+    if changes:
+        record_event(db, "admin.field_changed", current_user, target_type="field", target_id=field.id,
+                     target_label=field.label, details={"changes": changes})
     await db.commit()
     await db.refresh(field)
     
@@ -419,6 +445,7 @@ async def archive_field_definition(
         raise HTTPException(status_code=400, detail="Built-in fields cannot be archived")
     
     field.is_archived = True
+    record_event(db, "admin.field_archived", current_user, target_type="field", target_id=field.id, target_label=field.label)
     await db.commit()
     
     return {"message": "Field archived successfully"}

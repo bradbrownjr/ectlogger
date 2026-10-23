@@ -1550,6 +1550,22 @@ class MfaDisableRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class EmailChangeRequest(BaseModel):
+    new_email: EmailStr
+    # Required when the account has two-factor turned on, so a signed-in
+    # browser left open can't move the account to someone else's mailbox.
+    totp_code: Optional[str] = Field(None, max_length=32)
+
+    @field_validator('new_email')
+    @classmethod
+    def normalize_email_field(cls, v: str) -> str:
+        return normalize_email(v)
+
+
+class EmailChangeConfirm(BaseModel):
+    token: str = Field(min_length=1, max_length=1000)
+
+
 # App Settings Schemas
 class FieldConfigItem(BaseModel):
     enabled: bool = True

@@ -47,6 +47,7 @@ import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import HistoryIcon from '@mui/icons-material/History';
 import useSortableTable from '../../hooks/useSortableTable';
 import api, { BACKGROUND_REQUEST_CONFIG } from '../../services/api';
 import useVisibilityAwareInterval from '../../hooks/useVisibilityAwareInterval';
@@ -110,9 +111,11 @@ type OnlineStatus = 'online' | 'away' | 'offline';
 interface Props {
   showSnackbar: (message: string, severity: 'success' | 'error') => void;
   refreshTrigger?: number;
+  /** Opens the Activity tab narrowed to this account. */
+  onShowActivity?: (person: { id: number; label: string }) => void;
 }
 
-const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
+const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowActivity }) => {
   const { user: currentUser } = useAuth();
 
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -741,6 +744,16 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
                     >
                       <EditIcon />
                     </IconButton>
+                    {onShowActivity && (
+                      <IconButton
+                        size="small"
+                        onClick={() => onShowActivity({ id: user.id, label: user.callsign || user.banned_callsign || user.email })}
+                        title="Show Activity"
+                        aria-label="Show activity"
+                      >
+                        <HistoryIcon />
+                      </IconButton>
+                    )}
                     {user.is_active ? (
                       <IconButton
                         size="small"

@@ -13,6 +13,7 @@ from typing import List, Optional
 from PIL import Image
 
 from app.database import get_db
+from app.audit import record_net_event, user_label
 from app.models import ChatMessage, ChatMute, ChatNetMute, ChatReaction, ChatImage, CheckIn, Net, NetStatus, User
 from app.schemas import (
     ChatMessageCreate,
@@ -381,7 +382,13 @@ async def delete_message(
     # Only allow deleting own messages or if admin
     if message.user_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to delete this message")
-    
+
+    # Someone else's message: keep what it said, since the evidence is
+    # usually the reason it was removed.
+    if message.user_id != current_user.id:
+        net = await _get_net_or_404(db, net_id)
+        record_net_event(db, "chat.message_deleted", current_user, net, subject_user_id=message.user_id,
+                         details={"message": (message.message or "")[:500]})
     await db.delete(message)
     await db.commit()
     
@@ -744,6 +751,8 @@ async def net_mute_station(
     else:
         mute = ChatNetMute(net_id=net_id, muted_user_id=body.muted_user_id, applied_by_user_id=current_user.id)
         db.add(mute)
+    record_net_event(db, "chat.station_muted", current_user, net, subject=target_user,
+                     details={"station": user_label(target_user)})
     await db.commit()
     await db.refresh(mute)
 
@@ -780,6 +789,7 @@ async def net_unmute_station(
     )
     mute = result.scalar_one_or_none()
     if mute:
+        record_net_event(db, "chat.station_unmuted", current_user, net, subject_user_id=muted_user_id)
         await db.delete(mute)
         await db.commit()
         await _broadcast_net_mute_changed(net_id, {"muted_user_id": muted_user_id, "active": False})

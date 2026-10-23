@@ -15,6 +15,7 @@ from app.net_start import auto_open_lobby, lobby_open_due
 from app.services.callsign_people import duty_ncs_role
 from app.services.ncs_attribution import net_ncs_attribution
 from app.utils import display_callsign
+from app.audit import record_net_event
 from app.models import CheckIn, ChatMessage, NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus, TemplateStaff
 from app.email_service import EmailService
 from app.services.net_closure import close_net_and_notify, get_last_activity_at
@@ -201,6 +202,8 @@ class NCSReminderService:
                 if closed_nets:
                     for closed_net in closed_nets:
                         closed_net.status = NetStatus.ARCHIVED
+                        record_net_event(db, "net.auto_archived", None, closed_net,
+                                         details={"reason": "the schedule's next net was created"})
                     await db.commit()
                     logger.info("NCS_REMINDER", f"Auto-archived {len(closed_nets)} closed net(s) for template {template.id}")
             except Exception as e:
@@ -987,6 +990,7 @@ class NCSReminderService:
                     else "never opened"
                 )
                 net.status = NetStatus.ARCHIVED
+                record_net_event(db, "net.auto_archived", None, net, details={"reason": reason})
                 logger.info(
                     "NCS_REMINDER",
                     f"Auto-archived stale scheduled net {net.id} "
@@ -1090,6 +1094,8 @@ class NCSReminderService:
 
                     owner_result = await db.execute(select(User).where(User.id == full_net.owner_id))
                     owner = owner_result.scalar_one_or_none()
+                    record_net_event(db, "net.auto_closed", None, full_net,
+                                     details={"idle_minutes": round(elapsed_minutes)})
                     await close_net_and_notify(db, full_net, owner, post_chat_message=False)
 
                     closed += 1

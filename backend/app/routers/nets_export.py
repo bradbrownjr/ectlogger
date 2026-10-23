@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
+from app.audit import record_net_event
 from app.models import CheckIn, Net, NetStatus, User, net_frequencies
 from app.models import Form as TrafficFormModel
 from app.permissions import (
@@ -655,6 +656,7 @@ async def delete_net(
     if not await check_net_lifecycle_permission(db, net, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to delete this net")
     
+    record_net_event(db, "net.deleted", current_user, net, details={"status": net.status.value})
     await db.delete(net)
     await db.commit()
 
@@ -692,6 +694,8 @@ async def cancel_net(
     net.status = NetStatus.CANCELLED
     net.cancelled_at = datetime.utcnow()
     net.cancel_reason = request.reason
+    record_net_event(db, "net.cancelled", current_user, net,
+                     details={"reason": request.reason} if request.reason else None)
     await db.commit()
     await db.refresh(net, ['frequencies'])
 
@@ -736,6 +740,7 @@ async def restore_net(
     net.status = NetStatus.SCHEDULED if net.scheduled_start_time is not None else NetStatus.DRAFT
     net.cancelled_at = None
     net.cancel_reason = None
+    record_net_event(db, "net.restored", current_user, net)
     await db.commit()
     await db.refresh(net, ['frequencies'])
 
@@ -773,6 +778,7 @@ async def archive_net(
         raise HTTPException(status_code=400, detail="Only closed nets can be archived")
     
     net.status = NetStatus.ARCHIVED
+    record_net_event(db, "net.archived", current_user, net)
     await db.commit()
     await db.refresh(net, ['frequencies'])
 
@@ -813,6 +819,7 @@ async def unarchive_net(
         raise HTTPException(status_code=400, detail="Only archived nets can be unarchived")
     
     net.status = NetStatus.CLOSED
+    record_net_event(db, "net.unarchived", current_user, net)
     await db.commit()
     await db.refresh(net, ['frequencies'])
 

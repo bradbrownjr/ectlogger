@@ -1,10 +1,10 @@
 ---
 title: Signing in
-summary: The magic link, the password fallback for when email is down, and two-factor authentication.
+summary: The magic link, changing the address it goes to, the password fallback for when email is down, and two-factor authentication.
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-27
+revised: 2026-10-23
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/operators/signing-in/
@@ -39,6 +39,27 @@ Two browser settings break sign-in in ways that don't look like browser settings
 **An ad or privacy blocker.** The addresses ECTLogger uses to send a magic link and to complete one both have the words `magic-link` in them, and some blocker lists match on that, so the request never leaves your browser. It looks like a fault at our end: **Failed to send magic link** when you click the button, or a link from your email that opens a page which never finishes signing you in. That is why the error message on screen mentions your ad blocker.
 
 The fix for both is to allow this one site in whichever extension is responsible, by allow-listing `app.ectlogger.us` or your club's own address, rather than turning the extension off everywhere. A private window normally runs with extensions disabled, so if sign-in works there and not in an ordinary tab, you have found your answer.
+
+## Change your sign-in email
+
+The magic link goes to the address on your account, so that address is your account. Change it when you are about to lose the mailbox (a new job, a closed provider), or when the address itself names a callsign you no longer hold after an upgrade, a vanity call, or a move to another district.
+
+1. Open **Profile**, then the **Security** tab.
+2. Under **Sign-in email**, type the new address into **New email**. If you have two-factor authentication turned on, also type the current code into **Two-factor code**.
+3. Click **Send link**.
+4. Open the email that arrives at the new address and click **Confirm email**, then **Confirm new email** on the page it opens.
+
+<figure>
+  <img src="/docs/img/operators/security-email-card.png"
+       alt="The Sign-in email section at the top of the Profile page&#x27;s Security tab. It names the address the account signs in with, above a New email field holding a new address and the Send link button, outlined in red.">
+  <figcaption>The link goes to the new address. Nothing changes until it is opened there.</figcaption>
+</figure>
+
+Nothing changes until step 4, and the link works for 24 hours. It can be opened on any device, signed in or not. Once it goes through, your old address gets a notice that it happened, and sign-in links sent to the old address stop working for your account. Your callsign, check-ins, roles, and everything else stay exactly as they were.
+
+The confirmation goes to the new address, not the old one, on purpose: losing the old mailbox is one of the reasons to change it. If you have already lost it and are signed out everywhere, you can't do this yourself. Ask an admin on your instance, who can change it for you from the admin panel.
+
+If the **New email** field is greyed out and reads "Locked by an administrator", an admin has locked your email, and only an admin can change it.
 
 ## Set a password
 

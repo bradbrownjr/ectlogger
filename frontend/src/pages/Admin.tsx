@@ -17,6 +17,7 @@ import BuildIcon from '@mui/icons-material/Build';
 import BrandingWatermarkIcon from '@mui/icons-material/BrandingWatermark';
 import MailIcon from '@mui/icons-material/Mail';
 import BackupIcon from '@mui/icons-material/Backup';
+import HistoryIcon from '@mui/icons-material/History';
 import { useAuth } from '../contexts/AuthContext';
 import AdminUsersTab from '../components/admin/AdminUsersTab';
 import AdminContactsTab from '../components/admin/AdminContactsTab';
@@ -27,6 +28,7 @@ import AdminMaintenanceTab from '../components/admin/AdminMaintenanceTab';
 import AdminBrandingTab from '../components/admin/AdminBrandingTab';
 import AdminTrafficTab from '../components/admin/AdminTrafficTab';
 import AdminBackupsTab from '../components/admin/AdminBackupsTab';
+import AdminActivityTab, { ActivityPerson } from '../components/admin/AdminActivityTab';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -51,7 +53,7 @@ function TabPanel(props: TabPanelProps) {
 
 // Tab order. `?tab=<key>` opens a tab directly (the backup alert emails link
 // to /admin/users?tab=backups); the index is the position in this list.
-const TAB_KEYS = ['users', 'contacts', 'fields', 'frequencies', 'security', 'maintenance', 'branding', 'traffic', 'backups'];
+const TAB_KEYS = ['users', 'contacts', 'fields', 'frequencies', 'security', 'maintenance', 'branding', 'traffic', 'backups', 'activity'];
 
 const Admin: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -63,6 +65,8 @@ const Admin: React.FC = () => {
   });
   // Incremented when a user is created from the Contacts tab (invite), so UsersTab re-fetches
   const [usersRefreshTrigger, setUsersRefreshTrigger] = useState(0);
+  // The account the Activity tab is narrowed to ("Show activity" on a user row).
+  const [activityPerson, setActivityPerson] = useState<ActivityPerson | null>(null);
 
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
@@ -142,11 +146,19 @@ const Admin: React.FC = () => {
           <Tab label="Branding" id="admin-tab-6" aria-controls="admin-tabpanel-6" icon={<BrandingWatermarkIcon />} iconPosition="start" />
           <Tab label="Traffic" id="admin-tab-7" aria-controls="admin-tabpanel-7" icon={<MailIcon />} iconPosition="start" />
           <Tab label="Backups" id="admin-tab-8" aria-controls="admin-tabpanel-8" icon={<BackupIcon />} iconPosition="start" />
+          <Tab label="Activity" id="admin-tab-9" aria-controls="admin-tabpanel-9" icon={<HistoryIcon />} iconPosition="start" />
         </Tabs>
 
         {/* ========== TAB 0: USERS ========== */}
         <TabPanel value={tabValue} index={0}>
-          <AdminUsersTab showSnackbar={showSnackbar} refreshTrigger={usersRefreshTrigger} />
+          <AdminUsersTab
+            showSnackbar={showSnackbar}
+            refreshTrigger={usersRefreshTrigger}
+            onShowActivity={(person) => {
+              setActivityPerson(person);
+              setTabValue(TAB_KEYS.indexOf('activity'));
+            }}
+          />
         </TabPanel>
 
         {/* ========== TAB 1: CONTACTS ========== */}
@@ -190,6 +202,11 @@ const Admin: React.FC = () => {
         {/* ========== TAB 8: BACKUPS ========== */}
         <TabPanel value={tabValue} index={8}>
           <AdminBackupsTab showSnackbar={showSnackbar} />
+        </TabPanel>
+
+        {/* ========== TAB 9: ACTIVITY ========== */}
+        <TabPanel value={tabValue} index={9}>
+          <AdminActivityTab showSnackbar={showSnackbar} person={activityPerson} onPersonChange={setActivityPerson} />
         </TabPanel>
       </Paper>
 

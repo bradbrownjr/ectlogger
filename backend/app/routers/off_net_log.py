@@ -36,6 +36,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user
+from app.audit import record_net_event
 from app.models import CheckIn, Net, NetStatus, OffNetLogEntry, User
 from app.permissions import NetAccess, may_log_off_net, may_review_off_net_log, net_access
 from app.schemas import (
@@ -277,6 +278,8 @@ async def delete_off_net_entry(
     if not viewer.may_edit(entry):
         raise HTTPException(status_code=403, detail="Only net control can delete this entry")
     await db.delete(entry)
+    record_net_event(db, "off_net_log.deleted", current_user, net, subject_user_id=entry.entered_by_user_id,
+                     details={"from": entry.from_station, "to": entry.to_station, "message": entry.message})
     await db.commit()
     await _broadcast_changed(net.id)
     return Response(status_code=204)

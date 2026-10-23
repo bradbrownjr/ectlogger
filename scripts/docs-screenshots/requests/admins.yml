@@ -31,20 +31,22 @@ shots:
     annotate:
       - selector: 'tr:has-text("W1PINE") button[title="Edit User"]'
         style: box
+      - selector: 'tr:has-text("W1PINE") button[title="Show Activity"]'
+        style: box
       - selector: 'tr:has-text("W1PINE") button[title="Ban User"]'
         style: box
       - selector: 'tr:has-text("W1PINE") button[title="Reset Password"]'
         style: box
     alt: >
-      A row in the admin Users table for Alex Reed, W1PINE, with three of its
-      five action icons outlined in red: the pencil (Edit User), the
-      circle-with-a-slash beside it (Ban), and the key two icons further along
-      (Reset password). The stopwatch between them and the trash can at the end
-      are not outlined.
+      A row in the admin Users table for Alex Reed, W1PINE, with four of its
+      six action icons outlined in red: the pencil (Edit User), the clock with
+      an arrow beside it (Show activity), the circle-with-a-slash (Ban), and
+      the key two icons further along (Reset password). The stopwatch between
+      them and the trash can at the end are not outlined.
     caption: >
-      Every row in the Users table carries the same five actions. Edit User
-      and Ban are covered here; Reset password and the two-factor reset next
-      to it are covered in Security, MFA, and lockouts.
+      Every row in the Users table carries the same six actions. Edit User,
+      Show activity, and Ban are covered here; Reset password and the
+      two-factor reset next to it are covered in Security, MFA, and lockouts.
 
   - id: change-role-dialog
     section: admins
@@ -456,3 +458,35 @@ shots:
       A backup that has been checked shows a check mark. "Off-site copy
       failed" means the backup was made and kept here, but did not reach a
       target.
+
+  # ========== ACTIVITY TAB ==========
+  - id: activity-log
+    section: admins
+    page: /docs/admins/activity-log/
+    route: /admin/users?tab=activity
+    as: W1DEMO
+    viewport:
+      width: 1000
+      height: 1000
+    wait_for: 'text=Wrong password'
+    # The address N1ROVE and N1DUNE share is clicked first, so the figure
+    # shows the "accounts seen from this address" box the page describes.
+    steps:
+      - click: 'button:has-text("192.0.2.77") >> nth=0'
+      - wait_for: 'text=accounts have used this address'
+    element: '[role="tabpanel"]:visible'
+    pad: 8
+    annotate:
+      - selector: '[role="tabpanel"]:visible .MuiAlert-root'
+        style: box
+    alt: >
+      The Activity tab of the admin panel, narrowed to the address 192.0.2.77
+      by a chip above the list. An orange box outlined in red reads "2
+      accounts have used this address: N1ROVE (2), N1DUNE (1)". Below it, the
+      list shows N1DUNE signing in and two wrong passwords for N1ROVE, each
+      with its time and the address it came from.
+    caption: >
+      Clicking an address narrows the list to it and names every account that
+      has used it. Two accounts on one address is a reason to look closer,
+      not proof.
+

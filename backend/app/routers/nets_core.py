@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
+from app.audit import record_net_event
 from app.models import (
     CheckIn,
     DrillPlan,
@@ -934,6 +935,7 @@ async def close_net(
     # The close itself, the status broadcast, the system message and the
     # net-log email all live in services/net_closure.py so the CSV backfill
     # path can reuse them verbatim instead of growing a second copy.
+    record_net_event(db, "net.closed", current_user, net)
     await close_net_and_notify(db, net, current_user)
 
     return NetResponse.from_orm(net)

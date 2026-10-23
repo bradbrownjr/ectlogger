@@ -1,4 +1,10 @@
 {
+  "admins/activity-log": {
+    "path": "/docs/img/admins/activity-log.png",
+    "alt": "The Activity tab of the admin panel, narrowed to the address 192.0.2.77 by a chip above the list. An orange box outlined in red reads \"2 accounts have used this address: N1ROVE (2), N1DUNE (1)\". Below it, the list shows N1DUNE signing in and two wrong passwords for N1ROVE, each with its time and the address it came from.\n",
+    "caption": "Clicking an address narrows the list to it and names every account that has used it. Two accounts on one address is a reason to look closer, not proof.\n",
+    "page": "/docs/admins/activity-log/"
+  },
   "admins/add-contact-button": {
     "path": "/docs/img/admins/add-contact-button.png",
     "alt": "The add contact button, a plus icon in a circle at the bottom right of the Contacts tab, outlined in red.\n",
@@ -91,8 +97,8 @@
   },
   "admins/user-row-actions": {
     "path": "/docs/img/admins/user-row-actions.png",
-    "alt": "A row in the admin Users table for Alex Reed, W1PINE, with three of its five action icons outlined in red: the pencil (Edit User), the circle-with-a-slash beside it (Ban), and the key two icons further along (Reset password). The stopwatch between them and the trash can at the end are not outlined.\n",
-    "caption": "Every row in the Users table carries the same five actions. Edit User and Ban are covered here; Reset password and the two-factor reset next to it are covered in Security, MFA, and lockouts.\n",
+    "alt": "A row in the admin Users table for Alex Reed, W1PINE, with four of its six action icons outlined in red: the pencil (Edit User), the clock with an arrow beside it (Show activity), the circle-with-a-slash (Ban), and the key two icons further along (Reset password). The stopwatch between them and the trash can at the end are not outlined.\n",
+    "caption": "Every row in the Users table carries the same six actions. Edit User, Show activity, and Ban are covered here; Reset password and the two-factor reset next to it are covered in Security, MFA, and lockouts.\n",
     "page": "/docs/admins/users-and-roles/"
   },
   "landing/hero": {
@@ -526,6 +532,12 @@
     "alt": "The Schedule page's calendar on a phone, listed as days with each day's nets under it instead of a month grid.\n",
     "caption": "On a phone, the month is listed day by day.",
     "page": "/docs/operators/finding-a-net/"
+  },
+  "operators/security-email-card": {
+    "path": "/docs/img/operators/security-email-card.png",
+    "alt": "The Sign-in email section at the top of the Profile page's Security tab. It names the address the account signs in with, above a New email field holding a new address and the Send link button, outlined in red.\n",
+    "caption": "The link goes to the new address. Nothing changes until it is opened there.\n",
+    "page": "/docs/operators/signing-in/"
   },
   "operators/security-password-card": {
     "path": "/docs/img/operators/security-password-card.png",

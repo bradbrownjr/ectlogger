@@ -85,3 +85,18 @@ async def test_plain_staff_cannot_merge_or_delete(client, db, owner, other):
     delete = await client.delete(f"/api/templates/{source.id}", headers=auth_headers(other))
     assert delete.status_code == 403
 
+
+
+@pytest.mark.asyncio
+async def test_link_existing_net_lists_nets(client, db, owner, admin):
+    """The schedule's manager sees their own nets; an admin sees everyone's.
+    cf77076 dropped the is_admin this relies on and the list 500'd."""
+    template = await _template(db, owner.id, "Tuesday Net", 2)
+    await client.post("/api/nets/", json={"name": "Owner Net"}, headers=auth_headers(owner))
+    await client.post("/api/nets/", json={"name": "Admin Net"}, headers=auth_headers(admin))
+
+    mine = await client.get(f"/api/templates/{template.id}/linkable-nets", headers=auth_headers(owner))
+    assert mine.status_code == 200, mine.text
+    assert [n["name"] for n in mine.json()] == ["Owner Net"]
+    everyone = await client.get(f"/api/templates/{template.id}/linkable-nets", headers=auth_headers(admin))
+    assert sorted(n["name"] for n in everyone.json()) == ["Admin Net", "Owner Net"]

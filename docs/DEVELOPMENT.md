@@ -563,7 +563,7 @@ net = result.scalar_one_or_none()
 
 Permission check helper:
 ```python
-if not await check_net_permission(db, net, user, required_roles=["ncs", "logger"]):
+if not await check_net_permission(db, net, user, required_roles=["NCS", "LOGGER"]):
     raise HTTPException(status_code=403, detail="Permission denied")
 ```
 
@@ -588,6 +588,52 @@ callsign and licensee name are not redacted; both are already public via the FCC
 frontend's axios response interceptor (`services/api.ts`) only logs a user out on a 401 if a
 token was actually being sent — a guest hitting a login-required resource should fail that one
 request quietly, not get bounced off a page they're allowed to be on.
+
+---
+
+## Activity log
+
+`models.AuditEvent` (migration 088) is the admin-only record of who did what, from
+where: Admin > Activity, served by `routers/audit.py`. Write to it with
+`app/audit.py::record_event`, or `record_net_event` / `record_schedule_event`, which
+tag the net's or schedule's id and name for you.
+
+- **Log anything that destroys a record, changes who may do what, or touches an
+  account's sign-in.** Not routine net activity: check-ins and chat are already the
+  net's own record. A new endpoint in one of those categories is not done until it
+  writes an event.
+- **Call it before the commit that makes the change, never after.** It only adds the
+  row to the session, so a refused or rolled-back change leaves no event, and a
+  committed change always has one.
+- **Pass `actor=None` for the scheduler** (auto-close, auto-archive); the tab shows
+  "Automatic".
+- **Record changes as `details={"changes": {field: [old, new]}}`**, built with
+  `field_changes(obj, new_values, fields)` before applying them. It drops fields
+  that didn't change, so a form that resubmits every field logs nothing on an
+  unchanged save.
+- **The IP address and browser come from a context variable** that
+  `main.py::security_middleware` sets from `security.get_client_ip`, so no route
+  needs a `Request` parameter for it.
+- **Every action needs a label** in `frontend/src/utils/activityLog.ts`.
+  `tests/test_activity_log_labels.py` scans the backend for `record_*event(db,
+  "<action>"` and fails on any action without one.
+- **Retention:** `AuditPruneService` blanks `ip`/`user_agent` after 365 days and
+  deletes rows after 3 years (`AUDIT_IP_RETENTION_DAYS`, `AUDIT_RETENTION_DAYS`;
+  decided 2026-10-23, CNIL deliberation 2021-122 as the reference).
+- **Deleting an account calls `forget_user`**, which clears its id from every event
+  and keeps the labels. SQLite gives the next new account the highest id after a
+  delete, which would otherwise inherit the deleted account's history.
+
+### Changing an account's email
+
+Every change of `User.email` goes through
+`services/account_email.py::apply_email_change`. A magic-link account is found by
+`(oauth_provider, oauth_id)` before email (`routers/auth.py::get_or_create_user`),
+and `oauth_id` holds the address it signed up with. Setting only `User.email` leaves
+a link sent to the old address still signing in to the account. Self-service changes
+(`POST /auth/email-change/request`, then `/confirm` from the link) send a 24-hour
+signed token to the new address. The token carries the old address, which makes it
+single-use. Both steps refuse while an admin's Email padlock is on.
 
 ---
 

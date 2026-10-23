@@ -22,6 +22,8 @@ Every one of these is read directly from the sending code, not from memory. Most
 |---|---|---|---|
 | Magic link | You request one on the sign-in page | The address you entered | Nothing to turn off — it's how you sign in. |
 | Password changed | You change your own password, or an admin resets it for you | The account's email | Nothing to turn off — a security notice, sent regardless of your email preferences. |
+| Confirm your new email | You ask to change your sign-in email from Profile > Security | The new address | Nothing to turn off. The link works for 24 hours, and nothing changes unless it is opened. |
+| Email changed | Your sign-in email changes, by your own confirmed request or by an admin | Both the old and the new address | Nothing to turn off — a security notice, sent regardless of your email preferences. |
 | Team invitation | A schedule's manager or co-manager adds you to its staff by callsign and gives your email address, or sends the invitation later | The address they entered | Nothing to turn off, since you have no account yet. Each manager can send at most 25 invitations a day, and one address gets at most 3 a day. |
 | Callsign joined the team | An operator on your schedule's team by callsign takes over that spot, by signing in with the address you invited or because a co-manager linked them | The schedule's manager | Sent regardless of your email preferences, so you always know who took a spot |
 | Check this sign-up | Someone signs up with a callsign on your team without signing in at an address you invited, so nothing is handed over until you link them. Sent once per person and schedule. | The schedule's manager | Sent regardless of your email preferences, as above |

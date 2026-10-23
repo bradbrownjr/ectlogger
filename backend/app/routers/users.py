@@ -7,7 +7,9 @@ from typing import List, Optional
 from io import BytesIO
 from PIL import Image, ImageOps
 from app.database import get_db
-from app.models import User, UserRole, Contact, NetRole, CanHearReport, CheckIn, Frequency, net_frequencies, AdminAuditLog
+from app.models import User, UserRole, Contact, NetRole, CanHearReport, CheckIn, Frequency, net_frequencies
+from app.audit import record_event, field_changes, forget_user, user_label
+from app.services.account_email import apply_email_change
 from app.schemas import LiveLocationUpdate, UserResponse, UserUpdate, AdminUserCreate, AdminUserUpdate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse, AdminPasswordResetResult
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 from app.auth import generate_temporary_password, hash_password
@@ -70,6 +72,15 @@ async def get_my_profile(current_user: User = Depends(get_current_user)):
 # entry (services/callsign_people.py).
 
 
+# Profile fields worth a line in the activity log when a user changes them:
+# who they say they are, and what others see. Preferences (theme, sort
+# order, notification switches) are not.
+_AUDITED_PROFILE_FIELDS = (
+    'name', 'callsign', 'gmrs_callsign', 'callsigns', 'location',
+    'skywarn_number', 'website_url', 'sms_gateway',
+)
+
+
 @router.put("/me", response_model=UserResponse)
 async def update_my_profile(
     user_update: UserUpdate,
@@ -106,6 +117,12 @@ async def update_my_profile(
                 current_user.previous_callsigns = json.dumps(prev)
 
     primary_before = (current_user.callsign or '').upper()
+    # The form sends every field on every save; only real changes are logged.
+    changes = field_changes(current_user, update_data, _AUDITED_PROFILE_FIELDS)
+    if changes:
+        record_event(db, "user.profile_changed", current_user, target_type="user",
+                     target_id=current_user.id, target_label=user_label(current_user),
+                     details={"changes": changes})
     for field, value in update_data.items():
         # Handle callsigns JSON field
         if field == 'callsigns' and value is not None:
@@ -167,6 +184,8 @@ async def upload_my_avatar(
     pil_image.save(str(dest), format="JPEG", quality=90)
 
     current_user.avatar_url = f"/api/avatars/{current_user.id}.jpg"
+    record_event(db, "user.avatar_changed", current_user, target_type="user",
+                 target_id=current_user.id, target_label=user_label(current_user))
     await db.commit()
     await db.refresh(current_user)
     return UserResponse.from_orm(current_user)
@@ -182,6 +201,8 @@ async def delete_my_avatar(
     if dest.exists():
         dest.unlink()
     current_user.avatar_url = None
+    record_event(db, "user.avatar_removed", current_user, target_type="user",
+                 target_id=current_user.id, target_label=user_label(current_user))
     await db.commit()
     await db.refresh(current_user)
     return UserResponse.from_orm(current_user)
@@ -414,6 +435,9 @@ async def create_user(
     )
     
     db.add(new_user)
+    await db.flush()
+    record_event(db, "user.created_by_admin", current_user, target_type="user",
+                 target_id=new_user.id, target_label=user_label(new_user))
     await db.commit()
     await db.refresh(new_user)
     if new_user.callsign:
@@ -638,8 +662,7 @@ async def admin_update_user(
     only deleting and recreating the account, which loses check-in history
     and role assignments. Mirrors update_my_profile's previous_callsigns
     bookkeeping on a callsign change. Every changed field is written to
-    admin_audit_log (the only admin action logged anywhere in this app --
-    see AdminAuditLog's docstring for why this one is treated differently).
+    the activity log as one "user.admin_edited" event (app/audit.py).
     An email change notifies both the old and new address.
 
     Also edits the rest of the profile fields (GMRS callsign, additional
@@ -705,30 +728,20 @@ async def admin_update_user(
                 user.previous_callsigns = json.dumps(prev)
 
     old_email = user.email
-    changed_fields: List[str] = []
-    for field in (
+    changes = field_changes(user, update_data, (
         'name', 'callsign', 'email', 'role', 'gmrs_callsign', 'callsigns',
         'location', 'skywarn_number', 'website_url', 'locked_fields',
-    ):
-        if field not in update_data:
-            continue
-        old_value = getattr(user, field)
-        if isinstance(old_value, list):
-            old_value = json.dumps(old_value)
-        new_value = update_data[field]
-        old_str = old_value.value if hasattr(old_value, 'value') else old_value
-        new_str = new_value.value if hasattr(new_value, 'value') else new_value
-        if old_str == new_str:
-            continue
-        db.add(AdminAuditLog(
-            admin_id=current_user.id,
-            target_user_id=user.id,
-            field=field,
-            old_value=str(old_str) if old_str is not None else None,
-            new_value=str(new_str) if new_str is not None else None,
-        ))
-        setattr(user, field, new_value)
-        changed_fields.append(field)
+    ))
+    changed_fields: List[str] = list(changes)
+    if changes:
+        record_event(db, "user.admin_edited", current_user, target_type="user",
+                     target_id=user.id, target_label=user_label(user),
+                     details={"changes": changes})
+    for field in changed_fields:
+        if field == 'email':
+            apply_email_change(user, update_data[field])
+        else:
+            setattr(user, field, update_data[field])
 
     try:
         await db.commit()
@@ -741,7 +754,7 @@ async def admin_update_user(
     await db.refresh(user)
 
     if 'email' in changed_fields and old_email and user.email:
-        await EmailService.send_admin_email_change_notice(old_email, user.email)
+        await EmailService.send_email_change_notice(old_email, user.email, by_admin=True)
     if 'callsign' in changed_fields and user.callsign:
         await claim_and_queue_notices(db, user, background_tasks)
         await db.refresh(user)
@@ -763,6 +776,9 @@ async def update_user_role(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    if user.role != role:
+        record_event(db, "user.role_changed", current_user, target_type="user", target_id=user.id,
+                     target_label=user_label(user), details={"changes": {"role": [user.role.value, role.value]}})
     user.role = role
     await db.commit()
     await db.refresh(user)
@@ -785,6 +801,8 @@ async def ban_user(
     if user.id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot ban yourself")
     
+    record_event(db, "user.banned", current_user, target_type="user", target_id=user.id,
+                 target_label=user_label(user))
     user.is_active = False
     # Free the primary callsign, so the real operator can set it on their
     # own account (it is a unique column). Unban puts it back if still free.
@@ -867,6 +885,9 @@ async def revert_user_callsign_claim(
     if claim.reverted_at is not None:
         raise HTTPException(status_code=400, detail="Already reverted")
     restored = await revert_callsign_claim(db, claim, current_user)
+    record_event(db, "user.callsign_claim_reverted", current_user, target_type="user", target_id=user_id,
+                 target_label=claim.callsign, template_id=claim.template_id,
+                 details={"callsign": claim.callsign, "entries": restored})
     await db.commit()
     if claim.template_id:
         await _resync_after_revert(db, [claim.template_id])
@@ -886,6 +907,8 @@ async def unban_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    record_event(db, "user.unbanned", current_user, target_type="user", target_id=user.id,
+                 target_label=user_label(user) or user.banned_callsign)
     user.is_active = True
     # Give back the callsign the ban freed, unless the real operator has
     # since taken it; then it stays on banned_callsign for the admin to see.
@@ -920,6 +943,8 @@ async def admin_reset_password(
     user.password_hash = hash_password(temp_password)
     user.failed_password_attempts = 0
     user.password_locked_until = None
+    record_event(db, "user.password_reset_by_admin", current_user, target_type="user", target_id=user.id,
+                 target_label=user_label(user))
     await db.commit()
 
     if user.email:
@@ -955,6 +980,8 @@ async def admin_reset_mfa(
     user.mfa_secret_encrypted = None
     user.mfa_backup_codes = None
     user.mfa_pending_secret_encrypted = None
+    record_event(db, "user.mfa_reset_by_admin", current_user, target_type="user", target_id=user.id,
+                 target_label=user_label(user))
     await db.commit()
 
     return {"success": True, "message": "Two-factor authentication reset. The user will need to re-enroll."}
@@ -980,6 +1007,9 @@ async def set_schedule_age_bypass(
         raise HTTPException(status_code=404, detail="User not found")
 
     newly_granted = grant and not user.schedule_age_bypass
+    if bool(user.schedule_age_bypass) != grant:
+        record_event(db, "user.early_access_granted" if grant else "user.early_access_revoked", current_user,
+                     target_type="user", target_id=user.id, target_label=user_label(user))
     user.schedule_age_bypass = grant
     await db.commit()
     await db.refresh(user)
@@ -1073,6 +1103,9 @@ async def delete_user(
     from app.models import CallsignClaim
     await db.execute(sql_delete(CallsignClaim).where(CallsignClaim.user_id == user.id))
     await db.flush()
+    await forget_user(db, user.id)
+    record_event(db, "user.deleted", current_user, target_type="user", target_label=user_label(user),
+                 details={"email": user.email, "callsign": user.callsign or user.banned_callsign})
     await db.delete(user)
     await db.commit()
     await _resync_after_revert(db, template_ids)
@@ -1139,7 +1172,11 @@ async def email_all_users(
     """)
     
     html_content = html_template.render(subject=subject, message=message)
-    
+
+    record_event(db, "admin.emailed_all_users", current_user,
+                 details={"subject": subject, "recipients": len(users)})
+    await db.commit()
+
     # Send emails
     sent_count = 0
     failed_count = 0

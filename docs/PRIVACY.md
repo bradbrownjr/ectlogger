@@ -4,7 +4,7 @@ summary: What ECTLogger stores about you, who can see it, what leaves the instan
 kind: Explanation
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-10-23
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/PRIVACY/
@@ -61,6 +61,14 @@ preferences. Every notification email includes a one-click unsubscribe link. Tur
 itself and this session's own password-changed confirmation, which exist to protect your
 account.
 
+## Activity log and IP addresses
+
+ECTLogger keeps an activity log of actions that matter for security and moderation: signing in (and failed attempts), changes to your profile, password, two-factor settings, or email address, and actions that delete or change nets, schedules, roles, and accounts. Each entry records who did it, when, what changed, and the internet (IP) address and browser it came from.
+
+It exists so that an account taken over by someone else, or a person causing trouble under several accounts, can be traced and stopped. Only the instance's administrators can see it. Routine activity such as checking in or chatting is not added to it.
+
+The IP address and browser are cleared from an entry after one year, and the entry itself is deleted after three years. If your account is deleted, the log keeps the callsign it had on entries that already exist, so the record of what happened isn't lost.
+
 ## Gravatar
 
 If your instance has Gravatar avatars enabled and you haven't uploaded a custom profile
@@ -76,7 +84,7 @@ described above.
 
 ## Your data, your control
 
-You can review and update most of your own information from your Profile page at any time.
+You can review and update most of your own information from your Profile page at any time, including the email address you sign in with.
 To request that your account be deleted, contact an administrator of your ECTLogger
 instance.
 

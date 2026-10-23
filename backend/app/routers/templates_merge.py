@@ -15,6 +15,7 @@ from app.models import (
     TemplateStaff,
     TopicHistory,
     User,
+    UserRole,
 )
 from app.routers.ncs_rotation import resync_pending_duty_ncs
 from app.routers.ncs_schedule import stamp_rotation_anchor
@@ -26,6 +27,7 @@ from app.schemas import (
 )
 
 from app.routers.templates_core import may_administer_schedule
+from app.audit import record_schedule_event
 
 router = APIRouter()
 
@@ -363,7 +365,14 @@ async def merge_templates(
     # can trigger nullify/delete passes that clobber the just-reparented rows.
     # See merge_templates docstring and the comment in step 1.
     await db.flush()
+    record_schedule_event(db, "schedule.merged", current_user, target, details={
+        "merged": [source.name for source in sources],
+        "nets_moved": nets_moved, "subscribers_moved": subs_moved,
+        "staff_moved": staff_moved, "rotation_moved": rotation_moved,
+    })
     for source in sources:
+        record_schedule_event(db, "schedule.merged_away", current_user, source,
+                              details={"into": target.name, "into_id": target.id})
         await db.delete(source)
     logger.info(f"Merge: deleted {len(sources)} source templates")
 
@@ -422,7 +431,7 @@ async def list_linkable_nets(
         .order_by(Net.started_at.desc().nullslast(), Net.created_at.desc())
         .limit(500)
     )
-    if not is_admin:
+    if current_user.role != UserRole.ADMIN:
         query = query.where(Net.owner_id == current_user.id)
 
     result = await db.execute(query)

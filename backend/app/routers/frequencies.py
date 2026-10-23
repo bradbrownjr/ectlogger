@@ -9,6 +9,7 @@ from sqlalchemy import select, func, and_, or_
 from app.database import get_db
 from app.email_service import EmailService
 from app.logger import logger
+from app.audit import record_event
 from app.models import (
     CheckIn, Frequency, Net, NetTemplate, User, UserRole, net_frequencies, net_template_frequencies,
 )
@@ -443,6 +444,8 @@ async def delete_frequency(
         raise HTTPException(status_code=403, detail={"code": FREQUENCY_CHANGE_REFUSED, "message": refusal})
 
     await db.delete(frequency)
+    record_event(db, "frequency.deleted", current_user, target_type="frequency", target_id=frequency.id,
+                 target_label=" ".join(p for p in (frequency.frequency, frequency.mode, frequency.network, frequency.talkgroup) if p))
     await db.commit()
 
     return None

@@ -8,6 +8,7 @@ import json
 import logging
 from app.database import get_db
 from app.services.callsign_people import find_user_by_callsign, follow_callsign_correction
+from app.audit import record_net_event
 from app.models import CheckIn, CoverageSite, FieldDefinition, Net, NetStatus, User, UserRole, StationStatus, NetRole, Contact, Frequency
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse, ExpectedCodeResponse, VerifyIdentityRequest
 from app.dependencies import get_current_user, get_current_user_optional
@@ -753,7 +754,9 @@ async def delete_check_in(
     # Store net_id before deletion for broadcast
     net_id = check_in.net_id
     check_in_id = check_in.id
-    
+
+    record_net_event(db, "check_in.deleted", current_user, net, subject_user_id=check_in.user_id,
+                     details={"station": check_in.callsign, "checked_in_at": check_in.checked_in_at})
     await db.delete(check_in)
     await db.commit()
     

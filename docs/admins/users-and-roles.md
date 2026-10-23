@@ -4,7 +4,7 @@ summary: Inviting people, editing an account's identity and role, undoing a call
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-10-19
+revised: 2026-10-23
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/users-and-roles/
@@ -33,14 +33,14 @@ Because NCS and Guest don't currently gate anything, the role you'll actually us
 
 To edit someone's profile or role: click the pencil icon in their row, make your changes, and save. The dialog shows every field the person can set on their own Profile page: name, callsign, email, GMRS callsign, additional callsigns (one line, separated by commas), default location, SKYWARN spotter number, and website. Role changes take effect immediately, with no need for the person to sign out and back in.
 
-This is also the recovery path for an account that lost access to the email it signed up with, since that's the address magic-link sign-in goes to: put in the new address here and the person can sign in there instead. Both the old and new address get a notification email, so if you edit the wrong account by mistake, its owner finds out. Editing a callsign here works the same as the person changing it themselves from Profile — see the note on that below. Every field, role, or lock change made from this dialog is recorded (who made it, when, old value, new value), even though nothing else in this panel keeps that kind of record.
+This is also the recovery path for an account that lost access to the email it signed up with, since that's the address magic-link sign-in goes to: put in the new address here and the person can sign in there instead. Both the old and new address get a notification email, so if you edit the wrong account by mistake, its owner finds out. Editing a callsign here works the same as the person changing it themselves from Profile — see the note on that below. Every field, role, or lock change made from this dialog is recorded in the [activity log](/docs/admins/activity-log/), with who made it, when, and the old and new value.
 
-Every field has its own padlock. Locking one stops the person from changing that field themselves from their own Profile page, where it shows greyed out as "Locked by an administrator". It's useful after you've fixed something (a name that wasn't a name, a link where a spotter number belongs) and don't want it typed right back in. It doesn't stop you from editing that field as an admin, and locks are independent: lock just the spotter number and leave everything else editable. The padlock on Email is reserved for a future release — users can't change their own email yet regardless, so it doesn't currently do anything.
+Every field has its own padlock. Locking one stops the person from changing that field themselves from their own Profile page, where it shows greyed out as "Locked by an administrator". It's useful after you've fixed something (a name that wasn't a name, a link where a spotter number belongs) and don't want it typed right back in. It doesn't stop you from editing that field as an admin, and locks are independent: lock just the spotter number and leave everything else editable. The padlock on Email stops the person changing their sign-in email from Profile > Security; [signing in](/docs/operators/signing-in/) covers how they do that when it's unlocked.
 
 <figure>
   <img src="/docs/img/admins/user-row-actions.png"
-       alt="A row in the admin Users table for Alex Reed, W1PINE, with three of its five action icons outlined in red: the pencil (Edit User), the circle-with-a-slash beside it (Ban), and the key two icons further along (Reset password). The stopwatch between them and the trash can at the end are not outlined.">
-  <figcaption>Edit User, Ban, Reset password, and Delete appear on every row. The stopwatch shown here only appears when your instance has an account-age or net-participation requirement set for schedule creation, and the two-factor reset only appears on a row where that account has MFA enabled. Edit User and Ban are covered here; Reset password and the two-factor reset are covered in Security, MFA, and lockouts.</figcaption>
+       alt="A row in the admin Users table for Alex Reed, W1PINE, with four of its six action icons outlined in red: the pencil (Edit User), the clock with an arrow beside it (Show activity), the circle-with-a-slash (Ban), and the key two icons further along (Reset password). The stopwatch between them and the trash can at the end are not outlined.">
+  <figcaption>Every row in the Users table carries the same six actions. Edit User, Show activity, and Ban are covered here; Reset password and the two-factor reset next to it are covered in Security, MFA, and lockouts.</figcaption>
 </figure>
 
 ## Admin and net control
@@ -57,6 +57,7 @@ If the person has already checked into a net under a callsign you recognize, che
 
 Each row's action icons cover the rest of account management:
 
+- **Show activity** opens the [activity log](/docs/admins/activity-log/) narrowed to that account: everything it did, everything done to it, and the addresses it signed in from. Check it before a ban, and when somebody new appears that you suspect is somebody old.
 - **Ban** deactivates the account (`is_active` off). They can't sign in, but nothing about their history changes, and it's fully reversible with **Unban**. Two things do change. Banning frees the account's callsign so the real operator can use it; the Users tab then shows it as "was" that callsign, and **Unban** puts it back unless someone has taken it since. And team spots the account took over by callsign go back too (see below); unbanning doesn't take them again. This is the right tool for "stop this person from logging in" in every case except one, described next.
 - **Reset password** issues a one-time temporary password, shown to you once. Share it with the person over a trusted channel, not email, if email is the reason they're locked out in the first place. It never gets logged or emailed to them in the clear.
 - **Reset two-factor authentication** clears their MFA enrollment so they can set it up again from scratch. Only shows up for accounts that have MFA enabled. Covered in more detail in [Security, MFA, and lockouts](/docs/admins/security-and-mfa/).

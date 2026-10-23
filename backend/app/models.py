@@ -1391,24 +1391,44 @@ class Contact(Base):
     user = relationship("User", foreign_keys=[user_id])
 
 
-class AdminAuditLog(Base):
-    """One row per field an admin changed on another user's account via the
-    Admin Users "Edit User" dialog (profile fields, role, and field locks). No admin
-    action anywhere else in the app is audited -- this exists specifically
-    because editing another account's login email is account-recovery/
-    takeover-adjacent, unlike e.g. a role change or a ban."""
-    __tablename__ = "admin_audit_log"
+class AuditEvent(Base):
+    """The activity log: one row per security- or moderation-relevant action,
+    readable by admins only (Admin > Activity, routers/audit.py). Written by
+    app/audit.py::record_event in the same transaction as the change it
+    describes, so a rolled-back change leaves no event and the reverse.
+
+    Every reference is copied as a label as well as an id, because the thing
+    acted on is often gone (a deleted net, a deleted account) and SQLite
+    reuses the highest id after a delete. Deleting an account clears its ids
+    here and keeps the labels (routers/users.py::delete_user), so a new
+    account given the same id never inherits this history.
+
+    ip and user_agent are personal data under GDPR and are blanked after
+    AUDIT_IP_RETENTION_DAYS; the row itself is pruned after
+    AUDIT_RETENTION_DAYS (app/audit.py). Replaced admin_audit_log
+    (migration 088 copied its rows in)."""
+    __tablename__ = "audit_events"
 
     id = Column(Integer, primary_key=True, index=True)
-    admin_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    target_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    field = Column(String(50), nullable=False)  # a LOCKABLE_USER_FIELDS entry, 'role', or 'locked_fields'
-    old_value = Column(Text, nullable=True)
-    new_value = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-
-    admin = relationship("User", foreign_keys=[admin_id])
-    target_user = relationship("User", foreign_keys=[target_user_id])
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+    action = Column(String(64), nullable=False, index=True)  # e.g. "net.deleted", see app/audit.py
+    # Who did it. Null actor_user_id with a label: a failed sign-in, or a
+    # deleted account. Null both: the system (a scheduled job).
+    actor_user_id = Column(Integer, nullable=True, index=True)
+    actor_label = Column(String(255), nullable=True)
+    ip = Column(String(64), nullable=True, index=True)
+    user_agent = Column(String(255), nullable=True)
+    # What it was done to.
+    target_type = Column(String(32), nullable=True)  # user, net, schedule, check_in, chat_message, ...
+    target_id = Column(Integer, nullable=True)
+    target_label = Column(String(255), nullable=True)
+    # The person it was about, when that isn't the actor (an admin banning
+    # someone, NCS deleting a station's check-in). "Show activity" for a user
+    # matches actor_user_id or subject_user_id.
+    subject_user_id = Column(Integer, nullable=True, index=True)
+    net_id = Column(Integer, nullable=True, index=True)
+    template_id = Column(Integer, nullable=True, index=True)
+    details = Column(Text, nullable=True)  # JSON: {"changes": {field: [old, new]}, ...}
 
 
 class AppSettings(Base):

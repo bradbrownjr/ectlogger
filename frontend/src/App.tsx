@@ -17,6 +17,7 @@ import CreateNet from './pages/CreateNet';
 import Scheduler from './pages/Scheduler';
 import CreateSchedule from './pages/CreateSchedule';
 import VerifyMagicLink from './pages/VerifyMagicLink';
+import ConfirmEmailChange from './pages/ConfirmEmailChange';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import Statistics from './pages/Statistics';
@@ -180,6 +181,7 @@ const AppRoutes: React.FC = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/auth/verify" element={<VerifyMagicLink />} />
+          <Route path="/auth/confirm-email" element={<ConfirmEmailChange />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           {/* A schedule's shared subscribe link. Public: signed-out visitors land here. */}
           <Route path="/subscribe/:scheduleId" element={<SubscribeToSchedule />} />

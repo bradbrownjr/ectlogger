@@ -151,11 +151,13 @@ async def test_admin_rejects_unknown_lock(client, admin, other):
 @pytest.mark.asyncio
 async def test_admin_lock_change_is_audited(client, db, admin, other):
     from sqlalchemy import select
-    from app.models import AdminAuditLog
+    from app.models import AuditEvent
 
     await client.put(f"/api/users/{other.id}", json={"locked_fields": ["location"]}, headers=auth_headers(admin))
-    rows = (await db.execute(select(AdminAuditLog).where(AdminAuditLog.target_user_id == other.id))).scalars().all()
-    assert [(r.field, r.new_value) for r in rows] == [("locked_fields", '["location"]')]
+    rows = (await db.execute(select(AuditEvent).where(AuditEvent.subject_user_id == other.id))).scalars().all()
+    assert [(r.action, r.actor_user_id, json.loads(r.details)["changes"]["locked_fields"][1]) for r in rows] == [
+        ("user.admin_edited", admin.id, ["location"])
+    ]
 
 
 def test_migration_079_carries_locks_over(tmp_path):

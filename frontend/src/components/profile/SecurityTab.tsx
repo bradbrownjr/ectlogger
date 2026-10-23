@@ -53,6 +53,35 @@ const SecurityTab: React.FC = () => {
     if (token) await login(token);
   };
 
+  // ---------- Sign-in email ----------
+  // The link goes to the new address; nothing changes until it is opened
+  // there (pages/ConfirmEmailChange.tsx). Two-factor accounts confirm with
+  // a code first, so an unattended signed-in browser can't move the account.
+  const [newEmail, setNewEmail] = useState('');
+  const [emailCode, setEmailCode] = useState('');
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [emailSentTo, setEmailSentTo] = useState('');
+  // An admin's padlock on Email (Admin > Users > Edit User) stops this too.
+  const emailLocked = !!user?.locked_fields?.includes('email');
+
+  const handleRequestEmailChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailError('');
+    setEmailSentTo('');
+    setEmailBusy(true);
+    try {
+      await authApi.requestEmailChange(newEmail, user?.mfa_enabled ? emailCode : undefined);
+      setEmailSentTo(newEmail.trim().toLowerCase());
+      setNewEmail('');
+      setEmailCode('');
+    } catch (err: any) {
+      setEmailError(getErrorMessage(err, "Couldn't send the confirmation link"));
+    } finally {
+      setEmailBusy(false);
+    }
+  };
+
   // ---------- Password ----------
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -181,6 +210,54 @@ const SecurityTab: React.FC = () => {
 
   return (
     <>
+      {/* ========== SIGN-IN EMAIL ========== */}
+      <Typography variant="h6" gutterBottom>
+        Sign-in email
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        You sign in with <strong>{user?.email}</strong>. To change it, enter the new address and open the
+        link we send there. Your old address is told about the change.
+      </Typography>
+      {emailError && <Alert severity="error" sx={{ mb: 2 }}>{emailError}</Alert>}
+      {emailSentTo && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          We sent a link to {emailSentTo}. Open it within 24 hours to finish the change.
+        </Alert>
+      )}
+      <Box
+        component="form"
+        onSubmit={handleRequestEmailChange}
+        sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start', mb: 2 }}
+      >
+        <TextField
+          label="New email"
+          type="email"
+          autoComplete="email"
+          value={newEmail}
+          onChange={(e) => setNewEmail(e.target.value)}
+          disabled={emailLocked}
+          helperText={emailLocked ? 'Locked by an administrator' : undefined}
+          required
+          sx={{ flex: '1 1 260px', maxWidth: 400 }}
+        />
+        {/* Shows for accounts with two-factor turned on */}
+        {user?.mfa_enabled && (
+          <TextField
+            label="Two-factor code"
+            value={emailCode}
+            onChange={(e) => setEmailCode(e.target.value)}
+            inputProps={{ inputMode: 'numeric', autoComplete: 'one-time-code' }}
+            required
+            sx={{ flex: '0 1 180px' }}
+          />
+        )}
+        <Button type="submit" variant="contained" disabled={emailLocked || emailBusy || !newEmail.trim()} sx={{ minHeight: 56 }}>
+          {emailBusy ? 'Sending…' : 'Send link'}
+        </Button>
+      </Box>
+
+      <Divider sx={{ my: 3 }} />
+
       {/* ========== PASSWORD ========== */}
       <Typography variant="h6" gutterBottom>
         Password

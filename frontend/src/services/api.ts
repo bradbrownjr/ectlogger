@@ -113,6 +113,11 @@ export const authApi = {
   mfaReplaceStart: (password: string) => api.post('/auth/mfa/replace/start', { password }),
   mfaReplaceConfirm: (totp_code: string) => api.post('/auth/mfa/replace/confirm', { totp_code }),
   mfaDisable: (password: string) => api.post('/auth/mfa/disable', { password }),
+  // Self-service email change: the link goes to the new address, and the
+  // change happens only when it is confirmed from that link.
+  requestEmailChange: (new_email: string, totp_code?: string) =>
+    api.post('/auth/email-change/request', { new_email: new_email.trim().toLowerCase(), totp_code: totp_code || undefined }),
+  confirmEmailChange: (token: string) => api.post('/auth/email-change/confirm', { token }),
   getCurrentUser: () =>
     api.get('/users/me'),
 };
