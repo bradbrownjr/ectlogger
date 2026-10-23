@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-22
+revised: 2026-10-23
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,20 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# October 23, 2026
+
+## New Features
+
+* **Security: Activity log for admins** — Admins can now see who deleted a net, changed a role, or changed an account, with the date, the internet address and its approximate location. Open it from Admin > Activity, or from "Show activity" on any person in the Users list, to answer "who did this?" in seconds. [Learn more](/docs/admins/activity-log/)
+* **Security: Sign-in and moderation alerts** — When someone types several wrong passwords for your account, or one wrong two-factor code, you and the admins get an email listing each attempt and where it came from, so a break-in attempt doesn't go unnoticed. Admins are also told when several different people have muted the same station in chat, without naming who muted it. Both are set on Admin > Security. [Learn more](/docs/admins/security-and-mfa/#security-alerts)
+* **Security: Change your sign-in email** — You can now change the address you sign in with from Profile > Security, confirmed by a link sent to the new address, so losing a mailbox or getting a new callsign no longer means asking an admin. Your old address is told about the change, and it can no longer sign you in. [Learn more](/docs/operators/signing-in/#change-your-sign-in-email)
+
+## Bug Fixes
+
+* **Schedules: Merging and deleting schedules** — A schedule's co-managers can now merge and delete it as the schedule's manager can, and when a merge can't go ahead, the message says which nets are in the way. [Learn more](/docs/net-managers/recurring-schedules/#merging-schedules)
 
 ---
 

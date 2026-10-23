@@ -1,6 +1,43 @@
 {
-  "version": "2026.10.22c",
+  "version": "2026.10.23",
   "entries": [
+    {
+      "version": "2026.10.23",
+      "date": "2026-10-23",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Security: Activity log for admins — Admins can now see who deleted a net, changed a role, or changed an account, with the date, the internet address and its approximate location. Open it from Admin > Activity, or from \"Show activity\" on any person in the Users list, to answer \"who did this?\" in seconds.",
+              "userImpact": true,
+              "docs": "/docs/admins/activity-log/"
+            },
+            {
+              "text": "Security: Sign-in and moderation alerts — When someone types several wrong passwords for your account, or one wrong two-factor code, you and the admins get an email listing each attempt and where it came from, so a break-in attempt doesn't go unnoticed. Admins are also told when several different people have muted the same station in chat, without naming who muted it. Both are set on Admin > Security.",
+              "userImpact": true,
+              "docs": "/docs/admins/security-and-mfa/#security-alerts"
+            },
+            {
+              "text": "Security: Change your sign-in email — You can now change the address you sign in with from Profile > Security, confirmed by a link sent to the new address, so losing a mailbox or getting a new callsign no longer means asking an admin. Your old address is told about the change, and it can no longer sign you in.",
+              "userImpact": true,
+              "docs": "/docs/operators/signing-in/#change-your-sign-in-email"
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Schedules: Merging and deleting schedules — A schedule's co-managers can now merge and delete it as the schedule's manager can, and when a merge can't go ahead, the message says which nets are in the way.",
+              "docs": "/docs/net-managers/recurring-schedules/#merging-schedules"
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.10.22c",
       "date": "2026-10-22",
