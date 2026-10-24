@@ -1249,257 +1249,10 @@ const NetReport: React.FC = () => {
           </Box>
         )}
 
-        {/* ========== SECTION 4: CHECK-IN LOG ========== */}
-        <Box>
-        <ReportSectionTitle
-          sx={{ mb: 2 }}
-        >
-          Check-in Log ({checkIns.length} event{checkIns.length !== 1 ? 's' : ''} &mdash; {stats.unique_callsigns} unique station{stats.unique_callsigns !== 1 ? 's' : ''}{stats.rechecks > 0 ? `, ${stats.rechecks} re-check${stats.rechecks !== 1 ? 's' : ''}` : ''})
-        </ReportSectionTitle>
-
-        <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
-                <TableCell sx={{ fontWeight: 'bold' }}>#</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Time</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Callsign</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Location</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Frequency</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Notes</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {checkIns.map((checkIn, index) => (
-                <TableRow key={checkIn.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover }, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
-                    {formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false)}
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Typography variant="body2" fontWeight="medium">
-                        {checkIn.callsign}
-                      </Typography>
-                      {checkIn.is_recheck && (
-                        <span style={{ 
-                          display: 'inline-block',
-                          padding: '0 4px', 
-                          borderRadius: '8px', 
-                          backgroundColor: theme.palette.grey[400],
-                          color: '#ffffff',
-                          fontSize: '0.6rem',
-                          fontWeight: 600,
-                        }}>R</span>
-                      )}
-                    </Box>
-                  </TableCell>
-                  <TableCell>{checkIn.name || '—'}</TableCell>
-                  <TableCell sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {checkIn.location || '—'}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={checkIn.status} />
-                  </TableCell>
-                  <TableCell sx={{ fontSize: '0.75rem' }}>
-                    {getFrequencyById(checkIn.frequency_id)}
-                  </TableCell>
-                  <TableCell sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.75rem' }}>
-                    {checkIn.relayed_by ? `Via ${checkIn.relayed_by}` : ''}{checkIn.relayed_by && checkIn.notes ? ' - ' : ''}{checkIn.notes || ''}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {checkIns.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={8} align="center">
-                    <Typography color="text.secondary">No check-ins recorded</Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        </Box>
-
-        {/* ========== SECTION 5: TOPIC OF THE WEEK (if enabled and responses exist) ========== */}
-        {topicPrompt && (
-          <>
-            <ReportSectionTitle sx={{ mb: 2 }}>
-              Topic of the Week ({topicResponses.length} response{topicResponses.length !== 1 ? 's' : ''})
-            </ReportSectionTitle>
-
-            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-              <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
-                {topicPrompt}
-              </Typography>
-              {topicResponses.length > 0 ? (
-                <TableContainer sx={{ overflowX: 'auto' }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
-                        <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Callsign</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', width: 150 }}>Name</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Answer</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {topicResponses.map((r: TopicResponse, i: number) => (
-                        <TableRow key={i} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover } }}>
-                          <TableCell><Typography variant="body2" fontWeight="medium">{r.callsign}</Typography></TableCell>
-                          <TableCell>{r.name || '—'}</TableCell>
-                          <TableCell>{r.response}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <Typography variant="body2" color="text.secondary">No responses recorded.</Typography>
-              )}
-            </Paper>
-          </>
-        )}
-
-        {/* ========== SECTION 6: POLL RESULTS (if poll enabled and responses exist) ========== */}
-        {pollQuestion && pollResults.length > 0 && (
-          <>
-            <ReportSectionTitle sx={{ mb: 2 }}>
-              Poll Results ({pollResults.reduce((s, r) => s + r.count, 0)} response{pollResults.reduce((s, r) => s + r.count, 0) !== 1 ? 's' : ''})
-            </ReportSectionTitle>
-
-            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-              <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
-                {pollQuestion}
-              </Typography>
-              <ResponsiveContainer width="100%" height={Math.max(160, pollResults.length * 48)}>
-                <BarChart
-                  data={pollResults.map(r => ({ name: r.response, count: r.count }))}
-                  layout="vertical"
-                  margin={{ top: 4, right: 40, left: 8, bottom: 4 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis type="number" allowDecimals={false} />
-                  <YAxis dataKey="name" type="category" width={180} tick={{ fontSize: 12 }} />
-                  <RechartsTooltip formatter={(v: number) => [`${v} vote${v !== 1 ? 's' : ''}`, 'Votes']} />
-                  <Bar dataKey="count" fill={theme.palette.primary.main} radius={[0, 4, 4, 0]}>
-                    {pollResults.map((_, index) => (
-                      <Cell key={`poll-cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-              {/* Tabular fallback for PDF export */}
-              <TableContainer sx={{ mt: 2, overflowX: 'auto' }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Response</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', width: 80 }} align="right">Votes</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {pollResults.map((r: PollResult, i: number) => (
-                      <TableRow key={i} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover } }}>
-                        <TableCell>{r.response}</TableCell>
-                        <TableCell align="right">{r.count}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
-          </>
-        )}
-
-        {/* ========== SECTION 7: CHAT MESSAGES (operator messages only) ========== */}
-        {userChatMessages.length > 0 && (
-          <>
-            <ReportSectionTitle sx={{ mb: 2 }}>
-              Chat Messages ({userChatMessages.length} message{userChatMessages.length !== 1 ? 's' : ''})
-            </ReportSectionTitle>
-            
-            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
-                    <TableCell sx={{ fontWeight: 'bold', width: 140 }}>Time</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', width: 100 }}>From</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Message</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {userChatMessages.map((msg: ChatMessage) => (
-                    <TableRow key={msg.id}>
-                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
-                        {formatTimeWithDate(msg.created_at, user?.prefer_utc || false)}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight="medium">
-                          {msg.callsign || 'Unknown'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{formatChatMessageText(msg.message)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </>
-        )}
-
-        {/* ========== SECTION 8: SYSTEM LOG (automated event entries only) ========== */}
-        {systemLogMessages.length > 0 && (
-          <>
-            <ReportSectionTitle sx={{ mb: 2 }}>
-              System Log ({systemLogMessages.length} event{systemLogMessages.length !== 1 ? 's' : ''})
-            </ReportSectionTitle>
-            
-            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
-                    <TableCell sx={{ fontWeight: 'bold', width: 140 }}>Time</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Event</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {systemLogMessages.map((msg: ChatMessage) => (
-                    <TableRow key={msg.id} sx={{ backgroundColor: theme.palette.action.hover }}>
-                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
-                        {formatTimeWithDate(msg.created_at, user?.prefer_utc || false)}
-                      </TableCell>
-                      <TableCell sx={{ fontStyle: 'italic', color: 'text.secondary', fontSize: '0.85rem' }}>
-                        {msg.message}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </>
-        )}
-
-        {/* ========== SECTION 9: ICS-309 FORMAT (if enabled) ========== */}
-        {/* Same ICS309PrintView used by NetView's standalone "ICS-309 PDF"
-            button, fed by the same GET .../export/ics309?format=json data --
-            one accurate rendering of this form, not a second approximation
-            built from checkIns/net directly. See TRAFFIC-HANDLING-DESIGN.md
-            section 4.5. */}
-        {net.ics309_enabled && ics309LogData && (
-          <>
-            <ReportSectionTitle sx={{ mb: 2 }}>
-              ICS-309 Communications Log
-            </ReportSectionTitle>
-
-            <Paper variant="outlined" sx={{ p: 2, mb: 3, overflowX: 'auto' }}>
-              <ICS309PrintView id="net-report-ics309-view" data={ics309LogData} />
-            </Paper>
-          </>
-        )}
-
-        {/* ========== SECTION 9A: SITES (nets with sites) ========== */}
+        {/* Section order (Brad, 2026-10-24): what the net achieved first (sites and
+            coverage), then the check-in log and responses, then chat, with the
+            ICS-309 second to last and the Activity Log last. */}
+        {/* ========== SECTION 4: SITES (nets with sites) ========== */}
         {/* Who was at each site, home or deployed over the whole net: every
             check-in row, so a station that moved shows at each place. */}
         {siteBoard.length > 0 && (
@@ -1511,7 +1264,7 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 9B: COVERAGE BY SITE (drills with sites) ========== */}
+        {/* ========== SECTION 5: COVERAGE BY SITE (drills with sites) ========== */}
         {/* The place-to-place results a drill's after-action report needs:
             reach to the primary sites, between sites, repeaters and nodes,
             counties reached. Ahead of the station-by-station list. */}
@@ -1530,8 +1283,8 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 10: STATION COVERAGE (if propagation logging enabled) ========== */}
-        {/* Deliberately a separate section from ICS-309 above, not merged into
+        {/* ========== SECTION 6: STATION COVERAGE (if propagation logging enabled) ========== */}
+        {/* Deliberately a separate section from the ICS-309 below, not merged into
             it - coverage reports are not radio traffic, so they don't belong
             in a communications log format (see docs/ROADMAP.md Phase 3). */}
         {net.propagation_logging_enabled && (
@@ -1643,6 +1396,256 @@ const NetReport: React.FC = () => {
                 </Grid>
               </Box>
             )}
+          </>
+        )}
+
+        {/* ========== SECTION 7: CHECK-IN LOG ========== */}
+        <Box>
+        <ReportSectionTitle
+          sx={{ mb: 2 }}
+        >
+          Check-in Log ({checkIns.length} event{checkIns.length !== 1 ? 's' : ''} &mdash; {stats.unique_callsigns} unique station{stats.unique_callsigns !== 1 ? 's' : ''}{stats.rechecks > 0 ? `, ${stats.rechecks} re-check${stats.rechecks !== 1 ? 's' : ''}` : ''})
+        </ReportSectionTitle>
+
+        <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
+                <TableCell sx={{ fontWeight: 'bold' }}>#</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Time</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Callsign</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Location</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Frequency</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Notes</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {checkIns.map((checkIn, index) => (
+                <TableRow key={checkIn.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover }, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
+                    {formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false)}
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Typography variant="body2" fontWeight="medium">
+                        {checkIn.callsign}
+                      </Typography>
+                      {checkIn.is_recheck && (
+                        <span style={{ 
+                          display: 'inline-block',
+                          padding: '0 4px', 
+                          borderRadius: '8px', 
+                          backgroundColor: theme.palette.grey[400],
+                          color: '#ffffff',
+                          fontSize: '0.6rem',
+                          fontWeight: 600,
+                        }}>R</span>
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell>{checkIn.name || '—'}</TableCell>
+                  <TableCell sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {checkIn.location || '—'}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={checkIn.status} />
+                  </TableCell>
+                  <TableCell sx={{ fontSize: '0.75rem' }}>
+                    {getFrequencyById(checkIn.frequency_id)}
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.75rem' }}>
+                    {checkIn.relayed_by ? `Via ${checkIn.relayed_by}` : ''}{checkIn.relayed_by && checkIn.notes ? ' - ' : ''}{checkIn.notes || ''}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {checkIns.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} align="center">
+                    <Typography color="text.secondary">No check-ins recorded</Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        </Box>
+
+        {/* ========== SECTION 8: TOPIC OF THE WEEK (if enabled and responses exist) ========== */}
+        {topicPrompt && (
+          <>
+            <ReportSectionTitle sx={{ mb: 2 }}>
+              Topic of the Week ({topicResponses.length} response{topicResponses.length !== 1 ? 's' : ''})
+            </ReportSectionTitle>
+
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+                {topicPrompt}
+              </Typography>
+              {topicResponses.length > 0 ? (
+                <TableContainer sx={{ overflowX: 'auto' }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
+                        <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Callsign</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', width: 150 }}>Name</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Answer</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {topicResponses.map((r: TopicResponse, i: number) => (
+                        <TableRow key={i} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover } }}>
+                          <TableCell><Typography variant="body2" fontWeight="medium">{r.callsign}</Typography></TableCell>
+                          <TableCell>{r.name || '—'}</TableCell>
+                          <TableCell>{r.response}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Typography variant="body2" color="text.secondary">No responses recorded.</Typography>
+              )}
+            </Paper>
+          </>
+        )}
+
+        {/* ========== SECTION 9: POLL RESULTS (if poll enabled and responses exist) ========== */}
+        {pollQuestion && pollResults.length > 0 && (
+          <>
+            <ReportSectionTitle sx={{ mb: 2 }}>
+              Poll Results ({pollResults.reduce((s, r) => s + r.count, 0)} response{pollResults.reduce((s, r) => s + r.count, 0) !== 1 ? 's' : ''})
+            </ReportSectionTitle>
+
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+                {pollQuestion}
+              </Typography>
+              <ResponsiveContainer width="100%" height={Math.max(160, pollResults.length * 48)}>
+                <BarChart
+                  data={pollResults.map(r => ({ name: r.response, count: r.count }))}
+                  layout="vertical"
+                  margin={{ top: 4, right: 40, left: 8, bottom: 4 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis type="number" allowDecimals={false} />
+                  <YAxis dataKey="name" type="category" width={180} tick={{ fontSize: 12 }} />
+                  <RechartsTooltip formatter={(v: number) => [`${v} vote${v !== 1 ? 's' : ''}`, 'Votes']} />
+                  <Bar dataKey="count" fill={theme.palette.primary.main} radius={[0, 4, 4, 0]}>
+                    {pollResults.map((_, index) => (
+                      <Cell key={`poll-cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              {/* Tabular fallback for PDF export */}
+              <TableContainer sx={{ mt: 2, overflowX: 'auto' }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Response</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: 80 }} align="right">Votes</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {pollResults.map((r: PollResult, i: number) => (
+                      <TableRow key={i} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover } }}>
+                        <TableCell>{r.response}</TableCell>
+                        <TableCell align="right">{r.count}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+          </>
+        )}
+
+        {/* ========== SECTION 10: CHAT MESSAGES (operator messages only) ========== */}
+        {userChatMessages.length > 0 && (
+          <>
+            <ReportSectionTitle sx={{ mb: 2 }}>
+              Chat Messages ({userChatMessages.length} message{userChatMessages.length !== 1 ? 's' : ''})
+            </ReportSectionTitle>
+            
+            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
+                    <TableCell sx={{ fontWeight: 'bold', width: 140 }}>Time</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: 100 }}>From</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Message</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {userChatMessages.map((msg: ChatMessage) => (
+                    <TableRow key={msg.id}>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
+                        {formatTimeWithDate(msg.created_at, user?.prefer_utc || false)}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {msg.callsign || 'Unknown'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{formatChatMessageText(msg.message)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
+        )}
+
+        {/* ========== SECTION 11: ICS-309 FORMAT (if enabled) ========== */}
+        {/* Same ICS309PrintView used by NetView's standalone "ICS-309 PDF"
+            button, fed by the same GET .../export/ics309?format=json data --
+            one accurate rendering of this form, not a second approximation
+            built from checkIns/net directly. See TRAFFIC-HANDLING-DESIGN.md
+            section 4.5. */}
+        {net.ics309_enabled && ics309LogData && (
+          <>
+            <ReportSectionTitle sx={{ mb: 2 }}>
+              ICS-309 Communications Log
+            </ReportSectionTitle>
+
+            <Paper variant="outlined" sx={{ p: 2, mb: 3, overflowX: 'auto' }}>
+              <ICS309PrintView id="net-report-ics309-view" data={ics309LogData} />
+            </Paper>
+          </>
+        )}
+
+        {/* ========== SECTION 12: ACTIVITY LOG (automated event entries only) ========== */}
+        {systemLogMessages.length > 0 && (
+          <>
+            <ReportSectionTitle sx={{ mb: 2 }}>
+              Activity Log ({systemLogMessages.length} event{systemLogMessages.length !== 1 ? 's' : ''})
+            </ReportSectionTitle>
+            
+            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
+                    <TableCell sx={{ fontWeight: 'bold', width: 140 }}>Time</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Event</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {systemLogMessages.map((msg: ChatMessage) => (
+                    <TableRow key={msg.id} sx={{ backgroundColor: theme.palette.action.hover }}>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
+                        {formatTimeWithDate(msg.created_at, user?.prefer_utc || false)}
+                      </TableCell>
+                      <TableCell sx={{ fontStyle: 'italic', color: 'text.secondary', fontSize: '0.85rem' }}>
+                        {msg.message}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </>
         )}
 
