@@ -40,6 +40,8 @@ The dialog lists every entry, oldest first, with its status:
 - **Awaiting review** - a station logged it and net control hasn't accepted it yet.
 - **Rejected** - net control turned it down. It stays visible to whoever logged it, but it isn't on the ICS-309.
 
+On a long log, **Find an entry** narrows the list to the entries whose station, channel or text contains what you type.
+
 <figure>
   <img src="/docs/img/net-control/off-net-log-dialog.png"
        alt="The Off-net log dialog as Net Control sees it: a notice that 1 entry is awaiting review with an Accept all button, two entries marked On the log, and K1CAMP's Winlink entry to Harbor County EMA marked Awaiting review with Accept and Reject buttons.">

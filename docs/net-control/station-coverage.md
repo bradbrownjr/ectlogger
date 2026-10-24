@@ -41,7 +41,7 @@ Saving replaces that station's previous report for that frequency. To correct on
 
 ### On a net with more than one frequency
 
-The dialog turns into a grid with one column per frequency, so a 2m and 80m comparison is recorded in one pass. Only the frequencies the net's manager left ticked under **Coverage reports** appear; repeaters and talkgroups are usually unticked, since everyone hears everyone through them. Each column has its own select-all box under its heading, and saving records every column, including any you left empty. The **Station** column stays in place while you scroll sideways through a long list of frequencies, and each station is listed once per place, even after it has rechecked on a second frequency.
+The dialog turns into a grid with one column per frequency, so a 2m and 80m comparison is recorded in one pass. Only the frequencies the net's manager left ticked under **Coverage reports** appear; repeaters and talkgroups are usually unticked, since everyone hears everyone through them. Each column has its own select-all box under its heading, and saving records every column, including any you left empty. The **Station** column stays in place while you scroll sideways through a long list of frequencies, and each station is listed once per place, even after it has rechecked on a second frequency. On a big drill, **Find a station** narrows the list by callsign or site, and **Show frequencies** shows one frequency's column at a time. Neither one changes what you've ticked: a hidden tick is still saved. While a search is on, the select-all box ticks only the stations shown.
 
 <figure>
   <img src="/docs/img/net-control/can-hear-grid.png"

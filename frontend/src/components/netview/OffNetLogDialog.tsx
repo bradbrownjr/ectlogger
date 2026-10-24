@@ -89,6 +89,8 @@ const OffNetLogDialog: React.FC<OffNetLogDialogProps> = ({ open, onClose, netId,
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  // Narrows the list by station, channel or what happened.
+  const [entryFilter, setEntryFilter] = useState('');
 
   const fetchLog = useCallback(async () => {
     try {
@@ -290,8 +292,23 @@ const OffNetLogDialog: React.FC<OffNetLogDialogProps> = ({ open, onClose, netId,
             Nothing logged yet.
           </Typography>
         )}
+        {log && log.entries.length > 0 && (
+          <TextField
+            size="small"
+            fullWidth
+            label="Find an entry"
+            placeholder="Station, frequency or what happened"
+            value={entryFilter}
+            onChange={(e) => setEntryFilter(e.target.value)}
+            sx={{ mb: 1.5 }}
+          />
+        )}
         <Stack spacing={1}>
-          {log?.entries.map((entry) => (
+          {log?.entries.filter((entry) => {
+            const text = entryFilter.trim().toLowerCase();
+            return !text || [entry.from_station, entry.to_station, entry.channel, entry.message, entry.message_id]
+              .some((value) => (value || '').toLowerCase().includes(text));
+          }).map((entry) => (
             <Paper key={entry.id} variant="outlined" sx={{ p: 1.5, opacity: entry.status === 'rejected' ? 0.6 : 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, flexWrap: 'wrap' }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>

@@ -291,6 +291,11 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
     setAccessChanged(true);
   };
   const [saving, setSaving] = useState(false);
+  // Finding a station on a long drill: rows narrow by callsign or site, and
+  // the grid can show one frequency's column instead of all of them. Both
+  // only change what's shown; hidden ticks are kept and still saved.
+  const [stationFilter, setStationFilter] = useState('');
+  const [columnFilter, setColumnFilter] = useState<number | ''>('');
 
   // Changing the frequency re-derives which checkboxes are pre-checked, since
   // reports are scoped per frequency - any in-progress (unsaved) toggles for
@@ -318,6 +323,14 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
     const bOut = b.station.status === 'checked_out' ? 1 : 0;
     return aOut - bOut;
   });
+
+  const filterText = stationFilter.trim().toLowerCase();
+  const visibleStations = filterText
+    ? otherStations.filter((group) =>
+      [group.station.callsign, stationSiteName(group.station, sitesById), group.station.operating_position, group.station.location]
+        .some((text) => (text || '').toLowerCase().includes(filterText)))
+    : otherStations;
+  const visibleFrequencies = columnFilter === '' ? netFrequencies : netFrequencies.filter((f) => f.id === columnFilter);
 
   const isGroupChecked = (checked: Set<number> | undefined, group: StationGroup) =>
     group.ids.some((id) => checked?.has(id));
@@ -348,18 +361,22 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
   // checked out was still genuinely heard. Partly checked shows the box as
   // indeterminate; clicking it from either partial or empty selects all.
   const selectAllState = (checked: Set<number> | undefined) => {
-    const count = otherStations.filter((group) => isGroupChecked(checked, group)).length;
+    const count = visibleStations.filter((group) => isGroupChecked(checked, group)).length;
     return {
-      all: otherStations.length > 0 && count === otherStations.length,
-      some: count > 0 && count < otherStations.length,
+      all: visibleStations.length > 0 && count === visibleStations.length,
+      some: count > 0 && count < visibleStations.length,
     };
   };
   // Selecting all keeps a group's already-ticked row rather than swapping it
   // for the representative, so a save doesn't churn reports that were right.
+  // With a filter on, select-all covers only the stations shown.
   const nextSelection = (checked: Set<number> | undefined) => {
-    if (selectAllState(checked).all) return new Set<number>();
     const next = new Set<number>(checked ?? []);
-    otherStations.forEach((group) => { if (!isGroupChecked(next, group)) next.add(group.station.id); });
+    if (selectAllState(checked).all) {
+      visibleStations.forEach((group) => group.ids.forEach((id) => next.delete(id)));
+      return next;
+    }
+    visibleStations.forEach((group) => { if (!isGroupChecked(next, group)) next.add(group.station.id); });
     return next;
   };
 
@@ -468,6 +485,36 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
           </FormControl>
         )}
 
+        {/* ========== FIND A STATION ========== */}
+        {otherStations.length > 0 && (
+          <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+            <TextField
+              size="small"
+              label="Find a station"
+              placeholder="Callsign or site"
+              value={stationFilter}
+              onChange={(e) => setStationFilter(e.target.value)}
+              sx={{ flex: '1 1 200px' }}
+            />
+            {gridMode && (
+              <FormControl size="small" sx={{ flex: '1 1 200px' }}>
+                <InputLabel id="can-hear-column-filter">Show frequencies</InputLabel>
+                <Select
+                  labelId="can-hear-column-filter"
+                  label="Show frequencies"
+                  value={columnFilter}
+                  onChange={(e) => setColumnFilter(e.target.value === '' ? '' : Number(e.target.value))}
+                >
+                  <MenuItem value="">All frequencies</MenuItem>
+                  {netFrequencies.map((freq: any) => (
+                    <MenuItem key={freq.id} value={freq.id}>{frequencyLabel(freq)}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </Box>
+        )}
+
         {otherStations.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             No other stations are checked in yet.
@@ -482,7 +529,7 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
                 <TableRow>
                   {/* Station column stays pinned while the frequency columns scroll sideways */}
                   <TableCell sx={{ ...stickyStationCell, fontWeight: 'bold', zIndex: 3 }}>Station</TableCell>
-                  {netFrequencies.map((freq) => (
+                  {visibleFrequencies.map((freq) => (
                     <TableCell key={freq.id} align="center" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                       {frequencyLabel(freq)}
                       {/* Select-all for this frequency's column only */}
@@ -499,12 +546,12 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {otherStations.map((group) => (
+                {visibleStations.map((group) => (
                   <TableRow key={group.station.id} sx={{ opacity: group.station.status === 'checked_out' ? 0.6 : 1 }}>
                     <TableCell sx={stickyStationCell}>
                       <StationName station={group.station} sitesById={sitesById} />
                     </TableCell>
-                    {netFrequencies.map((freq) => (
+                    {visibleFrequencies.map((freq) => (
                       <TableCell key={freq.id} align="center" sx={{ p: 0 }}>
                         <Checkbox
                           checked={isGroupChecked(checkedByFrequency[freq.id], group)}
@@ -529,11 +576,11 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
                 onChange={toggleAll}
               />
             }
-            label="All stations"
+            label={filterText ? 'All stations shown' : 'All stations'}
             sx={{ mb: 1, '& .MuiFormControlLabel-label': { fontWeight: 'medium' } }}
           />
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 1, mb: 2 }}>
-            {otherStations.map((group) => (
+            {visibleStations.map((group) => (
               <FormControlLabel
                 key={group.station.id}
                 control={
