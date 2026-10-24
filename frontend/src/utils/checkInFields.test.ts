@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fieldLabel, withOnlyShownFields } from './checkInFields';
+import { fieldLabel, isRelayedByShown, withOnlyShownFields } from './checkInFields';
 import { isValidSpotterNumber } from './spotterNumber';
 
 describe('withOnlyShownFields', () => {
@@ -52,5 +52,24 @@ describe('fieldLabel', () => {
     expect(fieldLabel(undefined, 'power_source')).toBe('Power Src');
     expect(fieldLabel([{ name: 'notes', label: '' }], 'notes')).toBe('Notes');
     expect(fieldLabel([], 'mystery')).toBe('mystery');
+  });
+});
+
+describe('isRelayedByShown', () => {
+  const off = { relayed_by: { enabled: false } };
+
+  it('follows the net setting', () => {
+    expect(isRelayedByShown({ relayed_by: { enabled: true } }, [])).toBe(true);
+    expect(isRelayedByShown(off, [{ status: 'checked_in' }])).toBe(false);
+    expect(isRelayedByShown(undefined, [])).toBe(false);
+  });
+
+  it('appears on a net that has it off once a station is marked Relay', () => {
+    expect(isRelayedByShown(off, [{ status: 'checked_in' }, { status: 'relay' }])).toBe(true);
+    expect(isRelayedByShown(off, [{ status: 'RELAY' }])).toBe(true);
+  });
+
+  it('never hides a relayed-by callsign already logged', () => {
+    expect(isRelayedByShown(off, [{ status: 'checked_in', relayed_by: 'K1COVE' }])).toBe(true);
   });
 });

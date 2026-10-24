@@ -23,6 +23,7 @@ DEFAULT_FIELD_LABELS: Dict[str, str] = {
     "power": "Power",
     "feedback": "Feedback",
     "notes": "Notes",
+    "relayed_by": "Relayed By",
 }
 
 

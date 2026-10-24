@@ -4,7 +4,7 @@ summary: Every field a check-in can carry, what is always required, and what a n
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-29
+revised: 2026-10-23
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/check-in-fields/
@@ -12,7 +12,7 @@ permalink: /docs/reference/check-in-fields/
 
 # Check-in fields
 
-A check-in has one field that is always required, seven built-in fields a net can independently enable and require, and any number of admin-defined custom fields that behave exactly the same way as the built-in ones once created. Which fields actually appear on the check-in form and in the check-in table is controlled per net, not per account or globally.
+A check-in has one field that is always required, eight built-in fields a net can independently enable (seven of which it can also require), and any number of admin-defined custom fields that behave exactly the same way as the built-in ones once created. Which fields actually appear on the check-in form and in the check-in table is controlled per net, not per account or globally.
 
 ## Always required
 
@@ -33,8 +33,11 @@ Each of these can be independently enabled or disabled for a given net, and (if 
 | Power Src | Free text (e.g. "Generator", "Battery") | No | No |
 | Power | Free text (e.g. "100W", "50W mobile") — a separate field from Power Src, not the same thing | No | No |
 | Notes | Free text, multi-line | No | No |
+| Relayed By | The callsign of the station that passed this check-in along to net control. Can be enabled, never required, since most check-ins on a net that uses relays still come in direct | No | No |
 
 </div>
+
+**Relayed By is the one exception to the next paragraph.** With it enabled, its box is always on the check-in form and its column always in the check-in table. With it disabled, both appear anyway as soon as any station on the net is set to **Relay**, or a check-in already has a relayed-by callsign (from a CSV import, for example), so a net that only now and then uses a relay doesn't have to be edited mid-net. Before 2026-10-23 there was no setting at all: the box was on every net's check-in row.
 
 A field that is disabled for a net never appears on that net's check-in form or in its check-in table, whatever an individual operator's account settings are. A field marked required blocks submission of the check-in form until it's filled in.
 

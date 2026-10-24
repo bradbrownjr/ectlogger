@@ -48,7 +48,8 @@ interface CheckInMobileListProps {
   onlineUserIds: number[];
   activeSpeakerId: number | null;
   latestCheckedInAtByCallsign: Map<string, string>;
-  hasAnyRelayedBy: boolean;
+  // Relayed By column: the net has the field on, or it's in use (utils/checkInFields.ts::isRelayedByShown)
+  showRelayedBy: boolean;
   canManage: boolean;
   canManageCheckIns: boolean | undefined;
   getNcsColor: (station: { user_id?: number | null; callsign?: string | null }) => NcsColor;
@@ -89,7 +90,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
   onlineUserIds,
   activeSpeakerId,
   latestCheckedInAtByCallsign,
-  hasAnyRelayedBy,
+  showRelayedBy,
   canManage,
   canManageCheckIns,
   getNcsColor,
@@ -205,7 +206,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
             ))}
             {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Topic</TableCell>}
             {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
-            {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
+            {showRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'relayed_by')}</TableCell>}
             <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
             {/* Actions column: staff only (see showActions) */}
             {showActions && (
@@ -412,7 +413,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                 ))}
                 {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.topic_response || ''}</TableCell>}
                 {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}
-                {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.relayed_by || ''}</TableCell>}
+                {showRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.relayed_by || ''}</TableCell>}
                 <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
                 {showActions && (
                   <TableCell

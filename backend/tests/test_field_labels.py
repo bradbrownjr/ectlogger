@@ -41,3 +41,15 @@ async def test_closing_email_uses_the_admins_label(monkeypatch):
         field_labels={**DEFAULT_FIELD_LABELS, "power": "Power (W)"},
     )
     assert "<th>Power (W)</th>" in captured["html"]
+
+
+@pytest.mark.asyncio
+async def test_relayed_by_is_a_field_a_net_turns_on(client):
+    """Relayed By is a built-in field, off by default, so a net that never
+    uses relays doesn't carry the box (it was on every entry row until
+    2026-10-23)."""
+    fields = (await client.get("/api/settings/fields")).json()
+    relayed = next(f for f in fields if f["name"] == "relayed_by")
+    assert relayed["is_builtin"] is True
+    assert relayed["default_enabled"] is False
+    assert relayed["label"] == DEFAULT_FIELD_LABELS["relayed_by"]

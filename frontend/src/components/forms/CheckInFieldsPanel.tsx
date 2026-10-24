@@ -9,6 +9,7 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
+import { NEVER_REQUIRED_FIELDS } from '../../utils/checkInFields';
 
 // ========== SHARED CHECK-IN FIELDS PANEL ==========
 // Enable/require custom check-in fields; locked rows for poll and topic-of-week
@@ -74,7 +75,15 @@ const CheckInFieldsPanel: React.FC<CheckInFieldsPanelProps> = ({
             const config = fieldConfig[field.name] || { enabled: false, required: false };
             return (
               <TableRow key={field.name}>
-                <TableCell>{field.label}</TableCell>
+                <TableCell>
+                  {field.label}
+                  {/* Relayed By also shows on its own once a station is marked Relay (utils/checkInFields.ts) */}
+                  {field.name === 'relayed_by' && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Also shown when a station is marked Relay
+                    </Typography>
+                  )}
+                </TableCell>
                 <TableCell align="center">
                   <Checkbox
                     checked={config.enabled}
@@ -85,7 +94,7 @@ const CheckInFieldsPanel: React.FC<CheckInFieldsPanelProps> = ({
                   <Checkbox
                     checked={config.required}
                     onChange={() => handleFieldToggle(field.name, 'required')}
-                    disabled={!config.enabled}
+                    disabled={!config.enabled || NEVER_REQUIRED_FIELDS.includes(field.name)}
                   />
                 </TableCell>
               </TableRow>

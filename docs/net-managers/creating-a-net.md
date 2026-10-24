@@ -68,7 +68,7 @@ Both are covered in full in [Scripts, notes, and announcements](/docs/net-manage
 
 ### Check-in fields
 
-Callsign is the only field every net always requires. Everything else (Name, Location, Spotter #, Weather Observation, Power Src, Power, Feedback, Notes, and any custom fields your instance's administrator has defined) is switched on or off and marked required or optional independently, per net. See [Check-in fields](/docs/reference/check-in-fields/) for the complete list. If **Topic of the Week** or **Participant Poll** is on, its response field appears here too, locked on so it can't be switched off by mistake.
+Callsign is the only field every net always requires. Everything else (Name, Location, Spotter #, Weather Observation, Power Src, Power, Feedback, Notes, Relayed By, and any custom fields your instance's administrator has defined) is switched on or off and marked required or optional independently, per net. See [Check-in fields](/docs/reference/check-in-fields/) for the complete list. Turn on **Relayed By** for a net that regularly uses relay stations; on any other net it still appears by itself once a station is set to Relay. If **Topic of the Week** or **Participant Poll** is on, its response field appears here too, locked on so it can't be switched off by mistake.
 
 ## Saving
 

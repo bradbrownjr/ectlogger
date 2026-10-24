@@ -83,6 +83,8 @@ Removing and blocking is for the net's NCS and Logger, its manager, and admins.
 
 Not every station on the air has ever touched ECTLogger, and that's fine; a check-in doesn't require one. Type the callsign as given; if it doesn't match any registered account, the row is created as a **guest** check-in. Everything about it works the same as any other row: it can be edited, statused, and shown up in exports and the map exactly like an account-linked check-in.
 
+When a station relays a check-in for someone net control can't hear, type the relay's callsign in the **Relayed By** box on the check-in row. The box is there on a net whose manager turned the field on. On any other net it appears as soon as one station is set to **Relay** from its status menu, so set the relay station first.
+
 A guest check-in can be marked NCS, Logger, or Relay from its status menu, the same way as any other row. This is how a Logger who runs the net in the app credits the net control operator on the air when that operator has no account: pick **NCS** on their row, and the report, the ICS-309, and the closing log name them as Net Control. The role is a credit only. It doesn't give anyone access to anything, because there's no account to give it to. The people who can do this are the same ones who can use the net's **Roles** button. Picking a plain status for that row again removes the role.
 
 The things that are unavailable to a guest check-in are the ones that genuinely depend on an account existing: their profile popup has no account details such as a website link, and on an [authenticated net](/docs/net-control/authenticated-nets/) a guest check-in can never be identity-verified, because there's no TOTP secret behind it to check.

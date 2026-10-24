@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { fieldLabel } from '../utils/checkInFields';
+import { fieldLabel, isRelayedByShown } from '../utils/checkInFields';
 import { useDeleteCheckInPrompt } from '../hooks/useDeleteCheckInPrompt';
 import { formatFrequencyDisplay } from '../utils/frequencyList';
 import useDialog from '../hooks/useDialog';
@@ -1368,8 +1368,9 @@ const NetView: React.FC = () => {
     return net?.field_config?.[fieldName]?.required ?? false;
   };
 
-  // Check if any check-in has a relayed_by value (to conditionally show the column)
-  const hasAnyRelayedBy = checkIns.some((ci: CheckIn) => ci.relayed_by);
+  // Relayed By box and column: on when the net turns the field on, or once a
+  // station is marked Relay or a check-in carries a relayed-by callsign.
+  const showRelayedBy = isRelayedByShown(net?.field_config, checkIns);
 
   // Get appropriate callsign based on active frequency mode
   const getAppropriateCallsign = (): string => {
@@ -1882,7 +1883,7 @@ const NetView: React.FC = () => {
                 onlineUserIds={onlineUserIds}
                 activeSpeakerId={activeSpeakerId}
                 latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
-                hasAnyRelayedBy={hasAnyRelayedBy}
+                showRelayedBy={showRelayedBy}
                 hideDuplicates={hideDuplicates}
                 canManage={canManage}
                 canManageCheckIns={canManageCheckIns}
@@ -1932,7 +1933,7 @@ const NetView: React.FC = () => {
               onlineUserIds={onlineUserIds}
               activeSpeakerId={activeSpeakerId}
               latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
-              hasAnyRelayedBy={hasAnyRelayedBy}
+              showRelayedBy={showRelayedBy}
               canManage={canManage}
               canManageCheckIns={canManageCheckIns}
               getNcsColor={getNcsColor}
@@ -2337,22 +2338,24 @@ const NetView: React.FC = () => {
                         />
                       </TableCell>
                     )}
-                    <TableCell>
-                      <TextField
-                        size="small"
-                        value={checkInForm.relayed_by}
-                        onChange={(e) => setCheckInForm({ ...checkInForm, relayed_by: e.target.value.toUpperCase() })}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleCheckIn();
-                          }
-                        }}
-                        placeholder="Relay"
-                        inputProps={{ style: { textTransform: 'uppercase', fontSize: '0.75rem' } }}
-                        sx={{ width: 70 }}
-                      />
-                    </TableCell>
+                    {showRelayedBy && (
+                      <TableCell>
+                        <TextField
+                          size="small"
+                          value={checkInForm.relayed_by}
+                          onChange={(e) => setCheckInForm({ ...checkInForm, relayed_by: e.target.value.toUpperCase() })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleCheckIn();
+                            }
+                          }}
+                          placeholder={labelOf('relayed_by')}
+                          inputProps={{ style: { textTransform: 'uppercase', fontSize: '0.75rem' } }}
+                          sx={{ width: 70 }}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Select
                         size="small"
@@ -2594,17 +2597,19 @@ const NetView: React.FC = () => {
                     )
                   ))}
                   
-                  {/* Relayed By field */}
-                  <TextField
-                    size="small"
-                    label="Relayed By"
-                    value={checkInForm.relayed_by}
-                    onChange={(e) => setCheckInForm({ ...checkInForm, relayed_by: e.target.value.toUpperCase() })}
-                    placeholder="Relay callsign"
-                    inputProps={{ style: { textTransform: 'uppercase' } }}
-                    fullWidth
-                    helperText="Callsign of station who relayed this check-in"
-                  />
+                  {/* Relayed By field: shown when the net uses it (isRelayedByShown) */}
+                  {showRelayedBy && (
+                    <TextField
+                      size="small"
+                      label={labelOf('relayed_by')}
+                      value={checkInForm.relayed_by}
+                      onChange={(e) => setCheckInForm({ ...checkInForm, relayed_by: e.target.value.toUpperCase() })}
+                      placeholder="Relay callsign"
+                      inputProps={{ style: { textTransform: 'uppercase' } }}
+                      fullWidth
+                      helperText="Callsign of station who relayed this check-in"
+                    />
+                  )}
                   
                   {/* Frequency selector if multiple frequencies */}
                   {net?.frequencies && net.frequencies.length > 1 && (
@@ -2773,7 +2778,7 @@ const NetView: React.FC = () => {
                 onlineUserIds={onlineUserIds}
                 activeSpeakerId={activeSpeakerId}
                 latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
-                hasAnyRelayedBy={hasAnyRelayedBy}
+                showRelayedBy={showRelayedBy}
                 hideDuplicates={hideDuplicates}
                 canManage={canManage}
                 canManageCheckIns={canManageCheckIns}
@@ -2920,14 +2925,16 @@ const NetView: React.FC = () => {
                         />
                       </Tooltip>
                     )}
-                    <TextField
-                      size="small"
-                      value={checkInForm.relayed_by}
-                      onChange={(e) => setCheckInForm({ ...checkInForm, relayed_by: e.target.value.toUpperCase() })}
-                      placeholder="Relayed By"
-                      inputProps={{ style: { textTransform: 'uppercase' } }}
-                      sx={{ width: 100 }}
-                    />
+                    {showRelayedBy && (
+                      <TextField
+                        size="small"
+                        value={checkInForm.relayed_by}
+                        onChange={(e) => setCheckInForm({ ...checkInForm, relayed_by: e.target.value.toUpperCase() })}
+                        placeholder={labelOf('relayed_by')}
+                        inputProps={{ style: { textTransform: 'uppercase' } }}
+                        sx={{ width: 100 }}
+                      />
+                    )}
                     <Button variant="contained" onClick={handleCheckIn} disabled={!checkInForm.callsign} size="small">
                       Add
                     </Button>

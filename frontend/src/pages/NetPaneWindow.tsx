@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { fieldLabel } from '../utils/checkInFields';
+import { fieldLabel, isRelayedByShown } from '../utils/checkInFields';
 import { useDeleteCheckInPrompt } from '../hooks/useDeleteCheckInPrompt';
 import { formatFrequencyDisplay } from '../utils/frequencyList';
 import { useParams } from 'react-router-dom';
@@ -428,7 +428,7 @@ const NetPaneWindow: React.FC = () => {
 
   const isFieldRequired = (fieldName: string) => net?.field_config?.[fieldName]?.required ?? false;
 
-  const hasAnyRelayedBy = checkIns.some((ci: any) => ci.relayed_by);
+  const showRelayedBy = isRelayedByShown(net?.field_config, checkIns);
 
   const {
     handleCallsignLookup,
@@ -482,7 +482,7 @@ const NetPaneWindow: React.FC = () => {
         onlineUserIds={onlineUserIds}
         activeSpeakerId={activeSpeakerId}
         latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
-        hasAnyRelayedBy={hasAnyRelayedBy}
+        showRelayedBy={showRelayedBy}
         hideDuplicates={hideDuplicates}
         canManage={canManage}
         canManageCheckIns={canManageCheckIns}
@@ -648,14 +648,16 @@ const NetPaneWindow: React.FC = () => {
                 sx={{ width: 120 }}
               />
             )}
-            <TextField
-              size="small"
-              value={checkInForm.relayed_by}
-              onChange={(e) => setCheckInForm({ ...checkInForm, relayed_by: e.target.value.toUpperCase() })}
-              placeholder="Relayed By"
-              inputProps={{ style: { textTransform: 'uppercase' } }}
-              sx={{ width: 100 }}
-            />
+            {showRelayedBy && (
+              <TextField
+                size="small"
+                value={checkInForm.relayed_by}
+                onChange={(e) => setCheckInForm({ ...checkInForm, relayed_by: e.target.value.toUpperCase() })}
+                placeholder={labelOf('relayed_by')}
+                inputProps={{ style: { textTransform: 'uppercase' } }}
+                sx={{ width: 100 }}
+              />
+            )}
             <Button variant="contained" onClick={handleCheckIn} disabled={!checkInForm.callsign} size="small">
               Add
             </Button>

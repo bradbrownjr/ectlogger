@@ -64,7 +64,8 @@ interface CheckInTableProps {
   onlineUserIds: number[];
   activeSpeakerId: number | null;
   latestCheckedInAtByCallsign: Map<string, string>;
-  hasAnyRelayedBy: boolean;
+  // Relayed By column: the net has the field on, or it's in use (utils/checkInFields.ts::isRelayedByShown)
+  showRelayedBy: boolean;
   hideDuplicates: boolean;
   canManage: boolean;
   canManageCheckIns: boolean | undefined;
@@ -133,7 +134,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   onlineUserIds,
   activeSpeakerId,
   latestCheckedInAtByCallsign,
-  hasAnyRelayedBy,
+  showRelayedBy,
   hideDuplicates,
   canManage,
   canManageCheckIns,
@@ -297,7 +298,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           </Tooltip>
                         </TableCell>
                       )}
-                      {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
+                      {showRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'relayed_by')}</TableCell>}
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
                       <TableCell
                         sx={{
@@ -371,7 +372,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     if (net?.field_config?.power?.enabled) columnCount++;
                     if (net?.field_config?.notes?.enabled) columnCount++;
                     columnCount += getEnabledCustomFields().length;
-                    if (hasAnyRelayedBy) columnCount++;
+                    if (showRelayedBy) columnCount++;
                     
                     // Check if this row is being inline edited
                     const isInlineEditing = inlineEditingId === checkIn.id;
@@ -851,7 +852,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                         </TableCell>
                       )}
                       {/* Relayed By - inline editable */}
-                      {hasAnyRelayedBy && (
+                      {showRelayedBy && (
                         <TableCell data-field="relayed_by" sx={{ width: 80 }}>
                           {isInlineEditing ? (
                             <TextField

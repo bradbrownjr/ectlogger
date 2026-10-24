@@ -29,7 +29,7 @@ router = APIRouter(prefix="/check-ins", tags=["check-ins"])
 # in routers/settings.py. Custom fields are looked up by name directly.
 _SPAM_GUARDABLE_BUILTIN_FIELDS = (
     'name', 'location', 'skywarn_number', 'weather_observation',
-    'power_source', 'power', 'feedback', 'notes',
+    'power_source', 'power', 'feedback', 'notes', 'relayed_by',
 )
 
 
@@ -177,6 +177,7 @@ async def create_check_in(
         'power': check_in_data.power,
         'feedback': check_in_data.feedback,
         'notes': check_in_data.notes,
+        'relayed_by': check_in_data.relayed_by,
         **(check_in_data.custom_fields or {}),
     })
 
