@@ -45,6 +45,11 @@
               "docs": "/docs/net-managers/creating-a-net/#communication-plan"
             },
             {
+              "text": "Check-in: Relayed By only where you use it — Relayed By is now a check-in field that each net or schedule turns on, and it's off by default, so nets that never use relays get the room back on the check-in row. On a net with it off, the box appears by itself as soon as a station is set to Relay.",
+              "userImpact": true,
+              "docs": "/docs/reference/check-in-fields/"
+            },
+            {
               "text": "Check-in: Sites on any net — Any net can now have a list of sites, such as shelters, aid stations and checkpoints, without turning on coverage logging. Each check-in gets a Site box next to Location with those sites plus Home, and the net shows a board of who is at each site, at home, or mobile. Logging someone at a site doesn't change the usual town that fills in for them on your other nets.",
               "userImpact": true,
               "docs": "/docs/net-managers/sites/"
