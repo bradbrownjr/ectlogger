@@ -181,6 +181,17 @@ export function coverageFrequencies<F extends { id: number }>(net: { frequencies
 // The site a check-in is at, shown under its callsign: the same callsign can
 // appear twice in a coverage list once an operator rechecks from a second
 // site, so the site tells the two visits apart.
+// Sites with a station on the net right now: any check-in row at the site
+// that isn't checked out. Repeaters and nodes are never "active" this way,
+// since nobody checks in at one. Sorted by name for the header's tooltip.
+export function activeSiteNames(
+  checkIns: { coverage_site_id?: number | null; status?: string }[],
+  sites: CoverageSite[],
+): string[] {
+  const live = new Set(checkIns.filter((ci) => ci.status !== 'checked_out').map((ci) => ci.coverage_site_id));
+  return reportingSites(sites).filter((site) => live.has(site.id)).map((site) => site.name).sort((a, b) => a.localeCompare(b));
+}
+
 export function stationSiteName(checkIn: { coverage_site_id?: number | null }, sitesById: Map<number, CoverageSite>): string | null {
   const site = checkIn.coverage_site_id != null ? sitesById.get(checkIn.coverage_site_id) : undefined;
   return site ? site.name : null;

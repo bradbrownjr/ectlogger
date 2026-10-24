@@ -68,6 +68,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { netApi, checkInApi, netRoleApi, templateApi, canHearApi, offNetLogApi } from '../services/api';
+import { activeSiteNames, reportingSites } from '../utils/coverageSites';
 import api from '../services/api';
 import { exportElementToPdf } from '../utils/pdfExport';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
@@ -1747,6 +1748,7 @@ const NetView: React.FC = () => {
         userNetRole={userNetRole}
         userActiveCheckIn={userActiveCheckIn}
         netStats={netStats}
+        activeSites={reportingSites(siteCoverage.sites).length > 0 ? activeSiteNames(checkIns, siteCoverage.sites) : null}
         countdownTime={countdownTime}
         lobbyOpensCountdown={lobbyOpensCountdown}
         durationTime={durationTime}

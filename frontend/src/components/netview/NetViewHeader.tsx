@@ -198,6 +198,8 @@ interface NetViewHeaderProps {
   userNetRole: any;
   userActiveCheckIn: any;
   netStats: any;
+  // Names of the net's sites with a station on right now; null on a net with no sites.
+  activeSites: string[] | null;
   countdownTime: string | null;
   lobbyOpensCountdown: string | null;
   durationTime: string | null;
@@ -328,6 +330,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   userNetRole,
   userActiveCheckIn,
   netStats,
+  activeSites,
   countdownTime,
   lobbyOpensCountdown,
   durationTime,
@@ -1028,6 +1031,12 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
                 <Chip label={`${netStats.checked_out_count} Checked Out`} size="small" color="default" variant="outlined" />
               )}
               <Chip label={`${netStats.unique_stations ?? netStats.total_check_ins} Checked In`} size="small" color="primary" variant="outlined" />
+              {/* Shows on a net with sites: how many have a station on now */}
+              {activeSites && (
+                <Tooltip title={activeSites.length > 0 ? activeSites.join(', ') : 'No site has a station on right now'}>
+                  <Chip label={`${activeSites.length} ${activeSites.length === 1 ? 'Site' : 'Sites'} Active`} size="small" color="primary" variant="outlined" />
+                </Tooltip>
+              )}
               {(netStats.recheck_count ?? 0) > 0 && (
                 <Chip label={`${netStats.recheck_count} Rechecks`} size="small" color="warning" variant="outlined" />
               )}

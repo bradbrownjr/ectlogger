@@ -4,7 +4,7 @@ summary: Checking a station in at a shelter, an aid station or at home, what hap
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-24
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/stations-at-sites/
@@ -69,6 +69,8 @@ Every site the net is working is listed even when nobody has reached it yet, mar
        alt="The Sites board, listing the stations checked in on the SET net under where each one is: the net's sites in order, each with its town and a count of stations, such as Example County EOC, Windham, ME with N1LAKE and W1MILL, then the stations at home.">
   <figcaption>Who is where right now. A site nobody has reached says so.</figcaption>
 </figure>
+
+For a quick count, the **Sites Active** label at the top of the net shows how many sites have a station on right now. Point at it to see their names.
 
 ## Next
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coverageFrequencies, formatSiteLine, parseSiteLine, stationSiteName } from './coverageSites';
+import { activeSiteNames, coverageFrequencies, formatSiteLine, parseSiteLine, stationSiteName } from './coverageSites';
 
 describe('parseSiteLine', () => {
   it('splits a name from the town and state at the first comma', () => {
@@ -39,5 +39,23 @@ describe('stationSiteName', () => {
     const sites = new Map([[7, { id: 7, net_id: 1, name: 'Gray NWS', location: null, site_type: 'office' as const, is_primary: false, sort_order: 0, frequency_id: null, is_supported: true, in_use: true }]]);
     expect(stationSiteName({ coverage_site_id: 7 }, sites)).toBe('Gray NWS');
     expect(stationSiteName({}, sites)).toBeNull();
+  });
+});
+
+describe('activeSiteNames', () => {
+  const site = (id: number, name: string, site_type: 'office' | 'shelter' | 'infrastructure') =>
+    ({ id, net_id: 1, name, location: null, site_type, is_primary: false, sort_order: 0, frequency_id: null, is_supported: true, in_use: true });
+  const sites = [site(1, 'Windham HS', 'shelter'), site(2, 'Bunker', 'office'), site(3, 'Gray repeater', 'infrastructure'), site(4, 'Gorham MS', 'shelter')];
+
+  it('counts each site with a live station once, and skips checked-out rows and repeaters', () => {
+    const checkIns = [
+      { coverage_site_id: 2, status: 'checked_in' },
+      { coverage_site_id: 2, status: 'checked_in' }, // a recheck at the same site
+      { coverage_site_id: 1, status: 'mobile' },
+      { coverage_site_id: 4, status: 'checked_out' },
+      { coverage_site_id: 3, status: 'checked_in' },
+      { coverage_site_id: null, status: 'checked_in' },
+    ];
+    expect(activeSiteNames(checkIns, sites)).toEqual(['Bunker', 'Windham HS']);
   });
 });
