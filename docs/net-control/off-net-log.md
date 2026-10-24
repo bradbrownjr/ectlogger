@@ -4,7 +4,7 @@ summary: Put a station's contacts away from this net on its ICS-309, such as a c
 kind: How-to
 audience: NCS, Logger, and Relay operators, and stations checked into the net
 owner: KC1JMH
-revised: 2026-10-22
+revised: 2026-10-24
 review_by: 2027-10-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/off-net-log/
@@ -53,7 +53,7 @@ Click **Add entry** and fill in:
 - **Time** - when it happened. It starts at the current time; change it if you're logging something after the fact.
 - **From station** - the station that made the contact. Net control can enter any callsign, which is how you log a contact a station reports to you over the air. A station logging its own activity always logs as itself.
 - **To** - who the contact was with, such as "State ARES HF Net" or "Harbor County EMA."
-- **Channel** - where it happened, such as "3.940 LSB," "DMR TG 3100," or "Winlink." The list suggests this net's own frequencies, but you can type anything.
+- **Channel** - where it happened, such as "3.940 LSB," "DMR TG 3100," or "Winlink." Type any frequency, such as another county's repeater. As you type, it suggests this net's own frequencies too.
 - **What happened** - one line.
 - **Message ID** - optional, for a Winlink message or anything else with an ID of its own.
 

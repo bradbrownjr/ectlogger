@@ -234,13 +234,19 @@ const OffNetLogDialog: React.FC<OffNetLogDialogProps> = ({ open, onClose, netId,
                   required
                   inputProps={{ maxLength: 200 }}
                 />
+                {/* A text box with suggestions, not a pick-list: off-net activity
+                    is usually on a frequency this net doesn't use (another
+                    county's repeater). No dropdown arrow, and the helper text
+                    says so, since the arrow made it read as choose-one-of. */}
                 <Autocomplete
                   freeSolo
+                  forcePopupIcon={false}
                   options={[...channelSuggestions, 'Winlink']}
                   inputValue={draft.channel}
                   onInputChange={(_, value) => setDraft({ ...draft, channel: value })}
                   renderInput={(params) => (
-                    <TextField {...params} label="Channel" placeholder="3.940 LSB, a DMR talkgroup, Winlink" size="small"
+                    <TextField {...params} label="Channel" placeholder="147.345 FM, 3.940 LSB, a DMR talkgroup, Winlink" size="small"
+                      helperText="Type any frequency, or pick one of this net's"
                       inputProps={{ ...params.inputProps, maxLength: 200 }} />
                   )}
                 />
