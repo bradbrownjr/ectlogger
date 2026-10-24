@@ -1,8 +1,8 @@
 {
-  "version": "2026.10.24b",
+  "version": "2026.10.24c",
   "entries": [
     {
-      "version": "2026.10.24b",
+      "version": "2026.10.24c",
       "date": "2026-10-24",
       "sections": [
         {
@@ -39,6 +39,11 @@
               "text": "Net View: Release a frequency — Click your claimed frequency, or the net's active one, again to release it, so a net manager or coordinator can go back to seeing every check-in.",
               "userImpact": true,
               "docs": "/docs/net-control/frequencies-and-multi-ncs/#frequency-chips"
+            },
+            {
+              "text": "Reports: A clearer order — Sites and coverage now follow the map, ahead of the check-in log, and the ICS-309 and the Activity Log (formerly System Log) come last.",
+              "userImpact": false,
+              "docs": "/docs/net-managers/reports-and-exports/#the-net-report-page"
             }
           ]
         },
@@ -50,6 +55,10 @@
               "text": "Check-in: Power is saved — Power typed when checking a station in wasn't being saved, so the Power column stayed empty unless someone edited each check-in afterwards. It's saved now. Bulk add also has a Power column now, and Relayed By entered there goes to the Relayed By column.",
               "userImpact": true,
               "docs": "/docs/reference/speed-entry-syntax/"
+            },
+            {
+              "text": "Check-in list: Row buttons line up — The buttons at the end of each row stay in the same place on every row, and a checked-out station's row is one color all the way across.",
+              "userImpact": false
             }
           ]
         }

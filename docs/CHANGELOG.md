@@ -28,10 +28,12 @@ All notable changes to ECTLogger are documented here.
 * **Off-net log: Log any frequency, and find entries fast** — The Channel box no longer looks like a pick-list, so a contact on another county's repeater gets its own frequency instead of one of the net's. Find an entry searches the log by station, channel or what happened. [Learn more](/docs/net-control/off-net-log/#adding-an-entry)
 * **Net View: Clearer station counts** — Checked Out now sits beside Checked In, so the two add up to every station that took part. On a net with sites, a new label shows how many sites have a station on right now; point at it to see which. [Learn more](/docs/net-control/logging-check-ins/#rechecks)
 * **Net View: Release a frequency** — Click your claimed frequency, or the net's active one, again to release it, so a net manager or coordinator can go back to seeing every check-in. [Learn more](/docs/net-control/frequencies-and-multi-ncs/#frequency-chips)
+* **Reports: A clearer order** — Sites and coverage now follow the map, ahead of the check-in log, and the ICS-309 and the Activity Log (formerly System Log) come last. [Learn more](/docs/net-managers/reports-and-exports/#the-net-report-page)
 
 ## Bug Fixes
 
 * **Check-in: Power is saved** — Power typed when checking a station in wasn't being saved, so the Power column stayed empty unless someone edited each check-in afterwards. It's saved now. Bulk add also has a Power column now, and Relayed By entered there goes to the Relayed By column. [Learn more](/docs/reference/speed-entry-syntax/)
+* **Check-in list: Row buttons line up** — The buttons at the end of each row stay in the same place on every row, and a checked-out station's row is one color all the way across.
 
 ---
 
