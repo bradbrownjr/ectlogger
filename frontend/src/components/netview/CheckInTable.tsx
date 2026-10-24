@@ -192,6 +192,30 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   const [hasMoreToScroll, setHasMoreToScroll] = useState(false);
   const stickyShadow = hasMoreToScroll ? '-4px 0 6px -4px rgba(0,0,0,0.3)' : 'none';
 
+  // ========== ROW ACTION SLOTS ==========
+  // Which per-row buttons a check-in gets. A button any row in the table has
+  // keeps its slot on every row (an invisible stand-in where that row doesn't
+  // get it), so Delete and the rest line up down the column instead of
+  // shifting left on a checked-out row that only has Delete.
+  type ActionSlot = 'away' | 'hand' | 'speaker' | 'delete' | 'hear';
+  const ACTION_SLOTS: ActionSlot[] = ['away', 'hand', 'speaker', 'delete', 'hear'];
+  const actionSlotsFor = (checkIn: any): Record<ActionSlot, boolean> => {
+    const own = checkIn.user_id === user?.id;
+    const live = (net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out';
+    return {
+      away: (canManage || own) && live,
+      hand: (canManage || own) && live,
+      speaker: canManage && live,
+      delete: canManage,
+      // Relay staff can report without managing check-ins, and a station can
+      // report what it itself hears unless the net turned that off.
+      hear: !!net.propagation_logging_enabled
+        && (canReportCanHear || (own && net.self_can_hear_enabled !== false))
+        && isLogOpen(net) && checkIn.status !== 'checked_out',
+    };
+  };
+  const tableSlots = ACTION_SLOTS.filter((slot) => filteredCheckIns.some((ci) => actionSlotsFor(ci)[slot]));
+
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -363,6 +387,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     
                     // Calculate column count for frequency chip row colspan
                     const hasFrequencyChips = net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0;
+                    const rowSlots = actionSlotsFor(checkIn);
                     let columnCount = 5; // #, Status, Callsign, Time, Actions (merged with pop-out icon column)
                     if (net?.field_config?.name?.enabled) columnCount++;
                     if (showSite) columnCount++;
@@ -876,86 +901,73 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           rendered (matching the header's always-present merged cell) so
                           table columns stay aligned even on a row where neither canManage
                           nor "own check-in" applies; the cell is simply empty then. */}
-                      {/* Spans the frequency chips row too, so the buttons and the row's
-                          color cover the whole check-in rather than stopping above its chips.
-                          '&&' outranks the row's own td rule that drops the bottom border
-                          and padding when chips follow. */}
                       <TableCell
-                        rowSpan={hasFrequencyChips ? 2 : 1}
                         sx={{
                           position: 'sticky',
                           right: 0,
                           zIndex: 1,
                           ...stickyCellSx,
                           boxShadow: stickyShadow,
-                          ...(hasFrequencyChips && { '&&': { borderBottom: 1, borderColor: 'divider', pb: 0.75 } }),
                         }}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {(canManage || checkIn.user_id === user?.id) && (
-                        <>
-                        {/* Step away button - only show when net is active or lobby */}
-                        {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleStatusChange(checkIn.id, checkIn.status === 'away' ? 'checked_in' : 'away')}
-                            color={checkIn.status === 'away' ? 'warning' : 'default'}
-                            title={checkIn.status === 'away' ? 'Return from break' : 'Step away'}
-                            sx={{ opacity: checkIn.status === 'away' ? 1 : 0.4 }}
-                          >
-                            <PauseCircleOutlineIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                        {/* Hand Raise button - only show when net is active or lobby */}
-                        {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleToggleHand(checkIn.id)}
-                            color={checkIn.hand_raised ? 'warning' : 'default'}
-                            title={checkIn.hand_raised ? 'Lower hand' : 'Raise hand'}
-                            sx={{ opacity: checkIn.hand_raised ? 1 : 0.4 }}
-                          >
-                            <PanToolIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                        {canManage && (
-                        <>
-                        {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleSetActiveSpeaker(checkIn.id)}
-                            color={checkIn.id === activeSpeakerId ? 'primary' : 'default'}
-                            title="Mark as active speaker"
-                          >
-                            🗣️
-                          </IconButton>
-                        )}
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDeleteCheckIn(checkIn.id)}
-                          title="Delete check-in"
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                        </>
-                        )}
-                        </>
-                        )}
-                        {/* "Can hear" reporting - gated independently of canManage/ownership
-                            above, since Relay staff can report without managing check-ins.
-                            A station can also report what it itself can hear, unless the net
-                            has turned self-reporting off (self_can_hear_enabled). */}
-                        {net.propagation_logging_enabled && (canReportCanHear || (checkIn.user_id === user?.id && net.self_can_hear_enabled !== false)) && isLogOpen(net) && checkIn.status !== 'checked_out' && (
-                          <IconButton
-                            size="small"
-                            onClick={() => onOpenCanHearDialog(checkIn.id)}
-                            color={canHearReporterCheckInIds.includes(checkIn.id) ? 'info' : 'default'}
-                            title="Who can this station hear?"
-                            sx={{ opacity: canHearReporterCheckInIds.includes(checkIn.id) ? 1 : 0.4 }}
-                          >
-                            <HearingIcon fontSize="small" />
-                          </IconButton>
-                        )}
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {tableSlots.map((slot) => {
+                          const button = slot === 'away' ? (
+                            <IconButton
+                              size="small"
+                              onClick={() => handleStatusChange(checkIn.id, checkIn.status === 'away' ? 'checked_in' : 'away')}
+                              color={checkIn.status === 'away' ? 'warning' : 'default'}
+                              title={checkIn.status === 'away' ? 'Return from break' : 'Step away'}
+                              sx={{ opacity: checkIn.status === 'away' ? 1 : 0.4 }}
+                            >
+                              <PauseCircleOutlineIcon fontSize="small" />
+                            </IconButton>
+                          ) : slot === 'hand' ? (
+                            <IconButton
+                              size="small"
+                              onClick={() => handleToggleHand(checkIn.id)}
+                              color={checkIn.hand_raised ? 'warning' : 'default'}
+                              title={checkIn.hand_raised ? 'Lower hand' : 'Raise hand'}
+                              sx={{ opacity: checkIn.hand_raised ? 1 : 0.4 }}
+                            >
+                              <PanToolIcon fontSize="small" />
+                            </IconButton>
+                          ) : slot === 'speaker' ? (
+                            <IconButton
+                              size="small"
+                              onClick={() => handleSetActiveSpeaker(checkIn.id)}
+                              color={checkIn.id === activeSpeakerId ? 'primary' : 'default'}
+                              title="Mark as active speaker"
+                              sx={{ width: 30, height: 30, fontSize: '1rem' }}
+                            >
+                              🗣️
+                            </IconButton>
+                          ) : slot === 'delete' ? (
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteCheckIn(checkIn.id)}
+                              title="Delete check-in"
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          ) : (
+                            <IconButton
+                              size="small"
+                              onClick={() => onOpenCanHearDialog(checkIn.id)}
+                              color={canHearReporterCheckInIds.includes(checkIn.id) ? 'info' : 'default'}
+                              title="Who can this station hear?"
+                              sx={{ opacity: canHearReporterCheckInIds.includes(checkIn.id) ? 1 : 0.4 }}
+                            >
+                              <HearingIcon fontSize="small" />
+                            </IconButton>
+                          );
+                          // This row doesn't get the button: hold its 30px slot
+                          return rowSlots[slot]
+                            ? <React.Fragment key={slot}>{button}</React.Fragment>
+                            : <Box key={slot} aria-hidden sx={{ width: 30, height: 30, flexShrink: 0 }} />;
+                        })}
+                        </Box>
                       </TableCell>
                     </TableRow>
                     {/* Frequency chips row - only show if net has multiple frequencies */}
@@ -969,7 +981,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           borderLeft: `3px solid ${ncsColor.border}`,
                         }),
                       }}>
-                        {/* One column short: the Actions cell above spans into this row. */}
+                        {/* One column short: the row's own Actions cell closes it below. */}
                         <TableCell colSpan={columnCount - 1} sx={{ pt: 0, pb: 0.5, borderBottom: 1, borderColor: 'divider' }}>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', pl: 4 }}>
                             {checkIn.available_frequencies!.map((freqId: number) => {
@@ -1006,6 +1018,11 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                             })}
                           </Box>
                         </TableCell>
+                        {/* The frozen Actions column continues under the buttons, painted
+                            exactly like the cell above. One cell stretched over both rows
+                            was drawn in two shades on a faded row: the faded chips row is
+                            its own layer and painted over the stretched cell's lower half. */}
+                        <TableCell sx={{ position: 'sticky', right: 0, zIndex: 1, ...stickyCellSx, boxShadow: stickyShadow, pt: 0, pb: 0.5, borderBottom: 1, borderColor: 'divider' }} />
                       </TableRow>
                     )}
                     </React.Fragment>
