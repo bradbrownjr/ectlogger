@@ -34,6 +34,23 @@ async def test_check_in_to_active_net(client, owner):
 
 
 @pytest.mark.asyncio
+async def test_power_is_saved_on_check_in_and_recheck(client, owner):
+    """Power typed with a check-in is stored, on a recheck too. Both CheckIn
+    constructors in create_check_in left it out, so the Power column stayed
+    blank unless someone edited each row afterwards (2026-10-24 SET, net 137)."""
+    net_id = await _active_net(client, owner)
+    url = f"/api/check-ins/nets/{net_id}/check-ins"
+    first = await client.post(url, json={"callsign": _CALLSIGN, "power": "50"}, headers=auth_headers(owner))
+    assert first.status_code == 201
+    assert first.json()["power"] == "50"
+    await client.put(f"/api/check-ins/check-ins/{first.json()['id']}", json={"status": "checked_out"}, headers=auth_headers(owner))
+    again = await client.post(url, json={"callsign": _CALLSIGN, "power": "5"}, headers=auth_headers(owner))
+    assert again.status_code == 201
+    assert again.json()["is_recheck"] is True
+    assert again.json()["power"] == "5"
+
+
+@pytest.mark.asyncio
 async def test_duplicate_check_in_while_still_active_is_rejected(client, owner):
     """Checking in a callsign that is already checked in (self or NCS/logger
     re-adding them) must be rejected instead of creating a second live row —
