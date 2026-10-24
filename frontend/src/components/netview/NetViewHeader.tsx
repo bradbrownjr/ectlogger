@@ -1021,12 +1021,15 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
           )}
           {netStats && (
             <>
-              <Chip label={`${netStats.unique_stations ?? netStats.total_check_ins} Stations`} size="small" color="primary" variant="outlined" />
-              {(netStats.recheck_count ?? 0) > 0 && (
-                <Chip label={`${netStats.recheck_count} Rechecks`} size="small" color="warning" variant="outlined" />
-              )}
+              {/* Checked out, then checked in, so the two add up to every
+                  station that took part, read left to right. Both count a
+                  callsign once, by its latest row. */}
               {netStats.checked_out_count > 0 && (
                 <Chip label={`${netStats.checked_out_count} Checked Out`} size="small" color="default" variant="outlined" />
+              )}
+              <Chip label={`${netStats.unique_stations ?? netStats.total_check_ins} Checked In`} size="small" color="primary" variant="outlined" />
+              {(netStats.recheck_count ?? 0) > 0 && (
+                <Chip label={`${netStats.recheck_count} Rechecks`} size="small" color="warning" variant="outlined" />
               )}
               <Chip label={`${netStats.online_count} Online`} size="small" color="success" variant="outlined" />
               {netStats.guest_count > 0 && (

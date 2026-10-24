@@ -4,7 +4,7 @@ summary: Adding a station, editing a row in place, fixing a misheard callsign, r
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-24
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/logging-check-ins/
@@ -96,6 +96,8 @@ If you fix a guest row's callsign, a role on it follows the correction. If the c
 ## Rechecks
 
 If a callsign that's already on the list checks in again, that's a **recheck**, not an error: it adds a second row rather than overwriting the first. On a net with sites, a recheck from a different site also checks the station out of the old one; see [Stations at sites](/docs/net-control/stations-at-sites/#when-a-station-moves). [Station statuses](/docs/reference/station-statuses/) covers exactly how that shows up and how to collapse duplicate rows if you'd rather see one line per callsign.
+
+The counters at the top of the net count each callsign once, whatever its rechecks: **Checked Out** plus **Checked In** is every station that has taken part, and **Rechecks** counts the extra rows.
 
 ## Next
 
