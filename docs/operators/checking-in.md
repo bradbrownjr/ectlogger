@@ -4,7 +4,7 @@ summary: The check-in form, which fields are required, and what happens the mome
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-24
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/checking-in/
@@ -22,7 +22,7 @@ If you're eligible to help run the net (an active net staff member or NCS rotati
 
 You can also open the same form later from the net's toolbar.
 
-A net with a red **Participants only** label beside its status is for the stations taking part in an event or incident, such as a drill's deployed teams. The check-in form says so at the top. If you aren't one of them, listen without checking in. Net control can remove a station that checks in anyway.
+A net with a red **Participants only** label, beside its status in the net or under its name on its card, is for the stations taking part in an event or incident, such as a drill's deployed teams. The check-in form says so at the top. If you aren't one of them, listen without checking in. Net control can remove a station that checks in anyway.
 
 ## Filling it in
 

@@ -28,6 +28,7 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import EmailIcon from '@mui/icons-material/Email';
+import ParticipantsOnlyChip from '../netview/ParticipantsOnlyChip';
 import Avatar from '@mui/material/Avatar';
 import ExpandableDescription from '../ExpandableDescription';
 import CardActionButton from '../CardActionButton';
@@ -67,6 +68,7 @@ export interface Net {
   topic_of_week_prompt?: string | null;
   poll_enabled?: boolean;
   poll_question?: string | null;
+  participants_only?: boolean;
   frequencies: any[];
   check_in_count?: number;
   can_manage?: boolean;
@@ -184,6 +186,16 @@ const NetCard: React.FC<NetCardProps> = ({
             )}
           </Box>
         </Box>
+
+        {/* ---- Participants only label ---- */}
+        {/* Own line rather than beside the status chip: the title row keeps
+            its chips at full width, so a second one there squeezes the
+            net's name on a narrow card. */}
+        {net.participants_only && (
+          <Box sx={{ mb: 0.75 }}>
+            <ParticipantsOnlyChip />
+          </Box>
+        )}
 
         {/* ---- Description ---- */}
         <ExpandableDescription text={net.description} />
