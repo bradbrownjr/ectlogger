@@ -22,6 +22,7 @@ from sqlalchemy.orm import selectinload
 
 from app.email_service import EmailService
 from app.models import ChatMessage, CheckIn, Net, NetRole, NetStatus, User
+from app.services.field_labels import builtin_field_labels
 from app.services.ics309_log import build_ics309_rows, get_accepted_off_net_entries
 from app.traffic.ics309 import get_ics309_muted_user_ids, get_net_traffic_log_entries
 from app.traffic.log import compute_net_traffic_counts
@@ -214,6 +215,8 @@ async def close_net_and_notify(
         .order_by(CoverageSite.sort_order, CoverageSite.id)
     )).all()
     site_roster = build_site_roster([tuple(r) for r in reporting_sites], sorted_check_ins) if reporting_sites else []
+    # The check-in table's headings, as the admin named the fields.
+    field_labels = await builtin_field_labels(db)
 
     # Coverage by site and contacts outside the net: tz-independent, so built
     # once. None on an ordinary coverage net with neither.
@@ -441,6 +444,7 @@ async def close_net_and_notify(
                     coverage_edges=coverage_edges_data,
                     site_coverage=site_coverage,
                     site_roster=site_roster,
+                    field_labels=field_labels,
                     traffic_enabled=net.traffic_enabled,
                     traffic_summary=traffic_summary,
                     unsubscribe_token=unsub_token

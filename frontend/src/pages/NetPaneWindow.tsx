@@ -1,4 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { fieldLabel, isRelayedByShown } from '../utils/checkInFields';
+import { useDeleteCheckInPrompt } from '../hooks/useDeleteCheckInPrompt';
+import { formatFrequencyDisplay } from '../utils/frequencyList';
 import { useParams } from 'react-router-dom';
 import {
   Autocomplete,
@@ -122,6 +125,8 @@ const NetPaneWindow: React.FC = () => {
     pollResponses, topicResponses,
     fetchNet, fetchCheckIns, fetchNetRoles, fetchNetStats,
   } = useNetData(netId);
+  // Delete confirmation, with Remove and block for net control.
+  const deletePrompt = useDeleteCheckInPrompt(getNetActions(net, simulateRegularUser).block_station);
   const siteCoverage = useSiteCoverage(netId ? Number(netId) : null, !!net?.propagation_logging_enabled);
 
   // Which check-ins are currently mid-flash for having self-checked-in
@@ -412,6 +417,9 @@ const NetPaneWindow: React.FC = () => {
     return null;
   };
 
+  // A built-in field's label, as the admin named it (utils/checkInFields.ts).
+  const labelOf = (name: string) => fieldLabel(fieldDefinitions as any[], name);
+
   const getEnabledCustomFields = () => {
     return (fieldDefinitions as any[]).filter((field: any) =>
       !field.is_builtin && net?.field_config?.[field.name]?.enabled
@@ -420,16 +428,7 @@ const NetPaneWindow: React.FC = () => {
 
   const isFieldRequired = (fieldName: string) => net?.field_config?.[fieldName]?.required ?? false;
 
-  const formatFrequencyDisplay = (freq: any) => {
-    if (!freq) return '';
-    if (freq.frequency) {
-      return `${freq.frequency} MHz${freq.mode ? ` (${freq.mode})` : ''}`;
-    }
-    const label = freq.channel || freq.talkgroup || 'Digital';
-    return freq.mode ? `${label} ${freq.mode}` : label;
-  };
-
-  const hasAnyRelayedBy = checkIns.some((ci: any) => ci.relayed_by);
+  const showRelayedBy = isRelayedByShown(net?.field_config, checkIns);
 
   const {
     handleCallsignLookup,
@@ -448,7 +447,7 @@ const NetPaneWindow: React.FC = () => {
     checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef, lookupFilledRef,
     setCheckInForm, setToastMessage, setInlineEditingId, setInlineEditFocusField,
     setInlineEditValues, setCheckIns, setActiveSpeakerId, setNet, setFilteredFrequencyIds,
-    fetchCheckIns, fetchNetRoles,
+    fetchCheckIns, fetchNetRoles, askDelete: deletePrompt.ask,
   });
 
   const filteredCheckIns = checkIns.filter((checkIn: any) => {
@@ -483,7 +482,7 @@ const NetPaneWindow: React.FC = () => {
         onlineUserIds={onlineUserIds}
         activeSpeakerId={activeSpeakerId}
         latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
-        hasAnyRelayedBy={hasAnyRelayedBy}
+        showRelayedBy={showRelayedBy}
         hideDuplicates={hideDuplicates}
         canManage={canManage}
         canManageCheckIns={canManageCheckIns}
@@ -494,6 +493,7 @@ const NetPaneWindow: React.FC = () => {
         getNcsColor={getNcsColor}
         getNcsColorForFrequency={getNcsColorForFrequency}
         getEnabledCustomFields={getEnabledCustomFields}
+        fieldDefinitions={fieldDefinitions as any[]}
         isFieldRequired={isFieldRequired}
         formatFrequencyDisplay={formatFrequencyDisplay}
         getStatusIcon={getStatusIcon}
@@ -597,7 +597,7 @@ const NetPaneWindow: React.FC = () => {
               required
             />
             {net?.field_config?.name?.enabled && (
-              <TextField size="small" value={checkInForm.name} onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })} placeholder="Name" autoComplete="off" sx={{ width: 120 }} />
+              <TextField size="small" value={checkInForm.name} onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })} placeholder={labelOf('name')} autoComplete="off" sx={{ width: 120 }} />
             )}
             {/* Site, ahead of Location, on a net with sites */}
             {netHasSites(siteCoverage.sites) && (
@@ -612,13 +612,13 @@ const NetPaneWindow: React.FC = () => {
               </Box>
             )}
             {net?.field_config?.location?.enabled && (
-              <TextField size="small" value={checkInForm.location} onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })} placeholder="Location" sx={{ width: 150 }} />
+              <TextField size="small" value={checkInForm.location} onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })} placeholder={labelOf('location')} sx={{ width: 150 }} />
             )}
             {net?.field_config?.skywarn_number?.enabled && (
-              <TextField size="small" value={checkInForm.skywarn_number} onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })} placeholder="Spotter #" sx={{ width: 100 }} />
+              <TextField size="small" value={checkInForm.skywarn_number} onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })} placeholder={labelOf('skywarn_number')} sx={{ width: 100 }} />
             )}
             {net?.field_config?.notes?.enabled && (
-              <TextField size="small" value={checkInForm.notes} onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })} placeholder="Notes" sx={{ flex: 1, minWidth: 150 }} />
+              <TextField size="small" value={checkInForm.notes} onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })} placeholder={labelOf('notes')} sx={{ flex: 1, minWidth: 150 }} />
             )}
             {net?.topic_of_week_enabled && (
               <Autocomplete
@@ -648,14 +648,16 @@ const NetPaneWindow: React.FC = () => {
                 sx={{ width: 120 }}
               />
             )}
-            <TextField
-              size="small"
-              value={checkInForm.relayed_by}
-              onChange={(e) => setCheckInForm({ ...checkInForm, relayed_by: e.target.value.toUpperCase() })}
-              placeholder="Relayed By"
-              inputProps={{ style: { textTransform: 'uppercase' } }}
-              sx={{ width: 100 }}
-            />
+            {showRelayedBy && (
+              <TextField
+                size="small"
+                value={checkInForm.relayed_by}
+                onChange={(e) => setCheckInForm({ ...checkInForm, relayed_by: e.target.value.toUpperCase() })}
+                placeholder={labelOf('relayed_by')}
+                inputProps={{ style: { textTransform: 'uppercase' } }}
+                sx={{ width: 100 }}
+              />
+            )}
             <Button variant="contained" onClick={handleCheckIn} disabled={!checkInForm.callsign} size="small">
               Add
             </Button>
@@ -663,6 +665,7 @@ const NetPaneWindow: React.FC = () => {
         </Paper>
       )}
 
+      {deletePrompt.dialog}
       <Snackbar open={toastMessage !== ''} autoHideDuration={6000} onClose={() => setToastMessage('')} message={toastMessage} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} />
     </Box>
   );

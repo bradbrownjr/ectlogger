@@ -4,7 +4,7 @@ summary: Every role ECTLogger has, at every level, and a grid of who can do what
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-22
+revised: 2026-10-23
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/roles-and-permissions/
@@ -107,6 +107,7 @@ Read this as: given the row's action, which of the columns can do it. "Net manag
 | Assign or remove net roles (Manage Net Control Staff dialog) | No | No⁵ | No⁵ | Yes⁵ | Yes⁵ | No | Yes | Yes |
 | Step down your own active NCS role | — | — | — | Yes⁶ | — | — | — | — |
 | Mute a station net-wide in chat | No | No | No | Yes | Yes | No | Yes | Yes |
+| Remove and block a station from the net | No | No | No | Yes | Yes | No | Yes | Yes |
 | Record which stations another station can hear (coverage logging nets only) | No⁸ | No⁸ | No⁸ | Yes | Yes | Yes | Yes | Yes |
 | Log off-net activity for any station, on the ICS-309 without review | No⁹ | No⁹ | No⁹ | Yes | Yes | Yes | Yes | Yes |
 | Accept, reject, or change a station's off-net entry | No | No | No | Yes | Yes | No | Yes | Yes |

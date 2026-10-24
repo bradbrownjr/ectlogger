@@ -64,6 +64,7 @@ import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import CellTowerIcon from '@mui/icons-material/CellTower';
 import PlaceIcon from '@mui/icons-material/Place';
+import ParticipantsOnlyChip from './ParticipantsOnlyChip';
 import type { UseDialogResult } from '../../hooks/useDialog';
 import ImageLightbox from '../ImageLightbox';
 import { NetActions } from '../../utils/netActions';
@@ -182,10 +183,9 @@ interface ToolbarItemDef {
 interface NetViewHeaderProps {
   net: any;
   netId: string | undefined;
-  canManage: boolean;
   // Per-action permissions (utils/netActions.ts). Every management button
-  // below is gated on its own flag, never on canManage, which is broader
-  // than what the server allows for most of them.
+  // below is gated on its own flag, never on the broad canManage, which
+  // allows more than the server does for most of them.
   actions: NetActions;
   canManageCheckIns: boolean | undefined;
   canStartNet: boolean;
@@ -227,6 +227,7 @@ interface NetViewHeaderProps {
   offNetLog: UseDialogResult;
   // The Sites board (SitesBoard.tsx), offered on a net with sites
   sitesBoard: UseDialogResult;
+  netInfo: UseDialogResult;
   hasSites: boolean;
   // Signed in, and checked in or net control staff (derived in NetView.tsx)
   canUseOffNetLog: boolean;
@@ -315,7 +316,6 @@ function computeLayout(
 const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   net,
   netId,
-  canManage,
   actions,
   canManageCheckIns,
   canStartNet,
@@ -351,6 +351,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   canViewTraffic,
   offNetLog,
   sitesBoard,
+  netInfo,
   hasSites,
   canUseOffNetLog,
   script,
@@ -553,14 +554,12 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       tooltip: 'Net/Club info', onClick: () => window.open(net.info_url, '_blank'),
     },
     {
-      // Staff-only: this is a read-only render of the net's configuration
-      // form (rotation, custom fields, ICS-309 settings, etc.) — not
-      // appropriate for standard/guest visitors, and redundant with
-      // Edit net while that's available (active/lobby/draft/scheduled).
+      // Everyone, at every status: a card for the net (NetInfoDialog.tsx),
+      // not the Edit Net form.
       key: 'net-info', group: 'info', priority: 1,
-      visible: canManage && !isActiveOrLobby,
+      visible: true,
       Icon: InfoIcon, color: theme.palette.primary.main, label: 'Net info',
-      tooltip: 'View net info', onClick: () => navigate(`/nets/${netId}/info`),
+      tooltip: 'About this net', onClick: netInfo.onOpen,
     },
   ];
 
@@ -986,6 +985,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
             page horizontally on narrow (mobile) screens instead of
             wrapping chips onto additional lines. */}
         <Box sx={{ flex: '0 1 auto', display: 'flex', gap: 0.75, alignItems: 'center', flexWrap: 'wrap', ml: 'auto' }}>
+          {net.participants_only && <ParticipantsOnlyChip />}
           <Chip label={net.status === 'lobby' ? 'LOBBY' : net.status} size="small" color={net.status === 'active' ? 'success' : net.status === 'lobby' ? 'warning' : 'default'} />
           {countdownTime && (
             <Chip

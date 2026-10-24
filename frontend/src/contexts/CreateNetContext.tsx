@@ -18,7 +18,6 @@ export interface CreateNetContextValue {
   // Route / mode
   netId: string | undefined;
   isEditMode: boolean;
-  isInfoMode: boolean;
   currentUser: { id: number; role: string; callsign?: string; name?: string; [key: string]: any } | null;
 
   // Core form text fields
@@ -46,6 +45,7 @@ export interface CreateNetContextValue {
   chatGracePeriodEnabled: boolean; setChatGracePeriodEnabled: Dispatch<SetStateAction<boolean>>;
   chatGracePeriodMinutes: number; setChatGracePeriodMinutes: Dispatch<SetStateAction<number>>;
   selfCheckinEnabled: boolean; setSelfCheckinEnabled: Dispatch<SetStateAction<boolean>>;
+  participantsOnly: boolean; setParticipantsOnly: Dispatch<SetStateAction<boolean>>;
   // Auto-open lobby for this net only; sent as a nullable auto_lobby_minutes
   autoLobbyEnabled: boolean; setAutoLobbyEnabled: Dispatch<SetStateAction<boolean>>;
   autoLobbyMinutes: number; setAutoLobbyMinutes: Dispatch<SetStateAction<number>>;

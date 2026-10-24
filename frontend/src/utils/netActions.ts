@@ -19,6 +19,7 @@ export interface NetActions {
   run_drill: boolean;         // Drill plan: read it, mark messages sent
   log_off_net: boolean;       // Off-net log: add for any station, no review
   review_off_net_log: boolean; // Off-net log: accept, reject, edit any entry
+  block_station: boolean;     // Remove and block a station from the net
 }
 
 const NO_ACTIONS: NetActions = {
@@ -34,6 +35,7 @@ const NO_ACTIONS: NetActions = {
   run_drill: false,
   log_off_net: false,
   review_off_net_log: false,
+  block_station: false,
 };
 
 interface WithActions {

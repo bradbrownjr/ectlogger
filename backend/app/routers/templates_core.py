@@ -298,6 +298,7 @@ async def create_template(
         poll_enabled=template_data.poll_enabled or False,
         poll_question=template_data.poll_question,
         authenticated=template_data.authenticated or False,
+        participants_only=template_data.participants_only or False,
     )
     db.add(template)
     await db.flush()
@@ -551,6 +552,8 @@ async def update_template(
         template.poll_question = template_data.poll_question
     if template_data.authenticated is not None:
         template.authenticated = template_data.authenticated
+    if template_data.participants_only is not None:
+        template.participants_only = template_data.participants_only
 
     # Update owner if provided (owner/admin/co-manager can transfer ownership)
     if template_data.owner_id is not None and template_data.owner_id != template.owner_id:

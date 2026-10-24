@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { fieldLabel } from '../../utils/checkInFields';
 import {
   Box,
   Checkbox,
@@ -52,6 +53,8 @@ import { findCheckInRole, roleMatchesCheckIn, StationRole } from '../../utils/st
 type NcsColor = { bg: string; border: string; text: string } | null;
 
 interface CheckInTableProps {
+  // The site's field list, for each built-in field's heading (utils/checkInFields.ts::fieldLabel).
+  fieldDefinitions?: { name: string; label?: string | null }[];
   net: any;
   filteredCheckIns: any[];
   // Account and callsign-only roles merged (utils/stationRoles.ts).
@@ -61,7 +64,8 @@ interface CheckInTableProps {
   onlineUserIds: number[];
   activeSpeakerId: number | null;
   latestCheckedInAtByCallsign: Map<string, string>;
-  hasAnyRelayedBy: boolean;
+  // Relayed By column: the net has the field on, or it's in use (utils/checkInFields.ts::isRelayedByShown)
+  showRelayedBy: boolean;
   hideDuplicates: boolean;
   canManage: boolean;
   canManageCheckIns: boolean | undefined;
@@ -130,7 +134,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   onlineUserIds,
   activeSpeakerId,
   latestCheckedInAtByCallsign,
-  hasAnyRelayedBy,
+  showRelayedBy,
   hideDuplicates,
   canManage,
   canManageCheckIns,
@@ -142,6 +146,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   getNcsColor,
   getNcsColorForFrequency,
   getEnabledCustomFields,
+  fieldDefinitions,
   isFieldRequired,
   formatFrequencyDisplay,
   getStatusIcon,
@@ -265,14 +270,14 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>#</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Callsign *</TableCell>
-                      {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Name {net.field_config.name.required && '*'}</TableCell>}
+                      {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'name')} {net.field_config.name.required && '*'}</TableCell>}
                       {showSite && <TableCell sx={{ whiteSpace: 'nowrap' }}>Site</TableCell>}
-                      {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Location {net.field_config.location.required && '*'}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
-                      {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power Src {net.field_config.power_source.required && '*'}</TableCell>}
-                      {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power {net.field_config.power.required && '*'}</TableCell>}
-                      {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Notes {net.field_config.notes.required && '*'}</TableCell>}
+                      {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'location')} {net.field_config.location.required && '*'}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'skywarn_number')} {net.field_config.skywarn_number.required && '*'}</TableCell>}
+                      {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'weather_observation')} {net.field_config.weather_observation.required && '*'}</TableCell>}
+                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'power_source')} {net.field_config.power_source.required && '*'}</TableCell>}
+                      {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'power')} {net.field_config.power.required && '*'}</TableCell>}
+                      {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'notes')} {net.field_config.notes.required && '*'}</TableCell>}
                       {/* Custom fields */}
                       {getEnabledCustomFields().map((field) => (
                         <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>
@@ -293,7 +298,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           </Tooltip>
                         </TableCell>
                       )}
-                      {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
+                      {showRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'relayed_by')}</TableCell>}
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
                       <TableCell
                         sx={{
@@ -367,7 +372,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     if (net?.field_config?.power?.enabled) columnCount++;
                     if (net?.field_config?.notes?.enabled) columnCount++;
                     columnCount += getEnabledCustomFields().length;
-                    if (hasAnyRelayedBy) columnCount++;
+                    if (showRelayedBy) columnCount++;
                     
                     // Check if this row is being inline edited
                     const isInlineEditing = inlineEditingId === checkIn.id;
@@ -847,7 +852,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                         </TableCell>
                       )}
                       {/* Relayed By - inline editable */}
-                      {hasAnyRelayedBy && (
+                      {showRelayedBy && (
                         <TableCell data-field="relayed_by" sx={{ width: 80 }}>
                           {isInlineEditing ? (
                             <TextField
@@ -870,13 +875,19 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           rendered (matching the header's always-present merged cell) so
                           table columns stay aligned even on a row where neither canManage
                           nor "own check-in" applies; the cell is simply empty then. */}
+                      {/* Spans the frequency chips row too, so the buttons and the row's
+                          color cover the whole check-in rather than stopping above its chips.
+                          '&&' outranks the row's own td rule that drops the bottom border
+                          and padding when chips follow. */}
                       <TableCell
+                        rowSpan={hasFrequencyChips ? 2 : 1}
                         sx={{
                           position: 'sticky',
                           right: 0,
                           zIndex: 1,
                           ...stickyCellSx,
                           boxShadow: stickyShadow,
+                          ...(hasFrequencyChips && { '&&': { borderBottom: 1, borderColor: 'divider', pb: 0.75 } }),
                         }}
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -948,22 +959,17 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     </TableRow>
                     {/* Frequency chips row - only show if net has multiple frequencies */}
                     {hasFrequencyChips && (
-                      <TableRow sx={{ 
-                        backgroundColor: checkIn.id === activeSpeakerId 
-                          ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
-                          : checkIn.status === 'checked_out' 
-                          ? 'action.disabledBackground' 
-                          : isNcsUser && ncsColor ? ncsColor.bg
-                          : isOnActiveFrequency
-                          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
-                          : 'transparent',
-                        opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
+                      <TableRow sx={{
+                        // Same color and fading as the row above, so the two read as one check-in.
+                        backgroundColor: rowBgColor,
+                        opacity: isPriorRow ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
                         // Add left border for NCS users
                         ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
                           borderLeft: `3px solid ${ncsColor.border}`,
                         }),
                       }}>
-                        <TableCell colSpan={columnCount} sx={{ pt: 0, pb: 0.5, borderBottom: 1, borderColor: 'divider' }}>
+                        {/* One column short: the Actions cell above spans into this row. */}
+                        <TableCell colSpan={columnCount - 1} sx={{ pt: 0, pb: 0.5, borderBottom: 1, borderColor: 'divider' }}>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', pl: 4 }}>
                             {checkIn.available_frequencies!.map((freqId: number) => {
                               const freq = net.frequencies.find((f: any) => f.id === freqId);

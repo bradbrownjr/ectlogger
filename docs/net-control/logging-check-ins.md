@@ -1,6 +1,6 @@
 ---
 title: Logging check-ins
-summary: Adding a station, editing a row in place, fixing a misheard callsign, and logging a station with no account.
+summary: Adding a station, editing a row in place, fixing a misheard callsign, removing and blocking a station that shouldn't be on the net, and logging a station with no account.
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
@@ -12,7 +12,7 @@ permalink: /docs/net-control/logging-check-ins/
 
 # Logging check-ins
 
-Whoever holds NCS, Logger, or Relay on a net can add a check-in for any callsign, edit one in place, or delete one outright. This page covers all three, plus the one case that trips people up: logging a station over the air that has never used ECTLogger at all.
+Whoever holds NCS or Logger on a net can add a check-in for any callsign, edit one in place, or delete one outright. This page covers all three, plus the one case that trips people up: logging a station over the air that has never used ECTLogger at all.
 
 ## Adding a station who calls in over the air
 
@@ -60,9 +60,30 @@ The one exception is the station's round picture (its avatar) beside the callsig
 
 Each row has a delete action that asks you to confirm before it removes the row. This is a real delete, not a status change, so use it for a genuine mistake (a duplicate entry, a callsign typed into the wrong net), not for a station leaving the net. A station that's done for the night should be checked out instead (see [Status, rechecks, and checking out](/docs/operators/status-and-checking-out/)), since checking out keeps their participation in the log and on the map; deleting removes the row entirely.
 
+### Removing and blocking a station
+
+Sometimes a station checks in that shouldn't be on the net at all, such as someone who isn't part of a drill checking into its [participants-only](/docs/net-managers/creating-a-net/#basic-info) net. Deleting the row doesn't stop them checking straight back in, so the delete prompt offers a second button:
+
+1. Click the station's delete action.
+2. Click **Remove and block**.
+
+ECTLogger then:
+
+- removes every check-in under that callsign from this net,
+- mutes the station's chat for everyone on the net (see [Chat moderation](/docs/net-control/chat-moderation/#muting-a-station-for-everyone)),
+- refuses the station's own check-ins on this net from then on, under that callsign or any other on the same account, with "Net control has removed this station from this net."
+
+You can still check the station in yourself if it turns out to belong. A block only covers this one net: the schedule's next net starts clean.
+
+To lift a block, open **Net info** on the toolbar. Net control sees a **Blocked from this net** list there; click **Unblock** beside the callsign. That also lifts the chat mute. The removed check-ins don't come back.
+
+Removing and blocking is for the net's NCS and Logger, its manager, and admins.
+
 ## Logging a station with no ECTLogger account
 
 Not every station on the air has ever touched ECTLogger, and that's fine; a check-in doesn't require one. Type the callsign as given; if it doesn't match any registered account, the row is created as a **guest** check-in. Everything about it works the same as any other row: it can be edited, statused, and shown up in exports and the map exactly like an account-linked check-in.
+
+When a station relays a check-in for someone net control can't hear, type the relay's callsign in the **Relayed By** box on the check-in row. The box is there on a net whose manager turned the field on. On any other net it appears as soon as one station is set to **Relay** from its status menu, so set the relay station first.
 
 A guest check-in can be marked NCS, Logger, or Relay from its status menu, the same way as any other row. This is how a Logger who runs the net in the app credits the net control operator on the air when that operator has no account: pick **NCS** on their row, and the report, the ICS-309, and the closing log name them as Net Control. The role is a credit only. It doesn't give anyone access to anything, because there's no account to give it to. The people who can do this are the same ones who can use the net's **Roles** button. Picking a plain status for that row again removes the role.
 

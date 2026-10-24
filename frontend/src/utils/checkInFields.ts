@@ -39,3 +39,46 @@ export function withOnlyShownFields<T extends Record<string, any>>(values: T, fi
   }
   return result as T;
 }
+
+// ========== WHAT EACH FIELD IS CALLED ==========
+// The admin can rename a built-in field (Admin > Check-in fields: "Power"
+// to "Power (W)"); the field list (/settings/fields, loaded by useNetData)
+// carries that label. Every heading, label and placeholder for a built-in
+// field goes through fieldLabel. Each one used to type its own wording, so
+// a rename never reached the net (2026-10-23). The backend's closing email
+// does the same (services/field_labels.py).
+export const DEFAULT_FIELD_LABELS: Record<string, string> = {
+  name: 'Name',
+  location: 'Location',
+  skywarn_number: 'Spotter #',
+  weather_observation: 'Weather',
+  power_source: 'Power Src',
+  power: 'Power',
+  feedback: 'Feedback',
+  notes: 'Notes',
+  relayed_by: 'Relayed By',
+};
+
+export function fieldLabel(fieldDefinitions: { name: string; label?: string | null }[] | null | undefined, name: string): string {
+  return fieldDefinitions?.find((f) => f.name === name)?.label || DEFAULT_FIELD_LABELS[name] || name;
+}
+
+// ========== RELAYED BY ==========
+// "Relayed by" (the callsign that passed a check-in along) is a field a net
+// turns on like any other, off by default. Until 2026-10-23 its box was on
+// every entry row with no way to turn it off. A net that has it off still
+// shows it once it's needed: when a station there is marked Relay, or a
+// check-in already carries a relayed-by callsign, so the value is never
+// hidden from the NCS. That is also why it isn't in CHECKIN_TOGGLEABLE_FIELDS:
+// it's shown whenever it holds a value, so there is nothing hidden to strip.
+export function isRelayedByShown(
+  fieldConfig: FieldConfig,
+  checkIns: { status?: string | null; relayed_by?: string | null }[],
+): boolean {
+  return isFieldShown(fieldConfig, 'relayed_by')
+    || checkIns.some((ci) => ci.relayed_by || ci.status?.toLowerCase() === 'relay');
+}
+
+// Fields a net can turn on but never require. Most check-ins on a net that
+// uses relays still come in direct, so a required Relayed by would block them.
+export const NEVER_REQUIRED_FIELDS = ['relayed_by'];

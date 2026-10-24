@@ -748,33 +748,46 @@ async def net_mute_station(
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    mute = await apply_net_mute(db, net, target_user, current_user)
+    await db.commit()
+    return await announce_net_mute(db, mute, target_user, current_user)
+
+
+async def apply_net_mute(db: AsyncSession, net: Net, target_user: User, actor: User) -> ChatNetMute:
+    """Net-wide mute a station, without committing. Shared with blocking a
+    station (routers/net_blocks.py), which mutes its chat too. Re-muting an
+    already-muted station updates who applied it and when."""
     existing = await db.execute(
         select(ChatNetMute).where(
-            ChatNetMute.net_id == net_id,
-            ChatNetMute.muted_user_id == body.muted_user_id,
+            ChatNetMute.net_id == net.id,
+            ChatNetMute.muted_user_id == target_user.id,
         )
     )
     mute = existing.scalar_one_or_none()
     if mute:
-        mute.applied_by_user_id = current_user.id
+        mute.applied_by_user_id = actor.id
         mute.created_at = datetime.now(UTC)
     else:
-        mute = ChatNetMute(net_id=net_id, muted_user_id=body.muted_user_id, applied_by_user_id=current_user.id)
+        mute = ChatNetMute(net_id=net.id, muted_user_id=target_user.id, applied_by_user_id=actor.id)
         db.add(mute)
-    record_net_event(db, "chat.station_muted", current_user, net, subject=target_user,
+    record_net_event(db, "chat.station_muted", actor, net, subject=target_user,
                      details={"station": user_label(target_user)})
-    await db.commit()
+    return mute
+
+
+async def announce_net_mute(db: AsyncSession, mute: ChatNetMute, target_user: User, actor: User) -> ChatNetMuteResponse:
+    """After apply_net_mute is committed: count it toward the repeated-mute
+    alert and tell every open tab."""
     await check_mutes(db, target_user)
     await db.refresh(mute)
-
     response = ChatNetMuteResponse(
         muted_user_id=mute.muted_user_id,
         callsign=target_user.callsign,
-        applied_by_user_id=current_user.id,
-        applied_by_callsign=current_user.callsign,
+        applied_by_user_id=actor.id,
+        applied_by_callsign=actor.callsign,
         created_at=mute.created_at,
     )
-    await _broadcast_net_mute_changed(net_id, {**response.model_dump(mode="json"), "active": True})
+    await _broadcast_net_mute_changed(mute.net_id, {**response.model_dump(mode="json"), "active": True})
     return response
 
 

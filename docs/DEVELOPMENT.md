@@ -459,6 +459,35 @@ and schedule rows, keeping rows sent with an `id`, like coverage sites.
 
 Tests: `backend/tests/test_drill_plans.py`, `frontend/src/utils/drillPlan.test.ts`.
 
+## Participants-only nets and blocking a station
+
+`Net.participants_only` (and `NetTemplate.participants_only`, copied by
+`build_net_from_template` like every shared column; migration 090) is a
+**label, not a gate**. Self check-in stays open because a drill's volunteers
+aren't known until the day. The net view shows `ParticipantsOnlyChip`, and
+`CheckInFormDialog` and the check-in prompt say who the net is for.
+
+The enforcement is `NetBlock` (`routers/net_blocks.py`, rule
+`permissions.may_block_station`, sent as `NetActions.block_station`):
+
+- `POST /nets/{id}/blocks {check_in_id}` deletes every check-in under that
+  callsign on the net, records the block, and applies the net-wide chat mute
+  through `chat.apply_net_mute` / `announce_net_mute` (the same helpers the
+  shift-click mute uses, so the activity log and the repeated-mute alert see
+  it). Each removed row is broadcast as `check_in_deleted`.
+- `create_check_in` refuses a blocked callsign, or any check-in from or for a
+  blocked account, unless the submitter passes
+  `check_net_permission(..., ["NCS", "LOGGER"])`: net control can still check
+  the station in by hand. `services/net_blocks.py::blocked_on_net` is the
+  one lookup.
+- `DELETE /nets/{id}/blocks/{block_id}` lifts the block and the chat mute;
+  the removed rows stay removed.
+
+Blocks are per net, like `ChatNetMute`. The app offers **Remove and block**
+in the delete prompt (`hooks/useDeleteCheckInPrompt.tsx`, awaited by
+`checkInActions.ts::handleDeleteCheckIn`), and lists blocks with Unblock on
+the Net info card. Tests: `backend/tests/test_net_blocks.py`.
+
 ## Check-in fields and profile values
 
 A net turns its check-in fields on and off (`net.field_config`). Every

@@ -1,14 +1,19 @@
 {
-  "version": "2026.10.23c",
+  "version": "2026.10.23d",
   "entries": [
     {
-      "version": "2026.10.23c",
+      "version": "2026.10.23d",
       "date": "2026-10-23",
       "sections": [
         {
           "title": "New Features",
           "type": "feature",
           "items": [
+            {
+              "text": "Net View: Participants-only nets — A net can now be marked Participants only, for the stations taking part in an event or incident such as a drill's deployed teams. It shows a red label beside its status, and the check-in form asks anyone else to listen without checking in, while self check-in stays open for volunteers. If someone checks in anyway, net control can remove and block them: their check-ins come off the net, their chat is muted, and they can't check back in.",
+              "userImpact": true,
+              "docs": "/docs/net-control/logging-check-ins/#removing-and-blocking-a-station"
+            },
             {
               "text": "Security: Activity log for admins — Admins can now see who deleted a net, changed a role, or changed an account, with the date, the internet address and its approximate location. Open it from Admin > Activity, or from \"Show activity\" on any person in the Users list, to answer \"who did this?\" in seconds.",
               "userImpact": true,
@@ -31,6 +36,20 @@
           "type": "improvement",
           "items": [
             {
+              "text": "Net View: Net Info shows the whole net at a glance — Net Info now opens a card with the net's logo, description, schedule, frequencies, manager and staff, and links to its website and reports, and it stays available once the lobby opens or the net starts.",
+              "userImpact": true,
+              "docs": "/docs/operators/finding-a-net/#learning-about-a-net"
+            },
+            {
+              "text": "Edit Net: Show only the selected frequencies — A Selected only switch above the frequency list hides the frequencies the net doesn't use, so you can check a net's frequencies without scrolling the whole list.",
+              "docs": "/docs/net-managers/creating-a-net/#communication-plan"
+            },
+            {
+              "text": "Check-in: Relayed By only where you use it — Relayed By is now a check-in field that each net or schedule turns on, and it's off by default, so nets that never use relays get the room back on the check-in row. On a net with it off, the box appears by itself as soon as a station is set to Relay.",
+              "userImpact": true,
+              "docs": "/docs/reference/check-in-fields/"
+            },
+            {
               "text": "Check-in: Sites on any net — Any net can now have a list of sites, such as shelters, aid stations and checkpoints, without turning on coverage logging. Each check-in gets a Site box next to Location with those sites plus Home, and the net shows a board of who is at each site, at home, or mobile. Logging someone at a site doesn't change the usual town that fills in for them on your other nets.",
               "userImpact": true,
               "docs": "/docs/net-managers/sites/"
@@ -50,6 +69,13 @@
           "title": "Bug Fixes",
           "type": "bugfix",
           "items": [
+            {
+              "text": "Net View: Action buttons cover the whole check-in — On a net with several frequencies, a check-in's action buttons and its colour now cover its frequency line too, instead of stopping halfway down the check-in."
+            },
+            {
+              "text": "Check-in: Renamed fields show their new name — When an admin renames a check-in field, such as Power to Power (W), the check-in row, the check-in list, the check-in form and the closing email now use the new name. Before, they kept the old one.",
+              "userImpact": true
+            },
             {
               "text": "Schedules: Merging and deleting schedules — A schedule's co-managers can now merge and delete it as the schedule's manager can, and when a merge can't go ahead, the message says which nets are in the way.",
               "docs": "/docs/net-managers/recurring-schedules/#merging-schedules"

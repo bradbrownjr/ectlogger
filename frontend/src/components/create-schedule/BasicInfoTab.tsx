@@ -33,6 +33,7 @@ const BasicInfoTab: React.FC = () => {
     trafficStripTemplate, setTrafficStripTemplate,
     mobilePrioritySort, setMobilePrioritySort,
     selfCheckinEnabled, setSelfCheckinEnabled,
+    participantsOnly, setParticipantsOnly,
     topicOfWeekEnabled, setTopicOfWeekEnabled,
     topicOfWeekPrompt, setTopicOfWeekPrompt,
     pollEnabled, setPollEnabled,
@@ -120,6 +121,22 @@ const BasicInfoTab: React.FC = () => {
           />
           <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
             When disabled, stations can't check themselves in from the app; only Net Control and logging staff can add check-ins. Use this if self check-in causes confusion alongside voice roll call.
+          </Typography>
+        </Box>
+
+        {/* Participants only: a label, not a gate (models.Net.participants_only) */}
+        <Box sx={{ ml: 1, mt: 2 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={participantsOnly}
+                onChange={(e) => setParticipantsOnly(e.target.checked)}
+              />
+            }
+            label="Participants only"
+          />
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+            For the stations taking part in an event or incident, such as a drill's deployed teams. Self check-in stays open. The net shows a red Participants only label, and the check-in form tells stations it is for those taking part. Net control can remove and block anyone else.
           </Typography>
         </Box>
       </FormGroup>

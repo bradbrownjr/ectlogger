@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { withOnlyShownFields } from './checkInFields';
+import { fieldLabel, isRelayedByShown, withOnlyShownFields } from './checkInFields';
 import { isValidSpotterNumber } from './spotterNumber';
 
 describe('withOnlyShownFields', () => {
@@ -38,5 +38,38 @@ describe('isValidSpotterNumber', () => {
 
   it.each(['YOUTUBE.COM/@NB9D', 'me@example.com', '-248', 'A'.repeat(21)])('rejects %s', (value) => {
     expect(isValidSpotterNumber(value)).toBe(false);
+  });
+});
+
+// A built-in field the admin renamed is called that on the net (2026-10-23:
+// "Power" renamed "Power (W)" still read "Power" on the check-in row).
+describe('fieldLabel', () => {
+  it("uses the admin's label", () => {
+    expect(fieldLabel([{ name: 'power', label: 'Power (W)' }], 'power')).toBe('Power (W)');
+  });
+  it('falls back to the built-in wording, then the field name', () => {
+    expect(fieldLabel([], 'skywarn_number')).toBe('Spotter #');
+    expect(fieldLabel(undefined, 'power_source')).toBe('Power Src');
+    expect(fieldLabel([{ name: 'notes', label: '' }], 'notes')).toBe('Notes');
+    expect(fieldLabel([], 'mystery')).toBe('mystery');
+  });
+});
+
+describe('isRelayedByShown', () => {
+  const off = { relayed_by: { enabled: false } };
+
+  it('follows the net setting', () => {
+    expect(isRelayedByShown({ relayed_by: { enabled: true } }, [])).toBe(true);
+    expect(isRelayedByShown(off, [{ status: 'checked_in' }])).toBe(false);
+    expect(isRelayedByShown(undefined, [])).toBe(false);
+  });
+
+  it('appears on a net that has it off once a station is marked Relay', () => {
+    expect(isRelayedByShown(off, [{ status: 'checked_in' }, { status: 'relay' }])).toBe(true);
+    expect(isRelayedByShown(off, [{ status: 'RELAY' }])).toBe(true);
+  });
+
+  it('never hides a relayed-by callsign already logged', () => {
+    expect(isRelayedByShown(off, [{ status: 'checked_in', relayed_by: 'K1COVE' }])).toBe(true);
   });
 });

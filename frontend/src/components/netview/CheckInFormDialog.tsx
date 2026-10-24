@@ -15,13 +15,16 @@ import {
   FormControlLabel,
   Radio,
   Typography,
+  Alert,
 } from '@mui/material';
+import LockPersonIcon from '@mui/icons-material/LockPerson';
 import type { UseDialogResult } from '../../hooks/useDialog';
 import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING, FIELD_SPAM_WARNING } from '../../utils/nameFieldGuard';
 import api from '../../services/api';
-import { isFieldShown } from '../../utils/checkInFields';
+import { fieldLabel, isFieldShown } from '../../utils/checkInFields';
 import SiteField, { netHasSites } from './SiteField';
 import type { CoverageSite } from '../../utils/coverageSites';
+import { PARTICIPANTS_ONLY_HINT } from './ParticipantsOnlyChip';
 
 // ========== CHECK-IN FORM DIALOG ==========
 // The "Check In to {net}" modal. Renders the dynamic check-in form (fields shown
@@ -59,6 +62,10 @@ export interface CheckInFormState {
 
 interface CheckInFormDialogProps {
   dialog: UseDialogResult;
+  // A participants-only net (Net.participants_only): says so above the form.
+  participantsOnly?: boolean;
+  // The site's field list, for each built-in field's label.
+  fieldDefinitions?: { name: string; label?: string | null }[];
   netName: string | undefined;
   fieldConfig: any;
   frequencies: any[] | undefined;
@@ -95,6 +102,8 @@ interface CheckInFormDialogProps {
 
 const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
   dialog,
+  participantsOnly,
+  fieldDefinitions,
   netName,
   fieldConfig,
   frequencies,
@@ -113,6 +122,8 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
   coverageSites = [],
   savedTown,
 }) => {
+  // A built-in field's label, as the admin named it.
+  const labelOf = (name: string) => fieldLabel(fieldDefinitions, name);
   // Which check-in fields currently reject a URL/email-looking value --
   // admin-configurable per field (Admin > Check-in Fields > Spam Guard),
   // on by default. Fetched once; the dialog is short-lived enough that a
@@ -174,6 +185,12 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
       <DialogTitle>Check In to {netName}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          {/* Shows on a participants-only net: a notice, not a gate */}
+          {participantsOnly && (
+            <Alert severity="error" variant="outlined" icon={<LockPersonIcon />}>
+              <strong>Participants only.</strong> {PARTICIPANTS_ONLY_HINT}
+            </Alert>
+          )}
           <TextField
             label="Callsign"
             value={checkInForm.callsign}
@@ -208,7 +225,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
 
           {fieldConfig?.name?.enabled && (
             <TextField
-              label="Name"
+              label={labelOf('name')}
               value={checkInForm.name}
               onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
               fullWidth
@@ -231,7 +248,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
 
           {fieldConfig?.location?.enabled && (
             <TextField
-              label="Location"
+              label={labelOf('location')}
               value={checkInForm.location}
               onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
               fullWidth
@@ -243,7 +260,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
 
           {fieldConfig?.skywarn_number?.enabled && (
             <TextField
-              label="Spotter #"
+              label={labelOf('skywarn_number')}
               value={checkInForm.skywarn_number}
               onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
               fullWidth
@@ -255,7 +272,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
 
           {fieldConfig?.weather_observation?.enabled && (
             <TextField
-              label="Weather Observation"
+              label={labelOf('weather_observation')}
               value={checkInForm.weather_observation}
               onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
               fullWidth
@@ -269,7 +286,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
 
           {fieldConfig?.power_source?.enabled && (
             <TextField
-              label="Power Src"
+              label={labelOf('power_source')}
               value={checkInForm.power_source}
               onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
               fullWidth
@@ -281,7 +298,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
 
           {fieldConfig?.power?.enabled && (
             <TextField
-              label="Power"
+              label={labelOf('power')}
               value={checkInForm.power}
               onChange={(e) => setCheckInForm({ ...checkInForm, power: e.target.value })}
               fullWidth
@@ -293,7 +310,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
 
           {fieldConfig?.notes?.enabled && (
             <TextField
-              label="Notes"
+              label={labelOf('notes')}
               value={checkInForm.notes}
               onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
               fullWidth

@@ -34,6 +34,11 @@ BUILTIN_FIELDS = [
     {"name": "power", "label": "Power", "field_type": "text", "default_enabled": False, "is_builtin": True, "sort_order": 55},
     {"name": "feedback", "label": "Feedback", "field_type": "textarea", "default_enabled": False, "is_builtin": True, "sort_order": 60},
     {"name": "notes", "label": "Notes", "field_type": "textarea", "default_enabled": False, "is_builtin": True, "sort_order": 70},
+    # The callsign that relayed a check-in (CheckIn.relayed_by). Off by
+    # default: the entry row always carried this box until 2026-10-23, and
+    # most nets never use it. The net view also shows it on a net that has it
+    # off once a station there is marked Relay (utils/checkInFields.ts).
+    {"name": "relayed_by", "label": "Relayed By", "field_type": "text", "default_enabled": False, "is_builtin": True, "sort_order": 75},
 ]
 
 
