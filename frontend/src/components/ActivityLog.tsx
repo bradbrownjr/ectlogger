@@ -33,9 +33,9 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ netId, minimized, onMinimize,
   // Hoisted out of the mount effect so a reconnect can reuse it -- the
   // activity log is the record of what happened during a net, so it's the
   // worst thing to leave with a silent hole in it after an outage.
-  const fetchMessages = useCallback(async () => {
+  const fetchMessages = useCallback(async (background = false) => {
     try {
-      const response = await chatApi.list(netId);
+      const response = await chatApi.list(netId, background);
       setMessages(response.data.filter((m) => m.is_system));
     } catch (err) {
       console.error('ActivityLog: failed to fetch messages', err);
@@ -52,7 +52,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ netId, minimized, onMinimize,
     const handleResync = (event: Event) => {
       const detail = (event as CustomEvent<{ netId?: number | string }>).detail;
       if (detail?.netId && String(detail.netId) !== String(netId)) return;
-      fetchMessages();
+      fetchMessages(true);
     };
     window.addEventListener('netResync', handleResync);
     return () => window.removeEventListener('netResync', handleResync);

@@ -425,13 +425,13 @@ const NetView: React.FC = () => {
   // (below) and again whenever the can_hear_changed WebSocket message arrives -
   // never patched locally, since a single save can insert/delete/touch an
   // arbitrary number of edges at once.
-  const fetchCanHearReports = async () => {
+  const fetchCanHearReports = async (background = false) => {
     if (!netId) return;
     // Sites, contacts and repeater/node results ride the same
     // can_hear_changed event, so they refresh here too.
-    siteCoverage.refresh();
+    siteCoverage.refresh(background);
     try {
-      const response = await canHearApi.list(parseInt(netId));
+      const response = await canHearApi.list(parseInt(netId), background);
       setCanHearReports(response.data);
     } catch (error) {
       console.error('Failed to fetch can-hear reports:', error);

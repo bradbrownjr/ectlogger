@@ -1,4 +1,4 @@
-import api from '../services/api';
+import api, { BACKGROUND_REQUEST_CONFIG } from '../services/api';
 
 /** Denormalized quote of the message a reply answers, so rendering the quote
  *  block never needs a second lookup. Null once the quoted message is gone. */
@@ -99,13 +99,13 @@ export function formatChatMessageText(message: string): string {
 const inFlightLists = new Map<number, Promise<{ data: ChatMessage[] }>>();
 
 export const chatApi = {
-  list: (netId: number) => {
+  list: (netId: number, background = false) => {
     const pending = inFlightLists.get(netId);
     // Hand every caller its own array so no panel can disturb another's copy.
     const copy = (r: { data: ChatMessage[] }) => ({ ...r, data: [...r.data] });
     if (pending) return pending.then(copy);
 
-    const request = api.get<ChatMessage[]>(`/chat/nets/${netId}/messages`)
+    const request = api.get<ChatMessage[]>(`/chat/nets/${netId}/messages`, background ? BACKGROUND_REQUEST_CONFIG : undefined)
       .finally(() => { inFlightLists.delete(netId); });
     inFlightLists.set(netId, request);
     return request.then(copy);
@@ -141,7 +141,8 @@ export const chatApi = {
   unmute: (netId: number, mutedUserId: number) =>
     api.delete(`/chat/nets/${netId}/mutes/${mutedUserId}`),
 
-  listNetMutes: (netId: number) => api.get<ChatNetMute[]>(`/chat/nets/${netId}/net-mutes`),
+  listNetMutes: (netId: number, background = false) =>
+    api.get<ChatNetMute[]>(`/chat/nets/${netId}/net-mutes`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
 
   netMute: (netId: number, mutedUserId: number) =>
     api.post<ChatNetMute>(`/chat/nets/${netId}/net-mutes`, { muted_user_id: mutedUserId }),

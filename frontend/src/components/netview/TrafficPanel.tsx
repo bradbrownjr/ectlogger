@@ -108,13 +108,13 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [selectedFormId, setSelectedFormId] = useState<number | null>(null);
 
-  const refetch = useCallback(async () => {
+  const refetch = useCallback(async (background = false) => {
     setLoading(true);
     setError(null);
     try {
       const [listRes, summaryRes] = await Promise.all([
-        trafficApi.listForNet(netId, { limit: 10 }),
-        trafficApi.summary(netId),
+        trafficApi.listForNet(netId, { limit: 10 }, background),
+        trafficApi.summary(netId, background),
       ]);
       setItems(listRes.data.items);
       setSummary(summaryRes.data);
@@ -155,7 +155,7 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
     // detail view here -- this is catching up on someone else's activity.
     const handleResync = (event: any) => {
       if (event.detail?.netId && String(event.detail.netId) !== String(netId)) return;
-      refetch();
+      refetch(true);
     };
     window.addEventListener('trafficLogged', handleTrafficLogged);
     window.addEventListener('trafficLogChanged', handleTrafficLogged);

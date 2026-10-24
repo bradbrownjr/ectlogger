@@ -1087,6 +1087,15 @@ navigation, or a form submit. The header is bookkeeping only and must never infl
 authorization; `tests/test_last_active.py` pins that, along with the requirement that only
 the exact value `1` counts.
 
+**The catch-up after a WebSocket reconnect is background too.** A reconnect happens on its
+own (a dropped connection, a sleeping device waking, the stale-connection watchdog), so
+`useNetWebSocket.ts::resyncAfterReconnect` calls each loader with `background = true`, and
+every `netResync` listener (chat, activity log, traffic panel, traffic detail, inbox badge)
+does the same. The loaders take an optional `background` argument that defaults to off.
+Until 2026-10-24 that refetch counted as activity: a tab left open overnight on an archived
+net, on a laptop waking every ~15 minutes, kept its user showing as active and held up a
+production deploy for three hours.
+
 **Pause it while hidden.** Use `useVisibilityAwareInterval`
 (`frontend/src/hooks/useVisibilityAwareInterval.ts`) instead of a bare `setInterval`. Browsers
 throttle timers in hidden tabs but don't stop them, so a plain interval keeps hitting the

@@ -64,7 +64,7 @@ export function useTrafficInbox() {
     const handleTrafficLogChanged = () => refetch();
     // Hops relayed while a net socket was down never reached the badge, so
     // refresh it on reconnect too (see useNetWebSocket.ts).
-    const handleResync = () => refetch();
+    const handleResync = () => refetch(true);
     window.addEventListener('trafficLogChanged', handleTrafficLogChanged);
     window.addEventListener('netResync', handleResync);
     return () => {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { netApi, checkInApi, userApi, BACKGROUND_REQUEST_CONFIG } from '../services/api';
+import { netApi, checkInApi, userApi, netRoleApi, callsignRoleApi, BACKGROUND_REQUEST_CONFIG } from '../services/api';
 import api from '../services/api';
 import useVisibilityAwareInterval from './useVisibilityAwareInterval';
 import type { CallsignRole } from '../utils/stationRoles';
@@ -73,9 +73,14 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
     [checkIns, net?.topic_of_week_enabled, net?.topic_of_week_prompt],
   );
 
-  const fetchNet = async () => {
+  // `background` (on fetchNet, fetchCheckIns, fetchNetRoles and
+  // fetchNetStats) marks a fetch no one asked for -- the 10s stats poll and
+  // the catch-up after a WebSocket reconnect -- so it doesn't count as
+  // operator activity. The initial load and refreshes driven by a live
+  // WebSocket event leave it off.
+  const fetchNet = async (background = false) => {
     try {
-      const response = await netApi.get(Number(netId));
+      const response = await netApi.get(Number(netId), background);
       setNet(response.data);
     } catch (error) {
       console.error('Failed to fetch net:', error);
@@ -91,17 +96,15 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
     }
   };
 
-  const fetchCheckIns = async () => {
+  const fetchCheckIns = async (background = false) => {
     try {
-      const response = await checkInApi.list(Number(netId));
+      const response = await checkInApi.list(Number(netId), background);
       setCheckIns(response.data);
     } catch (error) {
       console.error('Failed to fetch check-ins:', error);
     }
   };
 
-  // `background` marks the 10s poll below so it doesn't count as operator
-  // activity; the initial load and WebSocket-driven refreshes leave it off.
   const fetchNetStats = async (background = false) => {
     try {
       const response = await api.get(`/nets/${netId}/stats`, background ? BACKGROUND_REQUEST_CONFIG : undefined);
@@ -112,11 +115,11 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
     }
   };
 
-  const fetchNetRoles = async () => {
+  const fetchNetRoles = async (background = false) => {
     try {
       const [response, callsignResponse] = await Promise.all([
-        api.get(`/nets/${netId}/roles`),
-        api.get(`/nets/${netId}/callsign-roles`),
+        netRoleApi.list(Number(netId), background),
+        callsignRoleApi.list(Number(netId), background),
       ]);
       setNetRoles(response.data);
       setCallsignRoles(callsignResponse.data);

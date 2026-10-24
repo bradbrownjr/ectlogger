@@ -289,9 +289,9 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
     // not something the refetched message list itself would reveal.
     const handleResync = (event: any) => {
       if (event.detail?.netId && String(event.detail.netId) !== String(netId)) return;
-      fetchMessages();
+      fetchMessages(true);
       if (user?.id) {
-        chatApi.listNetMutes(netId)
+        chatApi.listNetMutes(netId, true)
           .then((response) => setNetMutes(new Map(response.data.map((m) => [m.muted_user_id, m]))))
           .catch((error) => console.error('Failed to re-fetch net-wide chat mutes on resync:', error));
       }
@@ -375,9 +375,9 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
     return true;
   });
 
-  const fetchMessages = async () => {
+  const fetchMessages = async (background = false) => {
     try {
-      const response = await chatApi.list(netId);
+      const response = await chatApi.list(netId, background);
       setMessages(response.data);
     } catch (error) {
       console.error('Failed to fetch chat messages:', error);

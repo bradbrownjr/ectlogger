@@ -145,11 +145,11 @@ const NetPaneWindow: React.FC = () => {
 
   // Fetches the full "can hear" report list for this net - see NetView.tsx's
   // fetchCanHearReports for why this is always a full refetch, never a patch.
-  const fetchCanHearReports = async () => {
+  const fetchCanHearReports = async (background = false) => {
     if (!netId) return;
-    siteCoverage.refresh();
+    siteCoverage.refresh(background);
     try {
-      const response = await canHearApi.list(parseInt(netId));
+      const response = await canHearApi.list(parseInt(netId), background);
       setCanHearReports(response.data);
     } catch (error) {
       console.error('Failed to fetch can-hear reports:', error);

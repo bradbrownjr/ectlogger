@@ -16,18 +16,20 @@ export function useSiteCoverage(netId: number | null, coverageEnabled: boolean) 
   const [access, setAccess] = useState<CoverageAccess[]>([]);
   const [summary, setSummary] = useState<SiteCoverageSummary>(EMPTY_SITE_COVERAGE);
 
-  const refresh = useCallback(async () => {
+  // `background` marks a refresh no one asked for (the catch-up after a
+  // reconnect) so it doesn't count as operator activity.
+  const refresh = useCallback(async (background = false) => {
     if (!netId) return;
     try {
       if (!coverageEnabled) {
-        setSites((await coverageSiteApi.listSites(netId)).data);
+        setSites((await coverageSiteApi.listSites(netId, background)).data);
         return;
       }
       const [sitesRes, contactsRes, accessRes, summaryRes] = await Promise.all([
-        coverageSiteApi.listSites(netId),
-        coverageSiteApi.listContacts(netId),
-        coverageSiteApi.listAccess(netId),
-        coverageSiteApi.summary(netId),
+        coverageSiteApi.listSites(netId, background),
+        coverageSiteApi.listContacts(netId, background),
+        coverageSiteApi.listAccess(netId, background),
+        coverageSiteApi.summary(netId, background),
       ]);
       setSites(sitesRes.data);
       setContacts(contactsRes.data);

@@ -169,7 +169,8 @@ export const netApi = {
     params.append('limit', '1000');
     return api.get('/nets/', { params });
   },
-  get: (id: number) => api.get(`/nets/${id}`),
+  get: (id: number, background = false) =>
+    api.get(`/nets/${id}`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
   update: (id: number, data: any) => api.put(`/nets/${id}`, data),
   start: (id: number) => api.post(`/nets/${id}/start`),
   openLobby: (id: number) => api.post(`/nets/${id}/open-lobby`),
@@ -207,8 +208,8 @@ export const netApi = {
 export const checkInApi = {
   create: (netId: number, data: any) => 
     api.post(`/check-ins/nets/${netId}/check-ins`, data),
-  list: (netId: number) => 
-    api.get(`/check-ins/nets/${netId}/check-ins`),
+  list: (netId: number, background = false) =>
+    api.get(`/check-ins/nets/${netId}/check-ins`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
   update: (id: number, data: any) => 
     api.put(`/check-ins/check-ins/${id}`, data),
   delete: (id: number) => 
@@ -223,8 +224,8 @@ export const checkInApi = {
 
 // "Can hear" propagation logging API
 export const canHearApi = {
-  list: (netId: number) =>
-    api.get(`/nets/${netId}/can-hear-reports`),
+  list: (netId: number, background = false) =>
+    api.get(`/nets/${netId}/can-hear-reports`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
   save: (netId: number, payload: { reporter_check_in_id: number; heard_check_in_ids: number[]; frequency_id?: number | null; operating_position?: string | null; coverage_site_id?: number | null }) =>
     api.put(`/nets/${netId}/can-hear-reports`, payload),
   updateFrequency: (netId: number, reportId: number, frequencyId: number | null) =>
@@ -234,7 +235,8 @@ export const canHearApi = {
 // Coverage sites, contacts outside the net, and the by-site rollup
 // (backend routers/coverage_sites.py). Reads are open to guests.
 export const coverageSiteApi = {
-  listSites: (netId: number) => api.get(`/nets/${netId}/coverage-sites`),
+  listSites: (netId: number, background = false) =>
+    api.get(`/nets/${netId}/coverage-sites`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
   saveSites: (netId: number, sites: CoverageSitePayload[]) =>
     api.put(`/nets/${netId}/coverage-sites`, sites),
   // An EMA's spreadsheet read into rows of text, for the import dialog to
@@ -247,13 +249,16 @@ export const coverageSiteApi = {
       `/nets/${netId}/coverage-sites/read-file`, form, { headers: { 'Content-Type': 'multipart/form-data' } },
     );
   },
-  listContacts: (netId: number) => api.get(`/nets/${netId}/coverage-contacts`),
+  listContacts: (netId: number, background = false) =>
+    api.get(`/nets/${netId}/coverage-contacts`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
   saveContacts: (netId: number, reporterCheckInId: number, contacts: { frequency_id: number | null; callsign: string | null; station: string | null; county: string | null; state: string | null; two_way: boolean }[]) =>
     api.put(`/nets/${netId}/coverage-contacts`, { reporter_check_in_id: reporterCheckInId, contacts }),
-  listAccess: (netId: number) => api.get(`/nets/${netId}/coverage-access`),
+  listAccess: (netId: number, background = false) =>
+    api.get(`/nets/${netId}/coverage-access`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
   saveAccess: (netId: number, reporterCheckInId: number, results: { target_site_id: number; reached: boolean; note: string | null }[]) =>
     api.put(`/nets/${netId}/coverage-access`, { reporter_check_in_id: reporterCheckInId, results }),
-  summary: (netId: number) => api.get(`/nets/${netId}/site-coverage`),
+  summary: (netId: number, background = false) =>
+    api.get(`/nets/${netId}/site-coverage`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
 };
 
 // Drill plan for one net (routers/drill_plans.py). get 404s when the net
@@ -458,7 +463,8 @@ export const statisticsApi = {
 // list is matched to check-ins by user_id, and a guest row's null would match
 // one of these. Match these by callsign (utils/stationRole.ts).
 export const callsignRoleApi = {
-  list: (netId: number) => api.get(`/nets/${netId}/callsign-roles`),
+  list: (netId: number, background = false) =>
+    api.get(`/nets/${netId}/callsign-roles`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
   assign: (netId: number, callsign: string, role: string) =>
     api.post(`/nets/${netId}/callsign-roles`, { callsign, role }),
   remove: (netId: number, roleId: number) => api.delete(`/nets/${netId}/callsign-roles/${roleId}`),
@@ -466,7 +472,8 @@ export const callsignRoleApi = {
 
 // Net Role API (for NCS frequency claiming)
 export const netRoleApi = {
-  list: (netId: number) => api.get(`/nets/${netId}/roles`),
+  list: (netId: number, background = false) =>
+    api.get(`/nets/${netId}/roles`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
   toggleSelf: (netId: number) => api.put(`/nets/${netId}/roles/toggle-self`),
   claimFrequency: (netId: number, roleId: number, frequencyId: number) =>
     api.put(`/nets/${netId}/roles/${roleId}/frequency/${frequencyId}`),
@@ -503,9 +510,12 @@ export const trafficApi = {
 
   create: (data: any) => api.post('/traffic/forms', data),
   list: (params?: any) => api.get('/traffic/forms', { params }),
-  listForNet: (netId: number, params?: any) => api.get(`/traffic/nets/${netId}/forms`, { params }),
-  summary: (netId: number) => api.get(`/traffic/nets/${netId}/summary`),
-  get: (id: number) => api.get(`/traffic/forms/${id}`),
+  listForNet: (netId: number, params?: any, background = false) =>
+    api.get(`/traffic/nets/${netId}/forms`, { params, ...(background ? BACKGROUND_REQUEST_CONFIG : {}) }),
+  summary: (netId: number, background = false) =>
+    api.get(`/traffic/nets/${netId}/summary`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
+  get: (id: number, background = false) =>
+    api.get(`/traffic/forms/${id}`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
   update: (id: number, data: any) => api.patch(`/traffic/forms/${id}`, data),
   delete: (id: number) => api.delete(`/traffic/forms/${id}`),
   // Set/clear the drill or demo label. Allowed regardless of append-only

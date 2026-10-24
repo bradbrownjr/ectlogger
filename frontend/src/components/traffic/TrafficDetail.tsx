@@ -56,9 +56,9 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId, onDeleted }) => {
   const [relabeling, setRelabeling] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const refetch = useCallback(() => {
+  const refetch = useCallback((background = false) => {
     setError(null);
-    return trafficApi.get(formId)
+    return trafficApi.get(formId, background)
       .then((res) => {
         setForm(res.data);
       })
@@ -109,7 +109,7 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId, onDeleted }) => {
     // A hop logged while the socket was down would otherwise leave this
     // timeline permanently missing it (see useNetWebSocket.ts). Not filtered
     // by net: this view is open on one form, and refetching it is cheap.
-    const handleResync = () => refetch();
+    const handleResync = () => refetch(true);
     window.addEventListener('trafficLogChanged', handleTrafficLogChanged);
     window.addEventListener('netResync', handleResync);
     return () => {

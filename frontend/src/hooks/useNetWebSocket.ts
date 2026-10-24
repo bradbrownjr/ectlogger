@@ -30,11 +30,11 @@ interface NetWebSocketDeps {
   // handlers below) -- gated on this flag so nets without the feature (the
   // default) never pay for an extra fetchNet() on every message.
   autoCloseEnabled: boolean;
-  fetchCheckIns: () => void;
-  fetchNet: () => void;
-  fetchNetRoles: () => void;
-  fetchNetStats: () => void;
-  fetchCanHearReports: () => void;
+  fetchCheckIns: (background?: boolean) => void;
+  fetchNet: (background?: boolean) => void;
+  fetchNetRoles: (background?: boolean) => void;
+  fetchNetStats: (background?: boolean) => void;
+  fetchCanHearReports: (background?: boolean) => void;
   setActiveSpeakerId: Dispatch<SetStateAction<number | null>>;
   setCheckIns: Dispatch<SetStateAction<any[]>>;
   setToastMessage: Dispatch<SetStateAction<string>>;
@@ -96,11 +96,17 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
         fetchCanHearReports, setToastMessage, setBulkCheckInActive,
       } = depsRef.current;
 
-      fetchNet();
-      fetchCheckIns();
-      fetchNetRoles();
-      fetchNetStats();
-      fetchCanHearReports();
+      // Background requests: a reconnect happens on its own (a dropped
+      // connection, the watchdog below), so catching up must not count as
+      // the operator doing something. Otherwise a tab left open on a net
+      // looks like an active user every time its socket reconnects, which
+      // held up a production deploy for three hours on 2026-10-24.
+      // Every 'netResync' listener passes background for the same reason.
+      fetchNet(true);
+      fetchCheckIns(true);
+      fetchNetRoles(true);
+      fetchNetStats(true);
+      fetchCanHearReports(true);
 
       // Ephemeral relay state, not something a REST refetch can recover --
       // an active:false sent while this socket was down would never be seen.
