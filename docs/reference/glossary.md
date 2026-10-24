@@ -42,7 +42,7 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 : The place an agency, such as a county EMA, coordinates its response from during an incident, and where ARES operators are often posted. In ECTLogger it is one of a net's site types, kept apart from **Official office** because an agency's everyday office is not always where its EOC opens. See [Sites](/docs/net-managers/sites/).
 
 **Frequency chip**
-: The small badge for each of a net's frequencies, shown across the top of the check-in list. Click one to claim it as the frequency you're monitoring, or Ctrl+click to filter the check-in list to just that frequency.
+: The small badge for each of a net's frequencies, shown across the top of the check-in list. Click one to claim it as the frequency you're monitoring (click it again to release it), or Ctrl+click to filter the check-in list to just that frequency.
 
 **Grid square**
 : A Maidenhead locator (for example `FN43mr`), a compact way to specify a location that ECTLogger's map can parse directly, with no geocoding needed. See [Location formats](/docs/reference/location-formats/).

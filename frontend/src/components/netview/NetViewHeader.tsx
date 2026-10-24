@@ -1063,9 +1063,9 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
                 }
                 if (!isInactiveNet && canManageCheckIns) {
                   if (userNetRole?.role === 'NCS') {
-                    tooltipText += 'Click to claim • ';
+                    tooltipText += isMyFrequency ? 'Click to release • ' : 'Click to claim • ';
                   } else {
-                    tooltipText += 'Click to set active • ';
+                    tooltipText += isActive ? 'Click to clear • ' : 'Click to set active • ';
                   }
                 }
                 tooltipText += 'Ctrl+click to filter';

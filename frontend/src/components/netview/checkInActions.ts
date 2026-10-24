@@ -76,7 +76,7 @@ export interface CheckInActions {
   handleInlineBlur: (e: React.FocusEvent) => void;
   handleSetActiveSpeaker: (checkInId: number | null) => void;
   handleToggleHand: (checkInId: number) => Promise<void>;
-  handleSetActiveFrequency: (frequencyId: number) => Promise<void>;
+  handleSetActiveFrequency: (frequencyId: number | null) => Promise<void>;
   handleFrequencyChipClick: (frequencyId: number, event: React.MouseEvent) => Promise<void>;
 }
 
@@ -485,9 +485,12 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     }
   };
 
-  const handleSetActiveFrequency = async (frequencyId: number) => {
+  // null clears the net's active frequency (a second click on the active chip).
+  const handleSetActiveFrequency = async (frequencyId: number | null) => {
     try {
-      const response = await netApi.setActiveFrequency(Number(netId!), frequencyId);
+      const response = frequencyId === null
+        ? await netApi.clearActiveFrequency(Number(netId!))
+        : await netApi.setActiveFrequency(Number(netId!), frequencyId);
       setNet(response.data);
 
       // Broadcast frequency change via WebSocket
@@ -506,6 +509,11 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
 
   // Handle frequency chip click - NCS claims frequency, or Ctrl+click filters
   // For closed/archived nets, only allow Ctrl+click filtering (no claiming/setting active)
+  // Clicking the chip that is already yours (an NCS's claim) or already active
+  // (anyone else) releases it, so a net manager coordinating every band isn't
+  // stuck on the last one they clicked. Until 2026-10-24 a second click just
+  // claimed it again and nothing in the app released a frequency, though the
+  // server always had both clear actions.
   const handleFrequencyChipClick = async (frequencyId: number, event: React.MouseEvent) => {
     if (event.ctrlKey || event.metaKey) {
       // Ctrl+click: toggle frequency filter (always allowed)
@@ -517,6 +525,15 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     } else if (net?.status === 'closed' || net?.status === 'archived') {
       // For closed/archived nets, regular clicks do nothing (chips are view-only)
       return;
+    } else if (canManageCheckIns && userNetRole?.role === 'NCS' && userNetRole.active_frequency_id === frequencyId) {
+      // NCS clicking their own claimed frequency: release it
+      try {
+        await netRoleApi.clearFrequency(Number(netId), userNetRole.id);
+        await fetchNetRoles();
+        setToastMessage("You're no longer on a frequency. Pick one for each check-in, or click a frequency to claim it.");
+      } catch (error: any) {
+        setToastMessage(getErrorMessage(error, 'Failed to release frequency'));
+      }
     } else if (canManageCheckIns && userNetRole?.role === 'NCS') {
       // NCS clicking: claim this frequency and add to their available frequencies
       try {
@@ -541,8 +558,9 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         setToastMessage(getErrorMessage(error, 'Failed to claim frequency'));
       }
     } else if (canManageCheckIns) {
-      // Non-NCS managers: set active frequency (existing behavior)
-      handleSetActiveFrequency(frequencyId);
+      // Non-NCS managers: set the active frequency, or clear it when it is
+      // already the active one
+      handleSetActiveFrequency(net?.active_frequency_id === frequencyId ? null : frequencyId);
     }
   };
 
