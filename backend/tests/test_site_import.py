@@ -30,7 +30,7 @@ async def _net(db, owner):
 
 
 SITES = [
-    {"name": "Example County EOC", "location": "Windham, ME", "site_type": "office", "is_primary": True,
+    {"name": "Example County EOC", "location": "Windham, ME", "site_type": "eoc", "is_primary": True,
      "is_supported": False},
     {"name": "Naples Shelter", "location": "Naples, ME", "site_type": "shelter", "is_supported": True,
      "notes": "POC Jane Roe, 555-0100", "details": {"Emergency capacity": "150", "Generator": "Yes"}},
@@ -50,6 +50,7 @@ async def test_staff_see_every_site_and_its_details(client, db, owner):
     net = await _net(db, owner)
     sites = await _save(client, net, owner)
     assert set(sites) == {"Example County EOC", "Naples Shelter", "Fire Station"}
+    assert sites["Example County EOC"]["site_type"] == "eoc"
     assert sites["Naples Shelter"]["details"] == {"Emergency capacity": "150", "Generator": "Yes"}
     assert sites["Fire Station"]["notes"] == "Key at town office"
     assert sites["Fire Station"]["in_use"] is False

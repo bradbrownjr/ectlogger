@@ -2280,7 +2280,7 @@ class CoverageSiteItem(BaseModel):
     id: Optional[int] = None
     name: str = Field(min_length=1, max_length=100)
     location: Optional[str] = Field(None, max_length=255)
-    site_type: Literal['office', 'shelter', 'pod', 'staging', 'hospital', 'other', 'infrastructure'] = 'shelter'
+    site_type: Literal['eoc', 'office', 'shelter', 'pod', 'staging', 'hospital', 'other', 'infrastructure'] = 'shelter'
     is_primary: bool = False
     # Infrastructure only: which of the net's frequencies it's on.
     frequency_id: Optional[int] = None

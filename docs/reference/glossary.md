@@ -38,6 +38,9 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 **Drill traffic**
 : Traffic marked as simulating a real incident for practice. Unlike demo traffic, drill traffic is treated exactly like the real thing everywhere: the same reminder ladder, the same append-only chain of custody, the same appearance in exports. The label exists only so an after-action review can tell it apart from an actual activation.
 
+**EOC (Emergency Operations Center)**
+: The place an agency, such as a county EMA, coordinates its response from during an incident, and where ARES operators are often posted. In ECTLogger it is one of a net's site types, kept apart from **Official office** because an agency's everyday office is not always where its EOC opens. See [Sites](/docs/net-managers/sites/).
+
 **Frequency chip**
 : The small badge for each of a net's frequencies, shown across the top of the check-in list. Click one to claim it as the frequency you're monitoring, or Ctrl+click to filter the check-in list to just that frequency.
 

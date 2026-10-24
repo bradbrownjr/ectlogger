@@ -25,7 +25,7 @@ You need to be able to edit the net: its manager, its schedule's manager or a co
 1. Open the net's settings (**Edit** on the net, or the form when creating it) and go to **Basic Info**.
 2. Under **ARES & EmComm Features**, find **Sites** and click **Add site**.
 3. Type the site as one line: **Name, Town, ST**, such as `Naples Shelter, Naples, ME`, or a name followed by a grid square, such as `Gray Weather Office FN43rv`. The line underneath shows how it was split. If it says no place was found, add a comma before the town.
-4. Pick the site's **Type**: **Official office** for an emergency management office or EOC, **Shelter**, **Point of distribution (POD)**, **Staging area**, **Hospital**, or **Other** for anywhere else, such as an aid station or a checkpoint.
+4. Pick the site's **Type**: **Emergency Operations Center (EOC)**, **Official office** for an agency office that isn't running as an EOC, **Shelter**, **Point of distribution (POD)**, **Staging area**, **Hospital**, or **Other** for anywhere else, such as an aid station or a checkpoint.
 5. Leave **Supported** ticked on each site your teams will staff. A site you add by hand starts ticked.
 6. Click **Save**.
 

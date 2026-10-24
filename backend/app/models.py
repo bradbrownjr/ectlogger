@@ -624,7 +624,7 @@ class CoverageSite(Base):
 
 # "infrastructure" is a repeater, packet node or Winlink gateway: a target a
 # site tries to get into (CoverageAccess), not a place operators report from.
-COVERAGE_SITE_TYPES = ("office", "shelter", "pod", "staging", "hospital", "other", "infrastructure")
+COVERAGE_SITE_TYPES = ("eoc", "office", "shelter", "pod", "staging", "hospital", "other", "infrastructure")
 
 
 class CoverageAccess(Base):

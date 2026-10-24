@@ -30,7 +30,7 @@ export interface CoverageSite {
 
 // A repeater, packet node or Winlink gateway is "infrastructure": sites try
 // to get into it, nobody reports from it.
-export type SiteType = 'office' | 'shelter' | 'pod' | 'staging' | 'hospital' | 'other' | 'infrastructure';
+export type SiteType = 'eoc' | 'office' | 'shelter' | 'pod' | 'staging' | 'hospital' | 'other' | 'infrastructure';
 
 export interface CoverageAccess {
   id: number;
@@ -101,7 +101,12 @@ export interface SiteCoverageSummary {
 
 export const EMPTY_SITE_COVERAGE: SiteCoverageSummary = { nodes: [], links: [], reach: [], contacts: [], counties: [], targets: [], access: [] };
 
+// Order is the order the Site box groups them in (utils/stationPlace.ts).
+// An EOC is its own NIMS facility type, apart from an agency's everyday
+// office (2026-10-23), and the Teams location types name it too
+// (docs/concepts/TEAM-MANAGEMENT-NOTES.md 5.6).
 export const SITE_TYPE_LABELS: Record<SiteType, string> = {
+  eoc: 'Emergency Operations Center (EOC)',
   office: 'Official office',
   shelter: 'Shelter',
   pod: 'Point of distribution (POD)',
