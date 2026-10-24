@@ -18,6 +18,10 @@ All notable changes to ECTLogger are documented here.
 
 # October 24, 2026
 
+## New Features
+
+* **Closing: Finish the log before it goes out** — Close net can now hold the closing email while you add offline logs, accept off-net entries and fix check-ins. Stations can't check in and chat closes as soon as you close, the report and statistics are marked as a draft copy, and the net can't be archived until you send the log. The net's managers get a daily reminder until it's sent. [Learn more](/docs/net-control/closing-the-net/#finishing-the-log-later)
+
 ## Improvements
 
 * **Coverage: Easier coverage entry** — The "Who can … hear?" grid lists each station once per site, even after it rechecks on another frequency, and the Station column stays in view while you scroll across frequencies. On a big drill, Find a station and Show frequencies narrow the grid to the station or frequency you're recording. [Learn more](/docs/net-control/station-coverage/#record-a-stations-report)

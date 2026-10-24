@@ -1,10 +1,21 @@
 {
-  "version": "2026.10.24",
+  "version": "2026.10.24b",
   "entries": [
     {
-      "version": "2026.10.24",
+      "version": "2026.10.24b",
       "date": "2026-10-24",
       "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Closing: Finish the log before it goes out — Close net can now hold the closing email while you add offline logs, accept off-net entries and fix check-ins. Stations can't check in and chat closes as soon as you close, the report and statistics are marked as a draft copy, and the net can't be archived until you send the log. The net's managers get a daily reminder until it's sent.",
+              "userImpact": true,
+              "docs": "/docs/net-control/closing-the-net/#finishing-the-log-later"
+            }
+          ]
+        },
         {
           "title": "Improvements",
           "type": "improvement",
