@@ -4,7 +4,7 @@ summary: Words this site uses in a particular way, including a few that mean som
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-24
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/glossary/
@@ -75,7 +75,7 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 : An operator listed on a schedule's "Authorized Net Staff" roster, distinct from being in the NCS rotation, though a person is often both. See [Roles and permissions](/docs/reference/roles-and-permissions/).
 
 **Participants only**
-: A net for the stations taking part in an event or incident, such as a drill's deployed teams, marked with a red label beside its status. Self check-in stays open; net control removes and blocks anyone else. Not to be confused with a **closed** net, which is one that has ended.
+: A net for the stations taking part in an event or incident, such as a drill's deployed teams, marked with a red label beside its status. Self check-in can stay open; net control removes and blocks anyone else. Not to be confused with a **closed** net, which is one that has ended.
 
 **Paused net**
 : An active net with an NCS assigned, where every assigned-active NCS is currently absent (stepped away, checked out, or otherwise not present) with nobody covering. A net with no NCS assigned at all is not "paused"; that's simply an unstaffed net, a different and intentional situation.

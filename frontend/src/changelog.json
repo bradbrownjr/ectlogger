@@ -10,7 +10,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Net View: Participants-only nets — A net can now be marked Participants only, for the stations taking part in an event or incident such as a drill's deployed teams. It shows a red label beside its status, and the check-in form asks anyone else to listen without checking in, while self check-in stays open for volunteers. If someone checks in anyway, net control can remove and block them: their check-ins come off the net, their chat is muted, and they can't check back in.",
+              "text": "Net View: Participants-only nets — A net can now be marked Participants only, for the stations taking part in an event or incident such as a drill's deployed teams. It shows a red label beside its status, and the check-in form asks anyone else to listen without checking in, while self check-in can stay open for volunteers. If someone checks in anyway, net control can remove and block them: their check-ins come off the net, their chat is muted, and they can't check back in.",
               "userImpact": true,
               "docs": "/docs/net-control/logging-check-ins/#removing-and-blocking-a-station"
             },

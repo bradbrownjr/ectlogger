@@ -4,7 +4,7 @@ summary: The net form field by field: frequencies, check-in fields, self check-i
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-24
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/creating-a-net/
@@ -37,7 +37,7 @@ Name, description, an optional info URL and audio stream URL, and a scheduled st
 Below that are three groups of toggles, all off by default unless a schedule already turned them on for you:
 
 - **General**: prioritize mobile stations in the check-in list, [keep chat open](/docs/operators/chat-and-polls/#chat-after-the-net-closes) for 15 to 60 minutes after closing, allow or block **self check-in** (turn this off if you want every check-in to come in over the air and be logged by staff instead), **Participants only** (below), and the [auto-lobby and auto-close](/docs/net-managers/lobby-and-auto-close/) settings.
-- **Participants only** marks a net that is for the stations taking part in an event or incident, such as a drill's deployed teams, and not for everyone listening. Self check-in stays open, since you won't know until the day who volunteers. The net gets a red **Participants only** label beside its status, and the check-in form tells stations that the net is for those taking part and asks anyone else to listen without checking in. If someone checks in anyway, net control can [remove and block](/docs/net-control/logging-check-ins/#removing-and-blocking-a-station) them.
+- **Participants only** marks a net that is for the stations taking part in an event or incident, such as a drill's deployed teams, and not for everyone listening. It doesn't turn off self check-in, so you can leave that open when you won't know until the day who volunteers. The net gets a red **Participants only** label beside its status, and the check-in form tells stations that the net is for those taking part and asks anyone else to listen without checking in. If someone checks in anyway, net control can [remove and block](/docs/net-control/logging-check-ins/#removing-and-blocking-a-station) them.
 - **Community net features**: **Topic of the Week** asks participants a free-text question at check-in; **Participant Poll** asks a short question with autocompleted answers so the results stay countable. Turning either on adds a locked, always-enabled row for it on the Check-In Fields tab, so you can't accidentally leave a poll's answers uncollected.
 - **ARES & EmComm features**: the ICS-309 Communications Log format for the closing email, station-to-station coverage logging ("can hear" reports, with a second switch, **Allow stations to self-report**, that decides whether stations can record their own or only net control can; see [Station coverage](/docs/net-control/station-coverage/)), and **Authenticated Net**, which lets Net Control or the Logger compare a checked-in station's live authenticator code against the one ECTLogger computes for their account. A station with no two-factor authentication set up simply shows as unverified rather than blocking the check-in. Assisted Traffic Handling, which sets the form types this net accepts, lives here too; see the traffic pages in [Net control](/docs/net-control/) for what staff do with it.
 

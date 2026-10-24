@@ -199,7 +199,7 @@ const BasicInfoTab: React.FC = () => {
           label="Participants only"
         />
         <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-          For the stations taking part in an event or incident, such as a drill's deployed teams. Self check-in stays open. The net shows a red Participants only label, and the check-in form tells stations it is for those taking part. Net control can remove and block anyone else.
+          For the stations taking part in an event or incident, such as a drill's deployed teams. Self check-in can stay open. The net shows a red Participants only label, and the check-in form tells stations it is for those taking part. Net control can remove and block anyone else.
         </Typography>
       </Box>
 
