@@ -4,7 +4,7 @@ summary: Exactly what the Bulk add box accepts, in the order it accepts it.
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-10-24
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/speed-entry-syntax/
@@ -35,14 +35,14 @@ Within one check-in, separate fields with commas, in this exact order:
 3. **Location**, if the net has Location enabled (on by default).
 4. **Spotter #**, if the net has it enabled.
 5. **Weather Observation**, if the net has it enabled.
-6. **Power Src**, if the net has it enabled — entered here as a plain field with no label of its own, right after Weather Observation.
-7. **Feedback**, if the net has it enabled.
-8. **Notes**, if the net has it enabled.
-9. Any admin-defined custom fields the net has enabled, in the order the admin panel lists them.
+6. **Power Src**, if the net has it enabled.
+7. **Power** (wattage), if the net has it enabled.
+8. **Feedback**, if the net has it enabled.
+9. **Notes**, if the net has it enabled.
+10. **Relayed By**, if the net has it enabled.
+11. Any admin-defined custom fields the net has enabled, in the order the admin panel lists them.
 
 Only fields the net actually has turned on take a slot in the line — a net with just Name and Location enabled (the default) only has three positions: callsign, name, location. Check the net's own Check-In Fields settings, or watch the "Format:" line the box shows live above where you type, to see the exact order for that net. See [Check-in fields](/docs/reference/check-in-fields/) for what each field is and how a net turns one on.
-
-**The separate "Power" (wattage) field cannot be entered through Bulk add.** Only Power Src has a slot in the line, described above. If a net needs the wattage recorded, add it with Notes or after the fact through the check-in table.
 
 ## Status shortcuts
 

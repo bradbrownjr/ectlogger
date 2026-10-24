@@ -43,8 +43,10 @@ interface ParsedCheckIn {
   skywarn_number?: string;
   weather_observation?: string;
   power_source?: string;
+  power?: string;
   feedback?: string;
   notes?: string;
+  relayed_by?: string;
   status?: string;
   custom_fields?: Record<string, string>;
   error?: string;
@@ -95,22 +97,28 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
     };
   }, [open, ws]);
 
-  // Known standard field keys — anything else in fieldConfig is a custom field
-  const STANDARD_FIELD_KEYS: readonly string[] = CHECKIN_TOGGLEABLE_FIELDS;
+  // Built-in fields, each saved under its own name. Anything else enabled in
+  // fieldConfig is a custom field. Until 2026-10-24 the list here was typed
+  // out by hand: its "power" column filled Power Src (and only appeared with
+  // Power Src on), so watts could never be bulk-entered, and an enabled
+  // Relayed By was filed as a custom field instead of the real one.
+  const BUILT_IN_FIELDS: readonly string[] = [...CHECKIN_TOGGLEABLE_FIELDS, 'relayed_by'];
+  // Shown unless a net turns them off; the rest only when turned on.
+  const ON_BY_DEFAULT = ['name', 'location', 'notes'];
+  const isEnabled = (key: string) =>
+    ON_BY_DEFAULT.includes(key) ? fieldConfig?.[key]?.enabled !== false : !!fieldConfig?.[key]?.enabled;
+  const EXAMPLE_VALUES: Record<string, string> = {
+    name: 'John', location: 'Portland ME', skywarn_number: 'DFW-1234', weather_observation: 'Clear skies',
+    power_source: 'Generator', power: '50', feedback: 'Good signal', notes: 'Portable', relayed_by: 'W1ABC',
+  };
 
   // Build dynamic field list based on enabled fields
   const enabledFields = [
     'callsign', // Always required
-    ...(fieldConfig?.name?.enabled !== false ? ['name'] : []),
-    ...(fieldConfig?.location?.enabled !== false ? ['location'] : []),
-    ...(fieldConfig?.skywarn_number?.enabled ? ['skywarn_number'] : []),
-    ...(fieldConfig?.weather_observation?.enabled ? ['weather_observation'] : []),
-    ...(fieldConfig?.power_source?.enabled ? ['power'] : []),
-    ...(fieldConfig?.feedback?.enabled ? ['feedback'] : []),
-    ...(fieldConfig?.notes?.enabled !== false ? ['notes'] : []),
+    ...BUILT_IN_FIELDS.filter(isEnabled),
     // Custom fields (any non-standard enabled key)
     ...Object.keys(fieldConfig || {})
-      .filter(k => !STANDARD_FIELD_KEYS.includes(k) && fieldConfig![k]?.enabled),
+      .filter(k => !BUILT_IN_FIELDS.includes(k) && fieldConfig![k]?.enabled),
   ];
 
   // Generate format string
@@ -121,16 +129,8 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
     const examples: string[] = [];
 
     // First example - basic check-in
-    const ex1Parts = ['KC1ABC'];
-    if (fieldConfig?.name?.enabled !== false) ex1Parts.push('John');
-    if (fieldConfig?.location?.enabled !== false) ex1Parts.push('Portland ME');
-    if (fieldConfig?.skywarn_number?.enabled) ex1Parts.push('DFW-1234');
-    if (fieldConfig?.weather_observation?.enabled) ex1Parts.push('Clear skies');
-    if (fieldConfig?.power_source?.enabled) ex1Parts.push('Generator');
-    if (fieldConfig?.feedback?.enabled) ex1Parts.push('Good signal');
-    Object.keys(fieldConfig || {})
-      .filter(k => !STANDARD_FIELD_KEYS.includes(k) && fieldConfig![k]?.enabled)
-      .forEach(() => ex1Parts.push('value'));
+    // One value per column, so the example lines up with the format
+    const ex1Parts = ['KC1ABC', ...enabledFields.slice(1).map((key) => EXAMPLE_VALUES[key] ?? 'value')];
     examples.push(ex1Parts.join(', '));
 
     // Second example - with status
@@ -198,14 +198,9 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
         const fieldName = enabledFields[i];
         const value = fields[i];
         if (value) {
-          if (fieldName === 'name') checkIn.name = value;
-          else if (fieldName === 'location') checkIn.location = value;
-          else if (fieldName === 'skywarn_number') checkIn.skywarn_number = value;
-          else if (fieldName === 'weather_observation') checkIn.weather_observation = value;
-          else if (fieldName === 'power') checkIn.power_source = value;
-          else if (fieldName === 'feedback') checkIn.feedback = value;
-          else if (fieldName === 'notes') checkIn.notes = value;
-          else {
+          if (BUILT_IN_FIELDS.includes(fieldName)) {
+            (checkIn as any)[fieldName] = fieldName === 'relayed_by' ? value.toUpperCase() : value;
+          } else {
             // Custom field
             if (!checkIn.custom_fields) checkIn.custom_fields = {};
             checkIn.custom_fields[fieldName] = value;
@@ -249,8 +244,10 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
           skywarn_number: checkIn.skywarn_number,
           weather_observation: checkIn.weather_observation,
           power_source: checkIn.power_source || '',
+          power: checkIn.power,
           feedback: checkIn.feedback,
           notes: checkIn.notes || '',
+          relayed_by: checkIn.relayed_by,
           status: checkIn.status || 'checked_in',
           custom_fields: checkIn.custom_fields || {},
         });
