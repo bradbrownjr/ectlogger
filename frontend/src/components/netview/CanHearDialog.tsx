@@ -88,6 +88,39 @@ const StationName: React.FC<{ station: any; sitesById: Map<number, CoverageSite>
   );
 };
 
+// ========== ONE ROW PER STATION AND PLACE ==========
+// A recheck on a second frequency adds a second live check-in row for the
+// same station (check_ins.py::create_check_in), so listing check-ins as-is
+// shows KD1OM at Gorham Middle School twice. The dialog lists each callsign
+// at each place once instead. A report still names one check-in id: a new
+// tick uses the group's representative (its earliest live row), and a group
+// counts as heard if any of its rows already is, so reports saved against
+// either row before this grouping keep showing.
+interface StationGroup {
+  station: any; // representative row, shown and saved for a new tick
+  ids: number[]; // every check-in row in the group
+}
+
+const placeKey = (ci: any): string =>
+  ci.coverage_site_id != null
+    ? `site:${ci.coverage_site_id}`
+    : `pos:${(ci.operating_position || ci.location || '').trim().toLowerCase()}`;
+
+const stationKey = (ci: any): string => `${(ci.callsign || '').trim().toUpperCase()}|${placeKey(ci)}`;
+
+function groupStations(checkIns: any[]): StationGroup[] {
+  const groups = new Map<string, any[]>();
+  checkIns.forEach((ci) => {
+    const key = stationKey(ci);
+    groups.set(key, [...(groups.get(key) ?? []), ci]);
+  });
+  return Array.from(groups.values()).map((rows) => {
+    const byTime = rows.slice().sort((a, b) => a.id - b.id);
+    const station = byTime.find((ci) => ci.status !== 'checked_out') ?? byTime[0];
+    return { station, ids: byTime.map((ci) => ci.id) };
+  });
+}
+
 type AccessDraft = Record<number, { result: 'reached' | 'failed'; note: string }>;
 
 // This station's saved repeater and node results, keyed by target site.
@@ -136,6 +169,18 @@ function frequencyLabel(freq: any): string {
   const base = `${freq.frequency || freq.network || ''} ${freq.mode || ''}`.trim() || freq.description || `Frequency #${freq.id}`;
   return freq.band ? `${base} (${freq.band})` : base;
 }
+
+// Pinned first column of the grid. Needs its own background, or the
+// checkboxes scrolling underneath show through it.
+const stickyStationCell = {
+  position: 'sticky',
+  left: 0,
+  zIndex: 1,
+  bgcolor: 'background.paper',
+  borderRight: 1,
+  borderColor: 'divider',
+  minWidth: 140,
+} as const;
 
 const CanHearDialog: React.FC<CanHearDialogProps> = ({
   open,
@@ -257,43 +302,44 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
     setCheckedIds(deriveCheckedIds(existingReports, reporterCheckIn.id, newFrequencyId));
   };
 
-  const toggleStation = (checkInId: number) => {
-    setCheckedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(checkInId)) {
-        next.delete(checkInId);
-      } else {
-        next.add(checkInId);
-      }
-      return next;
-    });
+  // Every other station in the net, one row per callsign and place (see
+  // groupStations), checked-out ones sorted last (not filtered out - a
+  // station reported earlier that has since checked out must remain
+  // visible, just deprioritized). The reporter's own callsign is left out
+  // entirely, including its rows from a recheck on another frequency.
+  // Array.prototype.sort is a stable sort, so check-in order is otherwise
+  // preserved.
+  const reporterCallsign = (reporterCheckIn.callsign || '').trim().toUpperCase();
+  const otherStations: StationGroup[] = groupStations(
+    allCheckIns.filter((ci: any) =>
+      ci.id !== reporterCheckIn.id && (ci.callsign || '').trim().toUpperCase() !== reporterCallsign)
+  ).sort((a, b) => {
+    const aOut = a.station.status === 'checked_out' ? 1 : 0;
+    const bOut = b.station.status === 'checked_out' ? 1 : 0;
+    return aOut - bOut;
+  });
+
+  const isGroupChecked = (checked: Set<number> | undefined, group: StationGroup) =>
+    group.ids.some((id) => checked?.has(id));
+
+  // Unticking clears every row in the group; ticking adds its representative.
+  const toggleGroupIn = (prev: Set<number> | undefined, group: StationGroup): Set<number> => {
+    const next = new Set(prev ?? []);
+    if (isGroupChecked(next, group)) {
+      group.ids.forEach((id) => next.delete(id));
+    } else {
+      next.add(group.station.id);
+    }
+    return next;
   };
 
-  const toggleGridStation = (frequencyId: number, checkInId: number) => {
-    setCheckedByFrequency((prev) => {
-      const next = { ...prev, [frequencyId]: new Set(prev[frequencyId] ?? []) };
-      const set = next[frequencyId];
-      if (set.has(checkInId)) {
-        set.delete(checkInId);
-      } else {
-        set.add(checkInId);
-      }
-      return next;
-    });
+  const toggleStation = (group: StationGroup) => {
+    setCheckedIds((prev) => toggleGroupIn(prev, group));
   };
 
-  // Every other station in the net, checked-out ones sorted last (not
-  // filtered out - a station reported earlier that has since checked out
-  // must remain visible, just deprioritized). Array.prototype.sort is a
-  // stable sort, so check-in order is otherwise preserved.
-  const otherStations = allCheckIns
-    .filter((ci: any) => ci.id !== reporterCheckIn.id)
-    .slice()
-    .sort((a: any, b: any) => {
-      const aOut = a.status === 'checked_out' ? 1 : 0;
-      const bOut = b.status === 'checked_out' ? 1 : 0;
-      return aOut - bOut;
-    });
+  const toggleGridStation = (frequencyId: number, group: StationGroup) => {
+    setCheckedByFrequency((prev) => ({ ...prev, [frequencyId]: toggleGroupIn(prev[frequencyId], group) }));
+  };
 
   // ========== SELECT ALL ==========
   // "I heard everybody but WA1XYZ" is a common simplex report (GitHub issue
@@ -302,14 +348,20 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
   // checked out was still genuinely heard. Partly checked shows the box as
   // indeterminate; clicking it from either partial or empty selects all.
   const selectAllState = (checked: Set<number> | undefined) => {
-    const count = otherStations.filter((s: any) => checked?.has(s.id)).length;
+    const count = otherStations.filter((group) => isGroupChecked(checked, group)).length;
     return {
       all: otherStations.length > 0 && count === otherStations.length,
       some: count > 0 && count < otherStations.length,
     };
   };
-  const nextSelection = (checked: Set<number> | undefined) =>
-    selectAllState(checked).all ? new Set<number>() : new Set<number>(otherStations.map((s: any) => s.id));
+  // Selecting all keeps a group's already-ticked row rather than swapping it
+  // for the representative, so a save doesn't churn reports that were right.
+  const nextSelection = (checked: Set<number> | undefined) => {
+    if (selectAllState(checked).all) return new Set<number>();
+    const next = new Set<number>(checked ?? []);
+    otherStations.forEach((group) => { if (!isGroupChecked(next, group)) next.add(group.station.id); });
+    return next;
+  };
 
   const toggleAll = () => setCheckedIds((prev) => nextSelection(prev));
 
@@ -428,7 +480,8 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Station</TableCell>
+                  {/* Station column stays pinned while the frequency columns scroll sideways */}
+                  <TableCell sx={{ ...stickyStationCell, fontWeight: 'bold', zIndex: 3 }}>Station</TableCell>
                   {netFrequencies.map((freq) => (
                     <TableCell key={freq.id} align="center" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                       {frequencyLabel(freq)}
@@ -446,16 +499,17 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {otherStations.map((station: any) => (
-                  <TableRow key={station.id} sx={{ opacity: station.status === 'checked_out' ? 0.6 : 1 }}>
-                    <TableCell>
-                      <StationName station={station} sitesById={sitesById} />
+                {otherStations.map((group) => (
+                  <TableRow key={group.station.id} sx={{ opacity: group.station.status === 'checked_out' ? 0.6 : 1 }}>
+                    <TableCell sx={stickyStationCell}>
+                      <StationName station={group.station} sitesById={sitesById} />
                     </TableCell>
                     {netFrequencies.map((freq) => (
                       <TableCell key={freq.id} align="center" sx={{ p: 0 }}>
                         <Checkbox
-                          checked={checkedByFrequency[freq.id]?.has(station.id) ?? false}
-                          onChange={() => toggleGridStation(freq.id, station.id)}
+                          checked={isGroupChecked(checkedByFrequency[freq.id], group)}
+                          onChange={() => toggleGridStation(freq.id, group)}
+                          inputProps={{ 'aria-label': `${group.station.callsign} on ${frequencyLabel(freq)}` }}
                         />
                       </TableCell>
                     ))}
@@ -479,17 +533,17 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
             sx={{ mb: 1, '& .MuiFormControlLabel-label': { fontWeight: 'medium' } }}
           />
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 1, mb: 2 }}>
-            {otherStations.map((station: any) => (
+            {otherStations.map((group) => (
               <FormControlLabel
-                key={station.id}
+                key={group.station.id}
                 control={
                   <Checkbox
-                    checked={checkedIds.has(station.id)}
-                    onChange={() => toggleStation(station.id)}
+                    checked={isGroupChecked(checkedIds, group)}
+                    onChange={() => toggleStation(group)}
                   />
                 }
-                label={<StationName station={station} sitesById={sitesById} />}
-                sx={{ opacity: station.status === 'checked_out' ? 0.6 : 1 }}
+                label={<StationName station={group.station} sitesById={sitesById} />}
+                sx={{ opacity: group.station.status === 'checked_out' ? 0.6 : 1 }}
               />
             ))}
           </Box>

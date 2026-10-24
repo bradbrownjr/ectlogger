@@ -4,7 +4,7 @@ summary: Recording who can hear whom during a net, reading the coverage table an
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-21
+revised: 2026-10-24
 review_by: 2027-10-21
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/station-coverage/
@@ -41,7 +41,7 @@ Saving replaces that station's previous report for that frequency. To correct on
 
 ### On a net with more than one frequency
 
-The dialog turns into a grid with one column per frequency, so a 2m and 80m comparison is recorded in one pass. Only the frequencies the net's manager left ticked under **Coverage reports** appear; repeaters and talkgroups are usually unticked, since everyone hears everyone through them. Each column has its own select-all box under its heading, and saving records every column, including any you left empty.
+The dialog turns into a grid with one column per frequency, so a 2m and 80m comparison is recorded in one pass. Only the frequencies the net's manager left ticked under **Coverage reports** appear; repeaters and talkgroups are usually unticked, since everyone hears everyone through them. Each column has its own select-all box under its heading, and saving records every column, including any you left empty. The **Station** column stays in place while you scroll sideways through a long list of frequencies, and each station is listed once per place, even after it has rechecked on a second frequency.
 
 <figure>
   <img src="/docs/img/net-control/can-hear-grid.png"
