@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-24
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,21 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# October 24, 2026
+
+## Improvements
+
+* **Coverage: Easier coverage entry** — The "Who can … hear?" grid lists each station once per site, even after it rechecks on another frequency, and the Station column stays in view while you scroll across frequencies. On a big drill, Find a station and Show frequencies narrow the grid to the station or frequency you're recording. [Learn more](/docs/net-control/station-coverage/#record-a-stations-report)
+* **Off-net log: Log any frequency, and find entries fast** — The Channel box no longer looks like a pick-list, so a contact on another county's repeater gets its own frequency instead of one of the net's. Find an entry searches the log by station, channel or what happened. [Learn more](/docs/net-control/off-net-log/#adding-an-entry)
+* **Net View: Clearer station counts** — Checked Out now sits beside Checked In, so the two add up to every station that took part. On a net with sites, a new label shows how many sites have a station on right now; point at it to see which. [Learn more](/docs/net-control/logging-check-ins/#rechecks)
+* **Net View: Release a frequency** — Click your claimed frequency, or the net's active one, again to release it, so a net manager or coordinator can go back to seeing every check-in. [Learn more](/docs/net-control/frequencies-and-multi-ncs/#frequency-chips)
+
+## Bug Fixes
+
+* **Check-in: Power is saved** — Power typed when checking a station in wasn't being saved, so the Power column stayed empty unless someone edited each check-in afterwards. It's saved now. Bulk add also has a Power column now, and Relayed By entered there goes to the Relayed By column. [Learn more](/docs/reference/speed-entry-syntax/)
 
 ---
 

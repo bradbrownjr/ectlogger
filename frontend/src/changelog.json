@@ -1,6 +1,49 @@
 {
-  "version": "2026.10.23e",
+  "version": "2026.10.24",
   "entries": [
+    {
+      "version": "2026.10.24",
+      "date": "2026-10-24",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Coverage: Easier coverage entry — The \"Who can … hear?\" grid lists each station once per site, even after it rechecks on another frequency, and the Station column stays in view while you scroll across frequencies. On a big drill, Find a station and Show frequencies narrow the grid to the station or frequency you're recording.",
+              "userImpact": true,
+              "docs": "/docs/net-control/station-coverage/#record-a-stations-report"
+            },
+            {
+              "text": "Off-net log: Log any frequency, and find entries fast — The Channel box no longer looks like a pick-list, so a contact on another county's repeater gets its own frequency instead of one of the net's. Find an entry searches the log by station, channel or what happened.",
+              "userImpact": true,
+              "docs": "/docs/net-control/off-net-log/#adding-an-entry"
+            },
+            {
+              "text": "Net View: Clearer station counts — Checked Out now sits beside Checked In, so the two add up to every station that took part. On a net with sites, a new label shows how many sites have a station on right now; point at it to see which.",
+              "userImpact": true,
+              "docs": "/docs/net-control/logging-check-ins/#rechecks"
+            },
+            {
+              "text": "Net View: Release a frequency — Click your claimed frequency, or the net's active one, again to release it, so a net manager or coordinator can go back to seeing every check-in.",
+              "userImpact": true,
+              "docs": "/docs/net-control/frequencies-and-multi-ncs/#frequency-chips"
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Check-in: Power is saved — Power typed when checking a station in wasn't being saved, so the Power column stayed empty unless someone edited each check-in afterwards. It's saved now. Bulk add also has a Power column now, and Relayed By entered there goes to the Relayed By column.",
+              "userImpact": true,
+              "docs": "/docs/reference/speed-entry-syntax/"
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.10.23e",
       "date": "2026-10-23",
