@@ -27,7 +27,8 @@ export type TopicPollAction = 'open-lobby' | 'start' | 'go-live';
 interface NetControlDialogsProps {
   // Close Net
   closeNetDialog: UseDialogResult;
-  onCloseNet: () => void;
+  // holdLog: close without emailing the log ("Finish the log later")
+  onCloseNet: (holdLog?: boolean) => void;
   // Stations' off-net log entries still awaiting review (net control only)
   pendingOffNetCount: number;
   onReviewOffNet: () => void;
@@ -90,42 +91,55 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
   return (
     <>
       {/* ========== CLOSE NET DIALOG ========== */}
+      {/* Two ways to close: send the log now, or hold it while net control
+          finishes it (utils/netLog.ts). No Enter shortcut, since that would
+          pick one for you. */}
       <Dialog
         open={closeNetDialog.open}
         onClose={closeNetDialog.onClose}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            onCloseNet();
-          }
-        }}
       >
         <DialogTitle>Close Net?</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to close this net? This will end the session and send log emails to subscribers.
+            Closing ends the net. Stations can no longer check in, and chat closes.
+          </Typography>
+          <Typography sx={{ mt: 1.5 }}>
+            <strong>Close and send the log</strong> emails the log to subscribers and net control now.
+          </Typography>
+          <Typography sx={{ mt: 1 }}>
+            <strong>Finish the log later</strong> holds the email while you add offline logs and fix entries.
+            The report is marked as a draft, and you send the log from the net page when it's done.
           </Typography>
           {/* Shows when stations' off-net entries are waiting for review */}
           {pendingOffNetCount > 0 && (
             <Alert severity="warning" sx={{ mt: 2 }}>
               {pendingOffNetCount === 1 ? '1 off-net entry is' : `${pendingOffNetCount} off-net entries are`} awaiting
-              review. Entries you don't accept are left off the emailed ICS-309. You can still accept them after the net closes.
+              review. If you send the log now, entries you haven't accepted are left off its ICS-309.
             </Alert>
           )}
         </DialogContent>
-        <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
-          <Button onClick={closeNetDialog.onClose}>Cancel</Button>
-          {pendingOffNetCount > 0 && (
-            <>
+        {/* Two right-aligned rows: the choices that send nothing, then the
+            two that send the log (both red) on a row of their own. */}
+        <DialogActions sx={{ flexDirection: 'column', alignItems: 'flex-end', gap: 1 }} disableSpacing>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 1 }}>
+            <Button onClick={closeNetDialog.onClose}>Cancel</Button>
+            {pendingOffNetCount > 0 && (
               <Button onClick={onReviewOffNet}>Review</Button>
+            )}
+            <Button onClick={() => onCloseNet(true)} variant="outlined">
+              Finish the log later
+            </Button>
+          </Box>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 1 }}>
+            {pendingOffNetCount > 0 && (
               <Button onClick={onAcceptOffNetAndClose} variant="outlined" color="error">
-                Accept all and close
+                Accept all and send
               </Button>
-            </>
-          )}
-          <Button onClick={onCloseNet} variant="contained" color="error">
-            {pendingOffNetCount > 0 ? 'Close anyway' : 'Close Net'}
-          </Button>
+            )}
+            <Button onClick={() => onCloseNet(false)} variant="contained" color="error">
+              Close and send the log
+            </Button>
+          </Box>
         </DialogActions>
       </Dialog>
 

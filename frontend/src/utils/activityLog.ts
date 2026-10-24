@@ -71,6 +71,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'user.deleted': 'Account deleted',
 
   'net.closed': 'Net closed',
+  'net.log_sent': 'Net log sent',
   'net.auto_closed': 'Net closed automatically',
   'net.cancelled': 'Net cancelled',
   'net.restored': 'Net restored',

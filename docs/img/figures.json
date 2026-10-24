@@ -145,7 +145,7 @@
   },
   "net-control/close-net-dialog": {
     "path": "/docs/img/net-control/close-net-dialog.png",
-    "alt": "The Close Net confirmation dialog: \"Are you sure you want to close this net? This will end the session and send log emails to subscribers,\" with a notice that 1 off-net entry is awaiting review, and Cancel, Review, Accept all and close, and Close anyway buttons. Close anyway is outlined in red.\n",
+    "alt": "The Close Net dialog, explaining that closing ends the net, with a notice that 1 off-net entry is awaiting review, and Cancel, Review, Finish the log later, Accept all and send, and Close and send the log buttons. Close and send the log is outlined in red.\n",
     "caption": "There is no scheduled undo for this -- see Closing the net for what to do if you close one by mistake.",
     "page": "/docs/net-control/closing-the-net/"
   },

@@ -673,6 +673,12 @@ class NetUpdate(BaseModel):
         return v
 
 
+class CloseNetRequest(BaseModel):
+    """POST /nets/{id}/close. hold_log closes the net without emailing its
+    log; POST /nets/{id}/send-log sends it once net control has finished."""
+    hold_log: bool = False
+
+
 class NetActions(BaseModel):
     """Which net actions the current user may take, one flag per server
     action, each computed by the same rule the action itself enforces
@@ -728,6 +734,9 @@ class NetResponse(NetBase):
     scheduled_start_time: Optional[datetime] = None
     started_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
+    # Set while a closed net's log is waiting to be sent (Net.log_held_since).
+    # The app marks the report a draft and holds archive until it's cleared.
+    log_held_since: Optional[datetime] = None
     cancelled_at: Optional[datetime] = None
     cancel_reason: Optional[str] = None
     created_at: datetime
@@ -811,6 +820,7 @@ class NetResponse(NetBase):
             'scheduled_start_time': net.scheduled_start_time,
             'started_at': net.started_at,
             'closed_at': net.closed_at,
+            'log_held_since': net.log_held_since,
             'cancelled_at': net.cancelled_at,
             'cancel_reason': net.cancel_reason,
             'created_at': net.created_at,
@@ -2153,6 +2163,9 @@ class NetStatsResponse(BaseModel):
     net_id: int
     net_name: str
     status: str
+    # Closed with its log still waiting to be sent (Net.log_held_since): the
+    # statistics page marks itself a draft.
+    log_held: bool = False
     template_id: Optional[int] = None  # ID of the recurring net template, if any
     
     # Counts

@@ -26,6 +26,7 @@ import OffscreenArrivalArrow from './OffscreenArrivalArrow';
 import CheckInLocation from './CheckInLocation';
 import HandRaisedIndicator from './HandRaisedIndicator';
 import { findCheckInRole, roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
+import { isLogOpen } from '../../utils/netLog';
 
 // ========== CHECK-IN LIST TABLE 2: Mobile View ==========
 // The small-screen (xs only) check-in table. Intentionally simpler than the
@@ -429,7 +430,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                     {canManage && (
                       <IconButton size="small" onClick={() => onDeleteCheckIn(checkIn.id)}><DeleteIcon fontSize="small" /></IconButton>
                     )}
-                    {showCanHear && (net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
+                    {showCanHear && isLogOpen(net) && checkIn.status !== 'checked_out' && (
                       <IconButton
                         size="small"
                         onClick={() => onOpenCanHearDialog(checkIn.id)}

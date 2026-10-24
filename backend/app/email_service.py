@@ -37,6 +37,7 @@ from app.email.net_lifecycle import (
     send_net_invitation,
     send_net_notification,
 )
+from app.email.net_log_hold import send_log_hold_reminder
 from app.email.net_logs import send_ics309_log, send_net_log
 from app.email.reminders import (
     send_ncs_duty_correction,
@@ -75,6 +76,7 @@ class EmailService:
     send_ncs_duty_correction = staticmethod(send_ncs_duty_correction)
     send_net_log = staticmethod(send_net_log)
     send_ics309_log = staticmethod(send_ics309_log)
+    send_log_hold_reminder = staticmethod(send_log_hold_reminder)
     send_feedback_email = staticmethod(send_feedback_email)
     send_whats_new_email = staticmethod(send_whats_new_email)
     send_early_access_request = staticmethod(send_early_access_request)

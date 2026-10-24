@@ -82,11 +82,12 @@ A station can change or delete its own entry until it's accepted.
 
 ## Closing with entries still waiting
 
-If entries are still awaiting review when you click **Close net**, the confirmation says so and gives you three choices:
+If entries are still awaiting review when you click **Close net**, the confirmation says so and gives you these choices:
 
 - **Review** - opens the off-net log, without closing the net.
-- **Accept all and close** - accepts every waiting entry, then closes the net.
-- **Close anyway** - closes the net. Entries you haven't accepted are left off the ICS-309 in the closing email.
+- **Finish the log later** - closes the net and holds the closing email, so you can review the entries and send the log afterward.
+- **Accept all and send** - accepts every waiting entry, then closes the net and sends the log.
+- **Close and send the log** - closes the net and sends the log. Entries you haven't accepted are left off the ICS-309 in the closing email.
 
 You can still accept entries after the net closes. Downloading the ICS-309 again afterward includes them. See [Closing the net](/docs/net-control/closing-the-net/).
 

@@ -73,6 +73,7 @@ async def close_net_and_notify(
     closed_at: Optional[datetime] = None,
     started_at: Optional[datetime] = None,
     post_chat_message: bool = True,
+    hold_log: bool = False,
 ) -> None:
     """Close *net*, commit, then broadcast and mail the log.
 
@@ -94,11 +95,19 @@ async def close_net_and_notify(
         backfill suppresses it: the message would be stamped after closed_at
         and so render as an out-of-order trailing row in the CSV, ICS-309 and
         emailed log, and its wording is false for a net nobody closed live.
+    hold_log
+        Close without emailing the log. Net control finishes it (offline
+        logs, off-net entries, corrections) and sends it later with
+        send_net_log, through POST /nets/{id}/send-log.
     """
     net_id = net.id
 
     net.status = NetStatus.CLOSED
     net.closed_at = closed_at if closed_at is not None else datetime.utcnow()
+    if hold_log:
+        net.log_held_since = net.closed_at
+        net.log_held_by_user_id = actor.id
+        net.log_hold_reminded_at = None
 
     # Finalize an in-progress pause (net closed while NCS was away) so
     # total_paused_seconds reflects the full paused window.
@@ -138,13 +147,28 @@ async def close_net_and_notify(
         "data": {
             "net_id": net_id,
             "status": "closed",
-            "closed_at": net.closed_at.isoformat() if net.closed_at else None
+            "closed_at": net.closed_at.isoformat() if net.closed_at else None,
+            "log_held": hold_log,
         }
     }, net_id)
 
     # Post system message for net close
     if post_chat_message:
         await post_system_message(net_id, f"Net has been closed by {display_callsign(actor)}", db)
+
+    if not hold_log:
+        await send_net_log(db, net)
+
+
+async def send_net_log(db: AsyncSession, net: Net) -> None:
+    """Email *net*'s log (plain or ICS-309) to its owner, its schedule's
+    subscribers and its active NCS/Logger/Relay. Sent at close, or later from
+    POST /nets/{id}/send-log for a net closed with hold_log.
+
+    The caller loads net.frequencies and net.check_ins with CheckIn.frequency.
+    A failed send to one address is logged and skipped, never raised.
+    """
+    net_id = net.id
 
     # Get owner/NCS information
     result = await db.execute(

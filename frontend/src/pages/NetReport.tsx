@@ -157,6 +157,7 @@ import { buildSiteBoard } from '../utils/stationPlace';
 import { SiteGroups } from '../components/netview/SitesBoard';
 import { netHasSites } from '../components/netview/SiteField';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
+import { DRAFT_LOG_NOTICE, isLogHeld } from '../utils/netLog';
 
 // ========== INTERFACES ==========
 
@@ -165,6 +166,7 @@ interface Net {
   name: string;
   description: string;
   status: string;
+  log_held_since?: string | null;
   owner_id: number;
   ics309_enabled?: boolean;
   propagation_logging_enabled?: boolean;
@@ -721,6 +723,8 @@ const NetReport: React.FC = () => {
   const reportSpan = stats.started_at
     ? formatReportSpan(stats.started_at, stats.closed_at, user?.prefer_utc || false)
     : null;
+  // Marks every masthead, so the PDF and images say so too, until the log is sent
+  const draftNotice = isLogHeld(net) ? DRAFT_LOG_NOTICE : undefined;
 
   // Split chat into user messages and system log entries
   const userChatMessages = chatMessages.filter(m => !m.is_system);
@@ -801,6 +805,7 @@ const NetReport: React.FC = () => {
           title={net.name}
           when={reportSpan?.when}
           whenDetail={reportSpan?.detail}
+          draftNotice={draftNotice}
         />
 
         {/* ========== SECTION 1: NET DETAILS ========== */}
@@ -1014,6 +1019,7 @@ const NetReport: React.FC = () => {
                   title={net.name}
                   when={reportSpan?.when}
                   whenDetail={reportSpan?.detail}
+                  draftNotice={draftNotice}
                 />
               </Box>
             )}
@@ -1659,6 +1665,7 @@ const NetReport: React.FC = () => {
           statusCounts={stats.status_counts}
           frequencyCounts={stats.check_ins_by_frequency}
           rows={socialRows}
+          draftNotice={draftNotice}
         />
       )}
 

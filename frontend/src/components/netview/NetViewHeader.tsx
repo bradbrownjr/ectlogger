@@ -70,6 +70,7 @@ import ImageLightbox from '../ImageLightbox';
 import { NetActions } from '../../utils/netActions';
 import { canOpenLobby } from '../../utils/netStart';
 import type { TopicPollAction } from './NetControlDialogs';
+import { canArchiveNet, isLogOpen } from '../../utils/netLog';
 
 // ========== NET VIEW HEADER ==========
 // Title row (name, description, status/stat/frequency chips) plus a full-width
@@ -439,7 +440,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     },
     {
       key: 'bulk', group: 'info', priority: 3,
-      visible: isActiveOrLobby && checkInsCount > 0 && !!canManageCheckIns,
+      visible: isLogOpen(net) && checkInsCount > 0 && !!canManageCheckIns,
       Icon: FastForwardIcon, color: theme.palette.primary.main, label: 'Bulk add',
       tooltip: 'Bulk add multiple check-ins', onClick: () => bulkCheckIn.onOpen(),
     },
@@ -750,7 +751,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     },
     {
       key: 'archive', group: 'management', priority: 2,
-      visible: actions.lifecycle && net.status === 'closed',
+      visible: actions.lifecycle && canArchiveNet(net),
       Icon: ArchiveIcon, color: neutralIconColor, label: 'Archive',
       tooltip: 'Archive net', onClick: onArchive,
     },

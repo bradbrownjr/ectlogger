@@ -41,6 +41,7 @@ import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
 import { CheckInFormState } from '../components/netview/CheckInFormDialog';
 import { canHearApi } from '../services/api';
 import { getNetActions } from '../utils/netActions';
+import { chatGraceMinutes } from '../utils/netLog';
 
 // NCS color palette for check-in row / frequency-chip coloring — duplicated
 // from NetView.tsx (a small static constant, not worth a shared module for).
@@ -227,7 +228,7 @@ const NetPaneWindow: React.FC = () => {
           // further down this file and in NetView.tsx.
           canManage={paneCanManage}
           canManageCheckIns={paneCanManage || paneIsNCSOrLogger}
-          chatGracePeriodMinutes={net.chat_grace_period_minutes ?? undefined}
+          chatGracePeriodMinutes={chatGraceMinutes(net)}
           closedAt={net.closed_at}
           onlineUserIds={onlineUserIds}
           checkIns={checkIns}

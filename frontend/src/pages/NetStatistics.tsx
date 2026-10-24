@@ -74,6 +74,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { MAP_TILE_URL, MAP_TILE_ATTRIBUTION, getMapTileClassName } from '../utils/mapTiles';
 import { computeCheckInTimeline } from '../utils/checkInTimeline';
 import ReportPageHeader from '../components/report/ReportPageHeader';
+import { DRAFT_LOG_NOTICE } from '../utils/netLog';
 
 // Fix default Leaflet marker icons for Vite/webpack
 const DefaultIcon = L.icon({
@@ -116,6 +117,7 @@ interface NetStats {
   net_id: number;
   net_name: string;
   status: string;
+  log_held: boolean;  // closed, log not sent yet: the page is a draft
   template_id: number | null;  // ID of the recurring net template, if any
   total_check_ins: number;
   unique_callsigns: number;
@@ -365,6 +367,13 @@ const NetStatistics: React.FC = () => {
           </Button>
         )}
       </ReportPageHeader>
+
+      {/* Shows while the net is closed with its log not yet sent */}
+      {stats.log_held && (
+        <Alert severity="warning" sx={{ mb: 3 }} data-testid="statistics-draft-notice">
+          <strong>Draft copy.</strong> {DRAFT_LOG_NOTICE}
+        </Alert>
+      )}
 
       <Box id="net-stats-content">
         {/* Summary Cards */}

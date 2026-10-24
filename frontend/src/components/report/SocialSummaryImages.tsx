@@ -60,6 +60,8 @@ interface SocialSummaryImagesProps {
   frequencyCounts: Record<string, number>;
   /** One row per station, in check-in order. */
   rows: SocialRosterRow[];
+  /** Draft-copy note while the net's log hasn't been sent (ReportMasthead). */
+  draftNotice?: string;
 }
 
 interface PageSlice {
@@ -176,13 +178,13 @@ const PageShell = React.forwardRef<HTMLDivElement, { children: React.ReactNode; 
 PageShell.displayName = 'PageShell';
 
 const SocialSummaryImages: React.FC<SocialSummaryImagesProps> = (props) => {
-  const { accentColors, logoUrl, title, when, whenDetail, figures, rows } = props;
+  const { accentColors, logoUrl, title, when, whenDetail, figures, rows, draftNotice } = props;
   const firstProbe = useRef<HTMLDivElement>(null);
   const nextProbe = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<PageSlice[] | null>(null);
 
   const masthead = (eyebrow: string) => (
-    <ReportMasthead compact logoUrl={logoUrl} eyebrow={eyebrow} title={title} when={when} whenDetail={whenDetail} />
+    <ReportMasthead compact logoUrl={logoUrl} eyebrow={eyebrow} title={title} when={when} whenDetail={whenDetail} draftNotice={draftNotice} />
   );
   const firstTop = (
     <>

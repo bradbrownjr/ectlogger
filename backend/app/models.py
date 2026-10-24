@@ -278,6 +278,15 @@ class Net(Base):
     scheduled_start_time = Column(DateTime(timezone=True))  # When the net is scheduled to start
     started_at = Column(DateTime(timezone=True))
     closed_at = Column(DateTime(timezone=True))
+    # Closed with "finish the log later": set at close, cleared when net
+    # control sends the log (POST /nets/{id}/send-log). While set, the
+    # closing email hasn't gone out, net control can still add and fix
+    # check-ins, chat is closed, and the net can't be archived.
+    # log_hold_reminded_at paces the daily reminder to the net's managers
+    # (services/net_log_hold.py).
+    log_held_since = Column(DateTime(timezone=True), nullable=True)
+    log_held_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    log_hold_reminded_at = Column(DateTime(timezone=True), nullable=True)
     cancelled_at = Column(DateTime(timezone=True), nullable=True)
     cancel_reason = Column(String(500), nullable=True)  # Optional operator-entered note, e.g. "in-person meeting instead"
     created_at = Column(DateTime(timezone=True), server_default=func.now())

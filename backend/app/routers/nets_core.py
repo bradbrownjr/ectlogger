@@ -40,13 +40,14 @@ from app.permissions import (
     is_eligible_for_ncs_auto_grant,
 )
 from app.schemas import (
+    CloseNetRequest,
     NetCreate,
     NetResponse,
     NetTemplateLinkRequest,
     NetUpdate,
     public_display_name,
 )
-from app.services.net_closure import close_net_and_notify, compute_auto_close_at
+from app.services.net_closure import close_net_and_notify, compute_auto_close_at, send_net_log
 from app.utils import NET_LOGO_DIR, display_callsign, save_resized_logo
 from app.services.ncs_attribution import load_ncs_attribution, net_ncs_attribution
 
@@ -889,10 +890,13 @@ async def clear_active_frequency(
 @router.post("/{net_id}/close", response_model=NetResponse)
 async def close_net(
     net_id: int,
+    body: Optional[CloseNetRequest] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Close a net and send log to NCS"""
+    """Close a net and email its log. With hold_log, close it without the
+    email: net control finishes the log and sends it with send_held_log."""
+    hold_log = bool(body and body.hold_log)
     result = await db.execute(
         select(Net).options(
             selectinload(Net.frequencies),
@@ -936,7 +940,48 @@ async def close_net(
     # The close itself, the status broadcast, the system message and the
     # net-log email all live in services/net_closure.py so the CSV backfill
     # path can reuse them verbatim instead of growing a second copy.
-    record_net_event(db, "net.closed", current_user, net)
-    await close_net_and_notify(db, net, current_user)
+    record_net_event(db, "net.closed", current_user, net,
+                     details={"log_held": True} if hold_log else None)
+    await close_net_and_notify(db, net, current_user, hold_log=hold_log)
 
+    return NetResponse.from_orm(net)
+
+
+@router.post("/{net_id}/send-log", response_model=NetResponse)
+async def send_held_log(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Email the log of a net closed with hold_log, built from the log as it
+    stands now, and release the hold so the net can be archived. Same people
+    as Close net (may_close_net)."""
+    result = await db.execute(
+        select(Net).options(
+            selectinload(Net.frequencies),
+            selectinload(Net.check_ins).selectinload(CheckIn.frequency)
+        ).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    if not may_close_net(await net_access(db, net, current_user)):
+        raise HTTPException(status_code=403, detail="Not authorized to send this net's log")
+    if net.status != NetStatus.CLOSED or net.log_held_since is None:
+        raise HTTPException(status_code=400, detail="This net's log has already been sent")
+
+    net.log_held_since = None
+    net.log_held_by_user_id = None
+    net.log_hold_reminded_at = None
+    record_net_event(db, "net.log_sent", current_user, net)
+    await db.commit()
+
+    from app.main import manager
+    await manager.broadcast({
+        "type": "net_status_change",
+        "data": {"net_id": net_id, "status": "closed", "log_held": False},
+    }, net_id)
+    await send_net_log(db, net)
+
+    await db.refresh(net, ['frequencies'])
     return NetResponse.from_orm(net)

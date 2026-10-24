@@ -164,9 +164,15 @@ async def create_check_in(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Allow check-ins in both LOBBY (pre-net staging) and ACTIVE (official net) states
-    if net.status not in (NetStatus.ACTIVE, NetStatus.LOBBY):
+    # Allow check-ins in both LOBBY (pre-net staging) and ACTIVE (official net)
+    # states. A net closed to finish its log (Net.log_held_since) also takes
+    # them, from net control only, for stations from offline logs; stations
+    # can't check themselves in once the net has closed.
+    log_being_finished = net.status == NetStatus.CLOSED and net.log_held_since is not None
+    if net.status not in (NetStatus.ACTIVE, NetStatus.LOBBY) and not log_being_finished:
         raise HTTPException(status_code=400, detail="Net is not active")
+    if log_being_finished and not await check_net_permission(db, net, current_user, ["NCS", "LOGGER"]):
+        raise HTTPException(status_code=403, detail="This net has closed. Net control is finishing its log.")
 
     await _enforce_spam_guard(db, {
         'name': check_in_data.name,

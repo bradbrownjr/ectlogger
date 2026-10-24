@@ -505,19 +505,20 @@ shots:
     steps:
       - click: 'span[aria-label="Close net"]'
       - wait_for: '.MuiDialog-paper:visible'
+      # The waiting-entries notice arrives with its own request
+      - wait_for: '.MuiDialog-paper .MuiAlert-root'
     element: '.MuiDialog-paper'
     pad: 12
     # The seeded active net has one station's off-net entry awaiting
     # review, so the dialog shows the review choices.
     annotate:
-      - selector: '.MuiDialog-paper button:has-text("Close anyway")'
+      - selector: '.MuiDialog-paper button:has-text("Close and send the log")'
         style: box
     alt: >
-      The Close Net confirmation dialog: "Are you sure you want to close this
-      net? This will end the session and send log emails to subscribers,"
-      with a notice that 1 off-net entry is awaiting review, and Cancel,
-      Review, Accept all and close, and Close anyway buttons. Close anyway is
-      outlined in red.
+      The Close Net dialog, explaining that closing ends the net, with a
+      notice that 1 off-net entry is awaiting review, and Cancel, Review,
+      Finish the log later, Accept all and send, and Close and send the log
+      buttons. Close and send the log is outlined in red.
     caption: There is no scheduled undo for this -- see Closing the net for what to do if you close one by mistake.
 
   - id: closed-net-exports

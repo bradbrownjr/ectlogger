@@ -194,7 +194,8 @@ async def _broadcast_chat_message(db: AsyncSession, net_id: int, chat_message: C
 def chat_is_open(net: Net, now: Optional[datetime] = None) -> bool:
     """Whether stations may still write in this net's chat: always until the
     net closes, never once it's archived, and after closing only within the
-    net's "Keep chat open after closing" window (chat_grace_period_minutes).
+    net's "Keep chat open after closing" window (chat_grace_period_minutes),
+    which doesn't apply while its log is held (Net.log_held_since).
 
     The same rule Chat.tsx uses to disable the message box. Until 2026-10-23
     only the browser applied it, so the server took messages on a closed net
@@ -203,6 +204,10 @@ def chat_is_open(net: Net, now: Optional[datetime] = None) -> bool:
         return False
     if net.status != NetStatus.CLOSED:
         return True
+    # Closed to finish the log: no grace window, so nobody chats while net
+    # control is still working on it.
+    if net.log_held_since is not None:
+        return False
     if not net.chat_grace_period_minutes or not net.closed_at:
         return False
     closed_at = net.closed_at if net.closed_at.tzinfo else net.closed_at.replace(tzinfo=UTC)

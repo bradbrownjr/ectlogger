@@ -40,6 +40,7 @@ import { formatDateTime } from '../../utils/dateUtils';
 import { NetActions } from '../../utils/netActions';
 import { canOpenLobby } from '../../utils/netStart';
 import { formatFrequencyList } from '../../utils/frequencyList';
+import { canArchiveNet, isLogHeld } from '../../utils/netLog';
 
 // ---- Types ----
 
@@ -70,6 +71,7 @@ export interface Net {
   poll_question?: string | null;
   participants_only?: boolean;
   frequencies: any[];
+  log_held_since?: string | null;
   check_in_count?: number;
   can_manage?: boolean;
   is_owner_or_ncs?: boolean;
@@ -207,7 +209,7 @@ const NetCard: React.FC<NetCardProps> = ({
             <AccessTimeIcon fontSize="small" color="action" />
             <Typography variant="body2" color="text.secondary">
               {net.status === 'closed' && net.closed_at && (
-                <>Closed: {formatDateTime(net.closed_at, preferUtc)}</>
+                <>Closed: {formatDateTime(net.closed_at, preferUtc)}{isLogHeld(net) && ', log not sent yet'}</>
               )}
               {net.status === 'active' && net.started_at && (
                 <>Started: {formatDateTime(net.started_at, preferUtc)}</>
@@ -369,12 +371,15 @@ const NetCard: React.FC<NetCardProps> = ({
               <>
                 {actions.lifecycle && (
                   <>
-                    <CardActionButton
-                      icon={<ArchiveIcon />}
-                      label="Archive"
-                      tooltip="Archive net"
-                      onClick={onArchiveNet}
-                    />
+                    {/* Held until a "Finish the log later" net's log is sent */}
+                    {canArchiveNet(net) && (
+                      <CardActionButton
+                        icon={<ArchiveIcon />}
+                        label="Archive"
+                        tooltip="Archive net"
+                        onClick={onArchiveNet}
+                      />
+                    )}
                     <CardActionButton
                       icon={<DeleteIcon />}
                       label="Delete"

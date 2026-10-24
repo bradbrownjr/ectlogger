@@ -22,9 +22,12 @@ interface ReportMastheadProps {
   /** Smaller fixed sizes for the social-media images (SocialSummaryImages),
    *  which are always 960 px wide and need the room for the check-in list. */
   compact?: boolean;
+  /** Shown under the accent rule while the net's log hasn't been sent
+   *  (utils/netLog.ts::DRAFT_LOG_NOTICE), on screen and in every export. */
+  draftNotice?: string;
 }
 
-const ReportMasthead: React.FC<ReportMastheadProps> = ({ logoUrl, eyebrow, title, when, whenDetail, compact }) => {
+const ReportMasthead: React.FC<ReportMastheadProps> = ({ logoUrl, eyebrow, title, when, whenDetail, compact, draftNotice }) => {
   const { accent, flag } = useReportAccent();
   const logoSize = compact ? 84 : { xs: 84, sm: 148 };
   return (
@@ -79,6 +82,21 @@ const ReportMasthead: React.FC<ReportMastheadProps> = ({ logoUrl, eyebrow, title
       </Box>
       {/* Accent rule; the logo's second color, when it has one, takes the short end. */}
       <Box sx={{ height: 4, background: `linear-gradient(90deg, ${accent} 0 88%, ${flag} 88% 100%)` }} />
+      {/* Draft copy: the log may still change before it's sent */}
+      {draftNotice && (
+        <Box
+          data-testid="report-draft-notice"
+          sx={{
+            mt: 1.5, px: 1.5, py: 1, border: 2, borderColor: 'warning.main', borderRadius: 1,
+            fontSize: compact ? 16 : { xs: 13, sm: 15 }, color: 'text.primary',
+          }}
+        >
+          <Box component="span" sx={{ fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', mr: 1 }}>
+            Draft copy
+          </Box>
+          {draftNotice}
+        </Box>
+      )}
     </Box>
   );
 };

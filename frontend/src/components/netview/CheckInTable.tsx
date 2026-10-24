@@ -38,6 +38,7 @@ import { placeChoice, placeChoiceLabel } from '../../utils/stationPlace';
 import HandRaisedIndicator from './HandRaisedIndicator';
 import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
 import { findCheckInRole, roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
+import { isLogOpen } from '../../utils/netLog';
 
 // ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ==========
 // The full-featured desktop check-in table: sticky header, inline click-to-edit
@@ -944,7 +945,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                             above, since Relay staff can report without managing check-ins.
                             A station can also report what it itself can hear, unless the net
                             has turned self-reporting off (self_can_hear_enabled). */}
-                        {net.propagation_logging_enabled && (canReportCanHear || (checkIn.user_id === user?.id && net.self_can_hear_enabled !== false)) && (net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
+                        {net.propagation_logging_enabled && (canReportCanHear || (checkIn.user_id === user?.id && net.self_can_hear_enabled !== false)) && isLogOpen(net) && checkIn.status !== 'checked_out' && (
                           <IconButton
                             size="small"
                             onClick={() => onOpenCanHearDialog(checkIn.id)}

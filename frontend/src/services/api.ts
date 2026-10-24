@@ -174,7 +174,9 @@ export const netApi = {
   update: (id: number, data: any) => api.put(`/nets/${id}`, data),
   start: (id: number) => api.post(`/nets/${id}/start`),
   openLobby: (id: number) => api.post(`/nets/${id}/open-lobby`),
-  close: (id: number) => api.post(`/nets/${id}/close`),
+  // holdLog closes without emailing the log; sendLog sends it later.
+  close: (id: number, holdLog = false) => api.post(`/nets/${id}/close`, holdLog ? { hold_log: true } : undefined),
+  sendLog: (id: number) => api.post(`/nets/${id}/send-log`),
   archive: (id: number) => api.post(`/nets/${id}/archive`),
   unarchive: (id: number) => api.post(`/nets/${id}/unarchive`),
   cancel: (id: number, reason?: string) => api.post(`/nets/${id}/cancel`, { reason: reason || null }),

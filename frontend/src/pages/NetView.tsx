@@ -15,6 +15,7 @@ import NetControlDialogs, { type TopicPollAction } from '../components/netview/N
 import EarlyStartDialog from '../components/EarlyStartDialog';
 import NetViewHeader from '../components/netview/NetViewHeader';
 import AutoCloseWarningBanner from '../components/netview/AutoCloseWarningBanner';
+import DraftLogBanner from '../components/netview/DraftLogBanner';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
 import { buildStaffRoleRank, compareCheckInsByRole } from '../components/netview/checkInSort';
 import { activeNcsRoles, mergeStationRoles, roleMatchesCheckIn } from '../utils/stationRoles';
@@ -97,6 +98,7 @@ import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import { watchZoomAwarePopovers } from '../utils/zoomAwarePopovers';
 import { getNetActions } from '../utils/netActions';
 import { canOpenLobby, isBeforeScheduledStart } from '../utils/netStart';
+import { canArchiveNet, isLogHeld, isLogOpen } from '../utils/netLog';
 
 interface Frequency {
   id: number;
@@ -764,7 +766,7 @@ const NetView: React.FC = () => {
   // alone would incorrectly hide this from a genuine, non-simulating admin too.
   useEffect(() => {
     const canManageThisNet = user?.role === 'admin' || !!net?.is_owner_or_ncs;
-    if (net?.status === 'closed' && canManageThisNet && !archiveReminderShownRef.current) {
+    if (canArchiveNet(net) && canManageThisNet && !archiveReminderShownRef.current) {
       archiveReminderShownRef.current = true;
       // Delayed so this modal doesn't pop up right on top of a toast that just
       // fired for the same status change (e.g. a CSV import that closes the net
@@ -772,7 +774,7 @@ const NetView: React.FC = () => {
       const timer = setTimeout(() => archiveReminder.onOpen(), 1500);
       return () => clearTimeout(timer);
     }
-  }, [net?.status, net?.is_owner_or_ncs, user?.role]);
+  }, [net?.status, net?.log_held_since, net?.is_owner_or_ncs, user?.role]);
 
   // Tracks the net's previously-seen status so the effect below can tell a live
   // status transition (someone just archived it) apart from simply loading a
@@ -1121,13 +1123,13 @@ const NetView: React.FC = () => {
     await handleCloseNet();
   };
 
-  const handleCloseNet = async () => {
+  const handleCloseNet = async (holdLog = false) => {
     try {
       // Capture values before closing since net state will change
       const templateId = net?.template_id;
       const currentCheckIns = [...checkIns];
       
-      await netApi.close(Number(netId));
+      await netApi.close(Number(netId), holdLog);
       closeNetDialog.onClose();
       // Poll results and topic answers are derived from the check-in list
       // (utils/netResponses.ts), so they need no fetch of their own here
@@ -1162,9 +1164,29 @@ const NetView: React.FC = () => {
           }
         }
       }
-      archiveReminder.onOpen();
+      // A held log can't be archived yet; the banner offers Send the log.
+      if (holdLog) {
+        setToastMessage('Net closed. Send the log when it is finished.');
+      } else {
+        archiveReminder.onOpen();
+      }
     } catch (error) {
       console.error('Failed to close net:', error);
+    }
+  };
+
+  // Send the log of a net closed with "Finish the log later", then offer
+  // archive as a normal close does.
+  const handleSendLog = async () => {
+    try {
+      await netApi.sendLog(Number(netId));
+      await fetchNet();
+      setToastMessage('Net log sent.');
+      archiveReminderShownRef.current = true;
+      archiveReminder.onOpen();
+    } catch (error: any) {
+      console.error('Failed to send net log:', error);
+      setToastMessage(getErrorMessage(error, 'Failed to send the net log'));
     }
   };
 
@@ -1733,6 +1755,10 @@ const NetView: React.FC = () => {
       {autoCloseCountdown && (
         <AutoCloseWarningBanner autoCloseAt={net.auto_close_at} remainingLabel={autoCloseCountdown} />
       )}
+      {/* Shows on a net closed with "Finish the log later" until its log is sent */}
+      {isLogHeld(net) && (
+        <DraftLogBanner canSend={actions.close} onSendLog={handleSendLog} />
+      )}
       <NetViewHeader
         net={net}
         netId={netId}
@@ -1990,8 +2016,8 @@ const NetView: React.FC = () => {
                     </Typography>
                   </Tooltip>
                 )}
-                {/* Inline edit hint - only shown to NCS/Loggers when net is active or in lobby */}
-                {(net.status === 'active' || net.status === 'lobby') && canManageCheckIns && (
+                {/* Inline edit hint - only shown to NCS/Loggers while the log is open (utils/netLog.ts) */}
+                {isLogOpen(net) && canManageCheckIns && (
                   <Tooltip title="Click any row to edit check-in details inline" placement="top" arrow>
                     <Typography variant="caption" sx={{ cursor: 'help', color: 'primary.main', fontStyle: 'italic' }}>
                       💡 Click row to edit
@@ -2054,7 +2080,7 @@ const NetView: React.FC = () => {
             )}
 
             {/* New check-in form - desktop only */}
-            {(net.status === 'active' || net.status === 'lobby') && canManageCheckIns && (
+            {isLogOpen(net) && canManageCheckIns && (
               <Paper sx={{ border: 1, borderColor: 'divider', borderTop: 0, borderRadius: '0 0 4px 4px', p: 1, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
                 <Table size="small">
                   <TableBody>
@@ -2407,7 +2433,7 @@ const NetView: React.FC = () => {
                 NCS/Loggers attending another operator's net don't have a tall
                 form pushing the check-in list off-screen. Header is always
                 tappable to expand/collapse. */}
-            {(net.status === 'active' || net.status === 'lobby') && canManageCheckIns && (
+            {isLogOpen(net) && canManageCheckIns && (
               <Paper sx={{ p: 1.5, mt: 1, display: { xs: 'block', md: 'none' } }}>
                 <Box
                   onClick={() => setMobileCheckInExpanded((v) => !v)}
@@ -2845,8 +2871,8 @@ const NetView: React.FC = () => {
                   <Tooltip title="Has traffic" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🚨 Traffic</Typography></Tooltip>
                   <Tooltip title="Has announcements" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📢 Announce</Typography></Tooltip>
                   <Tooltip title="Checked out" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👋 Out</Typography></Tooltip>
-                  {/* Inline edit hint - only shown to NCS/Loggers when net is active or in lobby */}
-                  {(net.status === 'active' || net.status === 'lobby') && canManageCheckIns && (
+                  {/* Inline edit hint - only shown to NCS/Loggers while the log is open (utils/netLog.ts) */}
+                  {isLogOpen(net) && canManageCheckIns && (
                     <Tooltip title="Click any row to edit check-in details inline" placement="top" arrow>
                       <Typography variant="caption" sx={{ cursor: 'help', color: 'primary.main', fontStyle: 'italic' }}>
                         💡 Click row to edit
@@ -2857,7 +2883,7 @@ const NetView: React.FC = () => {
               </Box>
               
               {/* Check-in form */}
-              {(net.status === 'active' || net.status === 'lobby') && canManageCheckIns && (
+              {isLogOpen(net) && canManageCheckIns && (
                 <Paper sx={{ border: 1, borderColor: 'divider', borderTop: 0, borderRadius: '0 0 4px 4px', p: 1, flexShrink: 0 }}>
                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
                     <TextField

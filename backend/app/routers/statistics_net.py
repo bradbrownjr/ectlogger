@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.dependencies import get_current_user_optional
 from app.logo_accent import logo_accent_colors
-from app.models import CheckIn, Net, NetRole, NetTemplate, TrafficLogEntry, User
+from app.models import CheckIn, Net, NetRole, NetTemplate, TrafficLogEntry, User, NetStatus
 from app.schemas import (
     NetStatsResponse,
     TimeSeriesDataPoint,
@@ -174,6 +174,7 @@ async def get_net_statistics(
         net_id=net_id,
         net_name=net.name,
         status=net.status.value,
+        log_held=net.status == NetStatus.CLOSED and net.log_held_since is not None,
         template_id=net.template_id,
         total_check_ins=total_check_ins,
         unique_callsigns=unique_callsigns,

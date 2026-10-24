@@ -108,6 +108,7 @@ class NCSReminderService:
                 await self._check_and_send_subscriber_reminders()
                 await self._check_and_archive_stale_scheduled_nets()
                 await self._check_and_close_inactive_nets()
+                await self._check_and_send_log_hold_reminders()
             except Exception as e:
                 logger.error("NCS_REMINDER", f"Error in reminder loop: {str(e)}")
 
@@ -195,6 +196,9 @@ class NCSReminderService:
                     select(Net).where(
                         Net.template_id == template.id,
                         Net.status == NetStatus.CLOSED,
+                        # A net whose log is still being finished stays
+                        # closed until net control sends it.
+                        Net.log_held_since.is_(None),
                         Net.id != net.id
                     )
                 )
@@ -1032,6 +1036,15 @@ class NCSReminderService:
         never becoming eligible for auto-close at all.
         """
         return await get_last_activity_at(db, net_id, started_at)
+
+    async def _check_and_send_log_hold_reminders(self):
+        """Daily reminder for nets closed with their log held
+        (services/net_log_hold.py)."""
+        from app.services.net_log_hold import send_due_log_hold_reminders
+        async with AsyncSessionLocal() as db:
+            sent = await send_due_log_hold_reminders(db)
+            if sent:
+                logger.info("NCS_REMINDER", f"Sent held-log reminders for {sent} net(s)")
 
     async def _check_and_close_inactive_nets(self):
         """Close an ACTIVE net that opted into auto-close once it's been quiet

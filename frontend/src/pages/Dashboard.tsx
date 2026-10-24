@@ -82,6 +82,7 @@ import { canOpenLobby, isBeforeScheduledStart } from '../utils/netStart';
 import EarlyStartDialog from '../components/EarlyStartDialog';
 import DeleteNetWarning from '../components/DeleteNetWarning';
 import { formatFrequencyList } from '../utils/frequencyList';
+import { canArchiveNet } from '../utils/netLog';
 
 const Dashboard: React.FC = () => {
   const [nets, setNets] = useState<Net[]>([]);
@@ -692,11 +693,14 @@ const Dashboard: React.FC = () => {
                     </Tooltip>
                     {actionsFor(net).lifecycle && (
                       <>
-                        <Tooltip title="Archive">
-                          <IconButton size="small" onClick={() => handleArchiveNet(net.id)}>
-                            <ArchiveIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                        {/* Held until a "Finish the log later" net's log is sent */}
+                        {canArchiveNet(net) && (
+                          <Tooltip title="Archive">
+                            <IconButton size="small" onClick={() => handleArchiveNet(net.id)}>
+                              <ArchiveIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         {/* The confirmation spells out what's destroyed */}
                         {/* and offers Archive as the safer alternative. */}
                         <Tooltip title="Delete">
@@ -1286,7 +1290,7 @@ const Dashboard: React.FC = () => {
               )}
               {/* Yellow Archive — only valid for closed nets (the only state */}
               {/* the existing archive endpoint accepts) */}
-              {netToDelete?.status === 'closed' && (
+              {canArchiveNet(netToDelete) && (
                 <Button
                   onClick={async () => {
                     if (!netToDelete) return;

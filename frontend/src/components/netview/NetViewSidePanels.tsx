@@ -11,6 +11,7 @@ import ResizeHandle from '../ResizeHandle';
 import useResizableSplit from '../../hooks/useResizableSplit';
 import useLayoutTier from '../../hooks/useLayoutTier';
 import { STORAGE_KEYS } from '../../utils/localStorageKeys';
+import { chatGraceMinutes } from '../../utils/netLog';
 
 // ========== NET VIEW SIDE PANELS (Chat + Map + Coverage + Traffic + Activity Log) ==========
 // The right-column stack, docked or detached. All five detach independently
@@ -287,7 +288,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           <Box sx={{ height: { xs: chatMinimized ? 'auto' : 450, md: '100%' }, display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
               <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} canManageCheckIns={canManageCheckIns} onDetach={handleDetachChat} onPopOut={handlePopOutChat}
-                chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
+                chatGracePeriodMinutes={chatGraceMinutes(net)} closedAt={net?.closed_at}
                 onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
                 checkIns={filteredCheckIns}
                 topicOfWeekEnabled={net?.topic_of_week_enabled} topicOfWeekPrompt={net?.topic_of_week_prompt}
@@ -469,7 +470,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           storageKey="chat"
         >
           <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} canManageCheckIns={canManageCheckIns}
-            chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
+            chatGracePeriodMinutes={chatGraceMinutes(net)} closedAt={net?.closed_at}
             onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
             checkIns={filteredCheckIns}
             topicOfWeekEnabled={net?.topic_of_week_enabled} topicOfWeekPrompt={net?.topic_of_week_prompt}

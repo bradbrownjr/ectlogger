@@ -776,6 +776,10 @@ async def archive_net(
     
     if net.status != NetStatus.CLOSED:
         raise HTTPException(status_code=400, detail="Only closed nets can be archived")
+
+    # Closed with "finish the log later": archive waits for the log to go out.
+    if net.log_held_since is not None:
+        raise HTTPException(status_code=400, detail="Send this net's log before archiving it")
     
     net.status = NetStatus.ARCHIVED
     record_net_event(db, "net.archived", current_user, net)
