@@ -482,6 +482,62 @@ before building the careful one.
 - [ ] Re-arm the inactivity auto-close on reopen, or a net reopened because auto-close was
       wrong will be closed by it again a few minutes later
 
+### Net Report Builder and Coverage Statistics
+
+**✨ One report per net, with sections net control can switch on and off, and the drill's coverage in numbers** *(KC1JMH, 2026-10-24, after the WSSM SET on net 137; put on hold 2026-10-27)*  
+**Model:** Sonnet for the page merge and the section switches, which move existing pieces rather than write new ones. Opus for the coverage summary, where the counting rule is the whole problem.
+**Think:** think for the merge and switches; think hard for the coverage summary (one station counts once per location and channel, across all of its check-in rows).
+**Docs:** net-managers (`reports-and-exports`), net-control (`closing-the-net`, coverage), reference (fields: backup power on sites).
+
+A net's statistics page (`NetStatistics.tsx`) and its report (`NetReport.tsx`) show
+mostly the same things, and Brad found the statistics page missing much of what the
+report has. The plan is to make them one page, built on a feature branch and tested on
+beta against net 137.
+
+**Constraint (Brad): don't disturb the other statistics.** The site-wide statistics page,
+schedule statistics, Profile activity and the leaderboards all rely on the same data and
+must not change. Concretely:
+
+- Leave `statistics_global.py`, `statistics_user.py`, schedule statistics and their pages
+  untouched
+- `GET /statistics/nets/{id}`, `/operators` and `/daily` change additively only
+- Never change how check-ins are counted. The once-per-location-and-channel rule applies
+  to the new coverage numbers only
+- Keep `/statistics/nets/:id` working: Schedule statistics, the Dashboard, net cards, Net
+  info and the net toolbar link to it. It renders the merged report
+
+**Phase 1: one page**
+- [ ] Move the operators table and the full-screen graphs from the statistics page into
+      the report (moved, not copied, so there is one version of each)
+- [ ] `/statistics/nets/:id` renders the report
+
+**Phase 2: section switches**
+- [ ] A **Sections** panel for net control (NCS, Logger, net manager) with one switch per
+      section that has data, all on by default
+- [ ] Saved on the net (one new column), so viewers, the PDF, the images and the closing
+      email show the report as net control left it
+- [ ] Open question: does switching off the ICS-309 section also drop the ICS-309
+      attachment from the closing email? Recommendation: no, the attachments are the
+      formal record
+
+**Phase 3: coverage statistics** (approved 2026-10-24)
+- [ ] One server-side summary built on `services/site_coverage.py`: sites by type (total,
+      active, primary offices reached), repeaters and nodes tried and reached, per
+      operator and per location (heard, heard by, two-way pairs, frequencies, outside
+      contacts, off-net), off-net totals, counties reached. Cross-channel hearing does
+      not count
+- [ ] Report order: conclusions (Met / Partially met / Not met), then the ARRL SET Form A
+      numbers, then the supporting tables. Each callsign or position counts as a
+      participant (WS1EC, WS1EC/HF and WS1EC/NP are three stations)
+- [ ] **Backup power available** checkbox on repeater and node sites. It means available,
+      not running on it, since pulling a repeater's plug during a drill affects the wider
+      community. Feeds Form A's emergency-powered repeaters count
+- [ ] A short block of counts in the closing email
+- [ ] Visible to stations checked into the net and to staff, never guests; unused sites
+      stay out of anything public
+- [ ] Shows only on nets with reporting sites; the off-net section only when accepted
+      entries exist. Regular nets are unchanged
+
 ### Incident Operations Log & Situational Awareness Feed
 
 **✨ Log what you hear once, and let it render as an ICS-214, a spreadsheet row, and a Slack post** *(KC1JMH — from the statewide drill of 2026-09-17, see [`USER-STORIES.md`](USER-STORIES.md))*  
