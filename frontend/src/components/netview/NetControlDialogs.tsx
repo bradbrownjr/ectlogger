@@ -24,6 +24,10 @@ import type { UseDialogResult } from '../../hooks/useDialog';
 // Which button opened the Topic/Poll dialog, so saving resumes it.
 export type TopicPollAction = 'open-lobby' | 'start' | 'go-live';
 
+// Which Close Net button is running, so it shows the spinner and the
+// others wait for it.
+export type ClosingAction = 'hold' | 'send' | 'accept-and-send';
+
 interface NetControlDialogsProps {
   // Close Net
   closeNetDialog: UseDialogResult;
@@ -33,6 +37,7 @@ interface NetControlDialogsProps {
   pendingOffNetCount: number;
   onReviewOffNet: () => void;
   onAcceptOffNetAndClose: () => void;
+  closingAction: ClosingAction | null;
 
   // Subscribe to schedule
   subscribeDialog: UseDialogResult;
@@ -68,6 +73,7 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
   pendingOffNetCount,
   onReviewOffNet,
   onAcceptOffNetAndClose,
+  closingAction,
   subscribeDialog,
   netName,
   subscribing,
@@ -96,7 +102,9 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
           pick one for you. */}
       <Dialog
         open={closeNetDialog.open}
-        onClose={closeNetDialog.onClose}
+        onClose={closingAction ? undefined : closeNetDialog.onClose}
+        maxWidth="sm"
+        fullWidth
       >
         <DialogTitle>Close Net?</DialogTitle>
         <DialogContent>
@@ -118,28 +126,48 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
             </Alert>
           )}
         </DialogContent>
-        {/* Two right-aligned rows: the choices that send nothing, then the
-            two that send the log (both red) on a row of their own. */}
-        <DialogActions sx={{ flexDirection: 'column', alignItems: 'flex-end', gap: 1 }} disableSpacing>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 1 }}>
-            <Button onClick={closeNetDialog.onClose}>Cancel</Button>
-            {pendingOffNetCount > 0 && (
-              <Button onClick={onReviewOffNet}>Review</Button>
-            )}
-            <Button onClick={() => onCloseNet(true)} variant="outlined">
-              Finish the log later
+        {/* One right-aligned row, colored by what each choice does
+            (docs/DESIGN.md "Dialog Button Colors"): outline backs out or
+            looks, orange closes and leaves the log to finish, green sends it.
+            It wraps only when off-net entries add Review and Accept all. */}
+        <DialogActions sx={{ flexWrap: 'wrap', justifyContent: 'flex-end', gap: 1, px: 3, pb: 2 }} disableSpacing>
+          <Button onClick={closeNetDialog.onClose} variant="outlined" color="inherit" disabled={!!closingAction}>
+            Cancel
+          </Button>
+          {pendingOffNetCount > 0 && (
+            <Button onClick={onReviewOffNet} variant="outlined" color="inherit" disabled={!!closingAction}>
+              Review
             </Button>
-          </Box>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 1 }}>
-            {pendingOffNetCount > 0 && (
-              <Button onClick={onAcceptOffNetAndClose} variant="outlined" color="error">
-                Accept all and send
-              </Button>
-            )}
-            <Button onClick={() => onCloseNet(false)} variant="contained" color="error">
-              Close and send the log
+          )}
+          <Button
+            onClick={() => onCloseNet(true)}
+            variant="contained"
+            color="warning"
+            disabled={!!closingAction}
+            startIcon={closingAction === 'hold' ? <CircularProgress size={20} color="inherit" /> : undefined}
+          >
+            Finish the log later
+          </Button>
+          {pendingOffNetCount > 0 && (
+            <Button
+              onClick={onAcceptOffNetAndClose}
+              variant="outlined"
+              color="success"
+              disabled={!!closingAction}
+              startIcon={closingAction === 'accept-and-send' ? <CircularProgress size={20} color="inherit" /> : undefined}
+            >
+              Accept all and send
             </Button>
-          </Box>
+          )}
+          <Button
+            onClick={() => onCloseNet(false)}
+            variant="contained"
+            color="success"
+            disabled={!!closingAction}
+            startIcon={closingAction === 'send' ? <CircularProgress size={20} color="inherit" /> : undefined}
+          >
+            Close and send the log
+          </Button>
         </DialogActions>
       </Dialog>
 

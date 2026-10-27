@@ -335,7 +335,7 @@ shots:
       - wait_for: '[data-testid="off-net-log-add"]:visible'
       - click: '[data-testid="off-net-log-add"]'
       - fill: { selector: '.MuiDialog-paper input[placeholder="State ARES net, a neighboring county EMA"]', value: 'Harbor County EMA' }
-      - fill: { selector: '.MuiDialog-paper input[placeholder="3.940 LSB, a DMR talkgroup, Winlink"]', value: 'Winlink' }
+      - fill: { selector: '.MuiDialog-paper input[placeholder="147.345 FM, 3.940 LSB, a DMR talkgroup, Winlink"]', value: 'Winlink' }
       - fill: { selector: '.MuiDialog-paper textarea[placeholder="Checked in for our county"]', value: 'Sent the shelter supply request' }
       - fill: { selector: '.MuiDialog-paper input[placeholder^="The Winlink message ID"]', value: 'R8MW3KQ2ZT6D' }
     hide:

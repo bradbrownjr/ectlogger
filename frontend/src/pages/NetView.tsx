@@ -11,7 +11,7 @@ import CsvImportDialog from '../components/netview/CsvImportDialog';
 import ArchiveDialogs from '../components/netview/ArchiveDialogs';
 import RoleAssignmentDialog from '../components/netview/RoleAssignmentDialog';
 import CheckInFormDialog, { CheckInFormState } from '../components/netview/CheckInFormDialog';
-import NetControlDialogs, { type TopicPollAction } from '../components/netview/NetControlDialogs';
+import NetControlDialogs, { type ClosingAction, type TopicPollAction } from '../components/netview/NetControlDialogs';
 import EarlyStartDialog from '../components/EarlyStartDialog';
 import NetViewHeader from '../components/netview/NetViewHeader';
 import AutoCloseWarningBanner from '../components/netview/AutoCloseWarningBanner';
@@ -1113,17 +1113,25 @@ const NetView: React.FC = () => {
     offNetLog.onOpen();
   };
 
+  // The Close Net button that is running. Its buttons wait while it does,
+  // so a second click can't reach a net the first one already closed.
+  const [closingAction, setClosingAction] = useState<ClosingAction | null>(null);
+
   const handleAcceptOffNetAndClose = async () => {
+    setClosingAction('accept-and-send');
     try {
       await offNetLogApi.acceptPending(Number(netId));
     } catch (error) {
       console.error('Failed to accept off-net entries:', error);
+      setToastMessage(getErrorMessage(error, 'Failed to accept the off-net entries'));
+      setClosingAction(null);
       return;
     }
-    await handleCloseNet();
+    await handleCloseNet(false, 'accept-and-send');
   };
 
-  const handleCloseNet = async (holdLog = false) => {
+  const handleCloseNet = async (holdLog = false, action?: ClosingAction) => {
+    setClosingAction(action ?? (holdLog ? 'hold' : 'send'));
     try {
       // Capture values before closing since net state will change
       const templateId = net?.template_id;
@@ -1170,8 +1178,17 @@ const NetView: React.FC = () => {
       } else {
         archiveReminder.onOpen();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to close net:', error);
+      setToastMessage(getErrorMessage(error, 'Failed to close the net'));
+      // Already closed (from another tab, or by someone else): show it as
+      // it is rather than leaving the dialog up.
+      if (error?.response?.status === 400) {
+        closeNetDialog.onClose();
+        await fetchNet();
+      }
+    } finally {
+      setClosingAction(null);
     }
   };
 
@@ -2982,6 +2999,7 @@ const NetView: React.FC = () => {
         pendingOffNetCount={pendingOffNetCount}
         onReviewOffNet={handleReviewOffNet}
         onAcceptOffNetAndClose={handleAcceptOffNetAndClose}
+        closingAction={closingAction}
         subscribeDialog={subscribeDialog}
         netName={net?.name}
         subscribing={subscribing}

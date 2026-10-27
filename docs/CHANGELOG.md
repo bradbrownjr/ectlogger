@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-24
+revised: 2026-10-27
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,19 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# October 27, 2026
+
+## Improvements
+
+* **Net View: Clearer choices when closing a net** — The Close Net window puts its choices on one line, colored by what they do: green sends the log now, and orange closes the net and leaves the log for you to finish.
+
+## Bug Fixes
+
+* **Net View: Closing a net responds right away** — Close and send the log now closes the window immediately and sends the log email in the background, instead of sitting on screen until every copy is sent. Clicking it again no longer leaves the window stuck.
+* **Check-in: Locations stick for stations with an account** — When a station's profile has no location, the check-in form now fills in the town net control entered last time, as it already does for stations without an account.
 
 ---
 

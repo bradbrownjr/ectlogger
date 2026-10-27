@@ -138,7 +138,8 @@ Each page icon carries `fontSize: 32` and `color: 'text.primary'` via its `sx` p
 - Every interactive element has a visible affordance (hover state, cursor change,
   or tooltip).
 - Destructive actions (delete, ban) use `color="error"`. Affirmative actions use
-  `color="primary"` or `color="success"`.
+  `color="primary"` or `color="success"`. Dialog buttons follow the fuller
+  scheme in "Dialog Button Colors" below.
 - Loading states are always indicated — never leave a button or section blank
   while data is fetching. Use `<CircularProgress size={20} />` inline in buttons,
   `<CircularProgress />` centered in content areas.
@@ -313,6 +314,38 @@ button(s) as children.
 ### Tooltip
 Every FAB must have a `<Tooltip>` with a concise label. The label should be a
 verb phrase: "Create new net", "Filter nets", "View archived nets".
+
+---
+
+## Dialog Button Colors
+
+A dialog's buttons are colored by **what the action does**, so the color alone
+says whether a click is safe. Adopted 2026-10-27 after the Close Net dialog drew
+its everyday choice in red and a net manager (UFB New England, net 139) couldn't
+tell which button to press.
+
+| Style | MUI props | Means | Examples |
+|---|---|---|---|
+| Outline only | `variant="outlined" color="inherit"` | Back out or look; changes nothing | Cancel, Review |
+| Blue solid | `variant="contained" color="primary"` | The ordinary next step, can be undone | Save, Start net |
+| Green solid | `variant="contained" color="success"` | Finishes something and sends it out | Close and send the log, Send log |
+| Orange solid | `variant="contained" color="warning"` | Goes ahead but leaves something unfinished, or carries a caveat | Finish the log later |
+| Red solid | `variant="contained" color="error"` | Destroys something or can't be taken back | Delete, Remove and block, Cancel net |
+
+- A second choice of the same kind next to a solid one is the **outlined** form
+  of the same color (Accept all and send beside Close and send the log).
+- **Red is only for destruction.** Closing a net is not destructive; deleting it
+  is. A red everyday button teaches people to ignore red.
+- Buttons sit on **one right-aligned row** (`flexWrap: 'wrap'`, so a narrow
+  screen wraps instead of scrolling), ordered as in "Ordering within a row":
+  back out first, the main action last.
+- A button whose request takes a moment shows `<CircularProgress size={20} />`
+  as its start icon, and the dialog's buttons are disabled until it finishes.
+  Never leave a dialog clickable while its request runs: a second click reaches
+  a server that already acted.
+- Reference implementation: the Close Net dialog in
+  `components/netview/NetControlDialogs.tsx`. Older dialogs are being moved to
+  this scheme; follow it in any dialog you add or touch.
 
 ---
 

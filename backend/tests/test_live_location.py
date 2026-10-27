@@ -139,6 +139,28 @@ async def test_callsign_lookup_falls_back_to_grid_then_profile(client, db, owner
 
 
 @pytest.mark.asyncio
+async def test_callsign_lookup_remembers_the_town_net_control_typed(client, db, owner, other):
+    """A station with an account but no profile location gets the town net
+    control entered last time (N1UB, 2026-10-25: blank every week), and a
+    profile location still wins over it."""
+    other.location = None
+    await db.commit()
+    net_id = await _active_net(client, owner)
+    resp = await client.post(f"/api/check-ins/nets/{net_id}/check-ins",
+                             json={"callsign": other.callsign, "location": "Sidney, ME"},
+                             headers=auth_headers(owner))
+    assert resp.status_code == 201, resp.text
+
+    resp = await client.get(f"/api/users/lookup/{other.callsign}", headers=auth_headers(owner))
+    assert resp.json()["location"] == "Sidney, ME"
+
+    other.location = "Augusta, ME"
+    await db.commit()
+    resp = await client.get(f"/api/users/lookup/{other.callsign}", headers=auth_headers(owner))
+    assert resp.json()["location"] == "Augusta, ME"
+
+
+@pytest.mark.asyncio
 async def test_check_in_from_the_live_town_keeps_the_grid(client, db, owner, other):
     """Net control entered the station with the town the lookup filled in."""
     await _set_live(db, other)

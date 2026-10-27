@@ -13,9 +13,11 @@ timestamp overrides and post_chat_message; with all three left at their
 defaults this is byte-for-byte the original close.
 """
 import json
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from fastapi import BackgroundTasks
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -27,6 +29,8 @@ from app.services.ics309_log import build_ics309_rows, get_accepted_off_net_entr
 from app.traffic.ics309 import get_ics309_muted_user_ids, get_net_traffic_log_entries
 from app.traffic.log import compute_net_traffic_counts
 from app.utils import display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
+
+logger = logging.getLogger(__name__)
 
 
 async def get_last_activity_at(db: AsyncSession, net_id: int, started_at: Optional[datetime]) -> Optional[datetime]:
@@ -74,6 +78,7 @@ async def close_net_and_notify(
     started_at: Optional[datetime] = None,
     post_chat_message: bool = True,
     hold_log: bool = False,
+    background_tasks: Optional[BackgroundTasks] = None,
 ) -> None:
     """Close *net*, commit, then broadcast and mail the log.
 
@@ -99,6 +104,10 @@ async def close_net_and_notify(
         Close without emailing the log. Net control finishes it (offline
         logs, off-net entries, corrections) and sends it later with
         send_net_log, through POST /nets/{id}/send-log.
+    background_tasks
+        A request's background tasks. When given, the log is emailed after
+        the response goes out (schedule_net_log), so the person closing the
+        net isn't left waiting while every copy is sent.
     """
     net_id = net.id
 
@@ -156,8 +165,40 @@ async def close_net_and_notify(
     if post_chat_message:
         await post_system_message(net_id, f"Net has been closed by {display_callsign(actor)}", db)
 
-    if not hold_log:
+    if hold_log:
+        return
+    if background_tasks is not None:
+        schedule_net_log(background_tasks, db, net_id)
+    else:
         await send_net_log(db, net)
+
+
+def schedule_net_log(background_tasks: BackgroundTasks, db: AsyncSession, net_id: int) -> None:
+    """Email the net's log once the response has gone out.
+
+    Sending is one SMTP conversation per recipient, so a net with many
+    subscribers kept Close and send the log waiting for tens of seconds with
+    the dialog still open (UFB New England, net 139, 2026-10-25): the closer
+    clicked again, got "already closed", and a stray click landed on Archive
+    Now. The request's own session is closed by the time background tasks
+    run, so this opens a new one on the same engine.
+    """
+    background_tasks.add_task(_send_net_log_by_id, db.bind, net_id)
+
+
+async def _send_net_log_by_id(bind, net_id: int) -> None:
+    try:
+        async with AsyncSession(bind, expire_on_commit=False) as db:
+            net = (await db.execute(
+                select(Net).options(
+                    selectinload(Net.frequencies),
+                    selectinload(Net.check_ins).selectinload(CheckIn.frequency),
+                ).where(Net.id == net_id)
+            )).scalar_one_or_none()
+            if net is not None:
+                await send_net_log(db, net)
+    except Exception:
+        logger.exception("Failed to send the log for net %s", net_id)
 
 
 async def send_net_log(db: AsyncSession, net: Net) -> None:

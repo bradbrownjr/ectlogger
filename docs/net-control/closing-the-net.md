@@ -4,7 +4,7 @@ summary: What closing generates, who receives it, how to finish the log before i
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-24
+revised: 2026-10-27
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/closing-the-net/
@@ -24,8 +24,8 @@ Closing a net is a real state change, not a formality: it ends the live session,
   <figcaption>There is no scheduled undo for this; see below for what to do if you close one by mistake.</figcaption>
 </figure>
 
-- **Close and send the log** closes the net and emails its log right away.
-- **Finish the log later** closes the net but holds the email. Use it when you still have work to do on the log, such as importing a station's paper log after a drill. See [Finishing the log later](#finishing-the-log-later).
+- **Close and send the log** (green) closes the net and emails its log right away. The dialog closes as soon as the net does, and the email follows a moment later.
+- **Finish the log later** (orange) closes the net but holds the email. Use it when you still have work to do on the log, such as importing a station's paper log after a drill. See [Finishing the log later](#finishing-the-log-later).
 
 Either way, the net's status moves to Closed immediately for every viewer, stations can no longer check in, and chat closes.
 

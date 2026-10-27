@@ -27,7 +27,6 @@ def sent_logs(monkeypatch):
         sent.append(net.id)
 
     monkeypatch.setattr(net_closure, "send_net_log", _fake_send)
-    monkeypatch.setattr("app.routers.nets_core.send_net_log", _fake_send)
     return sent
 
 

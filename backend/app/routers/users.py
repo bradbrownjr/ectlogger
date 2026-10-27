@@ -17,7 +17,7 @@ from app.email_service import EmailService
 from app.logger import logger
 from app.utils import AVATAR_DIR, user_callsigns
 from app.services.live_location import live_location_display
-from app.services.callsign_people import claim_and_queue_notices, revert_all_claims, revert_callsign_claim
+from app.services.callsign_people import claim_and_queue_notices, find_user_by_callsign, revert_all_claims, revert_callsign_claim
 from app.band_utils import band_from_frequency_string
 
 AVATAR_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
@@ -1030,51 +1030,33 @@ async def lookup_by_callsign(
     db: AsyncSession = Depends(get_db)
 ):
     """Look up station info by callsign for check-in auto-fill.
-    
-    Priority: User account > Contact record.
-    Returns limited info (name, location, skywarn_number) with source indicator.
-    Future: QRZ lookup as tertiary source (roadmap).
+
+    Each field comes from the account if it has one (location: a fresh live
+    GPS town first, then the profile), else from the Contact record, which
+    holds what net control last entered for the callsign. The account used to
+    win outright, so a station whose profile has no location came up blank
+    every week however often net control typed its town (N1UB, N1WSD,
+    2026-10-25). Future: QRZ lookup as tertiary source (roadmap).
     """
-    callsign_upper = callsign.upper()
-    
-    # Priority 1: Look up registered user by primary callsign, GMRS callsign, or additional callsigns
-    result = await db.execute(
-        select(User).where(
-            (User.callsign == callsign_upper) | 
-            (User.gmrs_callsign == callsign_upper) |
-            (User.callsigns.like(f'%"{callsign_upper}"%'))
-        )
-    )
-    user = result.scalar_one_or_none()
-    
-    if user:
-        # Prefer the live GPS position if recent (its town, or the grid if the
-        # town lookup failed), otherwise the static profile location
-        location = live_location_display(user) or user.location
-        
-        return CallsignLookupResponse(
-            name=user.name,
-            location=location,
-            skywarn_number=user.skywarn_number,
-            source='user'
-        )
-    
-    # Priority 2: Look up contact record (from check-in history)
-    contact_result = await db.execute(
+    callsign_upper = callsign.strip().upper()
+    user = await find_user_by_callsign(db, callsign_upper)
+    contact = (await db.execute(
         select(Contact).where(Contact.callsign == callsign_upper)
+    )).scalar_one_or_none()
+
+    if user is None and contact is None:
+        # No match found (future: QRZ lookup here)
+        return CallsignLookupResponse()
+
+    def pick(account_value, contact_field):
+        return account_value or (getattr(contact, contact_field) if contact else None)
+
+    return CallsignLookupResponse(
+        name=pick(user.name if user else None, 'name'),
+        location=pick((live_location_display(user) or user.location) if user else None, 'location'),
+        skywarn_number=pick(user.skywarn_number if user else None, 'skywarn_number'),
+        source='user' if user else 'contact',
     )
-    contact = contact_result.scalar_one_or_none()
-    
-    if contact:
-        return CallsignLookupResponse(
-            name=contact.name,
-            location=contact.location,
-            skywarn_number=contact.skywarn_number,
-            source='contact'
-        )
-    
-    # No match found — return empty response (future: QRZ lookup here)
-    return CallsignLookupResponse()
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

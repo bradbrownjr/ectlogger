@@ -3,7 +3,7 @@ from datetime import datetime
 from io import BytesIO
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile, status
 from PIL import Image
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,7 +47,7 @@ from app.schemas import (
     NetUpdate,
     public_display_name,
 )
-from app.services.net_closure import close_net_and_notify, compute_auto_close_at, send_net_log
+from app.services.net_closure import close_net_and_notify, compute_auto_close_at, schedule_net_log
 from app.utils import NET_LOGO_DIR, display_callsign, save_resized_logo
 from app.services.ncs_attribution import load_ncs_attribution, net_ncs_attribution
 
@@ -890,6 +890,7 @@ async def clear_active_frequency(
 @router.post("/{net_id}/close", response_model=NetResponse)
 async def close_net(
     net_id: int,
+    background_tasks: BackgroundTasks,
     body: Optional[CloseNetRequest] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -942,7 +943,8 @@ async def close_net(
     # path can reuse them verbatim instead of growing a second copy.
     record_net_event(db, "net.closed", current_user, net,
                      details={"log_held": True} if hold_log else None)
-    await close_net_and_notify(db, net, current_user, hold_log=hold_log)
+    await close_net_and_notify(db, net, current_user, hold_log=hold_log,
+                               background_tasks=background_tasks)
 
     return NetResponse.from_orm(net)
 
@@ -950,6 +952,7 @@ async def close_net(
 @router.post("/{net_id}/send-log", response_model=NetResponse)
 async def send_held_log(
     net_id: int,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -981,7 +984,7 @@ async def send_held_log(
         "type": "net_status_change",
         "data": {"net_id": net_id, "status": "closed", "log_held": False},
     }, net_id)
-    await send_net_log(db, net)
+    schedule_net_log(background_tasks, db, net_id)
 
     await db.refresh(net, ['frequencies'])
     return NetResponse.from_orm(net)
