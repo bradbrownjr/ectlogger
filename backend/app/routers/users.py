@@ -41,6 +41,13 @@ _LOCKED_FIELD_LABELS = {
 }
 
 
+def callsign_taken_message(callsign: str) -> str:
+    """What an operator sees when their callsign already has an account."""
+    return (f"{callsign} already has an account here, probably one you made with a different email address. "
+            "Sign in with that address instead, or ask an administrator to move this address onto it. "
+            "The administrators have been told.")
+
+
 def _profile_value(field: str, value):
     """Comparable form of a profile field, so a locked field that is
     re-submitted unchanged never trips the lock: the Profile form always
@@ -101,6 +108,19 @@ async def update_my_profile(
         if field in update_data and _profile_value(field, update_data[field]) != _profile_value(field, getattr(current_user, field, None)):
             label = _LOCKED_FIELD_LABELS.get(field, field)
             raise HTTPException(status_code=403, detail=f"Your {label} has been locked by an administrator and can't be changed here.")
+
+    # A primary callsign another account holds is almost always the same
+    # operator, signed up again with a different email address. Say so, never
+    # reveal the other address, and tell the admins, who can see both.
+    new_callsign = update_data.get('callsign')
+    if new_callsign and new_callsign.upper() != (current_user.callsign or '').upper():
+        holder = (await db.execute(
+            select(User).where(func.upper(User.callsign) == new_callsign.upper(), User.id != current_user.id).limit(1)
+        )).scalar_one_or_none()
+        if holder is not None:
+            from app.security_alerts import check_callsign_taken
+            await check_callsign_taken(db, current_user, holder, new_callsign.upper())
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=callsign_taken_message(new_callsign.upper()))
 
     # When the primary callsign changes, record the old one in previous_callsigns
     # so check-in history and statistics follow the user across callsign changes.

@@ -98,3 +98,33 @@ async def send_muted_often_alert(to_email: str, station: str, user_id: int, peop
     )
     await send_email(to_email=to_email, subject=f"[{settings.app_name}] {station} muted by {people} people",
                      html_content=html)
+
+
+async def send_callsign_taken_alert(to_email: str, callsign: str, user, holder):
+    """An account tried to take a callsign another account holds. Admins
+    only; this copy names both addresses, which the user never sees."""
+    logger.info("SECURITY_ALERT", f"Callsign-taken alert for {callsign}")
+    template = Template("""
+    <!DOCTYPE html>
+    <html><head><style>{{ style }}</style></head>
+    <body><div class="container">
+      <h2>A new account asked for {{ callsign }}</h2>
+      <p><strong>{{ user.email }}</strong> tried to set its callsign to <strong>{{ callsign }}</strong>, which already belongs to another account. This is usually the same operator signing in with a different email address.</p>
+      <table>
+        <tr><th></th><th>Has {{ callsign }}</th><th>Asked for it</th></tr>
+        <tr><td>Email</td><td>{{ holder.email }}</td><td>{{ user.email }}</td></tr>
+        <tr><td>Name</td><td>{{ holder.name or "" }}</td><td>{{ user.name or "" }}</td></tr>
+        <tr><td>Created</td><td>{{ when(holder.created_at) }}</td><td>{{ when(user.created_at) }}</td></tr>
+        <tr><td>Last active</td><td>{{ when(holder.last_active) }}</td><td>{{ when(user.last_active) }}</td></tr>
+      </table>
+      <p>They were told the callsign belongs to another account and to sign in with that address or ask an administrator. If it's the same person, delete the newer account if it's empty, then change the original account's email to the new address.</p>
+      <p><a href="{{ users_url }}">Find {{ callsign }} in Admin &gt; Users</a></p>
+    </div></body></html>
+    """)
+    html = template.render(
+        style=_STYLE, callsign=callsign, user=user, holder=holder,
+        when=lambda v: _when(v) if v else "Never",
+        users_url=f"{settings.frontend_url}/admin/users?tab=users&search={quote(callsign)}",
+    )
+    await send_email(to_email=to_email, subject=f"[{settings.app_name}] A new account asked for {callsign}",
+                     html_content=html)

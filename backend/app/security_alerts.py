@@ -140,3 +140,27 @@ async def check_mutes(db: AsyncSession, muted: User, now: Optional[datetime] = N
     except Exception as exc:
         logger.error("SECURITY_ALERT", f"Mute alert for user {muted.id} not sent: {exc}")
     return True
+
+
+async def check_callsign_taken(db: AsyncSession, user: User, holder: User, callsign: str,
+                               now: Optional[datetime] = None) -> bool:
+    """Call when user tries to make callsign their primary callsign and
+    holder's account already has it. Almost always the same operator, signed
+    up again under a different email address (K9NPD, 2026-10-27). The user is
+    never shown holder's address; admins are emailed both accounts, at most
+    once per account per day. Returns whether an alert went out."""
+    now = now or datetime.now(timezone.utc)
+    if await _alerted_since(db, "alert.callsign_taken", user.id, now - timedelta(days=1)):
+        return False
+    record_event(db, "alert.callsign_taken", None, target_type="user", target_id=user.id,
+                 target_label=user_label(user), subject=user,
+                 details={"callsign": callsign, "holder_user_id": holder.id})
+    await db.commit()
+
+    from app.email_service import EmailService
+    try:
+        for admin_email in await _admin_emails(db):
+            await EmailService.send_callsign_taken_alert(admin_email, callsign, user, holder)
+    except Exception as exc:
+        logger.error("SECURITY_ALERT", f"Callsign-taken alert for user {user.id} not sent: {exc}")
+    return True

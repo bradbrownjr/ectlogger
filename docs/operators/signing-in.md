@@ -4,7 +4,7 @@ summary: The magic link, changing the address it goes to, the password fallback 
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-27
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/operators/signing-in/
@@ -29,6 +29,10 @@ The link stays valid for 30 days, which is deliberate: during a multi-day activa
 After 30 days the link stops working. Opening it then shows **This sign-in link has expired** with a **Send me a new link** button: one click emails a fresh link to the same address, so you never have to type it again. Keep the new email in place of the old one. A link that was cut off when it was copied or forwarded shows **This sign-in link didn't work** instead, and needs a new one from the sign-in page.
 
 If the message has not arrived in a minute or two, check your spam folder. If your club runs its own instance and no message ever arrives, that is the server's mail configuration and not something you can fix from here; tell whoever runs it.
+
+## If your callsign already has an account
+
+Signing in with an address you haven't used before creates a new, empty account. If you already made one with a different address, saving your callsign on the new account is refused with a message that the callsign already has an account. Sign out and sign in with the address you used first; your check-ins and roles are all there. If you can't remember it or no longer have it, ask an administrator, who has already been told and can move your new address onto your original account.
 
 ## If the sign-in page does nothing
 

@@ -41,6 +41,7 @@ export const ACTION_GROUPS: { prefix: string; label: string }[] = [
 export const ACTION_LABELS: Record<string, string> = {
   'alert.failed_sign_ins': 'Failed sign-in alert sent',
   'alert.muted_often': 'Muted-by-others alert sent',
+  'alert.callsign_taken': 'Callsign-taken alert sent',
 
   'auth.signed_in': 'Signed in',
   'auth.password_failed': 'Wrong password',

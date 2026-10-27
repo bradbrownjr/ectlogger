@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -131,7 +132,10 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [emailForm, setEmailForm] = useState({ subject: '', message: '' });
   const [emailSending, setEmailSending] = useState(false);
-  const [userFilter, setUserFilter] = useState('');
+  // ?search=<text> pre-fills the filter (the callsign-taken alert email links
+  // to /admin/users?tab=users&search=<callsign> so both accounts show at once).
+  const [searchParams] = useSearchParams();
+  const [userFilter, setUserFilter] = useState(() => searchParams.get('search') ?? '');
   const [usersPage, setUsersPage] = useState(0);
   const [usersPerPage, setUsersPerPage] = useState(25);
   const [scheduleMinAccountAgeDays, setScheduleMinAccountAgeDays] = useState(0);

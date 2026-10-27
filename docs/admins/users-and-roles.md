@@ -4,7 +4,7 @@ summary: Inviting people, editing an account's identity and role, undoing a call
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-27
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/users-and-roles/
@@ -64,6 +64,14 @@ Each row's action icons cover the rest of account management:
 - **Delete** permanently removes the account. It cannot be undone, and you can't delete yourself or the account you're currently signed in as. Check-ins that person already logged keep the callsign and name they typed at the time, since those are stored on the check-in itself rather than looked up live from the account. Anything that depends on the account still existing (their profile popup, being credited by a live link rather than by callsign) stops resolving once the account is gone. If your actual goal is "stop this person from doing anything," Ban is almost always the better tool, since it's reversible and Delete isn't.
 
 Changing someone's primary callsign, whether from their own Profile or from this dialog, doesn't lose their history either: the system remembers the old callsign and keeps their past check-ins and statistics attached to the same account.
+
+## When someone signs up twice
+
+An operator who forgets which address they first used signs in with another one, gets a fresh empty account, and then types their callsign into the profile. Since their original account already holds it, the save is refused. They are told the callsign already has an account, probably made with a different address, and to sign in with that one or ask an administrator. They are never shown the other address.
+
+Every admin gets an email at the same moment, **A new account asked for** the callsign, with both accounts' addresses, names, and creation and last-active dates side by side, and a link to the Users tab filtered to that callsign. It goes out at most once a day per account, and the activity log records it as **Callsign-taken alert sent**.
+
+When it is the same person and the new account has nothing in it, delete the new account, then open the original with **Edit User** and change its email to the new address. Their next magic link to that address signs them into their original account, history and all.
 
 ## Undoing a callsign that isn't theirs
 

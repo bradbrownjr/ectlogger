@@ -248,3 +248,35 @@ def test_migration_089_adds_columns_and_is_rerunnable(tmp_path):
     assert "location" in {r[1] for r in conn.execute("PRAGMA table_info(audit_events)")}
     assert conn.execute("SELECT signin_alert_enabled, signin_alert_threshold, mute_alert_window_days "
                         "FROM app_settings").fetchone() == (1, 5, 30)
+
+
+# ========== CALLSIGN ALREADY HAS AN ACCOUNT ==========
+
+@pytest.mark.asyncio
+async def test_taken_callsign_explains_without_the_other_address_and_alerts_admins(client, db, owner, admin, monkeypatch):
+    """K9NPD, 2026-10-27: signed up again with a new address, typed his
+    callsign, and got only "already in use by another account"."""
+    sent = []
+
+    async def _taken(to_email, callsign, user, holder):
+        sent.append((to_email, callsign, user.email, holder.email))
+
+    monkeypatch.setattr(EmailService, "send_callsign_taken_alert", staticmethod(_taken))
+    newcomer = User(email="newcomer@test.com", role=UserRole.USER, is_active=True)
+    db.add(newcomer)
+    await db.commit()
+
+    for _ in range(2):
+        r = await client.put("/api/users/me", json={"callsign": "KC1OWN"}, headers=auth_headers(newcomer))
+        assert r.status_code == 409
+        detail = r.json()["detail"]
+        assert "KC1OWN already has an account" in detail
+        assert "owner@test.com" not in detail
+
+    # One alert a day, to admins only, naming both addresses.
+    assert sent == [("admin@test.com", "KC1OWN", "newcomer@test.com", "owner@test.com")]
+    assert len(await _events(db, "alert.callsign_taken")) == 1
+
+    # Keeping your own callsign is never a conflict.
+    r = await client.put("/api/users/me", json={"callsign": "KC1OWN", "name": "Pat"}, headers=auth_headers(owner))
+    assert r.status_code == 200
