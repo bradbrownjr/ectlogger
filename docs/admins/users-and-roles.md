@@ -71,10 +71,19 @@ An operator who forgets which address they first used signs in with another one,
 
 Every admin gets an email at the same moment, **A new account asked for** the callsign, with both accounts' addresses, names, and creation and last-active dates side by side, and a link to the Users tab filtered to the newer account. It goes out at most once a day per account, and the activity log records it as **Callsign-taken alert sent**.
 
+You don't have to wait for that email. When any accounts look like one person signed up twice, a **Possible duplicates** chip with a count appears beside the filter box. Click it to list only those accounts, each pair together, with a line under each email naming the account it matches and why:
+
+- **Same email**, ignoring capitals.
+- **Same callsign**: primary, additional, or previous.
+- **Callsign in the other's email**, such as a K9NPD account beside `k9npdnh@gmail.com`.
+- **Same full name**, two words or more.
+
+Two weaker matches are listed as extra evidence on a pair that one of those already found, but never put a pair on the list by themselves: **Same callsign apart from /suffix** (a club can run WS1EC and WS1EC/HF on purpose) and **Same sign-in address** (a household or club shares one). A first name alone never counts, since most accounts have only a first name. Banned accounts are left out. Click the chip's **×** to see everyone again.
+
 When you're satisfied it is the same person, merge the accounts:
 
 1. On the newer account's row, click **Merge into another account** (the merge icon).
-2. In **Account to keep**, pick their original account, usually the older one with the callsign and check-ins.
+2. In **Account to keep**, pick their original account, usually the older one with the callsign and check-ins. From the duplicates list it is already filled in with the account that has a callsign and the most check-ins.
 3. Read the comparison and the list of what moves. Where both accounts have the same thing, such as a spot on the same schedule's staff, the kept account's stays.
 4. Type your two-factor code and click **Merge accounts**.
 

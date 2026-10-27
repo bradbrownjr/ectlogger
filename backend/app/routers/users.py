@@ -13,7 +13,7 @@ from app.services.account_email import (
     MAX_BACKUP_EMAILS, account_addresses, apply_email_change, backup_emails, email_in_use,
     notify_backups_of_primary_change, notify_sign_in_address_change,
 )
-from app.schemas import AccountEmailsResponse, AccountMergePreview, AccountMergeRequest, AccountMergeSide, BackupEmailEntry, LiveLocationUpdate, UserResponse, UserUpdate, AdminUserCreate, AdminUserUpdate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse, AdminPasswordResetResult
+from app.schemas import AccountEmailsResponse, AccountMergePreview, DuplicateAccountPair, AccountMergeRequest, AccountMergeSide, BackupEmailEntry, LiveLocationUpdate, UserResponse, UserUpdate, AdminUserCreate, AdminUserUpdate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse, AdminPasswordResetResult
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 from app.auth import generate_temporary_password, hash_password
 from app.email_service import EmailService
@@ -21,6 +21,7 @@ from app.logger import logger
 from app.utils import AVATAR_DIR, user_callsigns
 from app.services.live_location import live_location_display
 from app.services import account_merge
+from app.services.account_duplicates import find_possible_duplicates
 from app.services.callsign_people import claim_and_queue_notices, find_user_by_callsign, revert_all_claims, revert_callsign_claim
 from app.band_utils import band_from_frequency_string
 
@@ -466,6 +467,17 @@ async def create_user(
         await db.refresh(new_user)
     
     return UserResponse.from_orm(new_user)
+
+
+@router.get("/duplicates", response_model=List[DuplicateAccountPair])
+async def list_possible_duplicates(
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Pairs of active accounts that are probably one operator signed up
+    twice, with why, for Admin > Users > Possible duplicates. Declared
+    before /{user_id} so "duplicates" isn't read as an id."""
+    return await find_possible_duplicates(db)
 
 
 @router.get("/directory", response_model=List[UserDirectoryEntry])

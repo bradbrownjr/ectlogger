@@ -53,13 +53,19 @@ import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import HistoryIcon from '@mui/icons-material/History';
 import useSortableTable from '../../hooks/useSortableTable';
-import api, { BACKGROUND_REQUEST_CONFIG } from '../../services/api';
+import api, { BACKGROUND_REQUEST_CONFIG, userApi } from '../../services/api';
 import useVisibilityAwareInterval from '../../hooks/useVisibilityAwareInterval';
 import { formatDateTime, formatDate } from '../../utils/dateUtils';
 import { displayCallsign } from '../../utils/userDisplay';
 import { getErrorMessage } from '../../utils/apiErrors';
 import { isValidSpotterNumber, SPOTTER_NUMBER_RULE } from '../../utils/spotterNumber';
 import { useAuth } from '../../contexts/AuthContext';
+
+interface DuplicatePair {
+  user_ids: number[];
+  reasons: string[];
+  keep_id: number;
+}
 
 interface AdminUser {
   id: number;
@@ -125,6 +131,14 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
   const [users, setUsers] = useState<AdminUser[]>([]);
   // The account a merge would fold away, while its dialog is open.
   const [mergeSource, setMergeSource] = useState<AdminUser | null>(null);
+  // The account the merge dialog starts on as the one to keep (a duplicate pair's suggestion).
+  const [mergeTargetId, setMergeTargetId] = useState<number | undefined>(undefined);
+  // ---------- Possible duplicates ----------
+  // Pairs of accounts that are probably one operator signed up twice (backend
+  // services/account_duplicates.py). The chip narrows the list to them, each
+  // pair together, with the reasons under each email.
+  const [duplicatePairs, setDuplicatePairs] = useState<DuplicatePair[]>([]);
+  const [showDuplicates, setShowDuplicates] = useState(false);
   // Drives the "updated Xs ago" caption so the admin can see the list is live.
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
@@ -165,6 +179,11 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
       const response = await api.get('/users', background ? BACKGROUND_REQUEST_CONFIG : undefined);
       setUsers(response.data);
       setLastRefreshed(new Date());
+      // Not on the 30 s poll: duplicates only change when accounts do.
+      if (!background) {
+        const duplicates = await userApi.listDuplicates();
+        setDuplicatePairs(duplicates.data);
+      }
     } catch (error) {
       console.error('Failed to fetch users:', error);
     }
@@ -248,7 +267,19 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
   };
 
   // ========== USER FILTERING & SORTING ==========
+  // Each flagged account's position in the duplicates list, so a pair sorts together.
+  const duplicateOrder = new Map<number, number>();
+  duplicatePairs.forEach((pair) => pair.user_ids.forEach((id) => {
+    if (!duplicateOrder.has(id)) duplicateOrder.set(id, duplicateOrder.size);
+  }));
+  const duplicatesOf = (id: number) => duplicatePairs.filter((pair) => pair.user_ids.includes(id));
+  const describeUser = (id: number) => {
+    const other = users.find((u) => u.id === id);
+    return other ? (other.callsign || other.email) : `account ${id}`;
+  };
+
   const filteredUsers = users.filter((user) => {
+    if (showDuplicates && !duplicateOrder.has(user.id)) return false;
     if (!userFilter) return true;
     const searchTerm = userFilter.toLowerCase();
     return (
@@ -260,6 +291,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
   });
 
   const sortedUsers = [...filteredUsers].sort((a, b) => {
+    if (showDuplicates) return (duplicateOrder.get(a.id) ?? 0) - (duplicateOrder.get(b.id) ?? 0);
     let aVal: string | number | boolean = '';
     let bVal: string | number | boolean = '';
 
@@ -534,6 +566,17 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
             />
           )}
         </Typography>
+        {/* Shows when any accounts look like one operator signed up twice */}
+        {duplicatePairs.length > 0 && (
+          <Chip
+            size="small"
+            label={`Possible duplicates (${duplicatePairs.length})`}
+            color="warning"
+            variant={showDuplicates ? 'filled' : 'outlined'}
+            onClick={() => { setShowDuplicates(!showDuplicates); setUsersPage(0); }}
+            onDelete={showDuplicates ? () => { setShowDuplicates(false); setUsersPage(0); } : undefined}
+          />
+        )}
         {/* Refresh state: the list updates itself every 30 s, so this exists to
             show that it is current rather than to invite clicking. The button
             is for when an admin wants an answer right now. */}
@@ -696,7 +739,18 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
                       </Tooltip>
                     ) : '-'}
                   </TableCell>
-                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    {user.email}
+                    {/* Shows with the Possible duplicates filter on: which account this one matches, and why */}
+                    {showDuplicates && duplicatesOf(user.id).map((pair) => {
+                      const otherId = pair.user_ids.find((id) => id !== user.id)!;
+                      return (
+                        <Typography key={otherId} variant="caption" color="text.secondary" display="block">
+                          Matches {describeUser(otherId)}: {pair.reasons.join(', ')}
+                        </Typography>
+                      );
+                    })}
+                  </TableCell>
                   <TableCell>
                     <Chip
                       label={user.role.toUpperCase()}
@@ -766,7 +820,13 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
                     {/* Fold this account into another of the same operator's (MergeAccountDialog) */}
                     <IconButton
                       size="small"
-                      onClick={() => setMergeSource(user)}
+                      onClick={() => {
+                        // In a duplicate pair, start on the account it suggests keeping.
+                        const pair = duplicatesOf(user.id)[0];
+                        const suggested = pair && (pair.keep_id !== user.id ? pair.keep_id : pair.user_ids.find((id) => id !== user.id));
+                        setMergeTargetId(suggested);
+                        setMergeSource(user);
+                      }}
                       title="Merge into another account"
                       aria-label="Merge into another account"
                       disabled={user.id === currentUser?.id || !user.is_active}
@@ -899,6 +959,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
 
       <MergeAccountDialog
         source={mergeSource}
+        initialTargetId={mergeTargetId}
         users={users}
         currentUserId={currentUser?.id}
         preferUtc={currentUser?.prefer_utc || false}

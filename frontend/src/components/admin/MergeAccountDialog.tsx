@@ -56,6 +56,8 @@ interface MergePreview {
 interface MergeAccountDialogProps {
   /** The account that will be merged away; null when closed. */
   source: MergeCandidate | null;
+  /** The account to start on as the one to keep (a duplicate pair's suggestion). */
+  initialTargetId?: number;
   users: MergeCandidate[];
   currentUserId?: number;
   preferUtc: boolean;
@@ -65,7 +67,7 @@ interface MergeAccountDialogProps {
 
 const describe = (u: { callsign?: string | null; email: string }) => (u.callsign ? `${u.callsign} (${u.email})` : u.email);
 
-const MergeAccountDialog: React.FC<MergeAccountDialogProps> = ({ source, users, currentUserId, preferUtc, onClose, onMerged }) => {
+const MergeAccountDialog: React.FC<MergeAccountDialogProps> = ({ source, initialTargetId, users, currentUserId, preferUtc, onClose, onMerged }) => {
   const [target, setTarget] = useState<MergeCandidate | null>(null);
   const [preview, setPreview] = useState<MergePreview | null>(null);
   const [loading, setLoading] = useState(false);
@@ -75,7 +77,7 @@ const MergeAccountDialog: React.FC<MergeAccountDialogProps> = ({ source, users, 
 
   // Start clean each time the dialog opens on an account.
   useEffect(() => {
-    setTarget(null);
+    setTarget(users.find((u) => u.id === initialTargetId && u.id !== source?.id && u.is_active) ?? null);
     setPreview(null);
     setCode('');
     setError('');

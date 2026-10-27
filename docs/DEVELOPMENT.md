@@ -713,6 +713,17 @@ refuses a banned account and the admin's own, and logs `user.merged` with what
 moved. Checked against a copy of production's database before shipping: 600
 merges, no errors, no reference left behind.
 
+`services/account_duplicates.py::find_possible_duplicates` (`GET /users/duplicates`,
+the Users tab's **Possible duplicates** chip) finds the pairs to merge. Strong
+matches flag a pair: same email ignoring case, an exact shared callsign
+(primary/additional/previous), a callsign inside the other's email local part, or a
+full name of two words or more. Weak matches only add a reason to a flagged pair:
+a callsign that differs by /suffix (club station accounts such as WS1EC/HF) and a
+shared `auth.signed_in` IP. The rule was set from production's accounts on
+2026-10-27: first-name matches flagged 16 pairs of mostly different people, and
+/suffix alone flagged the WS1EC station accounts; with the rule above it finds 5
+pairs, all real. Fetched with the users list but not on its 30 s background poll.
+
 ### Security alerts and IP locations
 
 `app/security_alerts.py` emails on patterns in the activity log, with thresholds in

@@ -139,6 +139,8 @@ export const userApi = {
   // An account's backup sign-in addresses (admin).
   listBackupEmails: (userId: number) => api.get(`/users/${userId}/backup-emails`),
   removeBackupEmail: (userId: number, backupId: number) => api.delete(`/users/${userId}/backup-emails/${backupId}`),
+  // Pairs of accounts that are probably one operator (admin).
+  listDuplicates: () => api.get('/users/duplicates'),
   // Merge account sourceId into targetId (admin). The preview changes nothing.
   mergePreview: (targetId: number, sourceId: number) =>
     api.get(`/users/${targetId}/merge-preview`, { params: { source_id: sourceId } }),

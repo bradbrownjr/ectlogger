@@ -1564,6 +1564,13 @@ class AccountMergeItem(BaseModel):
     count: int
 
 
+class DuplicateAccountPair(BaseModel):
+    """Two accounts that are probably one operator (services/account_duplicates.py)."""
+    user_ids: List[int]
+    reasons: List[str]
+    keep_id: int  # the suggested account to merge into
+
+
 class AccountMergePreview(BaseModel):
     """What a merge would do: everything listed moves from source to target."""
     source: AccountMergeSide
