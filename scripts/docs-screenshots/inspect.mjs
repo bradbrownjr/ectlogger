@@ -15,12 +15,13 @@ import { chromium } from 'playwright-core';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { browserlessUrl } from './browserless.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..', '..');
 const seed = JSON.parse(readFileSync(resolve(REPO, 'backend', 'demo-seed.json'), 'utf8'));
 
-const BROWSERLESS = process.env.BROWSERLESS_URL || 'ws://10.6.26.2:3000?token=nosi2QszI5M9eN';
+const BROWSERLESS = browserlessUrl();
 const BASE = process.env.DEMO_BASE_URL || 'http://10.6.26.3:3100';
 const API = process.env.DEMO_API_URL || 'http://10.6.26.3:8100/api';
 

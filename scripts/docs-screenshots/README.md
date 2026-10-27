@@ -42,6 +42,10 @@ node scripts/docs-screenshots/capture.mjs --only speed-entry   # one figure
 node scripts/docs-screenshots/capture.mjs --list               # dry run
 ```
 
+The Browserless address and token come from `BROWSERLESS_URL` if set, else from
+`~/.browserless/config.json` (`ws_url`, `token`); see `browserless.mjs`. Never
+put a token in this repository.
+
 Output lands in `docs/img/<section>/<id>.png`, plus `docs/img/figures.json`
 mapping every id to its path, alt text, and caption.
 

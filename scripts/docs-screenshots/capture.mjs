@@ -19,7 +19,8 @@
  *
  * Requires:
  *   - the seeded demo instance running (see README.md in this directory)
- *   - the Browserless container reachable at BROWSERLESS_URL
+ *   - the Browserless container reachable at BROWSERLESS_URL, or as set in
+ *     ~/.browserless/config.json (browserless.mjs)
  *
  * It must NEVER be pointed at beta or production. Beta holds a copy of
  * production's database, real names and email addresses included.
@@ -31,6 +32,7 @@ import { createHmac } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { browserlessUrl } from './browserless.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..', '..');
@@ -46,8 +48,7 @@ const REPO = resolve(HERE, '..', '..');
 // own size in the docs column. See the check before page.screenshot.
 const MAX_FIGURE_WIDTH = 1000;
 
-const BROWSERLESS_URL = process.env.BROWSERLESS_URL
-  || 'ws://10.6.26.2:3000?token=nosi2QszI5M9eN';
+const BROWSERLESS_URL = browserlessUrl();
 
 // Browserless pins its own 800x600 viewport on every page it serves, and that
 // pin beats the viewport Playwright asks for per context. The size therefore
