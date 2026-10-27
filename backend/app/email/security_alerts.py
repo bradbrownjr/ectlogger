@@ -118,14 +118,14 @@ async def send_callsign_taken_alert(to_email: str, callsign: str, user, holder):
         <tr><td>Created</td><td>{{ when(holder.created_at) }}</td><td>{{ when(user.created_at) }}</td></tr>
         <tr><td>Last active</td><td>{{ when(holder.last_active) }}</td><td>{{ when(user.last_active) }}</td></tr>
       </table>
-      <p>They were told the callsign belongs to another account and to sign in with that address or ask an administrator. If it's the same person, delete the newer account if it's empty, then change the original account's email to the new address.</p>
-      <p><a href="{{ users_url }}">Find {{ callsign }} in Admin &gt; Users</a></p>
+      <p>They were told the callsign belongs to another account and to sign in with that address or ask an administrator. If it's the same person, open the newer account in Admin &gt; Users and use <strong>Merge into</strong> to fold it into the one with {{ callsign }}. Its address then signs in to the original account.</p>
+      <p><a href="{{ users_url }}">Open the newer account in Admin &gt; Users</a></p>
     </div></body></html>
     """, autoescape=True)
     html = template.render(
         style=_STYLE, callsign=callsign, user=user, holder=holder,
         when=lambda v: _when(v) if v else "Never",
-        users_url=f"{settings.frontend_url}/admin/users?tab=users&search={quote(callsign)}",
+        users_url=f"{settings.frontend_url}/admin/users?tab=users&search={quote(user.email)}",
     )
     await send_email(to_email=to_email, subject=f"[{settings.app_name}] A new account asked for {callsign}",
                      html_content=html)

@@ -59,6 +59,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'user.backup_email_added': 'Backup email added',
   'user.backup_email_removed': 'Backup email removed',
   'user.backup_email_made_primary': 'Backup email made primary',
+  'user.merged': 'Accounts merged',
   'user.password_set': 'Password set',
   'user.password_changed': 'Password changed',
   'user.mfa_enabled': 'Two-factor turned on',

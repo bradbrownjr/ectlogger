@@ -539,6 +539,12 @@
     "caption": "On a phone, the month is listed day by day.",
     "page": "/docs/operators/finding-a-net/"
   },
+  "operators/security-backup-emails": {
+    "path": "/docs/img/operators/security-backup-emails.png",
+    "alt": "The Backup emails section of the Profile page's Security tab. One backup address, priya.home@example.org, is listed with Make primary and Remove buttons beside it. Below, a Backup email field holds a second address and the Send link button is outlined in red.\n",
+    "caption": "Each backup is added only once the link sent to it is opened.\n",
+    "page": "/docs/operators/signing-in/"
+  },
   "operators/security-email-card": {
     "path": "/docs/img/operators/security-email-card.png",
     "alt": "The Sign-in email section at the top of the Profile page's Security tab. It names the address the account signs in with, above a New email field holding a new address and the Send link button, outlined in red.\n",

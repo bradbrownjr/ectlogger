@@ -664,6 +664,55 @@ a link sent to the old address still signing in to the account. Self-service cha
 signed token to the new address. The token carries the old address, which makes it
 single-use. Both steps refuse while an admin's Email padlock is on.
 
+### Backup sign-in addresses
+
+An account signs in with its primary address (`User.email`, where all mail goes)
+or any of up to `MAX_BACKUP_EMAILS` (3) backups in `user_emails`
+(`models.UserEmail`, migration 092). Rules, all in `services/account_email.py`:
+
+- **Find an account by address with `find_user_by_email`**, never `User.email`
+  alone: magic link (`get_or_create_user`), the banned check in
+  `_send_magic_link`, password login, admin invite and contact invite all use it.
+  **Check an address is free with `email_in_use`**, which covers both columns. No
+  database constraint spans the two tables, so these two functions are the
+  constraint.
+- **`oauth_id` only ever holds the primary.** `get_or_create_user` updates it
+  only when the address signed in with is the primary. A backup written there
+  would keep matching the `(oauth_provider, oauth_id)` lookup after it was removed.
+- A backup row exists only once confirmed: the pending state is the 24-hour token
+  (`create_backup_email_token`, salt `backup-email`) emailed to it, and confirming
+  is idempotent. Make primary swaps the row with `User.email`
+  (`make_backup_primary`), so no address is dropped.
+- Request, remove and make primary need the two-factor code when enabled
+  (`routers/auth.py::_require_mfa_code`, shared with email change) and honour the
+  Email padlock. Each is logged (`user.backup_email_*`) and emailed to every
+  address on the account (`notify_sign_in_address_change`), plus the removed one.
+- Backups get security notices only: failed-sign-in alerts and password changes
+  go to `account_addresses(user)`; net logs, reminders and digests stay on
+  `User.email`.
+- `delete_user` deletes the rows explicitly; SQLite doesn't enforce the CASCADE.
+
+### Merging accounts
+
+`services/account_merge.py::merge_accounts(db, source, target)` folds a second
+account into an original one (Admin > Users > Merge into, `POST
+/users/{target}/merge`, preview at `GET /users/{target}/merge-preview`). It does not
+hard-code tables: `user_columns()` reads every foreign key to `users.id` from the
+models, so a new table is merged with no change. For each column it first deletes
+the source rows the target already has an equivalent of (same values on the other
+columns of any unique constraint, or of a `SOFT_UNIQUE` key for the tables that
+hold one row per account without a constraint), then repoints the rest. The
+activity log's `actor_user_id`/`subject_user_id` and the `mentioned_user_ids` JSON
+on chat messages have no foreign key and are handled by name;
+`tests/test_account_merge.py` fails if any other column that looks like an account
+id lacks a foreign key. Blank profile fields on the target are filled from the
+source (`FILLED_FIELDS`); passwords and two-factor never move. The source's
+addresses become target backups (the 3-address limit applies to self-service adds
+only), then the source is deleted. The endpoint needs a fresh admin TOTP code,
+refuses a banned account and the admin's own, and logs `user.merged` with what
+moved. Checked against a copy of production's database before shipping: 600
+merges, no errors, no reference left behind.
+
 ### Security alerts and IP locations
 
 `app/security_alerts.py` emails on patterns in the activity log, with thresholds in

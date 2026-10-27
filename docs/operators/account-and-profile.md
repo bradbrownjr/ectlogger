@@ -4,7 +4,7 @@ summary: Your callsign, your default location, your email preferences, and what 
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-27
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/account-and-profile/
@@ -18,7 +18,7 @@ You can look at the [dashboard](/docs/operators/finding-a-net/), a net, the sche
 
 Type your email address on the sign-in page, click **Send Magic Link**, and click the link in the email. If nobody has ever signed in with that address, that creates your account on the spot.
 
-You can also set a password as a fallback for when email delivery is down, and turn on two-factor authentication on top of either. Both live on the Profile page's **Security** tab, and both are covered in [signing in](/docs/operators/signing-in/).
+You can also add backup email addresses that sign you in if you lose your main one, set a password as a fallback for when email delivery is down, and turn on two-factor authentication on top of any of them. All of these live on the Profile page's **Security** tab, and all are covered in [signing in](/docs/operators/signing-in/).
 
 <figure>
   <img src="/docs/img/operators/account-profile-tab.png"

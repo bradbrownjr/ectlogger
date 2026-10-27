@@ -105,7 +105,7 @@ async def _build(db_path: Path, out_path: Path):
         NCSRotationMember, FormDefinition, Form, TrafficAction, AppSettings,
         FieldDefinition, CanHearReport, CoverageSite, CoverageAccess, CoverageContact,
         DrillPlan, DrillObjective, DrillEvent, TrafficTestCategory, OffNetLogEntry,
-        TopicHistory,
+        TopicHistory, UserEmail,
     )
     from app.traffic.exercise import mark_exercise_text
     from app.auth import (
@@ -219,6 +219,10 @@ async def _build(db_path: Path, out_path: Path):
         await db.commit()
         for user in users.values():
             await db.refresh(user)
+        # One backup sign-in address, so Profile > Security's Backup emails
+        # list has a row to show (docs figure security-backup-emails).
+        db.add(UserEmail(user_id=users["KC1HILL"].id, email="priya.home@example.org"))
+        await db.commit()
 
         for callsign, user in users.items():
             manifest["users"].append({

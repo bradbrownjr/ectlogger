@@ -35,6 +35,8 @@ import AdminFilterBar from './AdminFilterBar';
 import UserProfileDialog from '../UserProfileDialog';
 import CallsignClaimsSection from './CallsignClaimsSection';
 import BackupEmailsAdminSection from './BackupEmailsAdminSection';
+import MergeAccountDialog from './MergeAccountDialog';
+import CallMergeIcon from '@mui/icons-material/CallMerge';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -121,6 +123,8 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
   const { user: currentUser } = useAuth();
 
   const [users, setUsers] = useState<AdminUser[]>([]);
+  // The account a merge would fold away, while its dialog is open.
+  const [mergeSource, setMergeSource] = useState<AdminUser | null>(null);
   // Drives the "updated Xs ago" caption so the admin can see the list is live.
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
@@ -134,7 +138,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
   const [emailForm, setEmailForm] = useState({ subject: '', message: '' });
   const [emailSending, setEmailSending] = useState(false);
   // ?search=<text> pre-fills the filter (the callsign-taken alert email links
-  // to /admin/users?tab=users&search=<callsign> so both accounts show at once).
+  // to /admin/users?tab=users&search=<the newer account's email>).
   const [searchParams] = useSearchParams();
   const [userFilter, setUserFilter] = useState(() => searchParams.get('search') ?? '');
   const [usersPage, setUsersPage] = useState(0);
@@ -759,6 +763,16 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
                         <HistoryIcon />
                       </IconButton>
                     )}
+                    {/* Fold this account into another of the same operator's (MergeAccountDialog) */}
+                    <IconButton
+                      size="small"
+                      onClick={() => setMergeSource(user)}
+                      title="Merge into another account"
+                      aria-label="Merge into another account"
+                      disabled={user.id === currentUser?.id || !user.is_active}
+                    >
+                      <CallMergeIcon />
+                    </IconButton>
                     {user.is_active ? (
                       <IconButton
                         size="small"
@@ -882,6 +896,19 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
           <PersonAddIcon />
         </Fab>
       </Tooltip>
+
+      <MergeAccountDialog
+        source={mergeSource}
+        users={users}
+        currentUserId={currentUser?.id}
+        preferUtc={currentUser?.prefer_utc || false}
+        onClose={() => setMergeSource(null)}
+        onMerged={(message) => {
+          setMergeSource(null);
+          fetchUsers();
+          showSnackbar(message, 'success');
+        }}
+      />
 
       {/* Edit User Dialog — every profile field, role, and per-field locks in one place.
           Editing email is the recovery path for a user who lost access to

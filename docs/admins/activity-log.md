@@ -4,7 +4,7 @@ summary: Finding out who deleted, cancelled, or changed a net, schedule, or acco
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-27
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/activity-log/
@@ -19,12 +19,12 @@ Only admins can see it. Net managers and Net Control can't, so when one of them 
 ## What gets recorded
 
 - **Sign-ins:** every sign-in, every wrong password or two-factor code on a real account, and every attempt by a banned account.
-- **Accounts:** new accounts, profile changes with the old and new value of each field, profile pictures, passwords set or changed, two-factor turned on, replaced, or off, and email changes (both the request and the confirmed change).
-- **Admin actions on accounts:** edits, role changes, bans and unbans, password and two-factor resets, early schedule access, reverted callsign takeovers, deletions, and emails sent to all users.
+- **Accounts:** new accounts, profile changes with the old and new value of each field, profile pictures, passwords set or changed, two-factor turned on, replaced, or off, email changes (both the request and the confirmed change), and backup emails asked for, added, removed, or made primary.
+- **Admin actions on accounts:** edits, role changes, bans and unbans, password and two-factor resets, early schedule access, reverted callsign takeovers, merged accounts (with what moved), deletions, and emails sent to all users. A merge carries the merged account's history over, so its sign-ins and changes show under the account it was merged into.
 - **Nets:** closing, cancelling, restoring, archiving, unarchiving, and deleting, including the ones ECTLogger does by itself (an idle net closed automatically, an old net archived when its schedule's next one is created). Those show **Automatic** in the **Who** column.
 - **Net and schedule staff:** net roles given and removed, Claim NCS, schedule staff and NCS rotation changes, co-manager changes, a schedule handed to a new manager, and merged or deleted schedules.
 - **Moderation:** a check-in deleted, somebody else's chat message deleted (with what it said), a station muted or unmuted for everyone, a station muted by another participant for themselves, and an off-net log entry deleted. A participant's own mute shows **Another station** in the **Who** column and no address: whom somebody chooses not to read is their business, so it is counted but never named.
-- **Security alerts:** every [alert email](/docs/admins/security-and-mfa/#security-alerts) that went out, for failed sign-ins or a station muted by several people.
+- **Security alerts:** every [alert email](/docs/admins/security-and-mfa/#security-alerts) that went out, for failed sign-ins, a station muted by several people, or a new account asking for a callsign another account holds.
 - **The admin panel itself:** site settings, the logo, check-in fields, frequencies and contacts deleted, and every backup setting, key, destination, and download.
 
 Routine net activity is not here. Check-ins and chat are already the net's own record, in its log.

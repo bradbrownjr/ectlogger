@@ -13,13 +13,14 @@ from app.services.account_email import (
     MAX_BACKUP_EMAILS, account_addresses, apply_email_change, backup_emails, email_in_use,
     notify_backups_of_primary_change, notify_sign_in_address_change,
 )
-from app.schemas import AccountEmailsResponse, BackupEmailEntry, LiveLocationUpdate, UserResponse, UserUpdate, AdminUserCreate, AdminUserUpdate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse, AdminPasswordResetResult
+from app.schemas import AccountEmailsResponse, AccountMergePreview, AccountMergeRequest, AccountMergeSide, BackupEmailEntry, LiveLocationUpdate, UserResponse, UserUpdate, AdminUserCreate, AdminUserUpdate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse, AdminPasswordResetResult
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 from app.auth import generate_temporary_password, hash_password
 from app.email_service import EmailService
 from app.logger import logger
 from app.utils import AVATAR_DIR, user_callsigns
 from app.services.live_location import live_location_display
+from app.services import account_merge
 from app.services.callsign_people import claim_and_queue_notices, find_user_by_callsign, revert_all_claims, revert_callsign_claim
 from app.band_utils import band_from_frequency_string
 
@@ -47,7 +48,7 @@ _LOCKED_FIELD_LABELS = {
 def callsign_taken_message(callsign: str) -> str:
     """What an operator sees when their callsign already has an account."""
     return (f"{callsign} already has an account here, probably one you made with a different email address. "
-            "Sign in with that address instead, or ask an administrator to move this address onto it. "
+            "Sign in with that address instead, or ask an administrator to add this address to that account. "
             "The administrators have been told.")
 
 
@@ -1116,6 +1117,73 @@ async def delete_user(
     await db.commit()
     await _resync_after_revert(db, template_ids)
     return None
+
+
+# ========== MERGE ACCOUNTS (admin) ==========
+# Fold a second account (usually one made by signing in with a different
+# address) into the operator's original. services/account_merge.py decides
+# what moves; this checks who may, logs it, and tells every address.
+
+async def _merge_pair(db: AsyncSession, target_id: int, source_id: int, admin: User) -> tuple:
+    if source_id == target_id:
+        raise HTTPException(status_code=400, detail="Pick a different account to merge.")
+    target = (await db.execute(select(User).where(User.id == target_id))).scalar_one_or_none()
+    source = (await db.execute(select(User).where(User.id == source_id))).scalar_one_or_none()
+    if not target or not source:
+        raise HTTPException(status_code=404, detail="User not found")
+    if source.id == admin.id:
+        raise HTTPException(status_code=400, detail="You can't merge away the account you're signed in as.")
+    if not source.is_active or not target.is_active:
+        raise HTTPException(status_code=400, detail="Unban both accounts before merging them.")
+    return source, target
+
+
+def _merge_side(user: User) -> AccountMergeSide:
+    return AccountMergeSide(id=user.id, email=user.email, callsign=user.callsign, name=user.name,
+                            created_at=user.created_at, last_active=user.last_active)
+
+
+@router.get("/{target_id}/merge-preview", response_model=AccountMergePreview)
+async def merge_preview(
+    target_id: int,
+    source_id: int,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """What merging source_id into target_id would move. Changes nothing."""
+    source, target = await _merge_pair(db, target_id, source_id, current_user)
+    return AccountMergePreview(source=_merge_side(source), target=_merge_side(target),
+                               moves=await account_merge.preview(db, source))
+
+
+@router.post("/{target_id}/merge", response_model=UserResponse)
+async def merge_account(
+    target_id: int,
+    body: AccountMergeRequest,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Move everything of source_id's onto target_id, make its addresses
+    backup sign-in addresses there, and delete it. Can't be undone, and it
+    hands target a new sign-in address, so it takes a fresh two-factor code.
+    Request: { source_id, mfa_code }. Response: the merged account."""
+    from app.auth import decrypt_mfa_secret, verify_totp_code
+
+    secret = decrypt_mfa_secret(current_user.mfa_secret_encrypted) if current_user.mfa_secret_encrypted else None
+    if not secret or not verify_totp_code(secret, body.mfa_code):
+        raise HTTPException(status_code=403, detail="That two-factor code is not valid.")
+    source, target = await _merge_pair(db, target_id, body.source_id, current_user)
+
+    moves = await account_merge.preview(db, source)
+    merged = {"id": source.id, "email": source.email, "callsign": source.callsign, "name": source.name}
+    added = await account_merge.merge_accounts(db, source, target)
+    record_event(db, "user.merged", current_user, target_type="user", target_id=target.id,
+                 target_label=user_label(target), subject=target,
+                 details={"merged": merged, "moved": moves, "addresses_added": added})
+    await db.commit()
+    await db.refresh(target)
+    await notify_sign_in_address_change(db, target, "merged", merged["email"], by_admin=True)
+    return UserResponse.from_orm(target)
 
 
 # ========== BACKUP EMAILS (admin) ==========

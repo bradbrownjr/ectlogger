@@ -1544,6 +1544,33 @@ class AdminPasswordResetResult(BaseModel):
     temporary_password: str
 
 
+class AccountMergeRequest(BaseModel):
+    """Merge account source_id into the account in the path (admin)."""
+    source_id: int
+    mfa_code: str = Field(min_length=1, max_length=32)
+
+
+class AccountMergeSide(BaseModel):
+    id: int
+    email: str
+    callsign: Optional[str] = None
+    name: Optional[str] = None
+    created_at: Optional[datetime] = None
+    last_active: Optional[datetime] = None
+
+
+class AccountMergeItem(BaseModel):
+    label: str
+    count: int
+
+
+class AccountMergePreview(BaseModel):
+    """What a merge would do: everything listed moves from source to target."""
+    source: AccountMergeSide
+    target: AccountMergeSide
+    moves: List[AccountMergeItem]
+
+
 class MfaSetupStartResult(BaseModel):
     secret: str
     otpauth_url: str

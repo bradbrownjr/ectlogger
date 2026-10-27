@@ -139,6 +139,11 @@ export const userApi = {
   // An account's backup sign-in addresses (admin).
   listBackupEmails: (userId: number) => api.get(`/users/${userId}/backup-emails`),
   removeBackupEmail: (userId: number, backupId: number) => api.delete(`/users/${userId}/backup-emails/${backupId}`),
+  // Merge account sourceId into targetId (admin). The preview changes nothing.
+  mergePreview: (targetId: number, sourceId: number) =>
+    api.get(`/users/${targetId}/merge-preview`, { params: { source_id: sourceId } }),
+  mergeAccount: (targetId: number, sourceId: number, mfaCode: string) =>
+    api.post(`/users/${targetId}/merge`, { source_id: sourceId, mfa_code: mfaCode }),
   revertCallsignClaim: (userId: number, claimId: number) =>
     api.post(`/users/${userId}/callsign-claims/${claimId}/revert`),
   getProfile: () => api.get('/users/me'),

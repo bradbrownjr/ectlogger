@@ -69,9 +69,24 @@ Changing someone's primary callsign, whether from their own Profile or from this
 
 An operator who forgets which address they first used signs in with another one, gets a fresh empty account, and then types their callsign into the profile. Since their original account already holds it, the save is refused. They are told the callsign already has an account, probably made with a different address, and to sign in with that one or ask an administrator. They are never shown the other address.
 
-Every admin gets an email at the same moment, **A new account asked for** the callsign, with both accounts' addresses, names, and creation and last-active dates side by side, and a link to the Users tab filtered to that callsign. It goes out at most once a day per account, and the activity log records it as **Callsign-taken alert sent**.
+Every admin gets an email at the same moment, **A new account asked for** the callsign, with both accounts' addresses, names, and creation and last-active dates side by side, and a link to the Users tab filtered to the newer account. It goes out at most once a day per account, and the activity log records it as **Callsign-taken alert sent**.
 
-When it is the same person and the new account has nothing in it, delete the new account, then open the original with **Edit User** and change its email to the new address. Their next magic link to that address signs them into their original account, history and all.
+When you're satisfied it is the same person, merge the accounts:
+
+1. On the newer account's row, click **Merge into another account** (the merge icon).
+2. In **Account to keep**, pick their original account, usually the older one with the callsign and check-ins.
+3. Read the comparison and the list of what moves. Where both accounts have the same thing, such as a spot on the same schedule's staff, the kept account's stays.
+4. Type your two-factor code and click **Merge accounts**.
+
+Everything the newer account had moves to the original: check-ins, net roles, staff and rotation spots, subscriptions, chat, traffic, and its activity-log history. Blank profile fields on the original, such as a missing name or location, are filled in from the newer one; anything already filled in stays. A different primary callsign on the newer account is kept as a previous callsign, so its check-ins still count. Its address becomes a [backup email](/docs/operators/signing-in/#add-a-backup-email) on the original, so either address signs them in from now on. The newer account is then deleted. A merge can't be undone, which is why it takes a fresh two-factor code. Both addresses are emailed that it happened, and the activity log records it as **Accounts merged**, with what moved.
+
+Merging is refused for a banned account (unban it first, or don't merge it), and for the account you're signed in as. Passwords and two-factor settings never move: the original keeps its own.
+
+Because a merge gives the kept account a new sign-in address, never merge on someone's word alone. Check the alert email's comparison, the [activity log](/docs/admins/activity-log/#spot-one-person-behind-several-accounts), or ask them from the address you already know.
+
+## Backup emails
+
+Operators can add up to three backup addresses from their own Profile page, each confirmed from that mailbox (see [signing in](/docs/operators/signing-in/#add-a-backup-email)). **Edit User** lists an account's backups under its email, and **Remove** takes one off; every address on the account is told. The padlock on Email also stops the operator adding, removing, or swapping backups. Typing one of an account's own backups into its Email field makes that backup the primary.
 
 ## Undoing a callsign that isn't theirs
 

@@ -1,6 +1,6 @@
 ---
 title: Signing in
-summary: The magic link, changing the address it goes to, the password fallback for when email is down, and two-factor authentication.
+summary: The magic link, changing the address it goes to, backup addresses, the password fallback for when email is down, and two-factor authentication.
 kind: How-to
 audience: Operators
 owner: KC1JMH
@@ -32,7 +32,7 @@ If the message has not arrived in a minute or two, check your spam folder. If yo
 
 ## If your callsign already has an account
 
-Signing in with an address you haven't used before creates a new, empty account. If you already made one with a different address, saving your callsign on the new account is refused with a message that the callsign already has an account. Sign out and sign in with the address you used first; your check-ins and roles are all there. If you can't remember it or no longer have it, ask an administrator, who has already been told and can move your new address onto your original account.
+Signing in with an address you haven't used before creates a new, empty account. If you already made one with a different address, saving your callsign on the new account is refused with a message that the callsign already has an account. Sign out and sign in with the address you used first; your check-ins and roles are all there. If you can't remember it or no longer have it, ask an administrator. They have already been told, and they can merge the new account into your original one, after which both addresses sign you in to it. Adding a [backup email](#add-a-backup-email) once you are back in keeps it from happening again.
 
 ## If the sign-in page does nothing
 
@@ -64,6 +64,30 @@ Nothing changes until step 4, and the link works for 24 hours. It can be opened 
 The confirmation goes to the new address, not the old one, on purpose: losing the old mailbox is one of the reasons to change it. If you have already lost it and are signed out everywhere, you can't do this yourself. Ask an admin on your instance, who can change it for you from the admin panel.
 
 If the **New email** field is greyed out and reads "Locked by an administrator", an admin has locked your email, and only an admin can change it.
+
+## Add a backup email
+
+A backup email is a second address that also signs you in. Add one before you need it: if you lose the mailbox your sign-in email lives in, a magic link sent to the backup still opens your account, with everything in it. You can have up to three.
+
+1. Open **Profile**, then the **Security** tab.
+2. Under **Backup emails**, type the address into **Backup email**. If you have two-factor authentication turned on, also type the current code into **Two-factor code**.
+3. Click **Send link**.
+4. Open the email that arrives at that address and click **Confirm backup email**, then **Confirm backup email** again on the page it opens.
+
+<figure>
+  <img src="/docs/img/operators/security-backup-emails.png"
+       alt="The Backup emails section of the Profile page&#x27;s Security tab. One backup address, priya.home@example.org, is listed with Make primary and Remove buttons beside it. Below, a Backup email field holds a second address and the Send link button is outlined in red.">
+  <figcaption>Each backup is added only once the link sent to it is opened.</figcaption>
+</figure>
+
+The address is added only at step 4, and the link works for 24 hours. A backup gets the security notices your sign-in email gets, such as failed sign-ins and password changes, and nothing else: net logs, reminders, and every other email still go only to your sign-in email.
+
+Next to each backup are two buttons:
+
+- **Make primary** swaps it with your sign-in email. Email goes to it from then on, and your old sign-in email becomes a backup, so nothing stops signing in. Use this once you know you are losing the old address.
+- **Remove** takes it off your account. Sign-in links sent to it stop opening your account straight away.
+
+Both ask you to confirm, and for your two-factor code if you have it on. Every address on your account is emailed whenever one is added, removed, or made primary, so if someone else ever gets into your account and adds their own address, you hear about it. If the buttons are greyed out, an admin has locked your email, and only an admin can change your addresses.
 
 ## Set a password
 
