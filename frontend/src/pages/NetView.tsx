@@ -796,6 +796,18 @@ const NetView: React.FC = () => {
     }
   }, [net?.status]);
 
+  // Someone else closed the net while this Close Net dialog was open: take
+  // the dialog down and say so. UFB New England (net 139, 2026-10-25): the
+  // NCS closed and archived the net while the Logger's dialog stayed up, and
+  // each of the Logger's clicks was refused as "already closed" with nothing
+  // on screen. closingAction is set while this client's own close runs.
+  useEffect(() => {
+    if (closeNetDialog.open && !closingAction && net?.status && net.status !== 'active' && net.status !== 'lobby') {
+      closeNetDialog.onClose();
+      setToastMessage('Another operator just closed this net.');
+    }
+  }, [net?.status]);
+
   const handleDetachCheckInList = () => setCheckInListDetached(true);
   const handleAttachCheckInList = () => setCheckInListDetached(false);
   const handleDetachChat = () => setChatDetached(true);

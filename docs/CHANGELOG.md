@@ -24,7 +24,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
-* **Net View: Closing a net responds right away** — Close and send the log now closes the window immediately and sends the log email in the background, instead of sitting on screen until every copy is sent. Clicking it again no longer leaves the window stuck.
+* **Net View: Closing a net responds right away** — Close and send the log now closes the window immediately and sends the log email in the background, instead of sitting on screen until every copy is sent. If another operator closes the net while you have the window open, it closes and tells you, instead of refusing your clicks without a word.
 * **Check-in: Locations stick for stations with an account** — When a station's profile has no location, the check-in form now fills in the town net control entered last time, as it already does for stations without an account.
 
 ---
