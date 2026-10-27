@@ -102,7 +102,8 @@ async def send_muted_often_alert(to_email: str, station: str, user_id: int, peop
 
 async def send_callsign_taken_alert(to_email: str, callsign: str, user, holder):
     """An account tried to take a callsign another account holds. Admins
-    only; this copy names both addresses, which the user never sees."""
+    only; this copy names both addresses, which the user never sees.
+    Autoescaped: the names are user-typed."""
     logger.info("SECURITY_ALERT", f"Callsign-taken alert for {callsign}")
     template = Template("""
     <!DOCTYPE html>
@@ -120,7 +121,7 @@ async def send_callsign_taken_alert(to_email: str, callsign: str, user, holder):
       <p>They were told the callsign belongs to another account and to sign in with that address or ask an administrator. If it's the same person, delete the newer account if it's empty, then change the original account's email to the new address.</p>
       <p><a href="{{ users_url }}">Find {{ callsign }} in Admin &gt; Users</a></p>
     </div></body></html>
-    """)
+    """, autoescape=True)
     html = template.render(
         style=_STYLE, callsign=callsign, user=user, holder=holder,
         when=lambda v: _when(v) if v else "Never",

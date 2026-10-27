@@ -226,3 +226,100 @@ async def send_email_change_link(new_email: str, token: str):
         subject=f"Confirm your new {settings.app_name} email",
         html_content=template.render(app_name=settings.app_name, link=link),
     )
+
+
+async def send_backup_email_link(email: str, token: str):
+    """The confirmation link for a backup sign-in address, sent to that
+    address. Nothing is added until it is opened."""
+    link = f"{settings.frontend_url}/auth/confirm-email?token={token}&kind=backup"
+    logger.info("EMAIL CHANGE", f"Sending backup address confirmation to {email}")
+    template = Template("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .button {
+                display: inline-block;
+                padding: 12px 24px;
+                background-color: #1976d2;
+                color: #ffffff !important;
+                text-decoration: none;
+                border-radius: 4px;
+                margin: 20px 0;
+                font-weight: bold;
+            }
+            .footer { margin-top: 30px; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Confirm your backup {{ app_name }} email</h2>
+            <p>Someone asked to add this address as a backup sign-in address for a {{ app_name }} account. Once it's confirmed, sign-in links sent here open that account. Open the link to confirm it.</p>
+            <p><strong>This link is valid for 24 hours.</strong></p>
+            <a href="{{ link }}" class="button" style="color: #ffffff;">Confirm backup email</a>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #1976d2;">{{ link }}</p>
+            <div class="footer">
+                <p>If you didn't ask for this, ignore this email. Nothing changes unless the link is opened.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """)
+    await send_email(
+        to_email=email,
+        subject=f"Confirm your backup {settings.app_name} email",
+        html_content=template.render(app_name=settings.app_name, link=link),
+    )
+
+
+# What each change to an account's sign-in addresses says, by change.
+_ADDRESS_CHANGE_TEXT = {
+    "added": "{who} added <strong>{address}</strong> as a backup sign-in address on your {app} account. Sign-in links sent to it now open your account.",
+    "removed": "{who} removed <strong>{address}</strong> from your {app} account. Sign-in links sent to it no longer open your account.",
+    "made_primary": "{who} made <strong>{address}</strong> the primary address on your {app} account, so {app} email now goes there. {other} is now a backup sign-in address.",
+    "primary_changed": "{who} changed the primary address on your {app} account to <strong>{address}</strong>, so {app} email now goes there. {other} no longer signs in to it.",
+    "merged": "An administrator merged the {app} account for <strong>{address}</strong> into yours. Its check-ins and roles are now on your account, and {address} is a backup sign-in address for it.",
+}
+
+
+async def send_sign_in_address_notice(to_email: str, change: str, address: str, by_admin: bool, other: str = ""):
+    """Tell an address on an account that the account's sign-in addresses
+    changed (routers/auth.py BACKUP EMAILS, admin remove, admin merge). Sent
+    to every address on the account, and to a removed one, so someone who
+    got into one mailbox can't quietly add their own."""
+    from html import escape
+
+    logger.info("EMAIL CHANGE", f"Sign-in address notice ({change}) to {to_email}")
+    who = "An administrator" if by_admin else "Someone signed in to your account"
+    message = _ADDRESS_CHANGE_TEXT[change].format(
+        who=who, address=escape(address), other=escape(other), app=escape(settings.app_name))
+    template = Template("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .footer { margin-top: 30px; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Your {{ app_name }} sign-in addresses changed</h2>
+            <p>{{ message }}</p>
+            <p>You can see every address on your account on the Profile page's Security tab.</p>
+            <div class="footer">
+                <p>If this wasn't you, contact an administrator right away.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """)
+    await send_email(
+        to_email=to_email,
+        subject=f"Your {settings.app_name} sign-in addresses changed",
+        html_content=template.render(app_name=settings.app_name, message=message),
+    )

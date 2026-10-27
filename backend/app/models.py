@@ -1617,3 +1617,23 @@ class BackupRun(Base):
     verify_detail = Column(Text, nullable=True)
 
     triggered_by = relationship("User", foreign_keys=[triggered_by_id])
+
+
+class UserEmail(Base):
+    """A backup sign-in address for an account (migration 092). The primary
+    address stays on User.email and is where everything is sent; a backup
+    only signs in and gets security notices, so losing the primary mailbox
+    doesn't lock anyone out. Rows exist only once confirmed (the pending
+    state is the emailed link itself), or after an admin merge.
+
+    One address belongs to one account across both User.email and this
+    table: services/account_email.py::email_owner is the check, since no
+    database constraint spans two tables. Find an account by address with
+    services/account_email.py::find_user_by_email, never User.email alone.
+    """
+    __tablename__ = "user_emails"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    email = Column(String(255), nullable=False, unique=True, index=True)  # normalized (app.utils.normalize_email)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

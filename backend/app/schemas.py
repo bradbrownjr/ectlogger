@@ -1584,6 +1584,35 @@ class EmailChangeConfirm(BaseModel):
     token: str = Field(min_length=1, max_length=1000)
 
 
+class BackupEmailAction(BaseModel):
+    """Add, remove, or make primary one backup sign-in address."""
+    email: EmailStr
+    # Required when the account has two-factor turned on, as for an email
+    # change: each of these changes who can sign in.
+    totp_code: Optional[str] = Field(None, max_length=32)
+
+    @field_validator('email')
+    @classmethod
+    def normalize_email_field(cls, v: str) -> str:
+        return normalize_email(v)
+
+
+class BackupEmailEntry(BaseModel):
+    id: int
+    email: str
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AccountEmailsResponse(BaseModel):
+    """The addresses an account signs in with."""
+    primary: str
+    backups: List[BackupEmailEntry]
+    max_backups: int
+
+
 # App Settings Schemas
 class FieldConfigItem(BaseModel):
     enabled: bool = True

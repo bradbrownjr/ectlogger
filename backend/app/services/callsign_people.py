@@ -558,7 +558,9 @@ async def claim_callsign_placeholders(
         return outcome
 
     template_ids = [template_id] if template_id else sorted(await _placeholder_template_ids(db, callsign))
-    account_email = normalize_email(user.email or "")
+    # An invite counts when it went to any address the account signs in with.
+    from app.services.account_email import account_addresses
+    account_emails = {normalize_email(a) for a in await account_addresses(db, user)}
     for tid in template_ids:
         earlier = (await db.execute(
             select(CallsignClaim).where(
@@ -571,7 +573,7 @@ async def claim_callsign_placeholders(
         held = next((c for c in earlier if c.status == "held" and c.reverted_at is None), None)
 
         invite_email = await invited_email(db, tid, callsign)
-        via_invite = bool(invite_email) and invite_email == account_email
+        via_invite = bool(invite_email) and invite_email in account_emails
         if linked_by is None and not via_invite:
             if held is None and await _has_entries(db, tid, callsign):
                 held = CallsignClaim(user_id=user.id, callsign=callsign, template_id=tid, status="held")

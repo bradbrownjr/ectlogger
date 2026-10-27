@@ -21,6 +21,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import { useAuth } from '../../contexts/AuthContext';
 import { authApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
+import BackupEmailsSection from './BackupEmailsSection';
 
 // ========== SECURITY TAB ==========
 // Password fallback (for when magic-link email is down) and optional TOTP
@@ -255,6 +256,10 @@ const SecurityTab: React.FC = () => {
           {emailBusy ? 'Sending…' : 'Send link'}
         </Button>
       </Box>
+
+      <Divider sx={{ my: 3 }} />
+
+      <BackupEmailsSection onPrimaryChanged={refreshUser} />
 
       <Divider sx={{ my: 3 }} />
 

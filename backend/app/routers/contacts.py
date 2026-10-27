@@ -171,10 +171,8 @@ async def invite_contact(
     
     # Check if a user with this email already exists (case-insensitive: see
     # app.utils.normalize_email)
-    existing_user = await db.execute(
-        select(User).where(func.lower(User.email) == contact.email.lower())
-    )
-    if existing_user.scalar_one_or_none():
+    from app.services.account_email import email_in_use
+    if await email_in_use(db, contact.email):
         raise HTTPException(
             status_code=400,
             detail="A user with this email already exists"

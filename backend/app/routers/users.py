@@ -1,16 +1,19 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, nullslast, and_, func
+from sqlalchemy import select, nullslast, and_, func, delete as sql_delete
 from sqlalchemy.orm import aliased
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from io import BytesIO
 from PIL import Image, ImageOps
 from app.database import get_db
-from app.models import User, UserRole, Contact, NetRole, CanHearReport, CheckIn, Frequency, net_frequencies
+from app.models import User, UserEmail, UserRole, Contact, NetRole, CanHearReport, CheckIn, Frequency, net_frequencies
 from app.audit import record_event, field_changes, forget_user, user_label
-from app.services.account_email import apply_email_change
-from app.schemas import LiveLocationUpdate, UserResponse, UserUpdate, AdminUserCreate, AdminUserUpdate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse, AdminPasswordResetResult
+from app.services.account_email import (
+    MAX_BACKUP_EMAILS, account_addresses, apply_email_change, backup_emails, email_in_use,
+    notify_backups_of_primary_change, notify_sign_in_address_change,
+)
+from app.schemas import AccountEmailsResponse, BackupEmailEntry, LiveLocationUpdate, UserResponse, UserUpdate, AdminUserCreate, AdminUserUpdate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse, AdminPasswordResetResult
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 from app.auth import generate_temporary_password, hash_password
 from app.email_service import EmailService
@@ -437,10 +440,7 @@ async def create_user(
 ):
     """Create/invite a new user (admin only)"""
     # Check if user already exists (case-insensitive: see app.utils.normalize_email)
-    result = await db.execute(select(User).where(func.lower(User.email) == user_data.email))
-    existing_user = result.scalar_one_or_none()
-    
-    if existing_user:
+    if await email_in_use(db, user_data.email):
         raise HTTPException(status_code=400, detail="User with this email already exists")
     
     # Create the user - they can log in via magic link
@@ -709,11 +709,11 @@ async def admin_update_user(
     # 409 can name the specific field that conflicts -- a bare IntegrityError
     # can't tell which of email/callsign collided (see update_my_profile).
     if update_data.get('email') and update_data['email'] != user.email:
-        existing = await db.execute(
-            select(User.id).where(func.lower(User.email) == update_data['email'], User.id != user_id)
-        )
-        if existing.scalar_one_or_none():
+        if await email_in_use(db, update_data['email'], user_id):
             raise HTTPException(status_code=409, detail="That email is already in use by another account.")
+        # One of the account's own backups becoming its primary: it stops
+        # being a backup, so the address is still on the account once.
+        await db.execute(sql_delete(UserEmail).where(UserEmail.user_id == user_id, UserEmail.email == update_data['email']))
 
     if update_data.get('callsign') and update_data['callsign'] != user.callsign:
         existing = await db.execute(
@@ -775,6 +775,7 @@ async def admin_update_user(
 
     if 'email' in changed_fields and old_email and user.email:
         await EmailService.send_email_change_notice(old_email, user.email, by_admin=True)
+        await notify_backups_of_primary_change(db, user, old_email, by_admin=True)
     if 'callsign' in changed_fields and user.callsign:
         await claim_and_queue_notices(db, user, background_tasks)
         await db.refresh(user)
@@ -968,7 +969,8 @@ async def admin_reset_password(
     await db.commit()
 
     if user.email:
-        await EmailService.send_password_changed(user.email)
+        for address in await account_addresses(db, user):
+            await EmailService.send_password_changed(address)
 
     return AdminPasswordResetResult(temporary_password=temp_password)
 
@@ -1101,9 +1103,11 @@ async def delete_user(
     template_ids = await revert_all_claims(db, user, current_user)
     # And drop its claim records: SQLite reuses the id, and a later account
     # given it would inherit them (a reverted claim blocks taking over).
-    from sqlalchemy import delete as sql_delete
     from app.models import CallsignClaim
     await db.execute(sql_delete(CallsignClaim).where(CallsignClaim.user_id == user.id))
+    # SQLite doesn't enforce the CASCADE either, and a backup address left
+    # behind would keep signing in to whatever account reuses the id.
+    await db.execute(sql_delete(UserEmail).where(UserEmail.user_id == user.id))
     await db.flush()
     await forget_user(db, user.id)
     record_event(db, "user.deleted", current_user, target_type="user", target_label=user_label(user),
@@ -1112,6 +1116,49 @@ async def delete_user(
     await db.commit()
     await _resync_after_revert(db, template_ids)
     return None
+
+
+# ========== BACKUP EMAILS (admin) ==========
+# An account's backup sign-in addresses (models.UserEmail). Admins see and
+# remove them here; the owner adds them from Profile > Security.
+
+@router.get("/{user_id}/backup-emails", response_model=AccountEmailsResponse)
+async def admin_list_backup_emails(
+    user_id: int,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return AccountEmailsResponse(
+        primary=user.email,
+        backups=[BackupEmailEntry.model_validate(row) for row in await backup_emails(db, user.id)],
+        max_backups=MAX_BACKUP_EMAILS,
+    )
+
+
+@router.delete("/{user_id}/backup-emails/{backup_id}", response_model=AccountEmailsResponse)
+async def admin_remove_backup_email(
+    user_id: int,
+    backup_id: int,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Take a backup address off an account. Every address on it is told."""
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    row = (await db.execute(
+        select(UserEmail).where(UserEmail.id == backup_id, UserEmail.user_id == user_id)
+    )).scalar_one_or_none()
+    if not user or not row:
+        raise HTTPException(status_code=404, detail="Backup address not found")
+    email = row.email
+    await db.delete(row)
+    record_event(db, "user.backup_email_removed", current_user, target_type="user", target_id=user.id,
+                 target_label=user_label(user), subject=user, details={"email": email})
+    await db.commit()
+    await notify_sign_in_address_change(db, user, "removed", email, by_admin=True, also=(email,))
+    return await admin_list_backup_emails(user_id, current_user, db)
 
 
 @router.post("/email-all", status_code=status.HTTP_200_OK)

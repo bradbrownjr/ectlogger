@@ -118,6 +118,16 @@ export const authApi = {
   requestEmailChange: (new_email: string, totp_code?: string) =>
     api.post('/auth/email-change/request', { new_email: new_email.trim().toLowerCase(), totp_code: totp_code || undefined }),
   confirmEmailChange: (token: string) => api.post('/auth/email-change/confirm', { token }),
+  // Backup sign-in addresses (backend routers/auth.py BACKUP EMAILS). A new
+  // one is added only when confirmed from the link sent to it.
+  getBackupEmails: () => api.get('/auth/backup-emails'),
+  requestBackupEmail: (email: string, totp_code?: string) =>
+    api.post('/auth/backup-emails/request', { email: email.trim().toLowerCase(), totp_code: totp_code || undefined }),
+  confirmBackupEmail: (token: string) => api.post('/auth/backup-emails/confirm', { token }),
+  removeBackupEmail: (email: string, totp_code?: string) =>
+    api.post('/auth/backup-emails/remove', { email, totp_code: totp_code || undefined }),
+  makeBackupEmailPrimary: (email: string, totp_code?: string) =>
+    api.post('/auth/backup-emails/make-primary', { email, totp_code: totp_code || undefined }),
   getCurrentUser: () =>
     api.get('/users/me'),
 };
@@ -126,6 +136,9 @@ export const authApi = {
 export const userApi = {
   // Admin: schedule entries an account took over by callsign, and undoing one.
   listCallsignClaims: (userId: number) => api.get(`/users/${userId}/callsign-claims`),
+  // An account's backup sign-in addresses (admin).
+  listBackupEmails: (userId: number) => api.get(`/users/${userId}/backup-emails`),
+  removeBackupEmail: (userId: number, backupId: number) => api.delete(`/users/${userId}/backup-emails/${backupId}`),
   revertCallsignClaim: (userId: number, claimId: number) =>
     api.post(`/users/${userId}/callsign-claims/${claimId}/revert`),
   getProfile: () => api.get('/users/me'),

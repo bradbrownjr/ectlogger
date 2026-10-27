@@ -11,10 +11,14 @@ import { getErrorMessage } from '../utils/apiErrors';
 // button click, so a mail scanner or link preview that opens the link
 // can't make it. Works signed out, since the link may be opened on another
 // device (backend routers/auth.py::confirm_email_change).
+// The same page confirms a backup sign-in address, when the link carries
+// kind=backup (Profile > Security > Backup emails,
+// routers/auth.py::confirm_backup_email).
 
 const ConfirmEmailChange: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const isBackup = searchParams.get('kind') === 'backup';
   const { isAuthenticated, login } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -25,7 +29,7 @@ const ConfirmEmailChange: React.FC = () => {
     setBusy(true);
     setError('');
     try {
-      const response = await authApi.confirmEmailChange(token);
+      const response = isBackup ? await authApi.confirmBackupEmail(token) : await authApi.confirmEmailChange(token);
       setNewEmail(response.data.email);
       // Refresh the signed-in account so Profile shows the new address.
       const sessionToken = localStorage.getItem('token');
@@ -41,7 +45,7 @@ const ConfirmEmailChange: React.FC = () => {
     <Container maxWidth="sm" sx={{ mt: 6, mb: 4 }}>
       <Paper sx={{ p: { xs: 2, sm: 4 } }}>
         <Typography variant="h5" component="h1" gutterBottom>
-          Confirm your new email
+          {isBackup ? 'Confirm your backup email' : 'Confirm your new email'}
         </Typography>
 
         {!token && <Alert severity="error">This link is missing its code. Open it again from the email.</Alert>}
@@ -50,7 +54,7 @@ const ConfirmEmailChange: React.FC = () => {
         {newEmail && (
           <>
             <Alert severity="success" sx={{ mb: 2 }}>
-              Your sign-in email is now {newEmail}.
+              {isBackup ? `${newEmail} now signs in to your account.` : `Your sign-in email is now ${newEmail}.`}
             </Alert>
             <Button component={RouterLink} to={isAuthenticated ? '/profile?tab=security' : '/login'} variant="contained">
               {isAuthenticated ? 'Back to your profile' : 'Sign in'}
@@ -62,12 +66,14 @@ const ConfirmEmailChange: React.FC = () => {
         {token && !newEmail && (
           <>
             <Typography variant="body1" sx={{ mb: 2 }}>
-              Use this address to sign in from now on. Sign-in links sent to your old address will stop working.
+              {isBackup
+                ? 'Sign-in links sent to this address will open your account, alongside your sign-in email.'
+                : 'Use this address to sign in from now on. Sign-in links sent to your old address will stop working.'}
             </Typography>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             <Box>
               <Button variant="contained" onClick={confirm} disabled={busy}>
-                {busy ? 'Confirming…' : 'Confirm new email'}
+                {busy ? 'Confirming…' : isBackup ? 'Confirm backup email' : 'Confirm new email'}
               </Button>
             </Box>
           </>

@@ -34,6 +34,7 @@ import {
 import AdminFilterBar from './AdminFilterBar';
 import UserProfileDialog from '../UserProfileDialog';
 import CallsignClaimsSection from './CallsignClaimsSection';
+import BackupEmailsAdminSection from './BackupEmailsAdminSection';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -916,8 +917,10 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
               required
               fullWidth
               helperText="Changing this changes where the user's magic-link sign-in goes. Both the old and new address are notified."
-              InputProps={{ endAdornment: <LockToggle field="email" label="email" locked={editUserForm.locked_fields} onToggle={toggleEditUserLock} note="(Reserved for when users can edit their own email.)" /> }}
+              InputProps={{ endAdornment: <LockToggle field="email" label="email" locked={editUserForm.locked_fields} onToggle={toggleEditUserLock} note="(Also stops them adding or changing backup emails.)" /> }}
             />
+            {/* Shows only when the account has backup sign-in addresses */}
+            {selectedUser && <BackupEmailsAdminSection userId={selectedUser.id} />}
             <TextField
               label="GMRS Callsign"
               value={editUserForm.gmrs_callsign}

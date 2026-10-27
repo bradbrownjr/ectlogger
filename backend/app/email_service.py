@@ -4,7 +4,8 @@ so all existing callers continue to work without change.
 
 Implementation lives in:
   email/base.py          — send_email, send_email_with_attachment/s/binary_attachment, unsubscribe helpers
-  email/auth.py          — send_magic_link, send_password_changed, send_email_change_notice, send_email_change_link
+  email/auth.py          — send_magic_link, send_password_changed, send_email_change_notice, send_email_change_link,
+                            send_backup_email_link, send_sign_in_address_notice
   email/net_lifecycle.py — send_net_notification, send_net_invitation, send_net_cancellation
   email/reminders.py     — send_ncs_reminder, send_subscriber_reminder, send_staff_reminder,
                             send_ncs_duty_correction
@@ -18,7 +19,10 @@ Implementation lives in:
   email/traffic.py       — send_traffic_reminder, send_traffic_hxb_final_notice,
                             send_traffic_stale_digest
 """
-from app.email.auth import send_email_change_link, send_email_change_notice, send_magic_link, send_password_changed
+from app.email.auth import (
+    send_backup_email_link, send_email_change_link, send_email_change_notice, send_magic_link,
+    send_password_changed, send_sign_in_address_notice,
+)
 from app.email.backups import send_backup_downloaded, send_backup_failed, send_backup_overdue
 from app.email.base import (
     get_unsubscribe_footer,
@@ -65,6 +69,8 @@ class EmailService:
     send_magic_link = staticmethod(send_magic_link)
     send_password_changed = staticmethod(send_password_changed)
     send_email_change_notice = staticmethod(send_email_change_notice)
+    send_backup_email_link = staticmethod(send_backup_email_link)
+    send_sign_in_address_notice = staticmethod(send_sign_in_address_notice)
     send_email_change_link = staticmethod(send_email_change_link)
     send_failed_sign_in_alert = staticmethod(send_failed_sign_in_alert)
     send_muted_often_alert = staticmethod(send_muted_often_alert)

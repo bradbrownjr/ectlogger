@@ -12,12 +12,13 @@ from slowapi.util import get_remote_address
 from app.session_config import get_session_config
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import User, UserRole, Contact
+from app.models import User, UserEmail, UserRole, Contact
 from app.schemas import (
     Token, UserResponse, MagicLinkRequest, MagicLinkVerify, MagicLinkResend,
     PasswordLoginRequest, LoginResult, PasswordSetRequest,
     MfaSetupStartResult, MfaSetupConfirmRequest, MfaSetupConfirmResult,
     MfaReplaceStartRequest, MfaDisableRequest, EmailChangeRequest, EmailChangeConfirm,
+    AccountEmailsResponse, BackupEmailAction, BackupEmailEntry,
 )
 from app.auth import (
     create_access_token, create_magic_link_token, verify_magic_link_token,
@@ -34,7 +35,9 @@ from app.security import get_client_ip
 from app.audit import record_event, user_label
 from app.security_alerts import check_failed_sign_ins
 from app.services.account_email import (
-    apply_email_change, create_email_change_token, email_in_use, read_email_change_token,
+    MAX_BACKUP_EMAILS, account_addresses, apply_email_change, notify_backups_of_primary_change, notify_sign_in_address_change, backup_emails, create_backup_email_token,
+    create_email_change_token, email_in_use, find_user_by_email, make_backup_primary, read_backup_email_token,
+    read_email_change_token,
 )
 from app.utils import mask_email
 from datetime import datetime, timedelta, timezone
@@ -102,16 +105,16 @@ async def get_or_create_user(db: AsyncSession, email: str, name: Optional[str], 
             await db.refresh(user)
         return user
     
-    # Check if user exists by email. Case-insensitive comparison guards
-    # against any pre-existing row still holding a mixed-case address from
-    # before email normalization was enforced at every write site.
-    result = await db.execute(select(User).where(func.lower(User.email) == email))
-    user = result.scalar_one_or_none()
-    
+    # Then by address, primary or backup (services/account_email.py).
+    user = await find_user_by_email(db, email)
+
     if user:
-        # Update OAuth info
-        user.oauth_provider = provider
-        user.oauth_id = provider_id
+        # Point the sign-in lookup at the primary address only. A backup
+        # must stop signing in the moment it is removed, and an oauth_id
+        # holding it would keep matching above.
+        if (user.email or "").lower() == email:
+            user.oauth_provider = provider
+            user.oauth_id = provider_id
         # Ensure user has an unsubscribe token
         if not user.unsubscribe_token:
             user.unsubscribe_token = generate_unsubscribe_token()
@@ -189,7 +192,7 @@ async def _find_by_identifier(db: AsyncSession, identifier: str) -> Optional[Use
     by the presence of "@" -- shared by password login."""
     identifier = identifier.strip()
     if "@" in identifier:
-        result = await db.execute(select(User).where(User.email == identifier.lower()))
+        return await find_user_by_email(db, identifier)
     else:
         result = await db.execute(select(User).where(User.callsign == identifier.upper()))
     return result.scalar_one_or_none()
@@ -272,9 +275,8 @@ async def _send_magic_link(db: AsyncSession, email: str, client_ip: str, redirec
     """Email a fresh magic link, shared by a new request and a resend for an
     expired link. Refuses a deactivated account. `redirect` is the in-app
     path the link lands on after sign-in (already validated by the schema)."""
-    # Check if user exists and is banned. Case-insensitive: see get_or_create_user.
-    result = await db.execute(select(User).where(func.lower(User.email) == email))
-    existing_user = result.scalar_one_or_none()
+    # Check if user exists and is banned, by any of its addresses.
+    existing_user = await find_user_by_email(db, email)
     if existing_user and not existing_user.is_active:
         logger.banned_access(email, client_ip)
         raise HTTPException(
@@ -520,8 +522,8 @@ async def set_password(
     current_user.password_locked_until = None
     await db.commit()
 
-    if current_user.email:
-        await EmailService.send_password_changed(current_user.email)
+    for address in await account_addresses(db, current_user):
+        await EmailService.send_password_changed(address)
 
     return {"success": True, "message": "Password updated."}
 
@@ -531,6 +533,18 @@ async def set_password(
 # activity log: the request (with the address asked for), and the change.
 
 EMAIL_LOCKED_DETAIL = "Your email has been locked by an administrator and can't be changed here."
+
+
+async def _require_mfa_code(db: AsyncSession, user: User, totp_code: Optional[str], method: str) -> None:
+    """A change to who can sign in needs a current two-factor code when the
+    account has two-factor, so a signed-in browser left open can't hand the
+    account to someone else's mailbox. A wrong code counts as a failed
+    sign-in (security_alerts.py)."""
+    if user.mfa_enabled and await _resolve_mfa(db, user, totp_code) != "ok":
+        record_event(db, "auth.mfa_failed", user, details={"method": method})
+        await db.commit()
+        await check_failed_sign_ins(db, user, mfa=True)
+        raise HTTPException(status_code=401, detail="That two-factor code is not valid.")
 
 @router.post("/email-change/request")
 @_limiter.limit("5/hour")
@@ -549,13 +563,11 @@ async def request_email_change(
         raise HTTPException(status_code=403, detail=EMAIL_LOCKED_DETAIL)
     if new_email == (current_user.email or "").lower():
         raise HTTPException(status_code=400, detail="That is already your email address.")
-    if current_user.mfa_enabled and await _resolve_mfa(db, current_user, payload.totp_code) != "ok":
-        record_event(db, "auth.mfa_failed", current_user, details={"method": "email change"})
-        await db.commit()
-        await check_failed_sign_ins(db, current_user, mfa=True)
-        raise HTTPException(status_code=401, detail="That two-factor code is not valid.")
+    await _require_mfa_code(db, current_user, payload.totp_code, "email change")
     if await email_in_use(db, new_email, current_user.id):
         raise HTTPException(status_code=409, detail="That email is already used by another account.")
+    if await find_user_by_email(db, new_email) is not None:
+        raise HTTPException(status_code=400, detail="That is already one of your backup addresses. Use Make primary next to it instead.")
 
     record_event(db, "user.email_change_requested", current_user, target_type="user",
                  target_id=current_user.id, target_label=user_label(current_user),
@@ -598,7 +610,139 @@ async def confirm_email_change(
     apply_email_change(user, new_email)
     await db.commit()
     await EmailService.send_email_change_notice(old_email, new_email, by_admin=False)
+    await notify_backups_of_primary_change(db, user, old_email, by_admin=False)
     return {"success": True, "email": new_email}
+
+
+# ========== BACKUP EMAILS ==========
+# Backup sign-in addresses (models.UserEmail, services/account_email.py).
+# Adding one confirms from that mailbox, like an email change. Every change
+# needs the two-factor code (if on), honours the admin Email padlock, lands
+# in the activity log, and is told to every address on the account.
+
+async def _account_emails(db: AsyncSession, user: User) -> AccountEmailsResponse:
+    return AccountEmailsResponse(
+        primary=user.email,
+        backups=[BackupEmailEntry.model_validate(row) for row in await backup_emails(db, user.id)],
+        max_backups=MAX_BACKUP_EMAILS,
+    )
+
+
+async def _own_backup(db: AsyncSession, user: User, email: str) -> UserEmail:
+    row = next((r for r in await backup_emails(db, user.id) if r.email == email), None)
+    if row is None:
+        raise HTTPException(status_code=404, detail="That isn't one of your backup addresses.")
+    return row
+
+
+@router.get("/backup-emails", response_model=AccountEmailsResponse)
+async def list_backup_emails(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """The signed-in account's primary address and its backups."""
+    return await _account_emails(db, current_user)
+
+
+@router.post("/backup-emails/request")
+@_limiter.limit("5/hour")
+async def request_backup_email(
+    request: Request,
+    payload: BackupEmailAction,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email a confirmation link to a new backup address. Nothing is added
+    until it is opened. Request: { email, totp_code? }."""
+    if 'email' in current_user.get_locked_fields():
+        raise HTTPException(status_code=403, detail=EMAIL_LOCKED_DETAIL)
+    email = payload.email
+    if email == (current_user.email or "").lower() or any(r.email == email for r in await backup_emails(db, current_user.id)):
+        raise HTTPException(status_code=400, detail="That address is already on your account.")
+    if len(await backup_emails(db, current_user.id)) >= MAX_BACKUP_EMAILS:
+        raise HTTPException(status_code=400, detail=f"You can have up to {MAX_BACKUP_EMAILS} backup addresses. Remove one first.")
+    await _require_mfa_code(db, current_user, payload.totp_code, "backup email")
+    if await email_in_use(db, email, current_user.id):
+        raise HTTPException(status_code=409, detail="That email is already used by another account.")
+
+    record_event(db, "user.backup_email_requested", current_user, target_type="user",
+                 target_id=current_user.id, target_label=user_label(current_user), details={"email": email})
+    await db.commit()
+    await EmailService.send_backup_email_link(email, create_backup_email_token(current_user, email))
+    return {"success": True, "message": f"We sent a confirmation link to {email}."}
+
+
+@router.post("/backup-emails/confirm")
+@_limiter.limit("20/minute")
+async def confirm_backup_email(
+    request: Request,
+    payload: EmailChangeConfirm,
+    db: AsyncSession = Depends(get_db),
+):
+    """Add a backup address from its emailed link. Needs no session, like an
+    email change: opening the link from that mailbox is the proof."""
+    data = read_backup_email_token(payload.token)
+    if not data:
+        raise HTTPException(status_code=400, detail="This link isn't valid or has expired. Ask for a new one from your profile.")
+    user = (await db.execute(select(User).where(User.id == data["uid"]))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=400, detail="This link isn't valid or has expired. Ask for a new one from your profile.")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="This account is locked. Contact an administrator.")
+    if 'email' in user.get_locked_fields():
+        raise HTTPException(status_code=403, detail=EMAIL_LOCKED_DETAIL)
+    email = data["add"]
+    owner = await find_user_by_email(db, email)
+    if owner is not None and owner.id == user.id:
+        return {"success": True, "email": email, "already": True}
+    if owner is not None:
+        raise HTTPException(status_code=409, detail="That email is already used by another account.")
+    if len(await backup_emails(db, user.id)) >= MAX_BACKUP_EMAILS:
+        raise HTTPException(status_code=400, detail=f"This account already has {MAX_BACKUP_EMAILS} backup addresses. Remove one first.")
+
+    db.add(UserEmail(user_id=user.id, email=email))
+    record_event(db, "user.backup_email_added", user, target_type="user", target_id=user.id,
+                 target_label=user_label(user), details={"email": email})
+    await db.commit()
+    await notify_sign_in_address_change(db, user, "added", email, by_admin=False)
+    return {"success": True, "email": email}
+
+
+@router.post("/backup-emails/remove", response_model=AccountEmailsResponse)
+async def remove_backup_email(
+    payload: BackupEmailAction,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Take a backup address off the account. Sign-in links to it stop
+    opening the account at once. Request: { email, totp_code? }."""
+    if 'email' in current_user.get_locked_fields():
+        raise HTTPException(status_code=403, detail=EMAIL_LOCKED_DETAIL)
+    row = await _own_backup(db, current_user, payload.email)
+    await _require_mfa_code(db, current_user, payload.totp_code, "backup email")
+    await db.delete(row)
+    record_event(db, "user.backup_email_removed", current_user, target_type="user", target_id=current_user.id,
+                 target_label=user_label(current_user), details={"email": payload.email})
+    await db.commit()
+    await notify_sign_in_address_change(db, current_user, "removed", payload.email, by_admin=False, also=(payload.email,))
+    return await _account_emails(db, current_user)
+
+
+@router.post("/backup-emails/make-primary", response_model=AccountEmailsResponse)
+async def make_backup_email_primary(
+    payload: BackupEmailAction,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Swap a backup with the primary address: email goes to it from now on,
+    and the old primary becomes a backup. Request: { email, totp_code? }."""
+    if 'email' in current_user.get_locked_fields():
+        raise HTTPException(status_code=403, detail=EMAIL_LOCKED_DETAIL)
+    row = await _own_backup(db, current_user, payload.email)
+    await _require_mfa_code(db, current_user, payload.totp_code, "backup email")
+    old_primary = make_backup_primary(current_user, row)
+    record_event(db, "user.backup_email_made_primary", current_user, target_type="user", target_id=current_user.id,
+                 target_label=user_label(current_user), details={"changes": {"email": [old_primary, current_user.email]}})
+    await db.commit()
+    await notify_sign_in_address_change(db, current_user, "made_primary", current_user.email, by_admin=False, other=old_primary)
+    return await _account_emails(db, current_user)
 
 
 @router.post("/mfa/setup/start", response_model=MfaSetupStartResult)
