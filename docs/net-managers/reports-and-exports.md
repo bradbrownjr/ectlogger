@@ -4,7 +4,7 @@ summary: The net report, the PDF, the ICS-309 Communications Log, the per-sectio
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-24
+revised: 2026-10-27
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/reports-and-exports/
@@ -25,7 +25,7 @@ A closed net's toolbar carries four separate downloads, plus a fifth page of its
 - **ICS-309 PDF** downloads the same log as a form-accurate, printable PDF.
 - **Report** opens the full **Net Report** page, described below.
 
-ICS-309 export is available on any closed net regardless of whether that net turned on the **Enable ICS-309 Communications Log format** toggle — that toggle only decides whether the automatic closing email uses ICS-309 formatting. The toolbar buttons here are a manual download either way.
+ICS-309 export is available on any closed net regardless of whether that net turned on the **Enable ICS-309 Communications Log format** toggle — that toggle only decides whether the automatic closing email uses ICS-309 formatting for everyone. Anyone who turned on **Use ICS-309 format** in their own profile gets the closing email as an ICS-309 either way, so turning the net's toggle off doesn't stop it reaching them. The toolbar buttons here are a manual download either way.
 
 ### Keeping spam out of the record you hand to a served agency
 

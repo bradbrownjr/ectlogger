@@ -349,7 +349,7 @@ const BasicInfoTab: React.FC = () => {
           label="Enable ICS-309 Communications Log format"
         />
         <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-          When enabled, net close emails will use the official ICS-309 format used by ARES, RACES, and EmComm organizations.
+          When on, everyone who gets the closing log receives it as an ICS-309, the form used by ARES, RACES, and served agencies. When off, they get the plain check-in log, except anyone who chose ICS-309 in their own profile, who still gets one.
         </Typography>
       </Box>
 

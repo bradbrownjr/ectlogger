@@ -1,8 +1,8 @@
 {
-  "version": "2026.10.27c",
+  "version": "2026.10.27d",
   "entries": [
     {
-      "version": "2026.10.27c",
+      "version": "2026.10.27d",
       "date": "2026-10-27",
       "sections": [
         {
@@ -50,6 +50,10 @@
               "text": "Check-in: Locations stick for stations with an account — When a station's profile has no location, the check-in form now fills in the town net control entered last time, as it already does for stations without an account.",
               "userImpact": true,
               "docs": "/docs/net-control/logging-check-ins/"
+            },
+            {
+              "text": "Net Settings: Clearer ICS-309 switch — The ICS-309 switch on a net or schedule now says that anyone who chose ICS-309 in their own profile still gets the closing log in that format with the switch off.",
+              "docs": "/docs/net-managers/reports-and-exports/"
             }
           ]
         }

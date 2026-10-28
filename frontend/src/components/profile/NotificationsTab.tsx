@@ -106,7 +106,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
                 label="Use ICS-309 format"
               />
               <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
-                Format net logs as ICS-309 Communications Log (FEMA standard)
+                Get net logs as an ICS-309 Communications Log (FEMA standard), even from nets that don't use it
               </Typography>
             </Box>
 

@@ -32,6 +32,7 @@ All notable changes to ECTLogger are documented here.
 * **Profile: A clear message when your callsign already has an account** — If you sign in with a new email address and your callsign already belongs to your original account, the profile now says so and tells you how to get back in, instead of only saying it's in use. Administrators are told so they can help.
 * **Net View: Closing a net responds right away** — Close and send the log now closes the window immediately and sends the log email in the background, instead of sitting on screen until every copy is sent. If another operator closes the net while you have the window open, it closes and tells you, instead of refusing your clicks without a word.
 * **Check-in: Locations stick for stations with an account** — When a station's profile has no location, the check-in form now fills in the town net control entered last time, as it already does for stations without an account.
+* **Net Settings: Clearer ICS-309 switch** — The ICS-309 switch on a net or schedule now says that anyone who chose ICS-309 in their own profile still gets the closing log in that format with the switch off.
 
 ---
 

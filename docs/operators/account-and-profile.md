@@ -45,7 +45,7 @@ If a field is greyed out with "Locked by an administrator" beneath it, an admin 
 
 **Settings** tab covers appearance and behavior: a color theme (or follow the system default), dark mode, whether times display in your local timezone or UTC, a **Show activity in chat** switch, and [location awareness](/docs/operators/location-and-the-map/) (browser GPS used to keep a live grid square). It also has a **Remember Net View Layout** switch and a **Reset Net View Layout** button. Those control whether the panels in a net (chat, activity log, script, map, and so on) stay where you last left them on this device.
 
-**Notifications** tab is the email switchboard: a master switch, then per-event toggles for a subscribed net starting, a subscribed net closing (with the log attached, optionally as an [ICS-309](/docs/reference/emails/) form), a reminder an hour before a scheduled net, and an opt-in daily digest of what's new in ECTLogger.
+**Notifications** tab is the email switchboard: a master switch, then per-event toggles for a subscribed net starting, a subscribed net closing (with the log attached, optionally as an [ICS-309](/docs/reference/emails/) form, even from a net that doesn't use one), a reminder an hour before a scheduled net, and an opt-in daily digest of what's new in ECTLogger.
 
 ## Your profile photo
 
