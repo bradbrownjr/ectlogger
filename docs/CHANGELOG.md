@@ -18,12 +18,18 @@ All notable changes to ECTLogger are documented here.
 
 # October 27, 2026
 
+## New Features
+
+* **Profile: Backup email addresses** — You can add up to three more email addresses from Profile → Security and sign in with any of them, so losing one mailbox doesn't lock you out. Each is confirmed by a link sent to it, and every address on your account is told about any change.
+* **Admin: Merge accounts** — When someone signs up again with a different address, an admin can merge the new account into their original one, and a Possible duplicates filter finds them. All their check-ins and roles move over, and the new address signs them in to the original account.
+
 ## Improvements
 
 * **Net View: Clearer choices when closing a net** — The Close Net window puts its choices on one line, colored by what they do: green sends the log now, and orange closes the net and leaves the log for you to finish.
 
 ## Bug Fixes
 
+* **Profile: A clear message when your callsign already has an account** — If you sign in with a new email address and your callsign already belongs to your original account, the profile now says so and tells you how to get back in, instead of only saying it's in use. Administrators are told so they can help.
 * **Net View: Closing a net responds right away** — Close and send the log now closes the window immediately and sends the log email in the background, instead of sitting on screen until every copy is sent. If another operator closes the net while you have the window open, it closes and tells you, instead of refusing your clicks without a word.
 * **Check-in: Locations stick for stations with an account** — When a station's profile has no location, the check-in form now fills in the town net control entered last time, as it already does for stations without an account.
 

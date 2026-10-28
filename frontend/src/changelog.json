@@ -1,10 +1,26 @@
 {
-  "version": "2026.10.27b",
+  "version": "2026.10.27c",
   "entries": [
     {
-      "version": "2026.10.27b",
+      "version": "2026.10.27c",
       "date": "2026-10-27",
       "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Profile: Backup email addresses — You can add up to three more email addresses from Profile → Security and sign in with any of them, so losing one mailbox doesn't lock you out. Each is confirmed by a link sent to it, and every address on your account is told about any change.",
+              "userImpact": true,
+              "docs": "/docs/operators/signing-in/#add-a-backup-email"
+            },
+            {
+              "text": "Admin: Merge accounts — When someone signs up again with a different address, an admin can merge the new account into their original one, and a Possible duplicates filter finds them. All their check-ins and roles move over, and the new address signs them in to the original account.",
+              "userImpact": true,
+              "docs": "/docs/admins/users-and-roles/#when-someone-signs-up-twice"
+            }
+          ]
+        },
         {
           "title": "Improvements",
           "type": "improvement",
@@ -20,6 +36,11 @@
           "title": "Bug Fixes",
           "type": "bugfix",
           "items": [
+            {
+              "text": "Profile: A clear message when your callsign already has an account — If you sign in with a new email address and your callsign already belongs to your original account, the profile now says so and tells you how to get back in, instead of only saying it's in use. Administrators are told so they can help.",
+              "userImpact": true,
+              "docs": "/docs/operators/signing-in/#if-your-callsign-already-has-an-account"
+            },
             {
               "text": "Net View: Closing a net responds right away — Close and send the log now closes the window immediately and sends the log email in the background, instead of sitting on screen until every copy is sent. If another operator closes the net while you have the window open, it closes and tells you, instead of refusing your clicks without a word.",
               "userImpact": true,
