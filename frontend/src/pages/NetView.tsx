@@ -98,7 +98,7 @@ import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import { watchZoomAwarePopovers } from '../utils/zoomAwarePopovers';
 import { getNetActions } from '../utils/netActions';
 import { canOpenLobby, isBeforeScheduledStart } from '../utils/netStart';
-import { canArchiveNet, isLogHeld, isLogOpen } from '../utils/netLog';
+import { canArchiveNet, isLogHeld, isLogOpen, NCS_NEEDED_DETAIL } from '../utils/netLog';
 
 interface Frequency {
   id: number;
@@ -1129,6 +1129,28 @@ const NetView: React.FC = () => {
   // so a second click can't reach a net the first one already closed.
   const [closingAction, setClosingAction] = useState<ClosingAction | null>(null);
 
+  // ========== WHO RAN THIS NET? ==========
+  // Asked in the Close window when nobody would be credited as NCS. Checked
+  // each time the window opens, since check-ins and roles change during a net.
+  const [ncsNeeded, setNcsNeeded] = useState(false);
+  const [ncsCheckInId, setNcsCheckInId] = useState<number | null>(null);
+  const checkNcsNeeded = async (): Promise<boolean> => {
+    try {
+      const needed = (await netApi.ncsNeeded(Number(netId))).data.needed;
+      setNcsNeeded(needed);
+      return needed;
+    } catch (error) {
+      console.error('Failed to check whether an NCS is needed:', error);
+      return false;
+    }
+  };
+  useEffect(() => {
+    if (!closeNetDialog.open) return;
+    setNcsCheckInId(null);
+    checkNcsNeeded();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closeNetDialog.open]);
+
   const handleAcceptOffNetAndClose = async () => {
     setClosingAction('accept-and-send');
     try {
@@ -1149,7 +1171,7 @@ const NetView: React.FC = () => {
       const templateId = net?.template_id;
       const currentCheckIns = [...checkIns];
       
-      await netApi.close(Number(netId), holdLog);
+      await netApi.close(Number(netId), holdLog, ncsNeeded ? ncsCheckInId : null);
       closeNetDialog.onClose();
       // Poll results and topic answers are derived from the check-in list
       // (utils/netResponses.ts), so they need no fetch of their own here
@@ -1193,6 +1215,12 @@ const NetView: React.FC = () => {
     } catch (error: any) {
       console.error('Failed to close net:', error);
       setToastMessage(getErrorMessage(error, 'Failed to close the net'));
+      // Nobody is credited as NCS any more (a role changed since the window
+      // opened): keep it open with the question showing.
+      if (error?.response?.data?.detail === NCS_NEEDED_DETAIL) {
+        setNcsNeeded(true);
+        return;
+      }
       // Already closed (from another tab, or by someone else): show it as
       // it is rather than leaving the dialog up.
       if (error?.response?.status === 400) {
@@ -1206,9 +1234,9 @@ const NetView: React.FC = () => {
 
   // Send the log of a net closed with "Finish the log later", then offer
   // archive as a normal close does.
-  const handleSendLog = async () => {
+  const handleSendLog = async (sendNcsCheckInId?: number | null) => {
     try {
-      await netApi.sendLog(Number(netId));
+      await netApi.sendLog(Number(netId), sendNcsCheckInId);
       await fetchNet();
       setToastMessage('Net log sent.');
       archiveReminderShownRef.current = true;
@@ -1786,7 +1814,12 @@ const NetView: React.FC = () => {
       )}
       {/* Shows on a net closed with "Finish the log later" until its log is sent */}
       {isLogHeld(net) && (
-        <DraftLogBanner canSend={actions.close} onSendLog={handleSendLog} />
+        <DraftLogBanner
+          canSend={actions.close}
+          onSendLog={handleSendLog}
+          checkNcsNeeded={checkNcsNeeded}
+          checkIns={checkIns}
+        />
       )}
       <NetViewHeader
         net={net}
@@ -3012,6 +3045,10 @@ const NetView: React.FC = () => {
         onReviewOffNet={handleReviewOffNet}
         onAcceptOffNetAndClose={handleAcceptOffNetAndClose}
         closingAction={closingAction}
+        ncsNeeded={ncsNeeded}
+        ncsCheckInId={ncsCheckInId}
+        onNcsCheckInIdChange={setNcsCheckInId}
+        checkIns={checkIns}
         subscribeDialog={subscribeDialog}
         netName={net?.name}
         subscribing={subscribing}

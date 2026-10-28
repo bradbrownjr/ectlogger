@@ -41,6 +41,7 @@ from app.permissions import (
 )
 from app.schemas import (
     CloseNetRequest,
+    SendLogRequest,
     NetCreate,
     NetResponse,
     NetTemplateLinkRequest,
@@ -887,6 +888,34 @@ async def clear_active_frequency(
     return NetResponse.from_orm(net)
 
 
+async def _settle_ncs(db: AsyncSession, net: Net, ncs_check_in_id: Optional[int], actor: User) -> None:
+    """Before a close or a held log's send: record the answer to "Who ran
+    this net?" when one was given, and refuse to go on when nobody would be
+    credited as NCS (services/ncs_attribution.py). Closing is the one moment
+    someone is sure to be there, so the credit is settled now rather than
+    left for the net manager to fix by hand afterwards."""
+    from app.services.ncs_attribution import NCS_NEEDED_DETAIL, ncs_needed, record_ncs_from_check_in
+    if ncs_check_in_id is not None:
+        await record_ncs_from_check_in(db, net, ncs_check_in_id, actor)
+    elif await ncs_needed(db, net):
+        raise HTTPException(status_code=400, detail=NCS_NEEDED_DETAIL)
+
+
+@router.get("/{net_id}/ncs-needed")
+async def get_ncs_needed(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """{"needed": bool}: whether closing the net, or sending its held log,
+    must first say who ran it. Read by the Close and Send the log windows."""
+    from app.services.ncs_attribution import ncs_needed
+    net = (await db.execute(select(Net).where(Net.id == net_id))).scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    return {"needed": await ncs_needed(db, net)}
+
+
 @router.post("/{net_id}/close", response_model=NetResponse)
 async def close_net(
     net_id: int,
@@ -896,7 +925,9 @@ async def close_net(
     db: AsyncSession = Depends(get_db)
 ):
     """Close a net and email its log. With hold_log, close it without the
-    email: net control finishes the log and sends it with send_held_log."""
+    email: net control finishes the log and sends it with send_held_log.
+    Refused with NCS_NEEDED_DETAIL until ncs_check_in_id says who ran it, when
+    nobody would otherwise be credited as NCS (GET /nets/{id}/ncs-needed)."""
     hold_log = bool(body and body.hold_log)
     result = await db.execute(
         select(Net).options(
@@ -938,6 +969,8 @@ async def close_net(
             detail="Only a net that is running can be closed.",
         )
 
+    await _settle_ncs(db, net, body.ncs_check_in_id if body else None, current_user)
+
     # The close itself, the status broadcast, the system message and the
     # net-log email all live in services/net_closure.py so the CSV backfill
     # path can reuse them verbatim instead of growing a second copy.
@@ -953,6 +986,7 @@ async def close_net(
 async def send_held_log(
     net_id: int,
     background_tasks: BackgroundTasks,
+    body: Optional[SendLogRequest] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -972,10 +1006,12 @@ async def send_held_log(
         raise HTTPException(status_code=403, detail="Not authorized to send this net's log")
     if net.status != NetStatus.CLOSED or net.log_held_since is None:
         raise HTTPException(status_code=400, detail="This net's log has already been sent")
+    await _settle_ncs(db, net, body.ncs_check_in_id if body else None, current_user)
 
     net.log_held_since = None
     net.log_held_by_user_id = None
     net.log_hold_reminded_at = None
+    net.log_hold_send_at = None
     record_net_event(db, "net.log_sent", current_user, net)
     await db.commit()
 

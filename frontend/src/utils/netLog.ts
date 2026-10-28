@@ -33,3 +33,38 @@ export const chatGraceMinutes = (
 /** The note on a held net's page, report and statistics, after "Draft copy". */
 export const DRAFT_LOG_NOTICE =
   "This net's log may change before net control approves and sends it.";
+
+// ========== WHO RAN THE NET ==========
+// The server credits an NCS on an ended net only if they took part
+// (backend services/ncs_attribution.py), and closing or sending a held log
+// asks who ran it when that leaves nobody (GET /nets/{id}/ncs-needed).
+
+/** The server's refusal when a close or send needs to say who ran the net. */
+export const NCS_NEEDED_DETAIL = 'Choose who ran this net before closing it or sending its log.';
+
+/** What an ended net with no credited NCS shows, as the ICS-309 and email do. */
+export const NCS_NOT_RECORDED = 'Not recorded';
+
+/**
+ * The NCS line for a net's report: its credited callsigns, "Not recorded"
+ * once it has ended without one, and null while it hasn't.
+ */
+export const ncsCreditLine = (
+  net: (NetLogState & { ncs_callsign?: string | null }) | null | undefined,
+): string | null => {
+  if (net?.ncs_callsign) return net.ncs_callsign;
+  return net?.status === 'closed' || net?.status === 'archived' ? NCS_NOT_RECORDED : null;
+};
+
+/** One choice per station in the check-in list, for "Who ran this net?". */
+export const whoRanChoices = <T extends { id: number; callsign: string; name?: string | null }>(
+  checkIns: T[],
+): T[] => {
+  const seen = new Set<string>();
+  return checkIns.filter((c) => {
+    const key = (c.callsign || '').toUpperCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};

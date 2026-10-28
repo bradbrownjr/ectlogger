@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-27
+revised: 2026-10-28
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,14 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# October 28, 2026
+
+## Bug Fixes
+
+* **Reports: NCS credit goes to whoever ran the net** — An NCS assigned ahead of time who never checked in or logged anyone is no longer credited on the net's card, report, ICS-309, closing email or the schedule's NCS leaderboard. If that leaves a net with no NCS, closing it asks who ran it. Past nets are corrected too.
 
 ---
 

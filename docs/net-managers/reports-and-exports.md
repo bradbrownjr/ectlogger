@@ -4,7 +4,7 @@ summary: The net report, the PDF, the ICS-309 Communications Log, the per-sectio
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-27
+revised: 2026-10-28
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/reports-and-exports/
@@ -43,7 +43,7 @@ This page pulls together everything about the net into one document, in this ord
 
 On screen, the report follows your light or dark setting like the rest of the app. The PDF is always in print colors on US Letter pages, and it comes out the same whether you export it from a phone or a computer, so it is ready to print either way.
 
-The report is about your net, so your net leads it. The top of the first page shows the net's logo, the net's name as the title, and the date and time it ran. ECTLogger is credited in a single line at the end. Every page of the PDF also carries the net's name, the date, and "Page 2 of 3" along the bottom, so a page separated from the rest of a printed copy still says what it belongs to.
+The report is about your net, so your net leads it. The top of the first page shows the net's logo, the net's name as the title, and the date and time it ran. ECTLogger is credited in a single line at the end. The report names the net's NCS as the ICS-309 and closing email do: whoever is credited for running it, or **Not recorded** (see [Who ran this net?](/docs/net-control/closing-the-net/#who-ran-this-net)). Every page of the PDF also carries the net's name, the date, and "Page 2 of 3" along the bottom, so a page separated from the rest of a printed copy still says what it belongs to.
 
 The report's headings, numbers, and graphs take their color from the logo. The color is matched to the nearest of a short list of standard colors (navy, blue, teal, green, red, maroon, purple, and a few others) that are all easy to read on a white page, so an unusual logo color never produces an unreadable report. In dark mode the same color is shown a little lighter on screen so it stays readable, and the PDF uses the original. A logo that is mostly grey, black and white, brown, or yellow, and a net with no logo at all, gets a standard blue. There is nothing to set: upload a logo on the net or its schedule (see [Creating a net](/docs/net-managers/creating-a-net/)) and the report follows it.
 

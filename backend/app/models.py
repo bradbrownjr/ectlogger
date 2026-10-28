@@ -287,6 +287,11 @@ class Net(Base):
     log_held_since = Column(DateTime(timezone=True), nullable=True)
     log_held_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     log_hold_reminded_at = Column(DateTime(timezone=True), nullable=True)
+    # Set only when auto-close held the log because nobody would be credited
+    # as NCS (migration 093): the managers are asked who ran it, and at this
+    # time the log goes out anyway, with "NCS: Not recorded". A hold net
+    # control chose never sends itself.
+    log_hold_send_at = Column(DateTime(timezone=True), nullable=True)
     cancelled_at = Column(DateTime(timezone=True), nullable=True)
     cancel_reason = Column(String(500), nullable=True)  # Optional operator-entered note, e.g. "in-person meeting instead"
     created_at = Column(DateTime(timezone=True), server_default=func.now())

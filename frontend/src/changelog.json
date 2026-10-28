@@ -1,6 +1,23 @@
 {
-  "version": "2026.10.27d",
+  "version": "2026.10.28",
   "entries": [
+    {
+      "version": "2026.10.28",
+      "date": "2026-10-28",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Reports: NCS credit goes to whoever ran the net — An NCS assigned ahead of time who never checked in or logged anyone is no longer credited on the net's card, report, ICS-309, closing email or the schedule's NCS leaderboard. If that leaves a net with no NCS, closing it asks who ran it. Past nets are corrected too.",
+              "userImpact": true,
+              "docs": "/docs/net-control/closing-the-net/#who-ran-this-net"
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.10.27d",
       "date": "2026-10-27",

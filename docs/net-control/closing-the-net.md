@@ -4,7 +4,7 @@ summary: What closing generates, who receives it, how to finish the log before i
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-27
+revised: 2026-10-28
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/closing-the-net/
@@ -29,6 +29,12 @@ Closing a net is a real state change, not a formality: it ends the live session,
 
 Either way, the net's status moves to Closed immediately for every viewer, stations can no longer check in, and chat closes.
 
+### Who ran this net?
+
+Once a net has ended, an NCS is credited only if they took part: they're in the check-in list (whoever entered them), they logged a check-in, or they posted in the net's chat. An NCS assigned ahead of time who never turned up, such as the rotation's pick, is left off the net card, the report, the ICS-309, the closing email, and the schedule's NCS leaderboard. There's nothing to remove by hand.
+
+If that leaves nobody, the Close dialog asks **Who ran this net?**, and the close buttons wait until you choose someone from the stations checked in. They're credited as NCS from then on. If the person who ran it isn't in the list, cancel, check them in, and close again. A net nobody checked into closes without asking.
+
 If stations logged off-net activity that nobody has accepted yet, the dialog says how many entries are waiting, as above. **Review** opens the off-net log without closing, and **Accept all and send** accepts them, closes, and sends the log. If you send the log without accepting them, they're left off the emailed ICS-309. **Finish the log later** leaves them waiting so you can review them before you send. See [Logging off-net activity](/docs/net-control/off-net-log/).
 
 ## What happens the moment it closes
@@ -49,7 +55,7 @@ A net closed with **Finish the log later** stays closed to stations while net co
 - The net can't be archived, and isn't archived automatically when its schedule's next net is created.
 - Each day, the net's manager, the schedule's manager and co-managers, and whoever closed the net get an email reminding them the log hasn't been sent.
 
-When the log is complete, click **Send the log** on the banner at the top of the net and confirm. The closing email goes out exactly as it would have at close, built from the log as it stands now. The draft mark comes off, and the net can be archived as usual.
+When the log is complete, click **Send the log** on the banner at the top of the net and confirm. If nobody is recorded as NCS, it asks [who ran the net](#who-ran-this-net) first. The closing email goes out exactly as it would have at close, built from the log as it stands now. The draft mark comes off, and the net can be archived as usual.
 
 ## After closing
 

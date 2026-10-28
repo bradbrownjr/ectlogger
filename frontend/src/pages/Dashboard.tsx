@@ -82,7 +82,7 @@ import { canOpenLobby, isBeforeScheduledStart } from '../utils/netStart';
 import EarlyStartDialog from '../components/EarlyStartDialog';
 import DeleteNetWarning from '../components/DeleteNetWarning';
 import { formatFrequencyList } from '../utils/frequencyList';
-import { canArchiveNet } from '../utils/netLog';
+import { canArchiveNet, NCS_NEEDED_DETAIL, ncsCreditLine } from '../utils/netLog';
 
 const Dashboard: React.FC = () => {
   const [nets, setNets] = useState<Net[]>([]);
@@ -559,13 +559,15 @@ const Dashboard: React.FC = () => {
                 <Chip label={net.status} color={getStatusColor(net.status)} size="small" />
               </TableCell>
               <TableCell>
-                {/* Show assigned NCS when set; fall back to net manager */}
-                {(net.ncs_callsign || net.owner_callsign) && (
+                {/* Who ran it, as the server credits it, or "Not recorded".
+                    Fell back to the net manager until 2026-10-28, crediting
+                    someone who may not have run the net. */}
+                {ncsCreditLine(net) && (
                   <Typography variant="body2">
-                    {net.ncs_callsign || net.owner_callsign}
-                    {(net.ncs_callsign ? net.ncs_name : net.owner_name) && (
+                    {ncsCreditLine(net)}
+                    {net.ncs_callsign && net.ncs_name && (
                       <Typography component="span" variant="caption" color="text.secondary">
-                        {' '}({net.ncs_callsign ? net.ncs_name : net.owner_name})
+                        {' '}({net.ncs_name})
                       </Typography>
                     )}
                   </Typography>
@@ -1277,7 +1279,10 @@ const Dashboard: React.FC = () => {
                       setSnackbar({ open: true, message: `"${name}" closed and archived. The log was emailed to you.`, severity: 'success' });
                     } catch (error: any) {
                       console.error('Failed to close & archive net:', error);
-                      const message = getErrorMessage(error, 'Failed to close and archive net');
+                      // Nobody is credited as NCS: that's answered in the net's own Close window
+                      const message = error?.response?.data?.detail === NCS_NEEDED_DETAIL
+                        ? `Open "${name}" and close it there, to choose who ran it.`
+                        : getErrorMessage(error, 'Failed to close and archive net');
                       setSnackbar({ open: true, message, severity: 'error' });
                     }
                   }}

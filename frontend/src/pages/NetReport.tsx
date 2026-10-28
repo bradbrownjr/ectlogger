@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
@@ -132,8 +131,8 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { netApi, statisticsApi, checkInApi, netRoleApi, canHearApi, callsignRoleApi, coverageSiteApi } from '../services/api';
-import { activeNcsRoles, CallsignRole, mergeStationRoles } from '../utils/stationRoles';
+import { netApi, statisticsApi, checkInApi, netRoleApi, canHearApi, coverageSiteApi } from '../services/api';
+import { ncsCreditLine } from '../utils/netLog';
 import { chatApi, ChatMessage, formatChatMessageText } from '../api/chat';
 import { formatDateTime, formatTimeWithDate, formatReportSpan, formatReportShortDate } from '../utils/dateUtils';
 import { getErrorMessage } from '../utils/apiErrors';
@@ -167,6 +166,8 @@ interface Net {
   description: string;
   status: string;
   log_held_since?: string | null;
+  // Credited NCS callsigns, comma-joined (services/ncs_attribution.py)
+  ncs_callsign?: string | null;
   owner_id: number;
   ics309_enabled?: boolean;
   propagation_logging_enabled?: boolean;
@@ -258,8 +259,6 @@ const NetReport: React.FC = () => {
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [netRoles, setNetRoles] = useState<NetRole[]>([]);
-  // Roles held by stations with no account, credited by callsign.
-  const [callsignRoles, setCallsignRoles] = useState<CallsignRole[]>([]);
   const [topicPrompt, setTopicPrompt] = useState<string | null>(null);
   const [topicResponses, setTopicResponses] = useState<TopicResponse[]>([]);
   const [pollQuestion, setPollQuestion] = useState<string | null>(null);
@@ -331,13 +330,12 @@ const NetReport: React.FC = () => {
         setError(null);
 
         // Fetch all data in parallel
-        const [netRes, statsRes, checkInsRes, chatRes, rolesRes, callsignRolesRes, topicRes, pollRes, canHearRes, ics309Res] = await Promise.all([
+        const [netRes, statsRes, checkInsRes, chatRes, rolesRes, topicRes, pollRes, canHearRes, ics309Res] = await Promise.all([
           netApi.get(parseInt(netId)),
           statisticsApi.getNetStats(parseInt(netId)),
           checkInApi.list(parseInt(netId)),
           chatApi.list(parseInt(netId)),
           netRoleApi.list(parseInt(netId)),
-          callsignRoleApi.list(parseInt(netId)),
           netApi.getTopicResponses(parseInt(netId)),
           netApi.getPollResults(parseInt(netId)),
           canHearApi.list(parseInt(netId)),
@@ -358,7 +356,6 @@ const NetReport: React.FC = () => {
         setCheckIns(checkInsRes.data);
         setChatMessages(chatRes.data);
         setNetRoles(rolesRes.data);
-        setCallsignRoles(callsignRolesRes.data);
         setTopicPrompt(topicRes.data.prompt || null);
         setTopicResponses(topicRes.data.responses || []);
         setPollQuestion(pollRes.data.question || null);
@@ -698,16 +695,11 @@ const NetReport: React.FC = () => {
   const isMapPngExport = pngExportingId === 'net-report-map';
 
 
-  // Get NCS operators from net roles
-  // NetRole.role is always stored uppercase ("NCS") -- every other role
-  // comparison in the frontend (NetView.tsx, NetPaneWindow.tsx,
-  // NCSStaffModal.tsx) matches on 'NCS'. This one compared against 'ncs'
-  // instead, so the "Net Control Station(s)" section below silently
-  // rendered nothing on every net report, for every net, until this fix.
-  //
-  // Stations with no account that held NCS are named too (by callsign). Like
-  // the backend's format_ncs_attribution: active NCS, first assigned first.
-  const ncsOperators = activeNcsRoles(mergeStationRoles(netRoles, callsignRoles));
+  // Who ran the net, as the server credits it (services/ncs_attribution.py):
+  // the same line as the ICS-309 and the closing email. This page worked it
+  // out from the raw roles until 2026-10-28, so it kept crediting an NCS
+  // assigned ahead of time who never took part after the server stopped.
+  const ncsLine = ncsCreditLine(net);
 
   // Masthead date line, e.g. "Monday, September 21, 2026 · 5:52 – 6:23 PM EDT".
   // Single-series graphs (activity, frequencies) take the logo's accent
@@ -820,14 +812,12 @@ const NetReport: React.FC = () => {
         )}
 
         {/* NCS Operators */}
-        {ncsOperators.length > 0 && (
+        {ncsLine && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               Net Control Station(s):
             </Typography>
-            <Typography variant="body2">
-              {ncsOperators.map(r => (r.callsign_only ? r.callsign : displayCallsign(r as any)) || r.email).join(', ')}
-            </Typography>
+            <Typography variant="body2">{ncsLine}</Typography>
           </Box>
         )}
 

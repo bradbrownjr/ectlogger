@@ -4,24 +4,36 @@ import {
 } from '@mui/material';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import { DRAFT_LOG_NOTICE } from '../../utils/netLog';
+import WhoRanNetField from './WhoRanNetField';
 
 interface DraftLogBannerProps {
   // Net control (actions.close) gets Send the log; everyone else the notice.
   canSend: boolean;
-  onSendLog: () => Promise<void>;
+  // ncsCheckInId answers "Who ran this net?" when checkNcsNeeded says so
+  onSendLog: (ncsCheckInId?: number | null) => Promise<void>;
+  checkNcsNeeded: () => Promise<boolean>;
+  checkIns: { id: number; callsign: string; name?: string | null }[];
 }
 
 // ========== DRAFT LOG BANNER ==========
 // Shown on a net closed with "Finish the log later" (utils/netLog.ts::isLogHeld)
 // until its log is sent. Not dismissible: it is the only way to send it.
-const DraftLogBanner: React.FC<DraftLogBannerProps> = ({ canSend, onSendLog }) => {
+const DraftLogBanner: React.FC<DraftLogBannerProps> = ({ canSend, onSendLog, checkNcsNeeded, checkIns }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [ncsNeeded, setNcsNeeded] = useState(false);
+  const [ncsCheckInId, setNcsCheckInId] = useState<number | null>(null);
+
+  const openConfirm = async () => {
+    setNcsCheckInId(null);
+    setNcsNeeded(await checkNcsNeeded());
+    setConfirmOpen(true);
+  };
 
   const send = async () => {
     setSending(true);
     try {
-      await onSendLog();
+      await onSendLog(ncsNeeded ? ncsCheckInId : null);
     } finally {
       setSending(false);
       setConfirmOpen(false);
@@ -35,7 +47,7 @@ const DraftLogBanner: React.FC<DraftLogBannerProps> = ({ canSend, onSendLog }) =
         severity="info"
         icon={<EditNoteIcon fontSize="inherit" />}
         action={canSend ? (
-          <Button color="inherit" variant="outlined" size="small" onClick={() => setConfirmOpen(true)}
+          <Button color="inherit" variant="outlined" size="small" onClick={openConfirm}
             sx={{ whiteSpace: 'nowrap', alignSelf: 'center' }}>
             Send the log
           </Button>
@@ -60,10 +72,16 @@ const DraftLogBanner: React.FC<DraftLogBannerProps> = ({ canSend, onSendLog }) =
             The closing email and ICS-309 go to subscribers and net control, built from the log as it is now.
             The report stops being a draft, and the net can then be archived.
           </Typography>
+          {/* Shows when nobody would be credited as NCS */}
+          {ncsNeeded && (
+            <WhoRanNetField checkIns={checkIns} value={ncsCheckInId} onChange={setNcsCheckInId} disabled={sending} />
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmOpen(false)} disabled={sending}>Cancel</Button>
-          <Button onClick={send} variant="contained" disabled={sending}>Send the log</Button>
+          <Button onClick={send} variant="contained" disabled={sending || (ncsNeeded && ncsCheckInId == null)}>
+            Send the log
+          </Button>
         </DialogActions>
       </Dialog>
     </>

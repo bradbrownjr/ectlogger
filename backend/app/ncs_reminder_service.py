@@ -1038,10 +1038,14 @@ class NCSReminderService:
         return await get_last_activity_at(db, net_id, started_at)
 
     async def _check_and_send_log_hold_reminders(self):
-        """Daily reminder for nets closed with their log held
-        (services/net_log_hold.py)."""
-        from app.services.net_log_hold import send_due_log_hold_reminders
+        """Daily reminder for nets closed with their log held, and the
+        automatic send of an auto-close hold whose 24 hours to name the NCS
+        are up (services/net_log_hold.py)."""
+        from app.services.net_log_hold import send_due_held_logs, send_due_log_hold_reminders
         async with AsyncSessionLocal() as db:
+            released = await send_due_held_logs(db)
+            if released:
+                logger.info("NCS_REMINDER", f"Sent {released} held log(s) with no NCS named in time")
             sent = await send_due_log_hold_reminders(db)
             if sent:
                 logger.info("NCS_REMINDER", f"Sent held-log reminders for {sent} net(s)")
@@ -1107,9 +1111,21 @@ class NCSReminderService:
 
                     owner_result = await db.execute(select(User).where(User.id == full_net.owner_id))
                     owner = owner_result.scalar_one_or_none()
+                    # Nobody would be credited as NCS (the rotation's pick
+                    # never turned up, say): hold the log and ask the net's
+                    # managers who ran it, rather than mail it out with no
+                    # NCS. It sends itself after NCS_GRACE_PERIOD.
+                    from app.services.ncs_attribution import ncs_needed
+                    from app.services.net_log_hold import NCS_GRACE_PERIOD, ask_who_ran
+                    hold = await ncs_needed(db, full_net)
+                    if hold:
+                        full_net.log_hold_send_at = now + NCS_GRACE_PERIOD
                     record_net_event(db, "net.auto_closed", None, full_net,
-                                     details={"idle_minutes": round(elapsed_minutes)})
-                    await close_net_and_notify(db, full_net, owner, post_chat_message=False)
+                                     details={"idle_minutes": round(elapsed_minutes), "log_held": hold} if hold
+                                     else {"idle_minutes": round(elapsed_minutes)})
+                    await close_net_and_notify(db, full_net, owner, post_chat_message=False, hold_log=hold)
+                    if hold:
+                        await ask_who_ran(db, full_net)
 
                     closed += 1
                     logger.info(

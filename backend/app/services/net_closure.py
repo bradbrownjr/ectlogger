@@ -115,7 +115,7 @@ async def close_net_and_notify(
     net.closed_at = closed_at if closed_at is not None else datetime.utcnow()
     if hold_log:
         net.log_held_since = net.closed_at
-        net.log_held_by_user_id = actor.id
+        net.log_held_by_user_id = actor.id if actor else None
         net.log_hold_reminded_at = None
 
     # Finalize an in-progress pause (net closed while NCS was away) so
@@ -447,16 +447,16 @@ async def send_net_log(db: AsyncSession, net: Net) -> None:
             freq_strings.append(f"{freq.network} TG{freq.talkgroup or ''}")
 
     # Send log email to all recipients based on their preference.
-    # Every *active* NCS, oldest assignment first (see utils.format_ncs_attribution
-    # and the NCS attribution row in the Feature Registry) -- falling back to the
-    # owner when the net recorded none. This email and its ICS-309 attachment go
-    # to every participant, so crediting the wrong operator here is the most
-    # visible form of the 2026-08-30 net 79 misattribution.
-    from app.services.ncs_attribution import net_ncs_attribution
+    # Every credited NCS, oldest assignment first (services/ncs_attribution.py
+    # and the NCS attribution row in the Feature Registry), or "Not recorded".
+    # This email and its ICS-309 attachment go to every participant, so
+    # crediting the wrong operator here is the most visible form of the
+    # 2026-08-30 net 79 misattribution. It fell back to the net manager until
+    # 2026-10-28, which credited someone who may not have run the net.
+    from app.services.ncs_attribution import NCS_NOT_RECORDED, net_ncs_attribution
     ncs_callsign, ncs_name = await net_ncs_attribution(db, net_id)
     if not ncs_callsign:
-        ncs_callsign = display_callsign(owner) if owner else "Unknown"
-        ncs_name = (owner.name or display_callsign(owner)) if owner else "Unknown"
+        ncs_callsign = NCS_NOT_RECORDED
     # Several NCS (or no name on file): the callsign list is the operator
     # identity. Keeps the templates from rendering "NCS: None".
     ncs_name = ncs_name or ncs_callsign

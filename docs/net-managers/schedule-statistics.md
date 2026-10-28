@@ -4,7 +4,7 @@ summary: Participation over time, the four leaderboards, the net history, and th
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-04
+revised: 2026-10-28
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/schedule-statistics/
@@ -30,7 +30,7 @@ A line chart tracks check-ins and unique operators across the schedule's recent 
   <figcaption>Each leaderboard is its own ranking; a station can lead Check-ins without ever running the net as NCS.</figcaption>
 </figure>
 
-Four separate rankings share one card, switched between with tabs: **Check-ins** (who shows up most), **NCS** (who's run the net most), **Logger**, and **Relay**. They're independent: a station near the top of Check-ins may never have held a role, and someone who's run the net as NCS every week may check in from a different callsign than the one credited. The top three rows on each get a medal.
+Four separate rankings share one card, switched between with tabs: **Check-ins** (who shows up most), **NCS** (who's run the net most), **Logger**, and **Relay**. They're independent: a station near the top of Check-ins may never have held a role, and someone who's run the net as NCS every week may check in from a different callsign than the one credited. The top three rows on each get a medal. **NCS** counts only nets where that operator is credited as NCS, the same as each net's report: an NCS assigned ahead of time who never took part doesn't score (see [Who ran this net?](/docs/net-control/closing-the-net/#who-ran-this-net)).
 
 ## Net history
 

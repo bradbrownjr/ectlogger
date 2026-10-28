@@ -14,6 +14,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import type { UseDialogResult } from '../../hooks/useDialog';
+import WhoRanNetField from './WhoRanNetField';
 
 // ========== NET CONTROL DIALOGS ==========
 // The small NCS/owner net-control modals grouped in one place: Close Net,
@@ -38,6 +39,11 @@ interface NetControlDialogsProps {
   onReviewOffNet: () => void;
   onAcceptOffNetAndClose: () => void;
   closingAction: ClosingAction | null;
+  // "Who ran this net?": asked when nobody would be credited as NCS
+  ncsNeeded: boolean;
+  ncsCheckInId: number | null;
+  onNcsCheckInIdChange: (checkInId: number | null) => void;
+  checkIns: { id: number; callsign: string; name?: string | null }[];
 
   // Subscribe to schedule
   subscribeDialog: UseDialogResult;
@@ -74,6 +80,10 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
   onReviewOffNet,
   onAcceptOffNetAndClose,
   closingAction,
+  ncsNeeded,
+  ncsCheckInId,
+  onNcsCheckInIdChange,
+  checkIns,
   subscribeDialog,
   netName,
   subscribing,
@@ -94,6 +104,9 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
   onAvailableFrequencyIdsChange,
   formatFrequency,
 }) => {
+  // Every close button waits for an answer to "Who ran this net?" when one is needed
+  const closeBlocked = !!closingAction || (ncsNeeded && ncsCheckInId == null);
+
   return (
     <>
       {/* ========== CLOSE NET DIALOG ========== */}
@@ -125,6 +138,15 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
               review. If you send the log now, entries you haven't accepted are left off its ICS-309.
             </Alert>
           )}
+          {/* Shows when nobody would be credited as NCS (GET /nets/{id}/ncs-needed) */}
+          {ncsNeeded && (
+            <WhoRanNetField
+              checkIns={checkIns}
+              value={ncsCheckInId}
+              onChange={onNcsCheckInIdChange}
+              disabled={!!closingAction}
+            />
+          )}
         </DialogContent>
         {/* One right-aligned row, colored by what each choice does
             (docs/DESIGN.md "Dialog Button Colors"): outline backs out or
@@ -143,7 +165,7 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
             onClick={() => onCloseNet(true)}
             variant="contained"
             color="warning"
-            disabled={!!closingAction}
+            disabled={closeBlocked}
             startIcon={closingAction === 'hold' ? <CircularProgress size={20} color="inherit" /> : undefined}
           >
             Finish the log later
@@ -153,7 +175,7 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
               onClick={onAcceptOffNetAndClose}
               variant="outlined"
               color="success"
-              disabled={!!closingAction}
+              disabled={closeBlocked}
               startIcon={closingAction === 'accept-and-send' ? <CircularProgress size={20} color="inherit" /> : undefined}
             >
               Accept all and send
@@ -163,7 +185,7 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
             onClick={() => onCloseNet(false)}
             variant="contained"
             color="success"
-            disabled={!!closingAction}
+            disabled={closeBlocked}
             startIcon={closingAction === 'send' ? <CircularProgress size={20} color="inherit" /> : undefined}
           >
             Close and send the log

@@ -300,7 +300,25 @@ async def get_template_statistics(
             for row in result.all()
         ]
 
-    ncs_leaderboard = await _role_leaderboard("NCS")
+    # NCS counts only nets the operator is credited on (services/
+    # ncs_attribution.py), the same rule as the report and the history below.
+    # Until 2026-10-28 it counted every NCS role ever given, so a rotation
+    # pick who never turned up, or someone who stepped down, still scored.
+    from app.services.ncs_attribution import load_ncs_rows
+    credited = await load_ncs_rows(db, net_ids)
+
+    def _ncs_leaderboard() -> list[dict]:
+        counts: dict[int, dict] = {}
+        for rows in credited.values():
+            for credit in {c.user_id: c for c in rows if c.user_id is not None}.values():
+                entry = counts.setdefault(credit.user_id, {
+                    "user_id": credit.user_id, "callsign": credit.callsign,
+                    "name": credit.name, "nets_count": 0,
+                })
+                entry["nets_count"] += 1
+        return sorted(counts.values(), key=lambda e: -e["nets_count"])[:20]
+
+    ncs_leaderboard = _ncs_leaderboard()
     logger_leaderboard = await _role_leaderboard("LOGGER")
 
     # ===== RELAY LEADERBOARD =====
@@ -339,10 +357,9 @@ async def get_template_statistics(
     # the app uses for NCS attribution (see utils.format_ncs_attribution and
     # the Feature Registry). Without the is_active filter this credited
     # operators who had since stepped back down to participant.
-    from app.services.ncs_attribution import load_ncs_rows
     ncs_by_net: dict[int, list[str]] = {
-        net_id: [callsign for callsign, _name in rows if callsign]
-        for net_id, rows in (await load_ncs_rows(db, net_ids)).items()
+        net_id: [credit.callsign for credit in rows if credit.callsign]
+        for net_id, rows in credited.items()
     }
 
     instances_data = [

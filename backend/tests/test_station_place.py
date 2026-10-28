@@ -216,11 +216,13 @@ async def test_closing_email_lists_who_was_at_each_site(client, db, owner, monke
     net.propagation_logging_enabled = False
     await db.commit()
     _, shelter = await _sites(client, net, owner)
-    await _check_in(client, net, owner, coverage_site_id=shelter["id"], frequency_id=simplex.id)
+    hill = await _check_in(client, net, owner, coverage_site_id=shelter["id"], frequency_id=simplex.id)
     await client.post(f"/api/check-ins/nets/{net.id}/check-ins",
                       json={"callsign": "K1HOME", "operating_position": "Home"}, headers=auth_headers(owner))
 
-    resp = await client.post(f"/api/nets/{net.id}/close", headers=auth_headers(owner))
+    # Nobody holds NCS, so closing names who ran it (services/ncs_attribution.py)
+    resp = await client.post(f"/api/nets/{net.id}/close", json={"ncs_check_in_id": hill.json()["id"]},
+                             headers=auth_headers(owner))
     assert resp.status_code == 200, resp.text
     assert captured.get("site_roster") == [
         {"place": "Bonny Eagle HS", "detail": "Standish, ME", "callsigns": "KC1HILL"},

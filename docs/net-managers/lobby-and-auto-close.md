@@ -4,7 +4,7 @@ summary: Opening the lobby early so stations can arrive before Net Control, and 
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-22
+revised: 2026-10-28
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/lobby-and-auto-close/
@@ -48,6 +48,8 @@ One case where the automatic open is deliberately skipped: if the schedule's rot
 Turn this on and an **active** net that's gone quiet for a set number of hours (1, 2, 3, or 4) closes itself, exactly as if Net Control had clicked Close. The closing log still goes out the same way it would for a manual close; the only difference is a system chat message noting it closed automatically. This never applies to a net still sitting in **Lobby**, only to an active one.
 
 "Quiet" means no check-in, no recheck, and no chat message. Any one of those resets the clock, so a long SKYWARN or ARES activation that goes hours between check-ins while people are still actively watching and chatting is never closed out from under them. This is exactly why it's off by default rather than on: a net manager has to decide their net is the kind that's genuinely done once it's quiet, not the kind that goes quiet in the middle of real work.
+
+If nobody is recorded as NCS when it closes itself (see [Who ran this net?](/docs/net-control/closing-the-net/#who-ran-this-net)), the log is held instead of sent. The net's manager, the schedule's manager and co-managers get one email asking who ran it. Any of them, or the net's NCS or Logger, can open the net, click **Send the log**, and choose from the stations checked in. If nobody does within 24 hours, the log goes out anyway with **NCS: Not recorded**.
 
 When a net is within 15 minutes of its computed auto-close time, anyone viewing it sees a dismissible warning banner first, which is enough notice to keep it open by simply checking in or sending a chat message if it shouldn't close yet.
 

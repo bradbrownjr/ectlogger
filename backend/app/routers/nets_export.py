@@ -435,18 +435,17 @@ async def _build_ics309_data(db: AsyncSession, net: Net, current_user: Optional[
     freq_strings = [format_freq(f) for f in net.frequencies]
     freq_list = ", ".join(freq_strings) if freq_strings else "Multiple"
 
-    # Get NCS info — every *active* NCS, oldest assignment first; fall back to
-    # owner when the net has none. All of them rather than a single row: a net
+    # Get NCS info — every credited NCS, oldest assignment first, or "Not
+    # recorded" (services/ncs_attribution.py). All of them rather than a single row: a net
     # can legitimately be run by several NCS at once (see nets_core.py::get_net
     # for the full reasoning), and picking the most-recently-assigned one put
     # the wrong operator on the official ICS-309 for both multi-NCS nets and
     # single-NCS rotation nets (the rotation's scheduled pick is assigned ~24h
     # ahead, so any later grant outranked them).
-    from app.services.ncs_attribution import net_ncs_attribution
+    from app.services.ncs_attribution import NCS_NOT_RECORDED, net_ncs_attribution
     ncs_callsign, ncs_name = await net_ncs_attribution(db, net.id)
     if not ncs_callsign:
-        ncs_callsign = display_callsign(net.owner) if net.owner else "Unknown"
-        ncs_name = (net.owner.name or None) if net.owner else None
+        ncs_callsign = NCS_NOT_RECORDED
 
     # Display times in the requesting user's timezone preference (falls back to
     # UTC if they prefer UTC or haven't got a timezone on file yet)

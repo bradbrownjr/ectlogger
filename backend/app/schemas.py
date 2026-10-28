@@ -675,8 +675,16 @@ class NetUpdate(BaseModel):
 
 class CloseNetRequest(BaseModel):
     """POST /nets/{id}/close. hold_log closes the net without emailing its
-    log; POST /nets/{id}/send-log sends it once net control has finished."""
+    log; POST /nets/{id}/send-log sends it once net control has finished.
+    ncs_check_in_id answers "Who ran this net?": required when nobody would
+    otherwise be credited as NCS (services/ncs_attribution.py::ncs_needed)."""
     hold_log: bool = False
+    ncs_check_in_id: Optional[int] = None
+
+
+class SendLogRequest(BaseModel):
+    """POST /nets/{id}/send-log. Same ncs_check_in_id as CloseNetRequest."""
+    ncs_check_in_id: Optional[int] = None
 
 
 class NetActions(BaseModel):

@@ -289,6 +289,31 @@ behind it:
 
 ---
 
+## Who is credited as NCS
+
+`services/ncs_attribution.py::load_ncs_rows` is the only answer to "who ran
+this net", for the net card, report, ICS-309, closing email, schedule history
+and the schedule's NCS leaderboard. Never count `NetRole` rows for credit
+directly: until 2026-10-28 the leaderboard did, and scored stepped-down NCS
+and rotation picks who never turned up.
+
+- **Before and during a net, every active NCS is shown**, so the card names
+  who is on duty. **Once it has ended** (`CLOSED`/`ARCHIVED`), an NCS counts
+  only if they took part (`took_part_in`): a check-in under their account or
+  callsign, a check-in they logged (`checked_in_by_id`), or a chat message.
+- **Closing asks when that leaves nobody.** `ncs_needed` (someone checked in,
+  nobody credited) gates `POST /nets/{id}/close` and `/send-log` through
+  `nets_core.py::_settle_ncs`; the answer is a check-in id
+  (`ncs_check_in_id`), recorded by `record_ncs_from_check_in` as a `NetRole`
+  or, with no account, a `NetCallsignRole`. Only checked-in stations can be
+  named, the same rule as `/callsign-roles`.
+- **Auto-close can't ask**, so it holds the log, emails the managers once
+  (`net_log_hold.ask_who_ran`), and sets `Net.log_hold_send_at` (migration
+  093); `send_due_held_logs` sends it 24 hours later as it stands. A hold net
+  control chose never sends itself.
+- **No credit reads "Not recorded"** (`NCS_NOT_RECORDED`), never the net
+  manager: the old fallback credited someone who may not have run it.
+
 ## Check-in maps
 
 Every check-in map in the app plots from one pipeline:
