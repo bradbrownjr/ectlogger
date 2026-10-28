@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import { isFieldShown, withOnlyShownFields } from '../../utils/checkInFields';
 import { placeChoice } from '../../utils/stationPlace';
+import { withCheckIn } from '../../utils/checkInList';
 
 // ========== CHECK-IN ACTIONS ==========
 // The check-in row action handlers: create/edit/delete a check-in, change
@@ -171,11 +172,12 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         self_role_choice: 'standard',
       });
 
-      // Append the new row from the response instead of re-reading the list.
+      // Add the new row from the response instead of re-reading the list.
       // Every check-in creates a new row -- a recheck included (see
       // routers/check_ins.py::create_check_in) -- and the list is ordered by
-      // checked_in_at, so the newest row always belongs at the end.
-      setCheckIns((prev: any[]) => [...prev, response.data]);
+      // checked_in_at, so the newest row always belongs at the end. The
+      // server's own broadcast may already have put it there (withCheckIn).
+      setCheckIns((prev: any[]) => withCheckIn(prev, response.data));
 
       // Focus back on callsign field
       setTimeout(() => {

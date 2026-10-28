@@ -53,7 +53,9 @@ export interface CheckInFormState {
   // unless showNcsChoice or showLoggerChoice below is true. Always defaults
   // to 'standard' -- see the fail-safe history in schemas.py's
   // CheckInCreate.self_role_choice.
-  self_role_choice?: 'standard' | 'ncs' | 'logger';
+  // 'participant' (an explicit choice) also steps down from a role already
+  // held on this net; 'standard' (the default) leaves roles alone.
+  self_role_choice?: 'standard' | 'participant' | 'ncs' | 'logger';
   // Where the station is, picked from the Site box on a net with sites
   // (SiteField, utils/stationPlace.ts). Absent otherwise.
   coverage_site_id?: number | null;
@@ -206,8 +208,8 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
               <FormLabel sx={{ fontSize: '0.9rem' }}>Check in as</FormLabel>
               <RadioGroup
                 row
-                value={checkInForm.self_role_choice || 'standard'}
-                onChange={(e) => setCheckInForm({ ...checkInForm, self_role_choice: e.target.value as 'standard' | 'ncs' | 'logger' })}
+                value={!checkInForm.self_role_choice || checkInForm.self_role_choice === 'standard' ? 'participant' : checkInForm.self_role_choice}
+                onChange={(e) => setCheckInForm({ ...checkInForm, self_role_choice: e.target.value as 'participant' | 'ncs' | 'logger' })}
               >
                 {showNcsChoice && (
                   <FormControlLabel value="ncs" control={<Radio size="small" />} label="NCS (backup net control)" />
@@ -215,7 +217,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
                 {showLoggerChoice && (
                   <FormControlLabel value="logger" control={<Radio size="small" />} label="Logger" />
                 )}
-                <FormControlLabel value="standard" control={<Radio size="small" />} label="Standard participant" />
+                <FormControlLabel value="participant" control={<Radio size="small" />} label="Standard participant" />
               </RadioGroup>
               <Typography variant="caption" color="text.secondary">
                 You're a co-manager, rotation member, or the net owner, so you can help run this net. Choose Standard if you're just checking in as a participant this time.

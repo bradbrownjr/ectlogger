@@ -15,8 +15,10 @@ from pydantic import BaseModel, Field
 from app.audit import record_net_event, user_label
 from app.models import Net, NetCallsignRole, NetRole, NetStatus, NetTemplateSubscription, TemplateStaff, User
 from app.permissions import (
+    SOLE_NCS_DETAIL,
     can_manage_net_roles,
     is_admin,
+    is_sole_active_ncs,
     may_claim_ncs,
     may_email_net_subscribers,
     net_access,
@@ -418,20 +420,8 @@ async def toggle_self_net_role(
     currently_active = role.is_active if role.is_active is not None else True
 
     # Prevent stepping down if you are the only active NCS on an active net
-    if currently_active and net.status == NetStatus.ACTIVE:
-        result = await db.execute(
-            select(NetRole).where(
-                NetRole.net_id == net_id,
-                NetRole.role == "NCS",
-                NetRole.is_active == True  # noqa: E712
-            )
-        )
-        active_ncs = result.scalars().all()
-        if len(active_ncs) <= 1:
-            raise HTTPException(
-                status_code=400,
-                detail="You are the only active NCS. Assign another NCS before stepping down."
-            )
+    if currently_active and await is_sole_active_ncs(db, net, current_user.id):
+        raise HTTPException(status_code=400, detail=SOLE_NCS_DETAIL)
 
     role.is_active = not currently_active
     await db.commit()

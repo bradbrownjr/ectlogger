@@ -20,6 +20,7 @@ from app.models import (
     Form,
     Net,
     NetRole,
+    NetStatus,
     NetTemplate,
     NCSRotationMember,
     TemplateStaff,
@@ -478,6 +479,24 @@ async def can_manage_net_roles(db: AsyncSession, net: Net, user: User) -> bool:
     of that actual detail, so neither error ever explained itself.
     """
     return may_manage_net_roles(await net_access(db, net, user))
+
+
+SOLE_NCS_DETAIL = "You are the only active NCS. Assign another NCS before stepping down."
+
+
+async def is_sole_active_ncs(db: AsyncSession, net: Net, user_id: int) -> bool:
+    """True when *user_id* is the only active NCS on a running (ACTIVE) net,
+    who may not step down: the net would be left with nobody in control.
+    Shared by the Acting as NCS/Standard toggle (nets_roles.py) and Check In
+    as Participant (check_ins.py)."""
+    if net.status != NetStatus.ACTIVE:
+        return False
+    active = (await db.execute(
+        select(NetRole.user_id).where(
+            NetRole.net_id == net.id, NetRole.role == "NCS", NetRole.is_active == True,  # noqa: E712
+        )
+    )).scalars().all()
+    return user_id in active and len(active) <= 1
 
 
 async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: int) -> bool:

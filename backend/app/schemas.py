@@ -1159,7 +1159,12 @@ class CheckInCreate(CheckInBase):
     # made NCS (the same failure as the 2026-08-30 ME Dirigo Net incident,
     # through a different entry point). Keep the same discipline here: never
     # make anything other than 'standard' the default.
-    self_role_choice: Optional[Literal['standard', 'ncs', 'logger']] = 'standard'
+    # 'participant' is the explicit opposite: Check In as Participant, which
+    # also steps the person down from an NCS or Logger role they already
+    # hold on this net (assigned ahead of time by the rotation, say). Never
+    # the default either: 'standard' leaves any role alone, so a recheck or
+    # a client that omits the field can't strip someone's role.
+    self_role_choice: Optional[Literal['standard', 'participant', 'ncs', 'logger']] = 'standard'
 
     # On CheckInCreate/CheckInUpdate only, never CheckInBase: CheckInResponse
     # inherits it, and a stored pre-rule value would then fail every read.

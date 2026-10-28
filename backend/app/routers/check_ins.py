@@ -13,7 +13,10 @@ from app.models import CheckIn, CoverageSite, FieldDefinition, Net, NetStatus, U
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse, ExpectedCodeResponse, VerifyIdentityRequest
 from app.dependencies import get_current_user, get_current_user_optional
 from app.utils import display_callsign, looks_like_email_or_url
-from app.permissions import check_net_permission, is_eligible_for_logger_self_grant, is_eligible_for_ncs_auto_grant
+from app.permissions import (
+    SOLE_NCS_DETAIL, check_net_permission, is_eligible_for_logger_self_grant, is_eligible_for_ncs_auto_grant,
+    is_sole_active_ncs,
+)
 from app.auth import decrypt_mfa_secret, current_totp_codes
 from app.services.live_location import live_location_for_check_in
 from app.services.net_blocks import blocked_on_net
@@ -229,6 +232,27 @@ async def create_check_in(
         or (linked_user_id is not None and linked_user_id in blocked_users)
     ) and not await check_net_permission(db, net, current_user, ["NCS", "LOGGER"]):
         raise HTTPException(status_code=403, detail="Net control has removed this station from this net.")
+
+    # ========== CHECK IN AS PARTICIPANT: STEP DOWN FIRST ==========
+    # 'participant' (Check In as Participant) on someone's own check-in steps
+    # them down from any NCS or Logger role they hold here, typically the
+    # rotation's pick assigned a day ahead. Until 2026-10-28 that button sent
+    # 'standard', which grants nothing but also removed nothing, so an
+    # assigned NCS who chose Participant stayed NCS (N1KWG, net 142). Checked
+    # before anything is saved: the only active NCS on a running net can't
+    # step down (the same rule as the Acting as NCS/Standard toggle).
+    roles_to_step_down: list = []
+    if linked_user_id and current_user.id == linked_user_id and check_in_data.self_role_choice == "participant":
+        roles_to_step_down = (await db.execute(
+            select(NetRole).where(
+                NetRole.net_id == net_id,
+                NetRole.user_id == linked_user_id,
+                NetRole.role.in_(["NCS", "LOGGER"]),
+                NetRole.is_active == True,  # noqa: E712
+            )
+        )).scalars().all()
+        if any(r.role == "NCS" for r in roles_to_step_down) and await is_sole_active_ncs(db, net, linked_user_id):
+            raise HTTPException(status_code=400, detail=f"{SOLE_NCS_DETAIL} Or check in as NCS.")
 
     # Validate and process frequency_id
     # First check if current user is NCS with a claimed frequency
@@ -599,6 +623,28 @@ async def create_check_in(
             }, net_id)
             grant_reason = "schedule co-manager/rotation" if role_name == "NCS" else "net owner/schedule co-manager/rotation"
             await post_system_message(net_id, f"{display_callsign(matching_user)} has been granted {role_name} access ({grant_reason})", db)
+    elif roles_to_step_down:
+        # Check In as Participant: the same step-down as the toggle
+        # (is_active, not a delete), one role_change per role.
+        for role in roles_to_step_down:
+            role.is_active = False
+        await db.commit()
+        from app.main import manager as ws_manager, post_system_message
+        for role in roles_to_step_down:
+            await ws_manager.broadcast({
+                "type": "role_change",
+                "data": {
+                    "net_id": net_id,
+                    "user_id": linked_user_id,
+                    "role": role.role,
+                    "is_active": False,
+                    "assigned_at": role.assigned_at.isoformat() if hasattr(role.assigned_at, "isoformat") else str(role.assigned_at),
+                },
+                "timestamp": datetime.now(UTC).isoformat(),
+            }, net_id)
+        await post_system_message(net_id, f"{display_callsign(matching_user)} stepped down to participant", db)
+        from app.net_pause import sync_net_pause_state
+        await sync_net_pause_state(db, net_id)
 
     # Re-fetch with user relationship loaded (needed for avatar_url in response)
     result = await db.execute(

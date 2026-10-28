@@ -4,7 +4,7 @@ summary: The check-in form, which fields are required, and what happens the mome
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-10-24
+revised: 2026-10-28
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/checking-in/
@@ -19,6 +19,8 @@ Checking in puts your callsign on the net's list. You need to be [signed in](/do
 Open an Active or Lobby net. If you haven't checked in yet, a banner appears after a moment ("This net is active. Would you like to check in?", or "The lobby is open! Would you like to check in?" for a net still in its lobby) with a **Check In** button right there. Dismiss it if you'd rather just watch.
 
 If you're eligible to help run the net (an active net staff member or NCS rotation member for its schedule, with no role on this occurrence yet), the banner offers **Check In as NCS** or **Check In as Logger** alongside **Check In as Participant**; [Roles and permissions](/docs/reference/roles-and-permissions/) explains what that eligibility means. Whichever you click opens the check-in form with that choice already made, and the form itself still lets you change it via a **Standard participant** option if you'd rather just check in this time.
+
+If you're already NCS or Logger on this net, for example because the rotation assigned you NCS the day before, the banner offers **Check In as NCS** (or Logger) and **Check In as Participant**. Choose the role if you're running the net. **Check In as Participant** checks you in and steps you down from the role, the same as the **Role** toggle described in [Stepping down](/docs/net-control/roles-and-stepping-away/#stepping-down-and-stepping-away). If you're the only active NCS on a net that's already live, it's refused until someone else takes NCS.
 
 You can also open the same form later from the net's toolbar.
 

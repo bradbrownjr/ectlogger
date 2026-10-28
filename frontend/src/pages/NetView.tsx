@@ -421,7 +421,8 @@ const NetView: React.FC = () => {
     // must not be silently promoted -- becoming NCS or Logger is only ever
     // an affirmative choice via the "Check in as NCS"/"Check in as Logger"
     // control.
-    self_role_choice: 'standard' as 'standard' | 'ncs' | 'logger',
+    // 'participant' (Check In as Participant) also steps down from a role held here
+    self_role_choice: 'standard' as 'standard' | 'participant' | 'ncs' | 'logger',
   });
 
   // Fetches the full "can hear" report list for this net. Called once on mount
@@ -3409,7 +3410,7 @@ const NetView: React.FC = () => {
                   onClick={() => {
                     checkInPrompt.onClose();
                     if (user) {
-                      setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: selfCheckInLocation, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', self_role_choice: 'standard' });
+                      setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: selfCheckInLocation, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', self_role_choice: 'participant' });
                     }
                     checkInDialog.onOpen();
                   }}

@@ -21,6 +21,7 @@ All notable changes to ECTLogger are documented here.
 ## Bug Fixes
 
 * **Reports: NCS credit goes to whoever ran the net** — An NCS assigned ahead of time who never checked in or logged anyone is no longer credited on the net's card, report, ICS-309, closing email or the schedule's NCS leaderboard. If that leaves a net with no NCS, closing it asks who ran it. Past nets are corrected too.
+* **Check-in: Checking yourself in does what the button says** — Checking in, especially as NCS from the lobby, could list you twice until the page refreshed, and deleting one copy removed both. You now appear once, and if you were assigned NCS ahead of time, Check In as Participant now steps you down instead of leaving you as NCS.
 
 ---
 

@@ -4,7 +4,7 @@ summary: Taking NCS, handing it off, stepping down, and what the paused-net bann
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-10-28
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/roles-and-stepping-away/
@@ -39,6 +39,8 @@ This dialog is available to the net's manager, an admin, or (on a templated net)
 These are two different things, and it matters which one you mean.
 
 **Stepping down** (the **Role: NCS** / **Role: Standard** toggle on the toolbar) toggles whether your existing NCS role is currently active. Step down and you genuinely lose NCS access to this net, because the backend enforces the same active flag the screen shows, so this isn't just a display change. You keep the role itself and can step back up to it later; you just aren't acting as NCS in the meantime. If you're the *only* active NCS on a net that's currently active, this toggle is blocked outright; assign or wait for another NCS first.
+
+Choosing **Check In as Participant** when you check yourself in steps you down the same way, from NCS or Logger, with the same rule for the only active NCS.
 
 <figure>
   <img src="/docs/img/net-control/ncs-role-toggle.png"
