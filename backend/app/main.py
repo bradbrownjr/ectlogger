@@ -353,30 +353,21 @@ async def websocket_endpoint(websocket: WebSocket, net_id: int, token: str = Non
     """WebSocket endpoint for real-time net updates - allows guests for viewing"""
     from app.auth import verify_token
     from app.database import get_db
-    from sqlalchemy import select
-    from app.models import User
-    
+    from app.dependencies import user_from_token_payload
+
     user_id = 0  # Default for guests
-    
+
     # Verify JWT token if provided
     if token:
         try:
-            payload = verify_token(token)
-            user_id_str = payload.get("sub")
-            
-            if user_id_str:
-                user_id = int(user_id_str)
-                
-                # Verify user exists
-                async for db in get_db():
-                    result = await db.execute(select(User).where(User.id == user_id))
-                    user = result.scalar_one_or_none()
-                    if not user or not user.is_active:
-                        user_id = 0  # Fall back to guest
-                    break
+            async for db in get_db():
+                user = await user_from_token_payload(db, verify_token(token))
+                if user and user.is_active:
+                    user_id = user.id
+                break
         except Exception:
             user_id = 0  # Fall back to guest on auth errors
-    
+
     await manager.connect(websocket, net_id, user_id)
     try:
         while True:

@@ -25,7 +25,7 @@ from app.auth import (
     magic_link_email_ignoring_age,
     hash_password, verify_password, encrypt_mfa_secret, decrypt_mfa_secret,
     generate_totp_secret, totp_provisioning_uri, verify_totp_code,
-    generate_backup_codes, hash_backup_code,
+    generate_backup_codes, hash_backup_code, token_issued_to,
     MAX_FAILED_PASSWORD_ATTEMPTS, PASSWORD_LOCKOUT_MINUTES,
 )
 from app.email_service import EmailService
@@ -682,7 +682,7 @@ async def confirm_backup_email(
     if not data:
         raise HTTPException(status_code=400, detail="This link isn't valid or has expired. Ask for a new one from your profile.")
     user = (await db.execute(select(User).where(User.id == data["uid"]))).scalar_one_or_none()
-    if not user:
+    if not user or not token_issued_to(data, user, 0):
         raise HTTPException(status_code=400, detail="This link isn't valid or has expired. Ask for a new one from your profile.")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="This account is locked. Contact an administrator.")

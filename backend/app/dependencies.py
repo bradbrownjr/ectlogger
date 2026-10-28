@@ -6,7 +6,7 @@ from typing import Optional
 from datetime import datetime, timezone, timedelta
 from app.database import get_db
 from app.models import User, UserRole
-from app.auth import verify_token, create_access_token
+from app.auth import verify_token, create_access_token, token_issued_to
 from app.logger import logger
 from app.security import get_client_ip
 from app.session_config import get_session_config
@@ -46,6 +46,23 @@ def is_background_request(request: Request) -> bool:
     return request.headers.get(BACKGROUND_REQUEST_HEADER) == "1"
 
 
+async def user_from_token_payload(db: AsyncSession, payload: Optional[dict]) -> Optional[User]:
+    """The account a verified token was issued to, or None. Shared by every
+    route and the net WebSocket so they all apply the same rule: the id must
+    name an account that existed when the token was issued (token_issued_to)."""
+    if not payload:
+        return None
+    try:
+        user_id = int(payload.get("sub"))
+    except (ValueError, TypeError):
+        return None
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if user is None:
+        return None
+    lifetime_days, _ = await get_session_config(db)
+    return user if token_issued_to(payload, user, lifetime_days) else None
+
+
 async def get_current_user(
     request: Request,
     response: Response,
@@ -72,36 +89,20 @@ async def get_current_user(
             detail="Invalid authentication credentials"
         )
     
-    logger.debug("AUTH", f"Token verified, payload: {payload}")
-    
-    user_id_str = payload.get("sub")
-    if user_id_str is None:
+    if payload.get("sub") is None:
         logger.auth_failure("No 'sub' claim in token payload", client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
         )
-    
-    # Convert subject from string to int
-    try:
-        user_id = int(user_id_str)
-        logger.debug("AUTH", f"User ID from token: {user_id}")
-    except (ValueError, TypeError):
-        logger.auth_failure(f"Invalid user ID format: {user_id_str}", client_ip)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials"
-        )
-    
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    
+
+    user = await user_from_token_payload(db, payload)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found"
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -116,13 +117,17 @@ async def get_current_user(
         await db.commit()
 
     # Rolling refresh: if enabled and fewer than 7 days remain, issue a new
-    # token so active users never have to re-authenticate.
+    # token so active users never have to re-authenticate. A token from
+    # before iat was added is replaced straight away, so token_issued_to
+    # stops having to estimate its age.
     lifetime_days, rolling_renewal = await get_session_config(db)
     exp = payload.get("exp")
-    if rolling_renewal and exp and (exp - datetime.now(timezone.utc).timestamp()) < 7 * 24 * 60 * 60:
+    expiring = rolling_renewal and exp and (exp - datetime.now(timezone.utc).timestamp()) < 7 * 24 * 60 * 60
+    if expiring or payload.get("iat") is None:
         new_token = create_access_token(
             data={"sub": str(user.id)},
-            expires_delta=timedelta(days=lifetime_days),
+            expires_delta=timedelta(days=lifetime_days) if expiring
+            else timedelta(seconds=max(0, exp - datetime.now(timezone.utc).timestamp())),
         )
         response.headers["X-New-Token"] = new_token
 
@@ -138,27 +143,9 @@ async def get_current_user_optional(
         return None
     
     try:
-        token = credentials.credentials
-        payload = verify_token(token)
-        
-        if payload is None:
-            return None
-        
-        user_id_str = payload.get("sub")
-        if user_id_str is None:
-            return None
-        
-        try:
-            user_id = int(user_id_str)
-        except (ValueError, TypeError):
-            return None
-        
-        result = await db.execute(select(User).where(User.id == user_id))
-        user = result.scalar_one_or_none()
-        
+        user = await user_from_token_payload(db, verify_token(credentials.credentials))
         if user is None or not user.is_active:
             return None
-        
         return user
     except Exception:
         return None

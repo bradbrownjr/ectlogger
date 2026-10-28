@@ -132,29 +132,45 @@ def hash_backup_code(code: str) -> str:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        # Every login route passes the Admin-configured lifetime; this only
-        # covers a caller that doesn't (tests, scripts).
-        expire = datetime.utcnow() + timedelta(days=DEFAULT_SESSION_LIFETIME_DAYS)
-    to_encode.update({"exp": expire})
-    logger.debug("AUTH", f"Creating JWT with payload: {to_encode}")
-    logger.debug("AUTH", f"Using algorithm: {settings.algorithm}")
-    logger.debug("AUTH", f"Using secret key (first 10 chars): {settings.secret_key[:10]}...")
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
-    logger.debug("AUTH", f"JWT created: {encoded_jwt[:30]}...{encoded_jwt[-20:]}")
-    return encoded_jwt
+    now = datetime.now(timezone.utc)
+    # Every login route passes the Admin-configured lifetime; the default
+    # only covers a caller that doesn't (tests, scripts).
+    expire = now + (expires_delta or timedelta(days=DEFAULT_SESSION_LIFETIME_DAYS))
+    # iat ties the token to the account it was issued to: see token_issued_to.
+    to_encode.update({"exp": expire, "iat": int(now.timestamp())})
+    logger.debug("AUTH", f"Creating JWT for sub={to_encode.get('sub')}")
+    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+
+
+def token_issued_to(payload: dict, user, lifetime_days: int) -> bool:
+    """False when the token is older than the account it names.
+
+    A token carries only the account id, and SQLite hands a freed id to the
+    next new account when the highest one is deleted or merged away. Without
+    this, a browser still signed in to the old account would open the new
+    one. A token from before iat was added (2026-10-28) is dated from its
+    expiry less the session lifetime, the same lifetime it was issued with
+    unless an admin has since changed it.
+    """
+    created = user.created_at
+    if created is None:
+        return True
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=timezone.utc)
+    issued = payload.get("iat")
+    if issued is None:
+        exp = payload.get("exp")
+        if exp is None:
+            return False
+        issued = exp - lifetime_days * 24 * 60 * 60
+    # created_at is stored to the second; a token issued in the same second
+    # as its account is that account's.
+    return int(issued) >= int(created.timestamp())
 
 
 def verify_token(token: str, client_ip: str = None):
     try:
-        logger.debug("AUTH", "Attempting to decode token...")
-        logger.debug("AUTH", f"Algorithm: {settings.algorithm}")
-        logger.debug("AUTH", f"Secret key (first 10 chars): {settings.secret_key[:10]}...")
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        logger.debug("AUTH", f"Token decoded successfully: {payload}")
-        return payload
+        return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
     except JWTError as e:
         if client_ip:
             logger.auth_failure(f"JWT decode error: {type(e).__name__}: {str(e)}", client_ip)

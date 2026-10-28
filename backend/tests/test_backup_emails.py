@@ -133,6 +133,28 @@ async def test_a_link_confirmed_after_the_address_was_taken_is_refused(client, d
 
 
 @pytest.mark.asyncio
+async def test_a_link_for_a_deleted_account_does_not_reach_its_reused_id(client, db, mail):
+    """Links name the account by id, and SQLite reuses a freed highest id."""
+    from datetime import datetime, timedelta, timezone
+    gone = User(email="gone@example.com", is_active=True, created_at=datetime.now(timezone.utc) - timedelta(days=1))
+    db.add(gone)
+    await db.commit()
+    gone_id = gone.id
+    resp = await client.post("/api/auth/backup-emails/request", json={"email": "spare@example.com"},
+                             headers=auth_headers(gone))
+    assert resp.status_code == 200, resp.text
+    await db.delete(gone)
+    await db.commit()
+    db.add(User(id=gone_id, email="next@example.com", is_active=True,
+                created_at=datetime.now(timezone.utc) + timedelta(seconds=5)))
+    await db.commit()
+
+    resp = await client.post("/api/auth/backup-emails/confirm", json={"token": mail["links"][-1][1]})
+    assert resp.status_code == 400
+    assert (await db.execute(select(UserEmail))).scalars().all() == []
+
+
+@pytest.mark.asyncio
 async def test_at_most_three_backups(client, owner, mail):
     for n in range(3):
         await _add(client, owner, f"b{n}@example.com", mail)

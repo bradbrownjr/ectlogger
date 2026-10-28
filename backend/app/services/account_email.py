@@ -88,10 +88,14 @@ def create_backup_email_token(user: User, email: str) -> str:
 
 
 def read_backup_email_token(token: str) -> Optional[dict]:
+    """The payload plus "iat", its signing time, for app.auth.token_issued_to:
+    the token names an account by id, and ids can be reused."""
     try:
-        return serializer.loads(token, salt=BACKUP_EMAIL_SALT, max_age=EMAIL_CHANGE_MAX_AGE_SECONDS)
+        data, signed = serializer.loads(token, salt=BACKUP_EMAIL_SALT, max_age=EMAIL_CHANGE_MAX_AGE_SECONDS,
+                                        return_timestamp=True)
     except (BadSignature, SignatureExpired):
         return None
+    return {**data, "iat": int(signed.timestamp())}
 
 
 def make_backup_primary(user: User, backup: UserEmail) -> str:

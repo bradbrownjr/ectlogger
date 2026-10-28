@@ -724,6 +724,21 @@ shared `auth.signed_in` IP. The rule was set from production's accounts on
 /suffix alone flagged the WS1EC station accounts; with the rule above it finds 5
 pairs, all real. Fetched with the users list but not on its 30 s background poll.
 
+**Account ids can be reused, so every token that names one is dated.** `users`
+has no `AUTOINCREMENT`, so SQLite gives the next new account the highest id again
+once that account is deleted or merged away. A sign-in token carries only `sub`
+(the id), so before 2026-10-28 a browser still signed in to the old account would
+have opened the new one. `create_access_token` now adds `iat`, and
+`auth.py::token_issued_to` refuses a token issued before the account's
+`created_at` (to the second). Every route, the optional-auth routes and the net
+WebSocket resolve the account through `dependencies.py::user_from_token_payload`,
+so never look a token's `sub` up directly. A token from before `iat` is dated
+from its `exp` less the session lifetime and is replaced (same expiry, with
+`iat`) through `X-New-Token` on its next request. Backup-address links are
+checked the same way from their signing time. The email-change link didn't
+need it: it carries the address being replaced, which a different account
+doesn't have. Production had no reused id when this shipped.
+
 ### Security alerts and IP locations
 
 `app/security_alerts.py` emails on patterns in the activity log, with thresholds in
