@@ -30,10 +30,16 @@ A net that hasn't started shows two buttons on its toolbar and on its card:
   <figcaption>Before the scheduled start, a net offers both Open lobby and Start net.</figcaption>
 </figure>
 
-- **Open lobby** puts the net in **Lobby**. Stations can check in and chat, and the net page counts down to the scheduled start. Net Control clicks **Go Live** when ready. If Net Control still has the net open at the scheduled time, it goes live on its own. The button shows until the scheduled start time. On a net with no start time, it shows only when the net's lobby setting (below) is on.
+- **Open lobby** puts the net in **Lobby**. Stations can check in and chat, and the net page counts down to the scheduled start. Net Control clicks **Go Live** when ready, or lets it [go live at the scheduled time](#going-live-at-the-scheduled-time). The button shows until the scheduled start time. On a net with no start time, it shows only when the net's lobby setting (below) is on.
 - **Start net** starts the net now. Clicked before the scheduled time, it asks first and offers **Open lobby** instead, so you never start a net early by accident. You don't need to move a net's start time earlier to get a lobby.
 
 Whoever clicks either one becomes Net Control and is checked in, and subscribers get the "net starting" email at that moment.
+
+### Going live at the scheduled time
+
+A net in **Lobby** goes live on its own at its scheduled start, but only while someone who could click **Go Live** has the net open: its manager, an admin, or an NCS on the net. An NCS who stepped down to participant doesn't count. If Net Control opens the net after the start time, it goes live as soon as the page loads.
+
+If nobody running the net has it open, the net stays in **Lobby**. That's deliberate: with nobody there to take check-ins on the air, it shouldn't look like the net is running. Stations can still check in and chat in the lobby. If the lobby opened on its own, subscribers haven't been told the net is starting either, since that email waits for it to go live. If the lobby opened on its own and nobody checked in, the net is archived 24 hours after its start time, with no closing email.
 
 ## Auto-open lobby
 

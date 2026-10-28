@@ -614,10 +614,12 @@ const NetView: React.FC = () => {
           }
         } else {
           // Past scheduled time — auto-start the net if in LOBBY mode
-          // Only trigger if current user is NCS/owner/admin (has permission to go live)
-          const isOwnerOrAdmin = user?.id === net.owner_id || user?.role === 'admin';
-          const isNCSRole = netRoles.some((r: any) => r.user_id === user?.id && r.role === 'NCS');
-          const canAutoStart = isOwnerOrAdmin || isNCSRole;
+          // Only for someone the server lets go live (the Go Live button's own
+          // rule: manager, admin, or an *active* NCS), so it fires only while
+          // net control is present. Nobody there means the net stays in the
+          // lobby. This checked any NCS role until 2026-10-28, so an NCS who
+          // had stepped down fired a refused request every second.
+          const canAutoStart = getNetActions(net, simulateRegularUser).edit;
           
           if (net.status === 'lobby' && canAutoStart && !autoStartTriggeredRef.current) {
             autoStartTriggeredRef.current = true;
@@ -738,7 +740,7 @@ const NetView: React.FC = () => {
     const interval = setInterval(updateTimers, 1000);
 
     return () => clearInterval(interval);
-  }, [net?.scheduled_start_time, net?.started_at, net?.status, net?.owner_id, net?.id, net?.paused_at, net?.total_paused_seconds, net?.auto_close_at, user?.id, user?.role, netRoles]);
+  }, [net?.scheduled_start_time, net?.started_at, net?.status, net?.owner_id, net?.id, net?.paused_at, net?.total_paused_seconds, net?.auto_close_at, net?.actions, net?.actions_as_regular_user, simulateRegularUser, user?.id, user?.role, netRoles]);
 
   // Show check-in prompt for authenticated users viewing an active/lobby net they haven't checked into
   useEffect(() => {
