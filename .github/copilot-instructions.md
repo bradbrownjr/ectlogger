@@ -482,6 +482,15 @@ function and reports exceptions) as part of the pre-deploy safety check, before 
 production service, since beta's copy can itself be stale (see "Refreshing beta's database from
 production" below) and production can have rows beta doesn't have yet.
 
+**For a plain SQL question about production (diagnosing a report), use
+`scripts/prod-db-ro "SELECT ..."`** rather than a hand-written `ssh` one-liner. It
+opens the database read-only and an SQLite authorizer refuses everything but reads
+(writes, ATTACH, and PRAGMAs other than schema lookups), one statement per call. The
+agent's auto-mode safety check refuses raw `ssh` reads of production unpredictably
+and never lets the agent grant itself access, so Brad allowed this one script by its
+absolute path in `.claude/settings.local.json` (2026-10-28). Keep it read-only: a
+script on that allow rule that could write would skip the check entirely.
+
 ### Long-Running Feature Branches (Substantial Roadmap Items)
 
 For a multi-phase roadmap feature (the kind with its own "Design questions to resolve" list and a multi-agent **Model:** line, e.g. Assisted Traffic Handling, MFA/TOTP, Teams), don't build directly on `main`:

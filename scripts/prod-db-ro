@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+"""Run one read-only SQL query against production's database.
+
+    scripts/prod-db-ro "SELECT id, name, status FROM nets WHERE id = 143"
+    scripts/prod-db-ro < query.sql
+
+For diagnosing reports and the real-data checks in copilot-instructions.md,
+without a hand-written ssh one-liner each time. Nothing here can change
+production: the database is opened with mode=ro, and an SQLite authorizer
+refuses every operation except reading (no INSERT/UPDATE/DELETE, no ATTACH,
+no PRAGMA other than the schema lookups below). Python's execute() also
+takes one statement only. Output is tab-separated with a header row.
+"""
+import base64
+import subprocess
+import sys
+
+HOST = "ectlogger@app.ectlogger.us"
+
+# Runs on production. The query arrives base64-encoded, so no shell quoting
+# is involved anywhere.
+REMOTE = r'''
+import base64, os, sqlite3, sys
+sql = base64.b64decode("{sql}").decode()
+path = os.path.expanduser("~/ectlogger/backend/ectlogger.db")
+conn = sqlite3.connect(f"file:{{path}}?mode=ro", uri=True, timeout=10)
+READ_PRAGMAS = {{"table_info", "table_xinfo", "index_list", "index_info", "foreign_key_list"}}
+ALLOWED = {{sqlite3.SQLITE_SELECT, sqlite3.SQLITE_READ, sqlite3.SQLITE_FUNCTION, sqlite3.SQLITE_RECURSIVE}}
+def authorize(action, arg1, arg2, db, trigger):
+    if action in ALLOWED or (action == sqlite3.SQLITE_PRAGMA and arg1 in READ_PRAGMAS):
+        return sqlite3.SQLITE_OK
+    return sqlite3.SQLITE_DENY
+conn.set_authorizer(authorize)
+try:
+    cur = conn.execute(sql)
+except sqlite3.Error as e:
+    sys.exit(f"query refused or failed: {{e}}")
+if cur.description:
+    print("\t".join(d[0] for d in cur.description))
+    rows = 0
+    for row in cur:
+        print("\t".join("" if v is None else str(v) for v in row))
+        rows += 1
+    print(f"({{rows}} rows)", file=sys.stderr)
+'''
+
+
+def main() -> int:
+    sql = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else sys.stdin.read()
+    if not sql.strip():
+        print(__doc__, file=sys.stderr)
+        return 2
+    program = REMOTE.format(sql=base64.b64encode(sql.encode()).decode())
+    return subprocess.run(
+        ["ssh", "-o", "BatchMode=yes", HOST, "python3 -"], input=program.encode()
+    ).returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())
