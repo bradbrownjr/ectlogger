@@ -362,6 +362,7 @@ Top financial supporters and community contributors are acknowledged directly in
 **Phase 2 — Add one net to a calendar** *(not started)*
 - [ ] "Add to calendar" on a net and on a schedule occurrence (the calendar view's details popover is the natural home for the occurrence one), emitting a Google Calendar template URL and a downloadable `.ics` for everyone else. No backend and no new dependency
 - [ ] Populate title, start and end, location or frequency, and a link back to the net
+- [ ] **Download a whole schedule as an iCalendar file** (Brad, 2026-10-29: "Exporting an ICS for a schedule would be handy"). One recurring event built from the schedule's own rule, offered on the schedule card and the calendar view, so a weekly net is one import instead of one per week. Still no backend: `schedule_config` is already in the schedule response. Unlike the Phase 3 feed it is a snapshot, so the event carries no NCS name (the rotation changes weekly) and the download says plainly that later schedule changes won't follow it. Cancelled dates already known go in as exceptions
 
 **Phase 3 — Subscribable calendar feed** *(not started)*
 - [ ] Per-user feed of their subscribed schedules, offered as both `https` and `webcal://`. This is the version that actually pays off for a recurring net: it keeps updating as schedules change and the rotation advances
@@ -394,8 +395,14 @@ actually cares about.
       ~`:388`) and `CheckInMobileList.tsx`. The two hard-coded `validValues` status arrays in those
       files both need the new member — they are the kind of list that silently drops an unknown
       status
-- [ ] Only staff can set "No answer"; only the station itself sets "Step away". The toolbar's
-      step-away toggle stays self-only and never produces the new status
+- [ ] Only staff can set "No answer". **Staff must keep being able to set Away too**: Brad
+      marks a station that says it is stepping away with the pause action all the time, during
+      his own nets (2026-10-29). The toolbar's step-away toggle stays self-only and never
+      produces the new status
+- [ ] **Worth doing only if it doesn't confuse operators** (Brad, 2026-10-29). Two yellow-ish
+      states a station can't tell apart is worse than one. The labels and the row legend must
+      make the difference obvious at a glance, and a station looking at its own row should see
+      "No answer" as "net control couldn't reach you", not as an accusation
 - [ ] **Toolbar icon change:** the self step-away action currently uses `PauseCircleOutline`. Swap
       it for a walking/boot glyph so the two states read differently at a glance — MUI has
       `DirectionsWalk` and `Hiking`; `Hiking` is the closer match to the requested hiking boot.
@@ -466,10 +473,16 @@ before building the careful one.
 - [ ] Leave a record: a system chat message naming who reopened it (the same shape the
       auto-close message uses), and `reopened_at`/`reopened_by_id` if the after-action
       review needs it in the export rather than only in chat
-- [ ] Decide what closing again sends. A second closure email and a second ICS-309 will
-      reach people who already have the first. Either suppress the duplicate, or mark the
-      reissued log as superseding, but do not send two logs for one net with no indication
-      which is current
+- [ ] **Hold the closing email for a few minutes, with Undo** (Brad, 2026-10-29). A close
+      waits a short grace period before the log goes out, and the net shows an Undo for that
+      long, so a misclick costs nothing and nobody receives a log at all. Reuse the held-log
+      machinery rather than a second timer: `Net.log_hold_send_at` already sends a held log
+      on a deadline for the auto-close "Who ran this net?" case. Undo inside the window is
+      the cheap, common path; reopening after the log went out is the rarer one below
+- [ ] **A log sent again after a reopen is marked as a correction** (Brad, 2026-10-29), and
+      only when something actually changed (a check-in, chat, traffic, off-net entry or the
+      NCS credit). The email and the ICS-309 say they replace the earlier copy. A reopen and
+      reclose with no changes sends nothing new
 - [ ] Scope which statuses qualify. `CLOSED` is the case being asked for. `ARCHIVED`
       should likely require `unarchive` first, and `CANCELLED` already has `restore_net`,
       which is a different action with a correct implementation, so point at it rather
