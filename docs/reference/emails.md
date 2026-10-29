@@ -4,7 +4,7 @@ summary: Every message ECTLogger sends, what triggers it, who gets it, and how t
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-28
+revised: 2026-10-29
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/emails/
@@ -46,8 +46,8 @@ Every one of these is read directly from the sending code, not from memory. Most
 | Net log waiting to be sent | Once a day while a net closed with **Finish the log later** still hasn't sent its log | The net's manager, the schedule's manager and co-managers, and whoever closed it | Send the log. The master switch also stops it |
 | Who ran this net? | Auto-close closed a net with nobody recorded as NCS, and held its log | The same people as the reminder above, once | Send the log and choose who ran it. If nobody does within 24 hours, the log goes out with NCS: Not recorded |
 | Duty reminder (NCS) | 24 hours and 1 hour before your scheduled rotation slot | The rotation member on duty for that occurrence | The master switch only — this is a duty reminder, not an optional preference, so there's no separate toggle for it |
-| Duty reminder (staff) | 1 hour before a net from a schedule you're active staff on, whether or not you've separately subscribed | Every active staff member for that schedule, skipped if you already got the NCS or subscriber reminder for the same net | The master switch only, same reasoning as the NCS reminder |
-| Subscriber reminder | 1 hour before a net you've subscribed to, if you opted into reminders specifically | Subscribers with the reminder preference on | Profile setting "Net reminder (1 hour before)" (off by default — subscribing to a schedule alone does not turn this on), and the master switch |
+| Duty reminder (staff) | 1 hour before a net from a schedule you're active staff on, whether or not you've separately subscribed. Names the NCS on duty when the net has one | Every active staff member for that schedule, skipped if you already got the NCS or subscriber reminder for the same net | The master switch only, same reasoning as the NCS reminder |
+| Subscriber reminder | 1 hour before a net you've subscribed to, if you opted into reminders specifically. Names the NCS on duty when the net has one | Subscribers with the reminder preference on | Profile setting "Net reminder (1 hour before)" (off by default — subscribing to a schedule alone does not turn this on), and the master switch |
 | Duty roster changed | The pre-assigned NCS for an upcoming, not-yet-started net changes because the rotation roster was edited | Both the previously-assigned and the newly-assigned operator | Sent regardless of your email preferences, as of this writing — there is no way to opt out of this one |
 | Net cancelled | A specific date on the schedule is marked cancelled with no replacement NCS | The operator who would have been on duty, plus every subscriber to that schedule | Sent regardless of your email preferences, as of this writing |
 

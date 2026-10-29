@@ -6,6 +6,17 @@ from app.config import settings
 from app.email.logo_svg import LOGO_SVG
 from app.email.base import get_unsubscribe_footer, send_email
 
+def _frequency_items(frequencies: list) -> str:
+    """The <li> items of a reminder's frequency list (one copy per email until 2026-10-29)."""
+    freq_list = ""
+    for freq in frequencies:
+        if freq.get('frequency'):
+            freq_list += f"<li>{freq['frequency']} MHz - {freq.get('mode', 'N/A')}</li>"
+        elif freq.get('talkgroup_name'):
+            freq_list += f"<li>{freq['talkgroup_name']} (TG: {freq.get('talkgroup_id', 'N/A')})</li>"
+    return freq_list or "<li>No frequencies configured</li>"
+
+
 async def send_ncs_reminder(
     to_email: str, 
     operator_name: str,
@@ -22,16 +33,7 @@ async def send_ncs_reminder(
     """Send NCS duty reminder email"""
     logger.info("EMAIL", f"Sending NCS reminder to {to_email} for {net_name} on {net_date}")
     
-    # Format frequencies for display
-    freq_list = ""
-    for freq in frequencies:
-        if freq.get('frequency'):
-            freq_list += f"<li>{freq['frequency']} MHz - {freq.get('mode', 'N/A')}</li>"
-        elif freq.get('talkgroup_name'):
-            freq_list += f"<li>{freq['talkgroup_name']} (TG: {freq.get('talkgroup_id', 'N/A')})</li>"
-    
-    if not freq_list:
-        freq_list = "<li>No frequencies configured</li>"
+    freq_list = _frequency_items(frequencies)
     
     # Different messaging based on reminder timing
     if hours_until <= 1:
@@ -143,21 +145,18 @@ async def send_subscriber_reminder(
     net_time: str,
     frequencies: list,
     net_url: str,
-    unsubscribe_token: str = None
+    unsubscribe_token: str = None,
+    ncs_name: str = None,
+    ncs_callsign: str = None,
 ):
-    """Send net reminder to subscriber 1 hour before net starts"""
+    """Send net reminder to subscriber 1 hour before net starts.
+
+    ncs_name/ncs_callsign: who is on duty as NCS, when the net has one (the
+    same line the staff reminder shows).
+    """
     logger.info("EMAIL", f"Sending subscriber reminder to {to_email} for {net_name}")
     
-    # Format frequencies for display
-    freq_list = ""
-    for freq in frequencies:
-        if freq.get('frequency'):
-            freq_list += f"<li>{freq['frequency']} MHz - {freq.get('mode', 'N/A')}</li>"
-        elif freq.get('talkgroup_name'):
-            freq_list += f"<li>{freq['talkgroup_name']} (TG: {freq.get('talkgroup_id', 'N/A')})</li>"
-    
-    if not freq_list:
-        freq_list = "<li>No frequencies configured</li>"
+    freq_list = _frequency_items(frequencies)
     
     html_template = Template("""
     <!DOCTYPE html>
@@ -199,6 +198,7 @@ async def send_subscriber_reminder(
                 <p><strong>Net:</strong> {{ net_name }}</p>
                 <p><strong>Date:</strong> {{ net_date }}</p>
                 <p><strong>Time:</strong> {{ net_time }}</p>
+                {% if ncs_name %}<p><strong>NCS on duty:</strong> {{ ncs_name }}{% if ncs_callsign %} ({{ ncs_callsign }}){% endif %}</p>{% endif %}
                 <p><strong>Frequencies:</strong></p>
                 <ul>
                     {{ freq_list }}
@@ -228,6 +228,8 @@ async def send_subscriber_reminder(
         net_time=net_time,
         freq_list=freq_list,
         net_url=net_url,
+        ncs_name=ncs_name,
+        ncs_callsign=ncs_callsign,
         app_name=settings.app_name,
         unsubscribe_footer=get_unsubscribe_footer(unsubscribe_token)
     )
@@ -370,14 +372,7 @@ async def send_staff_reminder(
     """
     logger.info("EMAIL", f"Sending staff reminder to {to_email} for {net_name}")
 
-    freq_list = ""
-    for freq in frequencies:
-        if freq.get('frequency'):
-            freq_list += f"<li>{freq['frequency']} MHz - {freq.get('mode', 'N/A')}</li>"
-        elif freq.get('talkgroup_name'):
-            freq_list += f"<li>{freq['talkgroup_name']} (TG: {freq.get('talkgroup_id', 'N/A')})</li>"
-    if not freq_list:
-        freq_list = "<li>No frequencies configured</li>"
+    freq_list = _frequency_items(frequencies)
 
     # Same check_in=1 query-param convention as open_lobby=1 below: NetView picks
     # this up and triggers the check-in dialog once the net has loaded.
@@ -427,11 +422,11 @@ async def send_staff_reminder(
                 <p><strong>Net:</strong> {{ net_name }}</p>
                 <p><strong>Date:</strong> {{ net_date }}</p>
                 <p><strong>Time:</strong> {{ net_time }}</p>
+                {% if ncs_name %}<p><strong>NCS on duty:</strong> {{ ncs_name }}{% if ncs_callsign %} ({{ ncs_callsign }}){% endif %}</p>{% endif %}
                 <p><strong>Frequencies:</strong></p>
                 <ul>
                     {{ freq_list }}
                 </ul>
-                {% if ncs_name %}<p><strong>NCS on duty:</strong> {{ ncs_name }}{% if ncs_callsign %} ({{ ncs_callsign }}){% endif %}</p>{% endif %}
             </div>
 
             <div class="buttons">

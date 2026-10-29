@@ -33,6 +33,44 @@ from app.routers.ncs_schedule import (
 )
 
 
+def _reminder_frequencies(template: NetTemplate) -> list:
+    """The schedule's frequencies as the reminder emails list them.
+
+    Shared by the NCS, staff and subscriber reminders. The subscriber copy
+    had a talkgroup's name and number the wrong way round until 2026-10-29.
+    """
+    frequencies = []
+    for freq in template.frequencies:
+        if freq.frequency:
+            frequencies.append({'frequency': str(freq.frequency), 'mode': freq.mode})
+        elif freq.talkgroup:
+            frequencies.append({
+                'talkgroup_name': freq.network or freq.talkgroup,
+                'talkgroup_id': freq.talkgroup,
+            })
+    return frequencies
+
+
+async def _reminder_ncs(db, net_id) -> tuple:
+    """(ncs_name, ncs_callsign) for a reminder's "NCS on duty" line.
+
+    Every *active* NCS, oldest assignment first (see
+    utils.format_ncs_attribution). ASC matters: _assign_duty_ncs stamps the
+    rotation's scheduled pick ~24h ahead, so most-recent-wins would let any
+    later grant displace the operator actually on duty. Shared by the staff
+    and subscriber reminders; Joel AA1GM asked 2026-10-29 for the subscriber
+    one to say who is NCS, which only the staff one did.
+    """
+    if not net_id:
+        return None, None
+    ncs_callsign, ncs_name = await net_ncs_attribution(db, net_id)
+    if ncs_callsign and not ncs_name:
+        # Several on duty (or no name on file): show the callsign list alone
+        # rather than "None (WO1J, NB1T)".
+        return ncs_callsign, None
+    return ncs_name, ncs_callsign
+
+
 class NCSReminderService:
     """Service for sending NCS duty reminder emails"""
     
@@ -482,29 +520,8 @@ class NCSReminderService:
                 net_url = f"{settings.frontend_url}/nets/{net_id}" if net_id else f"{settings.frontend_url}/dashboard"
                 lobby_url = f"{net_url}?open_lobby=1" if net_id else net_url
 
-                frequencies = []
-                for freq in template.frequencies:
-                    if freq.frequency:
-                        frequencies.append({'frequency': str(freq.frequency), 'mode': freq.mode})
-                    elif freq.talkgroup:
-                        frequencies.append({
-                            'talkgroup_name': freq.network or freq.talkgroup,
-                            'talkgroup_id': freq.talkgroup,
-                        })
-
-                # Query the on-duty NCS for this net: every *active* NCS,
-                # oldest assignment first (see utils.format_ncs_attribution).
-                # ASC matters here -- _assign_duty_ncs stamps the rotation's
-                # scheduled pick ~24h ahead, so most-recent-wins would let any
-                # later grant displace the operator actually on duty.
-                ncs_name = None
-                ncs_callsign = None
-                if net_id:
-                    ncs_callsign, ncs_name = await net_ncs_attribution(db, net_id)
-                    if ncs_callsign and not ncs_name:
-                        # Several on duty (or no name on file): show the
-                        # callsign list alone rather than "None (WO1J, NB1T)".
-                        ncs_name, ncs_callsign = ncs_callsign, None
+                frequencies = _reminder_frequencies(template)
+                ncs_name, ncs_callsign = await _reminder_ncs(db, net_id)
 
                 for staff_entry in active_staff:
                     user = staff_entry.user
@@ -698,19 +715,7 @@ class NCSReminderService:
         scheduled_utc is the UTC equivalent (used for net lookups and dedup logging).
         """
         try:
-            # Format frequencies for the email
-            frequencies = []
-            for freq in template.frequencies:
-                if freq.frequency:
-                    frequencies.append({
-                        'frequency': str(freq.frequency),
-                        'mode': freq.mode
-                    })
-                elif freq.talkgroup:
-                    frequencies.append({
-                        'talkgroup_name': freq.network or freq.talkgroup,
-                        'talkgroup_id': freq.talkgroup
-                    })
+            frequencies = _reminder_frequencies(template)
             
             # Get operator name and callsign
             operator_name = user.name or display_callsign(user) or "Operator"
@@ -871,19 +876,7 @@ class NCSReminderService:
         scheduled_local is the net's local wall-clock time (used for email display);
         scheduled_utc is the UTC equivalent (used for net lookup and dedup logging).
         """
-        # Format frequencies for the email
-        frequencies = []
-        for freq in template.frequencies:
-            if freq.frequency:
-                frequencies.append({
-                    'frequency': str(freq.frequency),
-                    'mode': freq.mode
-                })
-            elif freq.talkgroup:
-                frequencies.append({
-                    'talkgroup_name': freq.talkgroup,
-                    'talkgroup_id': freq.network
-                })
+        frequencies = _reminder_frequencies(template)
 
         # Get user name and callsign
         recipient_name = user.name or display_callsign(user) or "Operator"
@@ -905,6 +898,7 @@ class NCSReminderService:
         existing_net = result.scalar_one_or_none()
         if existing_net:
             net_url = f"{settings.frontend_url}/nets/{existing_net.id}"
+        ncs_name, ncs_callsign = await _reminder_ncs(db, existing_net.id if existing_net else None)
 
         await EmailService.send_subscriber_reminder(
             to_email=user.email,
@@ -915,7 +909,9 @@ class NCSReminderService:
             net_time=scheduled_local.strftime("%I:%M %p"),
             frequencies=frequencies,
             net_url=net_url,
-            unsubscribe_token=user.unsubscribe_token
+            unsubscribe_token=user.unsubscribe_token,
+            ncs_name=ncs_name,
+            ncs_callsign=ncs_callsign,
         )
 
         # Log that we sent this reminder (keyed on UTC for stable dedup)
