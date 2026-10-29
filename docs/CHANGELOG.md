@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-28
+revised: 2026-10-29
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,23 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# October 29, 2026
+
+## New Features
+
+* **Check-in: In person** — Check in staff who are on site without a radio, such as at the EOC or a shelter during an exercise or incident. Their row reads In person with no frequency, so net control knows not to call them on the air. In Bulk add, end the line with :ip.
+
+## Improvements
+
+* **Check-in: Fix a station's frequency** — On a net with more than one frequency, net control can now change which frequency a station checked in on, and which others it can be reached on, by editing its row. Handy when nobody picked a frequency at check-in.
+* **Reminders: Who's NCS** — The 1-hour reminder for a net you subscribe to now names the NCS on duty, as the staff reminder already did.
+
+## Bug Fixes
+
+* **Reminders: Talkgroups listed correctly** — The 1-hour subscriber reminder showed a DMR talkgroup's number where its name belonged, and the other way round. It now matches the other reminders.
 
 ---
 

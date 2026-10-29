@@ -1,6 +1,50 @@
 {
-  "version": "2026.10.28b",
+  "version": "2026.10.29",
   "entries": [
+    {
+      "version": "2026.10.29",
+      "date": "2026-10-29",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Check-in: In person — Check in staff who are on site without a radio, such as at the EOC or a shelter during an exercise or incident. Their row reads In person with no frequency, so net control knows not to call them on the air. In Bulk add, end the line with :ip.",
+              "userImpact": true,
+              "docs": "/docs/net-control/logging-check-ins/#checking-someone-in-in-person"
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Check-in: Fix a station's frequency — On a net with more than one frequency, net control can now change which frequency a station checked in on, and which others it can be reached on, by editing its row. Handy when nobody picked a frequency at check-in.",
+              "userImpact": true,
+              "docs": "/docs/net-control/logging-check-ins/#fixing-a-stations-frequency"
+            },
+            {
+              "text": "Reminders: Who's NCS — The 1-hour reminder for a net you subscribe to now names the NCS on duty, as the staff reminder already did.",
+              "userImpact": true,
+              "docs": "/docs/reference/emails/"
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Reminders: Talkgroups listed correctly — The 1-hour subscriber reminder showed a DMR talkgroup's number where its name belonged, and the other way round. It now matches the other reminders.",
+              "userImpact": true,
+              "docs": "/docs/reference/emails/"
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.10.28b",
       "date": "2026-10-28",
