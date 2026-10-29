@@ -1,10 +1,10 @@
 ---
 title: Status, rechecks, and checking out
-summary: The eight station statuses, what a recheck actually does, and why checking out matters to whoever is running the net.
+summary: The nine station statuses, what a recheck actually does, and why checking out matters to whoever is running the net.
 kind: Explanation
 audience: Operators
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-29
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/status-and-checking-out/
@@ -20,7 +20,7 @@ The check-in list has a legend across the top of the table. It looks like one fl
 
 This page is about the first and third. Roles belong to whoever is running the net; see the [net control](/docs/net-control/) path if that's you.
 
-## The eight statuses
+## The nine statuses
 
 <div class="table-scroll" markdown="1">
 
@@ -33,13 +33,14 @@ This page is about the first and third. Roles belong to whoever is running the n
 | siren | Has traffic | Has traffic or emergency to report | You have something for NCS, formal or not. |
 | megaphone | Announcements | Has announcements to share | You have something to say to the net, not just to NCS. |
 | car | Mobile | Mobile - may only be available briefly | You're operating from a vehicle and might drop off suddenly. |
+| standing figure | In person | In person, not on the radio - don't call on the air | You're at the site in person (the EOC, a shelter) without a radio. Usually net control sets this for you when you sign in at the door. |
 | waving hand | Checked out | Checked out of net | You're done for this net. |
 
 </div>
 
-That's the complete list. `StationStatus` has exactly these eight values and no others. If you've seen an older guide mention a status called "Available," that was never a real one; every status above except "Checked in" and "Checked out" is something you'd actively choose because it's true of you right now.
+That's the complete list. `StationStatus` has exactly these nine values and no others. If you've seen an older guide mention a status called "Available," that was never a real one; every status above except "Checked in" and "Checked out" is something you'd actively choose because it's true of you right now.
 
-You can change your own status at any time while you're checked in, straight from the check-in list, with no NCS or Logger involved, since it's your own row. The dropdown there is the only place all eight are offered.
+You can change your own status at any time while you're checked in, straight from the check-in list, with no NCS or Logger involved, since it's your own row. The dropdown there is the only place all nine are offered.
 
 The net's toolbar, across the top of the page, carries one-click versions of the ones you'll actually want mid-net, so you don't have to find your row at all:
 
@@ -74,7 +75,7 @@ If you check in, then later check in again under the same callsign, ECTLogger do
 
 One recheck does change your earlier row. On a net with sites, checking in from a different site than your current check-in (a different shelter, Home, or Traveling) checks your earlier check-in out, because you can't be in two places at once. A recheck from the same place on another frequency leaves both rows checked in.
 
-By default the check-in list shows every one of those rows, and marks the newest one for a given callsign with a recheck (circular arrows) icon instead of the usual check mark, tooltip "Re-checked into the net." That's what you're seeing when the legend shows a "Recheck" entry: a flag on one particular row, not an eighth status alongside the eight above. If the list is getting long with a station's earlier rows all still visible, there's a small icon in the corner of the table's header that toggles **Hide duplicate rows (show latest per station)**. Turning it on collapses the view down to just each callsign's most recent row; turning it back off ("Show all rows, including re-checks") brings the full history back. Nothing is deleted either way; it's purely a display filter.
+By default the check-in list shows every one of those rows, and marks the newest one for a given callsign with a recheck (circular arrows) icon instead of the usual check mark, tooltip "Re-checked into the net." That's what you're seeing when the legend shows a "Recheck" entry: a flag on one particular row, not a tenth status alongside the nine above. If the list is getting long with a station's earlier rows all still visible, there's a small icon in the corner of the table's header that toggles **Hide duplicate rows (show latest per station)**. Turning it on collapses the view down to just each callsign's most recent row; turning it back off ("Show all rows, including re-checks") brings the full history back. Nothing is deleted either way; it's purely a display filter.
 
 <figure>
   <img src="/docs/img/operators/check-in-legend.png"
@@ -91,6 +92,6 @@ You don't have to check out before a net closes, since closing the net doesn't e
 
 <figure>
   <img src="/docs/img/operators/status-select-dropdown.png"
-       alt="A check-in row's status dropdown open, listing Checked in, Listening, Relay, Away, Has traffic, Announcements, Mobile, and Checked out.">
+       alt="A check-in row's status dropdown open, listing Checked in, Listening, Relay, Away, Has traffic, Announcements, Mobile, In person, and Checked out.">
   <figcaption>Every status is one dropdown away, on your own row.</figcaption>
 </figure>

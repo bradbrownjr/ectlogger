@@ -200,7 +200,8 @@ shots:
     pad: 8
     alt: >
       A check-in row's status dropdown open, listing Checked in, Listening,
-      Relay, Away, Has traffic, Announcements, Mobile, and Checked out.
+      Relay, Away, Has traffic, Announcements, Mobile, In person, and
+      Checked out.
     caption: Every status is one dropdown away, on your own row.
 
   - id: self-status-toolbar

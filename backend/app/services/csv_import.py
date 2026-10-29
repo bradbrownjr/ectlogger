@@ -46,6 +46,8 @@ STATUS_MAP: dict[str, StationStatus] = {
     "away": StationStatus.AWAY,
     "announcements": StationStatus.ANNOUNCEMENTS,
     "mobile": StationStatus.MOBILE,
+    "inperson": StationStatus.IN_PERSON,
+    "in_person": StationStatus.IN_PERSON,
     "checkedout": StationStatus.CHECKED_OUT,
     "checked_out": StationStatus.CHECKED_OUT,
 }
@@ -226,6 +228,9 @@ def process_csv_rows(reader: csv.DictReader, config: CsvImportConfig) -> CsvImpo
             ),
             config.frequency_token_map,
         )
+        # In person means no radio, so no frequency (same as create_check_in)
+        if parsed_status == StationStatus.IN_PERSON:
+            available_freq_ids = []
 
         # -- timestamp ------------------------------------------------------
         raw_time = _get_value(

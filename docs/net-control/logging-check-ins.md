@@ -1,10 +1,10 @@
 ---
 title: Logging check-ins
-summary: Adding a station, editing a row in place, fixing a misheard callsign, removing and blocking a station that shouldn't be on the net, and logging a station with no account.
+summary: Adding a station, editing a row in place, fixing a misheard callsign or a missed frequency, checking someone in in person, removing and blocking a station that shouldn't be on the net, and logging a station with no account.
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-27
+revised: 2026-10-29
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/logging-check-ins/
@@ -55,6 +55,27 @@ Click anywhere on a check-in's row (Callsign, Name, Location, whatever's shown) 
 This is the tool for fixing a callsign you misheard, correcting a location or a site, or updating anything else about a check-in after the fact. There's no separate "edit" mode or dialog to hunt for. A corrected callsign also moves the row to that station's account, or makes it a guest row if the new callsign has none, so a station first logged with a typo can still be made NCS or Logger from the list.
 
 The one exception is the station's round picture (its avatar) beside the callsign. Clicking that opens the station's profile instead, so you can look someone up without opening the row for editing.
+
+### Fixing a station's frequency
+
+On a net with more than one frequency, opening a row for editing also opens two boxes under it:
+
+- **Checked in on** is the frequency the station called in on.
+- **Also reachable on** is every frequency the station can be reached on.
+
+<figure>
+  <img src="/docs/img/net-control/frequency-edit-open.png"
+       alt="KC1HILL's check-in row open for editing, with two boxes outlined together in red on a row beneath it: Checked in on, showing the frequency the station called in on, and Also reachable on, listing every frequency the station can be reached on.">
+  <figcaption>On a net with more than one frequency, editing a row also lets you fix its frequencies.</figcaption>
+</figure>
+
+Use them when a station was logged without the right frequency, for instance when nobody picked one at check-in. Choosing a **Checked in on** frequency adds it to **Also reachable on** as well. A net with only one frequency has nothing to choose between, so the boxes don't appear there.
+
+## Checking someone in in person
+
+Someone can be part of a net without being on the air: staff at the EOC or a shelter during an exercise or incident, who signed in at the door rather than over the radio. Give their check-in the **In person** status, a standing figure. Their row is tinted and has no frequency, so net control knows not to call them on the air. In [Bulk add](/docs/net-control/speed-entry/), end the line with `:ip`.
+
+Changing a check-in to In person removes its frequency. Changing it back to another status on a net with one frequency puts the station on that frequency again. On a net with several, choose it in the row's editor as above.
 
 ## Deleting a check-in
 

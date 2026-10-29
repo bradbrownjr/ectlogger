@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { fieldLabel } from '../../utils/checkInFields';
 import {
+  Autocomplete,
   Box,
   Checkbox,
   Chip,
@@ -29,6 +30,7 @@ import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
 import UserAvatar from '../UserAvatar';
 import { formatTimeWithDate } from '../../utils/dateUtils';
 import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
+import { inPersonRowTint, STATUS_SELECT_VALUES } from './checkInStatusHelpers';
 import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS, useOffscreenArrivalIndicator } from './sneakInHighlight';
 import OffscreenArrivalArrow from './OffscreenArrivalArrow';
 import CheckInLocation from './CheckInLocation';
@@ -92,7 +94,7 @@ interface CheckInTableProps {
   handleDetachCheckInList: () => void;
   handlePopOutCheckInList?: () => void;
   handleStartInlineEdit: (checkIn: any, focusField?: string) => void;
-  handleInlineFieldChange: (field: string, value: string) => void;
+  handleInlineFieldChange: (field: string, value: any) => void;
   handleInlineKeyDown: (e: React.KeyboardEvent) => void;
   handleInlineBlur: (e: React.FocusEvent) => void;
   handleStatusChange: (checkInId: number, newStatus: string) => Promise<any> | void;
@@ -419,6 +421,8 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       ? theme.palette.action.disabledBackground
                       : checkIn.status === 'away'
                       ? (isDarkMode ? 'rgba(255, 193, 7, 0.18)' : 'rgba(255, 193, 7, 0.22)')
+                      : checkIn.status === 'in_person'
+                      ? inPersonRowTint(isDarkMode)
                       : isNcsUser && ncsColor ? ncsColor.bg
                       : isOnActiveFrequency
                       ? (isDarkMode ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)')
@@ -437,6 +441,18 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     };
 
                     const isSneakInHighlighted = !!highlightedCheckInIds?.has(checkIn.id);
+
+                    // The rows under this one (frequency chips, or their editor): same
+                    // color and fading as the row above, so the two read as one check-in.
+                    const subRowSx = {
+                      backgroundColor: rowBgColor,
+                      opacity: isPriorRow ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
+                      // Add left border for NCS users
+                      ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
+                        borderLeft: `3px solid ${ncsColor.border}`,
+                      }),
+                    };
+                    const editFrequencies = isInlineEditing && net.frequencies?.length > 1 && checkIn.status !== 'in_person';
 
                     return (
                     <React.Fragment key={checkIn.id}>
@@ -514,8 +530,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                             selectValue = userRole.role.toLowerCase();
                           }
                           // Only allow lowercase values for Select and MenuItem
-                          const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'has_traffic', 'announcements', 'mobile', 'checked_out'];
-                          if (!validValues.includes(selectValue)) {
+                          if (!STATUS_SELECT_VALUES.includes(selectValue)) {
                             selectValue = 'checked_in';
                           }
 
@@ -554,6 +569,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                                 <MenuItem value="has_traffic">🚨  {getStatusLabel('has_traffic')}</MenuItem>
                                 <MenuItem value="announcements">📢  {getStatusLabel('announcements')}</MenuItem>
                                 <MenuItem value="mobile">🚗  {getStatusLabel('mobile')}</MenuItem>
+                                <MenuItem value="in_person">🧍  {getStatusLabel('in_person')}</MenuItem>
                                 {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋  {getStatusLabel('checked_out')}</MenuItem>}
                               </Select>
                             </Tooltip>
@@ -970,17 +986,51 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                         </Box>
                       </TableCell>
                     </TableRow>
+                    {/* ========== FREQUENCY EDIT ROW: inline edit, multi-frequency nets ========== */}
+                    {/* Replaces the chips row below while this row is being edited, so net
+                        control can fix a frequency missed at check-in. Not for an In person
+                        station, which has no radio. data-inline-edit-row keeps focus here
+                        from counting as leaving the row (checkInActions.ts::handleInlineBlur). */}
+                    {editFrequencies && (
+                      <TableRow data-inline-edit-row sx={subRowSx}>
+                        <TableCell colSpan={columnCount - 1} sx={{ pt: 1.5, pb: 1, borderBottom: 1, borderColor: 'divider' }}>
+                          <Box sx={{ display: 'inline-flex', gap: 1, flexWrap: 'wrap', ml: 4 }}>
+                            <Autocomplete
+                              size="small"
+                              options={net.frequencies}
+                              value={net.frequencies.find((f: any) => f.id === inlineEditValues.frequency_id) ?? null}
+                              onChange={(_e, f: any) => {
+                                handleInlineFieldChange('frequency_id', f ? f.id : null);
+                                // The frequency checked in on is one the station can be reached on
+                                const reachable: number[] = inlineEditValues.available_frequency_ids || [];
+                                if (f && !reachable.includes(f.id)) handleInlineFieldChange('available_frequency_ids', [...reachable, f.id]);
+                              }}
+                              getOptionLabel={(f: any) => formatFrequencyDisplay(f)}
+                              isOptionEqualToValue={(a: any, b: any) => a.id === b.id}
+                              onBlur={handleInlineBlur}
+                              sx={{ width: 220 }}
+                              renderInput={(params) => <TextField {...params} label="Checked in on" />}
+                            />
+                            <Autocomplete
+                              multiple
+                              size="small"
+                              options={net.frequencies}
+                              value={net.frequencies.filter((f: any) => (inlineEditValues.available_frequency_ids || []).includes(f.id))}
+                              onChange={(_e, fs: any[]) => handleInlineFieldChange('available_frequency_ids', fs.map(f => f.id))}
+                              getOptionLabel={(f: any) => formatFrequencyDisplay(f)}
+                              isOptionEqualToValue={(a: any, b: any) => a.id === b.id}
+                              onBlur={handleInlineBlur}
+                              sx={{ width: 360 }}
+                              renderInput={(params) => <TextField {...params} label="Also reachable on" />}
+                            />
+                          </Box>
+                        </TableCell>
+                        <TableCell sx={{ position: 'sticky', right: 0, zIndex: 1, ...stickyCellSx, boxShadow: stickyShadow, pt: 0, pb: 0.5, borderBottom: 1, borderColor: 'divider' }} />
+                      </TableRow>
+                    )}
                     {/* Frequency chips row - only show if net has multiple frequencies */}
-                    {hasFrequencyChips && (
-                      <TableRow sx={{
-                        // Same color and fading as the row above, so the two read as one check-in.
-                        backgroundColor: rowBgColor,
-                        opacity: isPriorRow ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
-                        // Add left border for NCS users
-                        ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
-                          borderLeft: `3px solid ${ncsColor.border}`,
-                        }),
-                      }}>
+                    {hasFrequencyChips && !editFrequencies && (
+                      <TableRow sx={subRowSx}>
                         {/* One column short: the row's own Actions cell closes it below. */}
                         <TableCell colSpan={columnCount - 1} sx={{ pt: 0, pb: 0.5, borderBottom: 1, borderColor: 'divider' }}>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', pl: 4 }}>

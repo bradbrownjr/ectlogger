@@ -36,7 +36,7 @@ So the app is not the net. It is a log of the net, and it is also a second chann
 
 **[Checking in](/docs/operators/checking-in/)** — The check-in form, which fields are required and which are not, what the net has asked you for, and what happens when you submit.
 
-**[Status, rechecks, and checking out](/docs/operators/status-and-checking-out/)** — The eight station statuses, when to change yours, what a recheck actually does to the check-in list, and why checking out matters to the person running the net.
+**[Status, rechecks, and checking out](/docs/operators/status-and-checking-out/)** — The nine station statuses, when to change yours, what a recheck actually does to the check-in list, and why checking out matters to the person running the net.
 
 **[Chat, polls, and topics](/docs/operators/chat-and-polls/)** — Talking alongside the net without talking over it. Editing a message, replying to one, tagging a station, and muting one that is bothering you.
 

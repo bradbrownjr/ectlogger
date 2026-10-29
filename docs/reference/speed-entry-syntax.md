@@ -57,6 +57,7 @@ Add a colon and a one- or two-letter code at the end of a check-in to set anythi
 | `:t` | Has traffic |
 | `:a` | Announcements |
 | `:m` | Mobile |
+| `:ip` | In person |
 | `:o` | Checked out |
 
 </div>

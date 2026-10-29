@@ -32,8 +32,9 @@ shots:
       The check-in list legend, reading left to right: NCS (a crown), 2nd NCS
       (a second crown), Logger (a clipboard), Standard (a check mark), Recheck
       (two arrows in a circle), Listening (an ear), Relay (a satellite dish),
-      Away (a pause symbol), Traffic (a siren), Announce (a megaphone), and
-      Out (a waving hand), followed by a note that a blue highlight marks a
+      Away (a pause symbol), Traffic (a siren), Announce (a megaphone),
+      Mobile (a car), In person (a standing figure), and Out (a waving hand),
+      followed by a note that a blue highlight marks a
       station on the net's active frequency and that clicking a row opens
       inline editing.
     caption: >

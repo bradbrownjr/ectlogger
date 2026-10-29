@@ -74,7 +74,7 @@ The check-in list is the center of the page for a reason: everything else here e
 
 <figure>
   <img src="/docs/img/reference/check-in-legend.png"
-       alt="The check-in list legend, reading left to right: NCS (a crown), 2nd NCS (a second crown), Logger (a clipboard), Standard (a check mark), Recheck (two arrows in a circle), Listening (an ear), Relay (a satellite dish), Away (a pause symbol), Traffic (a siren), Announce (a megaphone), and Out (a waving hand), followed by a note that a blue highlight marks a station on the net's active frequency and that clicking a row opens inline editing.">
+       alt="The check-in list legend, reading left to right: NCS (a crown), 2nd NCS (a second crown), Logger (a clipboard), Standard (a check mark), Recheck (two arrows in a circle), Listening (an ear), Relay (a satellite dish), Away (a pause symbol), Traffic (a siren), Announce (a megaphone), Mobile (a car), In person (a standing figure), and Out (a waving hand), followed by a note that a blue highlight marks a station on the net's active frequency and that clicking a row opens inline editing.">
   <figcaption>The legend above the check-in list. It mixes net roles, station statuses, and the Recheck marker in one row; Station statuses explains what each entry means.</figcaption>
 </figure>
 

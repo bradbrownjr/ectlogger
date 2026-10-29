@@ -148,6 +148,64 @@ async def coverage_site_for_net(db: AsyncSession, net_id: int, site_id: int, use
     return site
 
 
+def _require_net_frequencies(net: Net, frequency_ids) -> None:
+    """Refuse a frequency that isn't one of the net's own."""
+    net_freq_ids = {f.id for f in net.frequencies}
+    invalid_freqs = [fid for fid in frequency_ids if fid not in net_freq_ids]
+    if invalid_freqs:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid frequency IDs: {invalid_freqs}. Must be from net's prescribed frequencies."
+        )
+
+
+async def _settle_frequencies(db: AsyncSession, net: Net, check_in: CheckIn, update_data: dict) -> None:
+    """The frequency fields of a check-in edit, decided before they're saved.
+
+    - Net control can change the frequency a station checked in on, for one
+      logged without the right one on a multi-frequency net. The new
+      frequency is added to the frequencies the station can be reached on.
+    - In person has no frequency, so setting it clears both, and an
+      in-person check-in can't be given one.
+    - Leaving In person for any status but Checked out, on a net with one
+      frequency, puts the station on it, as checking in there would have.
+    Edits update_data in place.
+    """
+    new_status = update_data.get('status') or check_in.status
+    if new_status == StationStatus.IN_PERSON:
+        if update_data.get('frequency_id') is not None:
+            raise HTTPException(status_code=400, detail="An in-person check-in has no frequency. Change its status first.")
+        if check_in.status != StationStatus.IN_PERSON:
+            update_data['frequency_id'] = None
+            update_data['available_frequency_ids'] = []
+        return
+
+    # Back on the air, that is: checking out leaves no frequency to take up.
+    leaving_in_person = check_in.status == StationStatus.IN_PERSON and new_status != StationStatus.CHECKED_OUT
+    if 'frequency_id' not in update_data and 'available_frequency_ids' not in update_data and not leaving_in_person:
+        return
+    await db.refresh(net, ['frequencies'])
+
+    current = json.loads(check_in.available_frequencies) if check_in.available_frequencies else []
+    available = list(update_data.get('available_frequency_ids', current) or [])
+    frequency_id = update_data['frequency_id'] if 'frequency_id' in update_data else check_in.frequency_id
+    if leaving_in_person and frequency_id is None and len(net.frequencies) == 1:
+        frequency_id = net.frequencies[0].id
+        update_data['frequency_id'] = frequency_id
+
+    # Only what this edit adds is checked: a frequency since removed from
+    # the net must not block an unrelated edit of an older check-in.
+    added = [fid for fid in available if fid not in current]
+    if 'frequency_id' in update_data and frequency_id is not None:
+        added.append(frequency_id)
+    _require_net_frequencies(net, added)
+
+    if frequency_id is not None and frequency_id not in available:
+        available.append(frequency_id)
+    if 'available_frequency_ids' in update_data or available != current:
+        update_data['available_frequency_ids'] = available
+
+
 @router.post("/nets/{net_id}/check-ins", response_model=CheckInResponse, status_code=status.HTTP_201_CREATED)
 async def create_check_in(
     net_id: int,
@@ -255,8 +313,15 @@ async def create_check_in(
             raise HTTPException(status_code=400, detail=f"{SOLE_NCS_DETAIL} Or check in as NCS.")
 
     # Validate and process frequency_id
+    # In person means no radio, so no frequency: skip the defaulting below,
+    # which would otherwise put the station on net control's frequency
+    # (net 137, 2026-10-24: an arrival at the CCEMA Bunker couldn't be
+    # logged without one).
+    if check_in_data.status == StationStatus.IN_PERSON:
+        check_in_data.frequency_id = None
+        check_in_data.available_frequency_ids = []
     # First check if current user is NCS with a claimed frequency
-    if check_in_data.frequency_id is None:
+    elif check_in_data.frequency_id is None:
         ncs_role_result = await db.execute(
             select(NetRole).where(
                 NetRole.net_id == net_id,
@@ -282,14 +347,7 @@ async def create_check_in(
     
     # Validate available_frequency_ids against net's prescribed frequencies
     available_freq_ids = check_in_data.available_frequency_ids or []
-    if available_freq_ids:
-        net_freq_ids = {f.id for f in net.frequencies}
-        invalid_freqs = [fid for fid in available_freq_ids if fid not in net_freq_ids]
-        if invalid_freqs:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Invalid frequency IDs: {invalid_freqs}. Must be from net's prescribed frequencies."
-            )
+    _require_net_frequencies(net, available_freq_ids)
     
     # ========== WHERE THE STATION IS ==========
     # The Site box sends one of the net's sites (whose name becomes the
@@ -731,6 +789,9 @@ async def update_check_in(
         **{k: v for k, v in update_data.items() if k in _SPAM_GUARDABLE_BUILTIN_FIELDS},
         **(update_data.get('custom_fields') or {}),
     })
+
+    if net:
+        await _settle_frequencies(db, net, check_in, update_data)
 
     # Handle available_frequency_ids separately (needs JSON serialization)
     if 'available_frequency_ids' in update_data:

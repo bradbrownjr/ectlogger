@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import CheckInLegend from '../components/netview/CheckInLegend';
 import { fieldLabel, isRelayedByShown } from '../utils/checkInFields';
 import { useDeleteCheckInPrompt } from '../hooks/useDeleteCheckInPrompt';
 import { formatFrequencyDisplay } from '../utils/frequencyList';
@@ -2061,35 +2062,7 @@ const NetView: React.FC = () => {
 
             {/* Legend - desktop only */}
             <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, borderBottom: 0, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
-              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
-                <Tooltip title="Net Control Station - manages the net" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👑 NCS</Typography></Tooltip>
-                <Tooltip title="2nd NCS - assists primary Net Control Station" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🤴 2nd NCS</Typography></Tooltip>
-                <Tooltip title="Logger - assists NCS with logging" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📋 Logger</Typography></Tooltip>
-                <Tooltip title="Checked in and available" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>✅ Standard</Typography></Tooltip>
-                <Tooltip title="Re-checked into the net" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🔄 Recheck</Typography></Tooltip>
-                <Tooltip title="Monitoring only, not transmitting" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👂 Listening</Typography></Tooltip>
-                <Tooltip title="Relay station - can relay stations NCS cannot hear" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📡 Relay</Typography></Tooltip>
-                <Tooltip title="Temporarily away, will return" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>⏸️ Away</Typography></Tooltip>
-                <Tooltip title="Has traffic or emergency to report" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🚨 Traffic</Typography></Tooltip>
-                <Tooltip title="Has announcements to share" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📢 Announce</Typography></Tooltip>
-                <Tooltip title="Checked out of net" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👋 Out</Typography></Tooltip>
-                {net.frequencies && net.frequencies.length > 1 && net.active_frequency_id && (
-                  <Tooltip title="Station is available on the active frequency" placement="top" arrow>
-                    <Typography variant="caption" sx={{ cursor: 'help', backgroundColor: 'rgba(25, 118, 210, 0.15)', px: 0.5, borderRadius: 0.5 }}>
-                      🔵 On Active Freq
-                    </Typography>
-                  </Tooltip>
-                )}
-                {/* Inline edit hint - only shown to NCS/Loggers while the log is open (utils/netLog.ts) */}
-                {isLogOpen(net) && canManageCheckIns && (
-                  <Tooltip title="Click any row to edit check-in details inline" placement="top" arrow>
-                    <Typography variant="caption" sx={{ cursor: 'help', color: 'primary.main', fontStyle: 'italic' }}>
-                      💡 Click row to edit
-                    </Typography>
-                  </Tooltip>
-                )}
-              </Box>
+              <CheckInLegend showActiveFrequency={!!(net.frequencies && net.frequencies.length > 1 && net.active_frequency_id)} showEditHint={isLogOpen(net) && canManageCheckIns} />
             </Box>
             
             {/* Poll Results and Topic Responses Summary - shown for closed/archived nets */}
@@ -2460,6 +2433,7 @@ const NetView: React.FC = () => {
                         <MenuItem value="checked_in">✅ In</MenuItem>
                         <MenuItem value="listening">👂 Listening</MenuItem>
                         <MenuItem value="mobile">🚗 Mobile</MenuItem>
+                        <MenuItem value="in_person">🧍 In person</MenuItem>
                         <MenuItem value="relay">📡 Relay</MenuItem>
                         <MenuItem value="has_traffic">🚨 Traffic</MenuItem>
                         <MenuItem value="announcements">📢 Announce</MenuItem>
@@ -2743,6 +2717,7 @@ const NetView: React.FC = () => {
                       <MenuItem value="checked_in">✅ Checked In</MenuItem>
                       <MenuItem value="listening">👂 Just Listening</MenuItem>
                       <MenuItem value="mobile">🚗 Mobile</MenuItem>
+                      <MenuItem value="in_person">🧍 In person</MenuItem>
                       <MenuItem value="relay">📡 Relay</MenuItem>
                       <MenuItem value="has_traffic">🚨 Has Traffic</MenuItem>
                       <MenuItem value="announcements">📢 Announcements</MenuItem>
@@ -2923,28 +2898,7 @@ const NetView: React.FC = () => {
 
               {/* Legend */}
               <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, flexShrink: 0 }}>
-                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
-                  <Tooltip title="Net Control Station" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👑 NCS</Typography></Tooltip>
-                  <Tooltip title="2nd NCS" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🤴 2nd NCS</Typography></Tooltip>
-                  <Tooltip title="Logger" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📋 Logger</Typography></Tooltip>
-                  <Tooltip title="Checked in" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>✅ Standard</Typography></Tooltip>
-                  <Tooltip title="Re-check" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🔄 Recheck</Typography></Tooltip>
-                  <Tooltip title="Listening only" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👂 Listening</Typography></Tooltip>
-                  <Tooltip title="Relay station" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📡 Relay</Typography></Tooltip>
-                  <Tooltip title="Away" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>⏸️ Away</Typography></Tooltip>
-                  <Tooltip title="Has traffic" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🚨 Traffic</Typography></Tooltip>
-                  <Tooltip title="Has announcements" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📢 Announce</Typography></Tooltip>
-                  <Tooltip title="Checked out" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👋 Out</Typography></Tooltip>
-                  {/* Inline edit hint - only shown to NCS/Loggers while the log is open (utils/netLog.ts) */}
-                  {isLogOpen(net) && canManageCheckIns && (
-                    <Tooltip title="Click any row to edit check-in details inline" placement="top" arrow>
-                      <Typography variant="caption" sx={{ cursor: 'help', color: 'primary.main', fontStyle: 'italic' }}>
-                        💡 Click row to edit
-                      </Typography>
-                    </Tooltip>
-                  )}
-                </Box>
+                <CheckInLegend showActiveFrequency={!!(net.frequencies && net.frequencies.length > 1 && net.active_frequency_id)} showEditHint={isLogOpen(net) && canManageCheckIns} />
               </Box>
               
               {/* Check-in form */}

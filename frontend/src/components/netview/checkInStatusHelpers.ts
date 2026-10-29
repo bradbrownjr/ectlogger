@@ -37,10 +37,25 @@ export function getStatusLabel(status: string): string {
     case 'has_traffic': return 'Has traffic';
     case 'announcements': return 'Announcements';
     case 'mobile': return 'Mobile';
+    case 'in_person': return 'In person';
     case 'checked_out': return 'Checked out';
     default: return status;
   }
 }
+
+// Every value the check-in list's status control can show: the net roles it
+// stands in for, then each StationStatus (backend/app/models.py). Shared by
+// the desktop and mobile lists, which each kept a copy and would show an
+// unknown status as Checked in.
+export const STATUS_SELECT_VALUES = [
+  'ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'has_traffic',
+  'announcements', 'mobile', 'in_person', 'checked_out',
+];
+
+// Row tint for an In person station, so net control sees at a glance who
+// not to call on the air. Same rgba-over-backdrop shape as the Away tint.
+export const inPersonRowTint = (isDarkMode: boolean) =>
+  isDarkMode ? 'rgba(161, 136, 127, 0.20)' : 'rgba(121, 85, 72, 0.14)';
 
 export interface CheckInStatusHelpers {
   getStatusIcon: (status: string, checkIn?: any) => string;
@@ -103,6 +118,7 @@ export function getCheckInStatusHelpers({
       case 'has_traffic': return '🚨'; // Has traffic
       case 'announcements': return '📢'; // Has announcements
       case 'mobile': return '🚗'; // Mobile station
+      case 'in_person': return '🧍'; // On site, no radio
       case 'checked_out': return '👋'; // Checked out
       default: return '✅';
     }
@@ -139,6 +155,7 @@ export function getCheckInStatusHelpers({
       case 'has_traffic': return 'Has traffic or emergency to report';
       case 'announcements': return 'Has announcements to share';
       case 'mobile': return 'Mobile - may only be available briefly';
+      case 'in_person': return 'In person, not on the radio - don\'t call on the air';
       case 'checked_out': return 'Checked out of net';
       default: return 'Checked in and available';
     }

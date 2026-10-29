@@ -197,6 +197,12 @@
     "caption": "Those coloured outlines are the app's own, not a callout on this page. Each active NCS claims a different chip, and the colour follows the operator -- the same red marks W1PINE's row in the check-in list.\n",
     "page": "/docs/net-control/frequencies-and-multi-ncs/"
   },
+  "net-control/frequency-edit-open": {
+    "path": "/docs/img/net-control/frequency-edit-open.png",
+    "alt": "KC1HILL's check-in row open for editing, with two boxes outlined together in red on a row beneath it: Checked in on, showing the frequency the station called in on, and Also reachable on, listing every frequency the station can be reached on.\n",
+    "caption": "On a net with more than one frequency, editing a row also lets you fix its frequencies.",
+    "page": "/docs/net-control/logging-check-ins/"
+  },
   "net-control/identity-padlocks": {
     "path": "/docs/img/net-control/identity-padlocks.png",
     "alt": "The check-in list of an authenticated net. Each callsign has a padlock beside it: closed and green for N1LAKE, whose identity was verified, greyed out for N1ROVE, whose account has no two-factor set up, and open for the others, with K1CAMP's open padlock outlined in red.\n",
@@ -595,7 +601,7 @@
   },
   "reference/check-in-legend": {
     "path": "/docs/img/reference/check-in-legend.png",
-    "alt": "The check-in list legend, reading left to right: NCS (a crown), 2nd NCS (a second crown), Logger (a clipboard), Standard (a check mark), Recheck (two arrows in a circle), Listening (an ear), Relay (a satellite dish), Away (a pause symbol), Traffic (a siren), Announce (a megaphone), and Out (a waving hand), followed by a note that a blue highlight marks a station on the net's active frequency and that clicking a row opens inline editing.\n",
+    "alt": "The check-in list legend, reading left to right: NCS (a crown), 2nd NCS (a second crown), Logger (a clipboard), Standard (a check mark), Recheck (two arrows in a circle), Listening (an ear), Relay (a satellite dish), Away (a pause symbol), Traffic (a siren), Announce (a megaphone), Mobile (a car), In person (a standing figure), and Out (a waving hand), followed by a note that a blue highlight marks a station on the net's active frequency and that clicking a row opens inline editing.\n",
     "caption": "The legend above the check-in list. It mixes three different kinds of thing -- net roles, station statuses, and the Recheck marker -- in one row; see Station statuses for what each entry actually means.\n",
     "page": "/docs/reference/station-statuses/"
   },

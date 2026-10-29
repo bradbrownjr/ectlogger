@@ -103,6 +103,34 @@ shots:
       directly.
     caption: Click anywhere on a row to edit it in place. Enter or clicking away saves it; Escape cancels.
 
+  - id: frequency-edit-open
+    section: net-control
+    page: /docs/net-control/logging-check-ins/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    # Same row-opening steps as inline-edit-open. The editor is a row of its
+    # own under the editing row, on a net with more than one frequency.
+    steps:
+      - click: 'tr:has-text("KC1HILL") td[data-field="callsign"]'
+      - wait_for: 'tr[data-inline-edit-row]'
+    element:
+      - 'tr:has(td[data-field="callsign"] input) td:first-child'
+      - 'tr:has(td[data-field="callsign"] input) td[data-field="location"]'
+      - 'tr[data-inline-edit-row] td:first-child > div'
+    pad: 10
+    annotate:
+      - selector: 'tr[data-inline-edit-row] td:first-child > div'
+        style: box
+        # Clear of each field's label, which sits on its top edge
+        pad: 8
+    alt: >
+      KC1HILL's check-in row open for editing, with two boxes outlined
+      together in red on a row beneath it: Checked in on, showing the frequency the station
+      called in on, and Also reachable on, listing every frequency the station
+      can be reached on.
+    caption: On a net with more than one frequency, editing a row also lets you fix its frequencies.
+
   # ========== Speed entry ==========
   - id: bulk-add-textarea
     section: net-control

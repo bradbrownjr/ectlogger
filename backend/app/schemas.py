@@ -1204,6 +1204,9 @@ class CheckInUpdate(BaseModel):
     relayed_by: Optional[str] = Field(None, max_length=50)
     operating_position: Optional[str] = Field(None, max_length=50)
     coverage_site_id: Optional[int] = None
+    # The frequency the station checked in on. Sent as null, the check-in has
+    # none recorded (In person always has none).
+    frequency_id: Optional[int] = None
     available_frequency_ids: Optional[List[int]] = None
     custom_fields: Optional[dict] = None
     # Topic of the Week / Poll responses

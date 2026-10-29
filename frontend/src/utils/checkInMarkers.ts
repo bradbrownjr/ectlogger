@@ -34,6 +34,7 @@ export const STATION_STATUS_MARKER_COLORS: Record<string, string> = {
   away: '#ff9800',          // orange - temporarily away
   announcements: '#00bcd4', // cyan - has announcements
   mobile: '#607d8b',        // blue-gray - mobile station
+  in_person: '#795548',     // brown - on site, no radio
   checked_out: '#9e9e9e',   // grey - left the net
 };
 

@@ -62,6 +62,10 @@ class StationStatus(str, enum.Enum):
     AWAY = "away"
     ANNOUNCEMENTS = "announcements"
     MOBILE = "mobile"
+    # Checked in on site with no radio (staff at an EOC or shelter during an
+    # exercise or incident), so net control doesn't call them on the air. An
+    # in-person check-in has no frequency (routers/check_ins.py).
+    IN_PERSON = "in_person"
     CHECKED_OUT = "checked_out"
 
 

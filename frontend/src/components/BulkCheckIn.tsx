@@ -59,6 +59,7 @@ const STATUS_SHORTCUTS: Record<string, string> = {
   't': 'has_traffic',     // Traffic (has traffic to report)
   'a': 'announcements',   // Announcements
   'm': 'mobile',          // Mobile (may only be available briefly)
+  'ip': 'in_person',      // In person (on site, no radio)
   'o': 'checked_out',     // Out / Checked Out
 };
 
@@ -381,6 +382,7 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
                   <span><strong>:t</strong> Traffic</span>
                   <span><strong>:a</strong> Announce</span>
                   <span><strong>:m</strong> Mobile</span>
+                  <span><strong>:ip</strong> In person</span>
                   <span><strong>:o</strong> Check Out</span>
                 </Typography>
               </Box>

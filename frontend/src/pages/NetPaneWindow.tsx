@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import CheckInLegend from '../components/netview/CheckInLegend';
 import { fieldLabel, isRelayedByShown } from '../utils/checkInFields';
 import { useDeleteCheckInPrompt } from '../hooks/useDeleteCheckInPrompt';
 import { formatFrequencyDisplay } from '../utils/frequencyList';
@@ -11,7 +12,6 @@ import {
   Paper,
   Snackbar,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
@@ -559,27 +559,7 @@ const NetPaneWindow: React.FC = () => {
 
       {/* Legend */}
       <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
-          <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
-          <Tooltip title="Net Control Station" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👑 NCS</Typography></Tooltip>
-          <Tooltip title="2nd NCS" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🤴 2nd NCS</Typography></Tooltip>
-          <Tooltip title="Logger" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📋 Logger</Typography></Tooltip>
-          <Tooltip title="Checked in" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>✅ Standard</Typography></Tooltip>
-          <Tooltip title="Re-check" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🔄 Recheck</Typography></Tooltip>
-          <Tooltip title="Listening only" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👂 Listening</Typography></Tooltip>
-          <Tooltip title="Relay station" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📡 Relay</Typography></Tooltip>
-          <Tooltip title="Away" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>⏸️ Away</Typography></Tooltip>
-          <Tooltip title="Has traffic" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🚨 Traffic</Typography></Tooltip>
-          <Tooltip title="Has announcements" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📢 Announce</Typography></Tooltip>
-          <Tooltip title="Checked out" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👋 Out</Typography></Tooltip>
-          {showCheckInForm && (
-            <Tooltip title="Click any row to edit check-in details inline" placement="top" arrow>
-              <Typography variant="caption" sx={{ cursor: 'help', color: 'primary.main', fontStyle: 'italic' }}>
-                💡 Click row to edit
-              </Typography>
-            </Tooltip>
-          )}
-        </Box>
+        <CheckInLegend showActiveFrequency={!!(net.frequencies && net.frequencies.length > 1 && net.active_frequency_id)} showEditHint={showCheckInForm} />
       </Box>
 
       {/* Check-in form */}

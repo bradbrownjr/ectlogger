@@ -72,7 +72,7 @@ export interface CheckInActions {
   handleStartInlineEdit: (checkIn: any, focusField?: string) => void;
   handleSaveInlineEdit: () => Promise<void>;
   handleCancelInlineEdit: () => void;
-  handleInlineFieldChange: (field: string, value: string) => void;
+  handleInlineFieldChange: (field: string, value: any) => void;
   handleInlineKeyDown: (e: React.KeyboardEvent) => void;
   handleInlineBlur: (e: React.FocusEvent) => void;
   handleSetActiveSpeaker: (checkInId: number | null) => void;
@@ -342,6 +342,13 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       coverage_site_id: checkIn.coverage_site_id ?? null,
       operating_position: checkIn.operating_position || '',
       status: checkIn.status,
+      // The frequency editor under the row (multi-frequency nets)
+      frequency_id: checkIn.frequency_id ?? null,
+      // The frequency checked in on is always one the station can be reached on
+      available_frequency_ids: [...new Set([
+        ...(checkIn.available_frequencies || []),
+        ...(checkIn.frequency_id ? [checkIn.frequency_id] : []),
+      ])],
     });
   };
 
@@ -368,8 +375,10 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         topic_response: inlineEditValues.topic_response,
         poll_response: inlineEditValues.poll_response,
         custom_fields: inlineEditValues.custom_fields,
-        // Keep existing frequency settings
-        available_frequency_ids: checkIn.available_frequencies || [],
+        available_frequency_ids: inlineEditValues.available_frequency_ids ?? checkIn.available_frequencies ?? [],
+        // Sent only when changed: the server checks it against the net's frequencies
+        ...((inlineEditValues.frequency_id ?? null) !== (checkIn.frequency_id ?? null)
+          ? { frequency_id: inlineEditValues.frequency_id ?? null } : {}),
         ...placeEdit(checkIn, inlineEditValues),
       }, net?.field_config));
       setInlineEditingId(null);
@@ -406,7 +415,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
   };
 
   // Handle inline field change
-  const handleInlineFieldChange = (field: string, value: string) => {
+  const handleInlineFieldChange = (field: string, value: any) => {
     if (field.startsWith('custom_')) {
       const customFieldName = field.replace('custom_', '');
       setInlineEditValues((prev: any) => ({
@@ -442,7 +451,9 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     setTimeout(() => {
       // Check if focus moved to another element within the same editing row
       const activeElement = document.activeElement;
-      if (inlineEditRowRef.current && inlineEditRowRef.current.contains(activeElement)) {
+      // The frequency editor is a row of its own under the editing row
+      if ((inlineEditRowRef.current && inlineEditRowRef.current.contains(activeElement))
+          || activeElement?.closest('[data-inline-edit-row]')) {
         // Focus is still within the editing row, don't save
         return;
       }

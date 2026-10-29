@@ -25,6 +25,7 @@ from app.models import Net, NetRole, CheckIn, NetStatus, StationStatus
 PRESENT_STATUSES = {
     StationStatus.CHECKED_IN, StationStatus.HAS_TRAFFIC, StationStatus.LISTENING,
     StationStatus.RELAY, StationStatus.ANNOUNCEMENTS, StationStatus.MOBILE,
+    StationStatus.IN_PERSON,
 }
 
 

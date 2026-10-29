@@ -21,6 +21,7 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import UserAvatar from '../UserAvatar';
 import { formatTimeWithDate } from '../../utils/dateUtils';
 import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
+import { inPersonRowTint, STATUS_SELECT_VALUES } from './checkInStatusHelpers';
 import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS, useOffscreenArrivalIndicator } from './sneakInHighlight';
 import OffscreenArrivalArrow from './OffscreenArrivalArrow';
 import CheckInLocation from './CheckInLocation';
@@ -242,6 +243,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
             const rowBgColor = checkIn.id === activeSpeakerId
               ? (isDarkMode ? theme.palette.success.dark : theme.palette.success.light)
               : checkIn.status === 'checked_out' ? theme.palette.action.disabledBackground
+              : checkIn.status === 'in_person' ? inPersonRowTint(isDarkMode)
               : isNcsUser && ncsColor ? ncsColor.bg
               : isOnActiveFrequency ? (isDarkMode ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)') : 'inherit';
             // NCS/active-frequency/disabled tints are semi-transparent rgba() values
@@ -291,8 +293,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                     if (selectValue === 'checked_in' && userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
                       selectValue = userRole.role.toLowerCase();
                     }
-                    const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'has_traffic', 'announcements', 'mobile', 'checked_out'];
-                    if (!validValues.includes(selectValue)) {
+                    if (!STATUS_SELECT_VALUES.includes(selectValue)) {
                       selectValue = 'checked_in';
                     }
                     return (
@@ -317,6 +318,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                         <MenuItem value="has_traffic">🚨  {getStatusLabel('has_traffic')}</MenuItem>
                         <MenuItem value="announcements">📢  {getStatusLabel('announcements')}</MenuItem>
                         <MenuItem value="mobile">🚗  {getStatusLabel('mobile')}</MenuItem>
+                        <MenuItem value="in_person">🧍  {getStatusLabel('in_person')}</MenuItem>
                         {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋  {getStatusLabel('checked_out')}</MenuItem>}
                       </Select>
                     );
