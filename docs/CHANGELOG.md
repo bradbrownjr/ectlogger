@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-29
+revised: 2026-10-30
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,14 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# October 30, 2026
+
+## Improvements
+
+* **Schedule: Scheduled and ad-hoc nets apart** — In the card and list views, schedules that run at a regular time are listed under Scheduled nets and on-demand ones under Ad-hoc nets, as the calendar already does. Starred schedules still lead within each group.
 
 ---
 

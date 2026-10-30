@@ -69,7 +69,7 @@ import { getErrorMessage } from '../utils/apiErrors';
 import { setScheduleSubscription } from '../utils/scheduleSubscription';
 import { useAuth } from '../contexts/AuthContext';
 import NCSStaffModal from '../components/NCSStaffModal';
-import ScheduleCard, { Schedule, computeNextOccurrence, formatSchedule } from '../components/scheduler/ScheduleCard';
+import ScheduleCard, { Schedule, computeNextOccurrence, formatSchedule, isAdHocSchedule } from '../components/scheduler/ScheduleCard';
 import ScheduleAnnouncementsDialog from '../components/scheduler/ScheduleAnnouncementsDialog';
 import ScheduleCalendar from '../components/scheduler/ScheduleCalendar';
 import { useFavorites } from '../hooks/useFavorites';
@@ -321,7 +321,12 @@ const Scheduler: React.FC = () => {
       );
     })
     .sort((a, b) => {
-      // Favorites always first
+      // Scheduled nets, then ad-hoc ones, each under its own heading
+      // (see SCHEDULE GROUPS below); favorites lead within each group.
+      const aAdHoc = isAdHocSchedule(a) ? 1 : 0;
+      const bAdHoc = isAdHocSchedule(b) ? 1 : 0;
+      if (aAdHoc !== bAdHoc) return aAdHoc - bAdHoc;
+
       const aFav = favorites.has(a.id) ? 0 : 1;
       const bFav = favorites.has(b.id) ? 0 : 1;
       if (aFav !== bFav) return aFav - bFav;
@@ -345,6 +350,36 @@ const Scheduler: React.FC = () => {
   const pagedSchedules = filteredSchedules.slice(
     (schedulePage - 1) * SCHEDULE_PAGE_SIZE,
     schedulePage * SCHEDULE_PAGE_SIZE
+  );
+
+  // ========== SCHEDULE GROUPS ==========
+  // Scheduled nets and ad-hoc (on demand) nets each get their own heading
+  // and their own table or grid of cards, as the calendar view lists ad-hoc
+  // nets apart. The filter and paging work on the whole list first, so a
+  // group is whatever of it lands on this page. With only one kind in the
+  // filtered list there is one unheaded group: a heading over everything
+  // says nothing.
+  const showGroupHeadings = filteredSchedules.some(isAdHocSchedule)
+    && filteredSchedules.some((schedule) => !isAdHocSchedule(schedule));
+  const pageGroups: { label: string | null; schedules: Schedule[] }[] = showGroupHeadings
+    ? [
+        { label: 'Scheduled nets', schedules: pagedSchedules.filter((schedule) => !isAdHocSchedule(schedule)) },
+        { label: 'Ad-hoc nets', schedules: pagedSchedules.filter(isAdHocSchedule) },
+      ].filter((group) => group.schedules.length > 0)
+    : [{ label: null, schedules: pagedSchedules }];
+  const renderGroups = (renderGroup: (schedules: Schedule[]) => React.ReactNode) => (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {pageGroups.map((group) => (
+        <Box key={group.label ?? 'all'}>
+          {group.label && (
+            <Typography variant="subtitle1" component="h3" sx={{ mb: 1 }}>
+              {group.label}
+            </Typography>
+          )}
+          {renderGroup(group.schedules)}
+        </Box>
+      ))}
+    </Box>
   );
 
   // ========== SCHEDULE CARD ==========
@@ -373,15 +408,18 @@ const Scheduler: React.FC = () => {
   );
 
   // ========== CARD VIEW RENDERER ==========
-  const renderCardView = () => (
+  // auto-fill, not auto-fit: auto-fit stretches a short group's cards across
+  // the row, so a group of one card spanned the page and the two groups'
+  // cards were different widths.
+  const renderCardView = () => renderGroups((schedules) => (
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(max(300px, calc(100% / 6 - 20px)), 1fr))' },
+        gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fill, minmax(max(300px, calc(100% / 6 - 20px)), 1fr))' },
         gap: { xs: 2, sm: 3 },
       }}
     >
-      {pagedSchedules.map((schedule: Schedule) => (
+      {schedules.map((schedule: Schedule) => (
         <Box
           key={schedule.id}
           sx={{
@@ -406,26 +444,29 @@ const Scheduler: React.FC = () => {
         </Box>
       ))}
     </Box>
-  );
+  ));
 
   // ========== LIST VIEW RENDERER ==========
-  const renderListView = () => (
+  // One table per group (SCHEDULE GROUPS). Fixed widths keep the columns of
+  // the two tables lined up: each would otherwise size its columns to its own
+  // contents. Below minWidth the table scrolls sideways, as it always has.
+  const renderListView = () => renderGroups((schedules) => (
     <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
-      <Table size="small">
+      <Table size="small" sx={{ tableLayout: 'fixed', minWidth: 900 }}>
         <TableHead>
           <TableRow>
             {/* Merge mode checkbox column */}
-            {mergeMode && <TableCell padding="checkbox" />}
-            <TableCell>Name</TableCell>
-            <TableCell>Schedule</TableCell>
-            <TableCell>NCS/Manager</TableCell>
+            {mergeMode && <TableCell padding="checkbox" sx={{ width: 48 }} />}
+            <TableCell sx={{ width: '26%' }}>Name</TableCell>
+            <TableCell sx={{ width: '15%' }}>Schedule</TableCell>
+            <TableCell sx={{ width: '13%' }}>NCS/Manager</TableCell>
             <TableCell>Frequencies</TableCell>
-            <TableCell align="center">Subscribers</TableCell>
-            <TableCell align="right">Actions</TableCell>
+            <TableCell align="center" sx={{ width: 104 }}>Subscribers</TableCell>
+            <TableCell align="right" sx={{ width: '20%' }}>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {pagedSchedules.map((schedule: Schedule) => (
+          {schedules.map((schedule: Schedule) => (
             <TableRow
               key={schedule.id}
               hover
@@ -488,7 +529,8 @@ const Scheduler: React.FC = () => {
               <TableCell align="center">
                 <Chip label={schedule.subscriber_count} size="small" variant="outlined" />
               </TableCell>
-              <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+              {/* Icons wrap inside the fixed column width: a manager can have seven */}
+              <TableCell align="right">
                 {canManageSchedule(schedule) && (
                   <Tooltip title="Create net now (skip auto-schedule)">
                     <IconButton size="small" color="success" onClick={() => handleCreateNetFromSchedule(schedule.id)}>
@@ -553,7 +595,7 @@ const Scheduler: React.FC = () => {
         </TableBody>
       </Table>
     </TableContainer>
-  );
+  ));
 
   return (
     <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: 4, pb: 12, px: { xs: 1, sm: 3 } }}>

@@ -26,7 +26,7 @@ import { formatFrequencyList } from '../../utils/frequencyList';
 import useLayoutTier from '../../hooks/useLayoutTier';
 import CardActionButton from '../CardActionButton';
 import ExpandableDescription from '../ExpandableDescription';
-import type { Schedule } from './ScheduleCard';
+import { isAdHocSchedule, type Schedule } from './ScheduleCard';
 
 // ---- Types ----
 
@@ -144,7 +144,7 @@ const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
       const schedule = o.template_id != null ? scheduleById.get(o.template_id) : undefined;
       // A schedule the filter hides takes its nets with it, wherever they would go.
       if (schedule && !visibleIds.has(schedule.id)) continue;
-      if (schedule && schedule.schedule_type !== 'ad_hoc') {
+      if (schedule && !isAdHocSchedule(schedule)) {
         grid.push(o);
         continue;
       }

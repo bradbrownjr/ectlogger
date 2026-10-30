@@ -121,8 +121,16 @@ export const computeNextOccurrence = (schedule: Schedule): number => {
   return Infinity;
 };
 
+// A schedule with no recurrence: its nets are started on demand. The column
+// defaults to ad_hoc, so a missing type is one too. The Schedules page groups
+// by this (card, list and calendar views).
+export const isAdHocSchedule = (schedule: Pick<Schedule, 'schedule_type'>): boolean =>
+  !schedule.schedule_type || schedule.schedule_type === 'ad_hoc';
+
 // Only reads the recurrence fields, so the schedule report can pass just those.
 export const formatSchedule = (schedule: Pick<Schedule, 'schedule_type' | 'schedule_config'>): string => {
+  // Same rule as isAdHocSchedule, written out so TypeScript knows
+  // schedule_type is set below.
   if (!schedule.schedule_type || schedule.schedule_type === 'ad_hoc') {
     return 'Ad-hoc (no recurring schedule)';
   }

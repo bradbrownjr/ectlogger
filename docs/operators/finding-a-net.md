@@ -4,7 +4,7 @@ summary: The dashboard, what each net status means, the Schedule page's calendar
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-30
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/finding-a-net/
@@ -93,6 +93,8 @@ A net manager may also send you a **subscribe link**. It opens a page for that o
 ## Finding a net that runs on a schedule
 
 Many nets aren't one-off events. They run weekly, monthly, or on some other recurrence. Recurring nets are set up as a **schedule** (the [net managers](/docs/net-managers/) path covers creating one). You don't need any special access to look at `/scheduler` and see what schedules exist and roughly when they next run; once ECTLogger auto-creates the next occurrence, it shows up on the dashboard the same as any other Scheduled net.
+
+In the card and list views, schedules with a regular time are listed first under **Scheduled nets**, and ones started on demand follow under **Ad-hoc nets**, the same split the calendar uses. Starred schedules sort first within each group.
 
 ## Seeing the month on a calendar
 

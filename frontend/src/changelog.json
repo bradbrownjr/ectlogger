@@ -1,6 +1,23 @@
 {
-  "version": "2026.10.29c",
+  "version": "2026.10.30",
   "entries": [
+    {
+      "version": "2026.10.30",
+      "date": "2026-10-30",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Schedule: Scheduled and ad-hoc nets apart — In the card and list views, schedules that run at a regular time are listed under Scheduled nets and on-demand ones under Ad-hoc nets, as the calendar already does. Starred schedules still lead within each group.",
+              "userImpact": true,
+              "docs": "/docs/operators/finding-a-net/#finding-a-net-that-runs-on-a-schedule"
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.10.29",
       "date": "2026-10-29",
