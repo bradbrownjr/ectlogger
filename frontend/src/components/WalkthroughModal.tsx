@@ -33,10 +33,14 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   WALKTHROUGH_STEPS,
+  NetCreationLimits,
   WalkthroughIconName,
   WalkthroughPath,
   docsUrl,
+  netCreationLimitsText,
 } from './walkthroughSteps';
+import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 // Maps the icon names used by the step data to Material icons.
 const ICONS: Record<WalkthroughIconName, React.ElementType> = {
@@ -81,6 +85,30 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ open, onClose, star
   // null = the chooser screen
   const [path, setPath] = useState<WalkthroughPath | null>(startPath ?? null);
   const [step, setStep] = useState(0);
+  const { user, isAuthenticated } = useAuth();
+  // Admins and accounts given early access can create a net at once, so the
+  // Create a net card says nothing about the limits to them.
+  const exemptFromCreationLimits = user?.role === 'admin' || !!user?.schedule_age_bypass;
+  // null until loaded, and for a guest, who cannot read the settings
+  const [creationLimits, setCreationLimits] = useState<NetCreationLimits | null>(null);
+
+  // This instance's net creation limits, for the Create a net card. Only for a
+  // signed-in user: GET /settings needs a sign-in, and a 401 would send a guest
+  // to the login page.
+  useEffect(() => {
+    if (!open || !isAuthenticated || exemptFromCreationLimits) return;
+    let cancelled = false;
+    api.get('/settings')
+      .then((r) => {
+        if (cancelled) return;
+        setCreationLimits({
+          minAccountAgeDays: r.data.schedule_min_account_age_days ?? 0,
+          minNetsCheckedInto: r.data.schedule_min_net_participations ?? 0,
+        });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [open, isAuthenticated, exemptFromCreationLimits]);
 
   // Reset to the starting state whenever the dialog opens, so relaunching always
   // starts fresh without snapping back during the close animation.
@@ -148,6 +176,9 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ open, onClose, star
   const Icon = ICONS[current.icon];
   const isFirst = step === 0;
   const isLast = step === steps.length - 1;
+  const limitsNote = current.showsCreationLimits && !exemptFromCreationLimits
+    ? netCreationLimitsText(creationLimits)
+    : '';
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={fullScreen}>
@@ -175,6 +206,12 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ open, onClose, star
           <Typography variant="body2" color="text.secondary" textAlign="center">
             {current.body}
           </Typography>
+          {/* Shows on the Create a net card for anyone the instance's limits apply to */}
+          {limitsNote && (
+            <Typography variant="body2" color="text.secondary" textAlign="center">
+              {limitsNote}
+            </Typography>
+          )}
           <Link
             href={docsUrl(current.learnMore)}
             target="_blank"

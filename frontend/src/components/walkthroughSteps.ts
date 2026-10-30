@@ -33,6 +33,12 @@ export interface WalkthroughStep {
   body: string;
   /** Path of a user guide page, exactly as its front matter permalink gives it. */
   learnMore: string;
+  /**
+   * Append this instance's account-age and net-count rule for creating a net
+   * (Admin > Security). Read from the settings when the card is shown, never
+   * written into the body, because each instance sets its own.
+   */
+  showsCreationLimits?: boolean;
 }
 
 export type WalkthroughPath = 'operator' | 'net-control';
@@ -118,6 +124,7 @@ export const NET_CONTROL_STEPS: WalkthroughStep[] = [
     body:
       'Press the + button on the Nets page to set up a one-time net: name, frequencies and what to collect at check-in.',
     learnMore: '/docs/net-managers/creating-a-net/',
+    showsCreationLimits: true,
   },
   {
     icon: 'lobby',
@@ -180,6 +187,33 @@ export const NET_CONTROL_STEPS: WalkthroughStep[] = [
     learnMore: '/docs/net-managers/reports-and-exports/',
   },
 ];
+
+// ========== NET CREATION LIMITS ==========
+// The anti-spam rule a new account must clear before the + button will create a
+// net or a schedule (templates_core.py::check_schedule_creation_eligibility).
+// 0 turns either half off. Admins, and accounts given early access, are exempt,
+// which the caller decides.
+export interface NetCreationLimits {
+  minAccountAgeDays: number;
+  minNetsCheckedInto: number;
+}
+
+const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/**
+ * The sentence the Create a net card adds. null limits (a guest, who cannot read
+ * the settings) get a general version; limits that are both 0 get ''.
+ */
+export const netCreationLimitsText = (limits: NetCreationLimits | null): string => {
+  if (!limits) {
+    return 'A new account may need to be a few days old and to have checked into a net before it can create one.';
+  }
+  const parts: string[] = [];
+  if (limits.minAccountAgeDays > 0) parts.push(`is at least ${plural(limits.minAccountAgeDays, 'day')} old`);
+  if (limits.minNetsCheckedInto > 0) parts.push(`has checked into at least ${plural(limits.minNetsCheckedInto, 'net')}`);
+  if (parts.length === 0) return '';
+  return `A new account can create a net once it ${parts.join(' and ')}. An admin can give you early access.`;
+};
 
 export const WALKTHROUGH_STEPS: Record<WalkthroughPath, WalkthroughStep[]> = {
   operator: OPERATOR_STEPS,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { OPERATOR_STEPS, NET_CONTROL_STEPS } from './walkthroughSteps';
+import { OPERATOR_STEPS, NET_CONTROL_STEPS, netCreationLimitsText } from './walkthroughSteps';
 
 // Collect every docs page's permalink from its front matter, so a "Learn more"
 // link that points at a renamed or removed page fails here. Vite reads the
@@ -34,5 +34,35 @@ describe.each([
     expect(s.learnMore.trim()).not.toBe('');
     expect(s.body).not.toContain('—');
     expect(permalinks.has(s.learnMore)).toBe(true);
+  });
+});
+
+describe('netCreationLimitsText', () => {
+  it('names both limits with this instance\'s numbers', () => {
+    expect(netCreationLimitsText({ minAccountAgeDays: 7, minNetsCheckedInto: 1 })).toBe(
+      'A new account can create a net once it is at least 7 days old and has checked into at least 1 net. An admin can give you early access.',
+    );
+  });
+
+  it('leaves out a limit set to 0', () => {
+    expect(netCreationLimitsText({ minAccountAgeDays: 0, minNetsCheckedInto: 3 })).toBe(
+      'A new account can create a net once it has checked into at least 3 nets. An admin can give you early access.',
+    );
+    expect(netCreationLimitsText({ minAccountAgeDays: 1, minNetsCheckedInto: 0 })).toBe(
+      'A new account can create a net once it is at least 1 day old. An admin can give you early access.',
+    );
+  });
+
+  it('says nothing when both are off', () => {
+    expect(netCreationLimitsText({ minAccountAgeDays: 0, minNetsCheckedInto: 0 })).toBe('');
+  });
+
+  it('gives a general version when the limits are unknown', () => {
+    expect(netCreationLimitsText(null)).toMatch(/^A new account may need/);
+  });
+
+  it('is on the Create a net card only', () => {
+    expect(NET_CONTROL_STEPS.filter((s) => s.showsCreationLimits).map((s) => s.title)).toEqual(['Create a net']);
+    expect(OPERATOR_STEPS.some((s) => s.showsCreationLimits)).toBe(false);
   });
 });
