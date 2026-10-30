@@ -156,6 +156,26 @@ shots:
       default.
     caption: Only Callsign is required unless the net's manager has turned on more fields.
 
+  # KC1HILL is seeded checked in, so the toolbar offers Edit check-in where
+  # Check in was. Cropped to its end, like self-status-toolbar below.
+  - id: edit-check-in-button
+    section: operators
+    page: /docs/operators/checking-in/
+    route: /nets/{{net:active}}
+    as: KC1HILL
+    wait_for: 'table:visible tbody tr'
+    element:
+      - 'span[aria-label="Check out of net"]'
+      - 'span[aria-label="Edit your check-in"]'
+    pad: 6
+    annotate:
+      - selector: 'span[aria-label="Edit your check-in"]'
+        style: box
+    alt: >
+      The right-hand end of the net toolbar once you are checked in: Check
+      out, then Edit check-in outlined in red.
+    caption: Once you're on the list, Edit check-in takes the place of Check in.
+
   # ========== Status, rechecks, and checking out ==========
   - id: check-in-legend
     section: operators

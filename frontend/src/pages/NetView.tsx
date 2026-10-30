@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import CheckInLegend from '../components/netview/CheckInLegend';
-import { fieldLabel, isRelayedByShown } from '../utils/checkInFields';
+import { MULTILINE_FIELDS, fieldLabel, isRelayedByShown, shownDetailFields } from '../utils/checkInFields';
 import { useDeleteCheckInPrompt } from '../hooks/useDeleteCheckInPrompt';
 import { formatFrequencyDisplay } from '../utils/frequencyList';
 import useDialog from '../hooks/useDialog';
@@ -94,7 +94,9 @@ import CanHearDialog from '../components/netview/CanHearDialog';
 import { useSiteCoverage } from '../hooks/useSiteCoverage';
 import SiteField, { netHasSites } from '../components/netview/SiteField';
 import SitesBoard from '../components/netview/SitesBoard';
-import EditTopicResponseDialog from '../components/netview/EditTopicResponseDialog';
+import EditOwnCheckInDialog from '../components/netview/EditOwnCheckInDialog';
+import CustomFieldInput from '../components/netview/CustomFieldInput';
+import CompactDetailFields from '../components/netview/CompactDetailFields';
 import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import { watchZoomAwarePopovers } from '../utils/zoomAwarePopovers';
 import { getNetActions } from '../utils/netActions';
@@ -248,7 +250,7 @@ const NetView: React.FC = () => {
   const [canHearReports, setCanHearReports] = useState<any[]>([]);
   // Self-service edit of the current user's own topic-of-week answer
   // (dialog open when non-null).
-  const [editTopicCheckInId, setEditTopicCheckInId] = useState<number | null>(null);
+  const [editOwnCheckInId, setEditOwnCheckInId] = useState<number | null>(null);
   // Authenticated nets: the check-in currently being identity-verified
   // (dialog open when non-null). Holds {id, callsign} directly rather than
   // just an id since IdentityVerifyDialog only needs those two fields.
@@ -1531,9 +1533,10 @@ const NetView: React.FC = () => {
     ? checkIns.find((ci: CheckIn) => ci.id === canHearDialogCheckInId) || null
     : null;
 
-  // The check-in the "Edit topic answer" dialog is currently open for.
-  const editTopicCheckIn = editTopicCheckInId !== null
-    ? checkIns.find((ci: CheckIn) => ci.id === editTopicCheckInId) || null
+  // The check-in the "Edit your check-in" dialog is open for (pencil on the
+  // station's own row, or the toolbar's Edit check-in).
+  const editOwnCheckIn = editOwnCheckInId !== null
+    ? checkIns.find((ci: CheckIn) => ci.id === editOwnCheckInId) || null
     : null;
 
   // Per-action permissions from the server (utils/netActions.ts): each
@@ -1884,7 +1887,7 @@ const NetView: React.FC = () => {
         onToggleNCSRole={handleToggleNCSRole}
         onCheckOut={handleCheckOut}
         onOpenCanHearDialog={setCanHearDialogCheckInId}
-        onOpenEditTopicDialog={setEditTopicCheckInId}
+        onOpenEditCheckIn={setEditOwnCheckInId}
         onGoLive={handleGoLiveClick}
         onExportCSV={handleExportCSV}
         onExportICS309={handleExportICS309}
@@ -2011,6 +2014,7 @@ const NetView: React.FC = () => {
                 canReportCanHear={canReportCanHear}
                 canHearReporterCheckInIds={canHearReporterCheckInIds}
                 onOpenCanHearDialog={setCanHearDialogCheckInId}
+                onEditOwnCheckIn={setEditOwnCheckInId}
                 sites={siteCoverage.sites}
                 onInlineValuesChange={setInlineEditValues}
                 onOpenIdentityVerify={setIdentityVerifyCheckIn}
@@ -2198,101 +2202,26 @@ const NetView: React.FC = () => {
                         />
                       </TableCell>
                     )}
-                    {net?.field_config?.skywarn_number?.enabled && (
-                      <TableCell>
+                    {/* Spotter # through Notes, as the net has them on (utils/checkInFields.ts) */}
+                    {shownDetailFields(net?.field_config).map((field) => (
+                      <TableCell key={field}>
                         <TextField
                           size="small"
-                          value={checkInForm.skywarn_number}
-                          onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
+                          value={checkInForm[field]}
+                          onChange={(e) => setCheckInForm({ ...checkInForm, [field]: e.target.value })}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
                               handleCheckIn();
                             }
                           }}
-                          placeholder={labelOf('skywarn_number')}
+                          placeholder={labelOf(field)}
                           inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
-                          required={net.field_config.skywarn_number.required}
+                          required={isFieldRequired(field)}
                         />
                       </TableCell>
-                    )}
-                    {net?.field_config?.weather_observation?.enabled && (
-                      <TableCell>
-                        <TextField
-                          size="small"
-                          value={checkInForm.weather_observation}
-                          onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleCheckIn();
-                            }
-                          }}
-                          placeholder={labelOf('weather_observation')}
-                          inputProps={{ style: { fontSize: '0.875rem' } }}
-                          fullWidth
-                          required={net.field_config.weather_observation.required}
-                        />
-                      </TableCell>
-                    )}
-                    {net?.field_config?.power_source?.enabled && (
-                      <TableCell>
-                        <TextField
-                          size="small"
-                          value={checkInForm.power_source}
-                          onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleCheckIn();
-                            }
-                          }}
-                          placeholder={labelOf('power_source')}
-                          inputProps={{ style: { fontSize: '0.875rem' } }}
-                          fullWidth
-                          required={net.field_config.power_source.required}
-                        />
-                      </TableCell>
-                    )}
-                    {net?.field_config?.power?.enabled && (
-                      <TableCell>
-                        <TextField
-                          size="small"
-                          value={checkInForm.power}
-                          onChange={(e) => setCheckInForm({ ...checkInForm, power: e.target.value })}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleCheckIn();
-                            }
-                          }}
-                          placeholder={labelOf('power')}
-                          inputProps={{ style: { fontSize: '0.875rem' } }}
-                          fullWidth
-                          required={net.field_config.power.required}
-                        />
-                      </TableCell>
-                    )}
-                    {net?.field_config?.notes?.enabled && (
-                      <TableCell>
-                        <TextField
-                          size="small"
-                          value={checkInForm.notes}
-                          onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleCheckIn();
-                            }
-                          }}
-                          placeholder={labelOf('notes')}
-                          inputProps={{ style: { fontSize: '0.875rem' } }}
-                          fullWidth
-                          required={net.field_config.notes.required}
-                        />
-                      </TableCell>
-                    )}
+                    ))}
                     {/* Custom field inputs */}
                     {getEnabledCustomFields().map((field) => (
                       <TableCell key={field.name}>
@@ -2318,16 +2247,25 @@ const NetView: React.FC = () => {
                             </Select>
                           </FormControl>
                         ) : field.field_type === 'checkbox' ? (
-                          <Checkbox
-                            size="small"
-                            checked={checkInForm.custom_fields[field.name] === 'true'}
-                            onChange={(e) => setCheckInForm({
-                              ...checkInForm,
-                              custom_fields: {
-                                ...checkInForm.custom_fields,
-                                [field.name]: e.target.checked ? 'true' : 'false'
-                              }
-                            })}
+                          // Labeled like the text boxes' placeholders, or the
+                          // box reads as nothing in particular and gets missed.
+                          <FormControlLabel
+                            sx={{ m: 0, whiteSpace: 'nowrap' }}
+                            slotProps={{ typography: { variant: 'body2', color: 'text.secondary' } }}
+                            control={
+                              <Checkbox
+                                size="small"
+                                checked={checkInForm.custom_fields[field.name] === 'true'}
+                                onChange={(e) => setCheckInForm({
+                                  ...checkInForm,
+                                  custom_fields: {
+                                    ...checkInForm.custom_fields,
+                                    [field.name]: e.target.checked ? 'true' : 'false'
+                                  }
+                                })}
+                              />
+                            }
+                            label={field.label}
                           />
                         ) : (
                           <TextField
@@ -2540,128 +2478,33 @@ const NetView: React.FC = () => {
                     />
                   )}
                   
-                  {net?.field_config?.skywarn_number?.enabled && (
+                  {/* Spotter # through Notes, as the net has them on (utils/checkInFields.ts) */}
+                  {shownDetailFields(net?.field_config).map((field) => (
                     <TextField
+                      key={field}
                       size="small"
-                      label={labelOf('skywarn_number')}
-                      value={checkInForm.skywarn_number}
-                      onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
+                      label={labelOf(field)}
+                      value={checkInForm[field]}
+                      onChange={(e) => setCheckInForm({ ...checkInForm, [field]: e.target.value })}
                       fullWidth
-                      required={net.field_config.skywarn_number.required}
+                      multiline={MULTILINE_FIELDS.has(field)}
+                      rows={MULTILINE_FIELDS.has(field) ? 2 : undefined}
+                      required={isFieldRequired(field)}
                     />
-                  )}
-                  
-                  {net?.field_config?.weather_observation?.enabled && (
-                    <TextField
-                      size="small"
-                      label={labelOf('weather_observation')}
-                      value={checkInForm.weather_observation}
-                      onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
-                      fullWidth
-                      multiline
-                      rows={2}
-                      required={net.field_config.weather_observation.required}
-                    />
-                  )}
-                  
-                  {net?.field_config?.power_source?.enabled && (
-                    <TextField
-                      size="small"
-                      label={labelOf('power_source')}
-                      value={checkInForm.power_source}
-                      onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
-                      fullWidth
-                      required={net.field_config.power_source.required}
-                    />
-                  )}
-                  
-                  {net?.field_config?.power?.enabled && (
-                    <TextField
-                      size="small"
-                      label={labelOf('power')}
-                      value={checkInForm.power}
-                      onChange={(e) => setCheckInForm({ ...checkInForm, power: e.target.value })}
-                      placeholder="Power output"
-                      fullWidth
-                      required={net.field_config.power.required}
-                    />
-                  )}
-                  
-                  {net?.field_config?.notes?.enabled && (
-                    <TextField
-                      size="small"
-                      label={labelOf('notes')}
-                      value={checkInForm.notes}
-                      onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
-                      fullWidth
-                      multiline
-                      rows={2}
-                      required={net.field_config.notes.required}
-                    />
-                  )}
-                  
+                  ))}
+
                   {/* Custom fields */}
                   {getEnabledCustomFields().map((field) => (
-                    field.field_type === 'select' && field.options ? (
-                      <FormControl key={field.name} size="small" fullWidth>
-                        <InputLabel>{field.label}{isFieldRequired(field.name) ? ' *' : ''}</InputLabel>
-                        <Select
-                          value={checkInForm.custom_fields[field.name] || ''}
-                          label={`${field.label}${isFieldRequired(field.name) ? ' *' : ''}`}
-                          onChange={(e) => setCheckInForm({ 
-                            ...checkInForm, 
-                            custom_fields: { 
-                              ...checkInForm.custom_fields, 
-                              [field.name]: e.target.value as string 
-                            } 
-                          })}
-                        >
-                          <MenuItem value="">
-                            <em>Select {field.label}</em>
-                          </MenuItem>
-                          {field.options.map((option) => (
-                            <MenuItem key={option} value={option}>{option}</MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    ) : field.field_type === 'checkbox' ? (
-                      <FormControlLabel
-                        key={field.name}
-                        control={
-                          <Checkbox
-                            checked={checkInForm.custom_fields[field.name] === 'true'}
-                            onChange={(e) => setCheckInForm({
-                              ...checkInForm,
-                              custom_fields: {
-                                ...checkInForm.custom_fields,
-                                [field.name]: e.target.checked ? 'true' : 'false'
-                              }
-                            })}
-                          />
-                        }
-                        label={`${field.label}${isFieldRequired(field.name) ? ' *' : ''}`}
-                      />
-                    ) : (
-                      <TextField
-                        key={field.name}
-                        size="small"
-                        label={field.label}
-                        value={checkInForm.custom_fields[field.name] || ''}
-                        onChange={(e) => setCheckInForm({
-                          ...checkInForm,
-                          custom_fields: {
-                            ...checkInForm.custom_fields,
-                            [field.name]: e.target.value
-                          }
-                        })}
-                        placeholder={field.placeholder || field.label}
-                        fullWidth
-                        required={isFieldRequired(field.name)}
-                        type={field.field_type === 'number' ? 'number' : 'text'}
-                        multiline={field.field_type === 'textarea'}
-                        rows={field.field_type === 'textarea' ? 2 : 1}
-                      />
-                    )
+                    <CustomFieldInput
+                      key={field.name}
+                      field={field}
+                      value={checkInForm.custom_fields[field.name]}
+                      required={isFieldRequired(field.name)}
+                      onChange={(value) => setCheckInForm({
+                        ...checkInForm,
+                        custom_fields: { ...checkInForm.custom_fields, [field.name]: value },
+                      })}
+                    />
                   ))}
                   
                   {/* Relayed By field: shown when the net uses it (isRelayedByShown) */}
@@ -2880,6 +2723,7 @@ const NetView: React.FC = () => {
                 canReportCanHear={canReportCanHear}
                 canHearReporterCheckInIds={canHearReporterCheckInIds}
                 onOpenCanHearDialog={setCanHearDialogCheckInId}
+                onEditOwnCheckIn={setEditOwnCheckInId}
                 sites={siteCoverage.sites}
                 onInlineValuesChange={setInlineEditValues}
                 onOpenIdentityVerify={setIdentityVerifyCheckIn}
@@ -2934,12 +2778,13 @@ const NetView: React.FC = () => {
                     {net?.field_config?.location?.enabled && (
                       <TextField size="small" value={checkInForm.location} onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })} placeholder={labelOf('location')} sx={{ width: 150 }} />
                     )}
-                    {net?.field_config?.skywarn_number?.enabled && (
-                      <TextField size="small" value={checkInForm.skywarn_number} onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })} placeholder={labelOf('skywarn_number')} sx={{ width: 100 }} />
-                    )}
-                    {net?.field_config?.notes?.enabled && (
-                      <TextField size="small" value={checkInForm.notes} onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })} placeholder={labelOf('notes')} sx={{ flex: 1, minWidth: 150 }} />
-                    )}
+                    <CompactDetailFields
+                      fieldConfig={net?.field_config}
+                      customFields={getEnabledCustomFields()}
+                      form={checkInForm}
+                      setForm={setCheckInForm}
+                      labelOf={labelOf}
+                    />
                     {net?.topic_of_week_enabled && (
                       <Tooltip title={net.topic_of_week_prompt ? `Topic of the Week: ${net.topic_of_week_prompt}` : ''}>
                         <Autocomplete
@@ -3063,6 +2908,7 @@ const NetView: React.FC = () => {
 
       {/* Check-In Dialog for Regular Users */}
       <CheckInFormDialog
+        customFields={getEnabledCustomFields()}
         coverageSites={siteCoverage.sites}
         savedTown={lookupFilledRef.current.location || selfCheckInLocation}
         dialog={checkInDialog}
@@ -3269,18 +3115,22 @@ const NetView: React.FC = () => {
         />
       )}
 
-      {/* ========== EDIT OWN TOPIC OF THE WEEK ANSWER ========== */}
-      {editTopicCheckIn && net?.topic_of_week_prompt && (
-        <EditTopicResponseDialog
-          key={editTopicCheckIn.id}
-          open
-          onClose={() => setEditTopicCheckInId(null)}
-          checkInId={editTopicCheckIn.id}
-          currentResponse={editTopicCheckIn.topic_response}
-          topicPrompt={net.topic_of_week_prompt}
-          onSaved={(newResponse) => {
-            setCheckIns((prev: any[]) => prev.map(ci => (ci.id === editTopicCheckIn.id ? { ...ci, topic_response: newResponse } : ci)));
-            setEditTopicCheckInId(null);
+      {/* ========== EDIT YOUR OWN CHECK-IN ========== */}
+      {editOwnCheckIn && (
+        <EditOwnCheckInDialog
+          key={editOwnCheckIn.id}
+          checkIn={editOwnCheckIn}
+          net={net}
+          customFields={getEnabledCustomFields()}
+          fieldDefinitions={fieldDefinitions as any[]}
+          coverageSites={siteCoverage.sites}
+          savedTown={selfCheckInLocation}
+          pollResponses={pollResponses}
+          formatFrequency={formatFrequencyDisplay}
+          onClose={() => setEditOwnCheckInId(null)}
+          onSaved={(updated) => {
+            setCheckIns((prev: any[]) => prev.map(ci => (ci.id === updated.id ? updated : ci)));
+            setEditOwnCheckInId(null);
           }}
           onToast={setToastMessage}
         />

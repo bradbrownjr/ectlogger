@@ -1,6 +1,5 @@
 import csv
 import io
-import json
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -32,6 +31,14 @@ from app.services.csv_import import (
     decode_csv_bytes,
     local_naive_to_utc,
     process_csv_rows,
+)
+from app.services.check_in_columns import (
+    available_frequencies,
+    checked_in_frequency,
+    field_value,
+    format_frequency,
+    load_field_definitions,
+    net_log_fields,
 )
 from app.services.ics309_log import build_ics309_rows, get_accepted_off_net_entries
 from app.services.net_closure import close_net_and_notify
@@ -67,22 +74,20 @@ async def export_net_csv(
         raise HTTPException(status_code=404, detail="Net not found")
     
     # A guest sees free text with contact details redacted, as in the list.
+    redact = current_user is None
     def shown(check_in, field):
         value = getattr(check_in, field)
-        if current_user is None and field in GUEST_REDACTED_CHECK_IN_FIELDS:
+        if redact and field in GUEST_REDACTED_CHECK_IN_FIELDS:
             return redact_contact_info(value)
         return value
 
-    # Build frequency lookup map
     freq_map = {f.id: f for f in net.frequencies}
-
-    # Helper to format frequency
-    def format_freq(freq):
-        if freq.frequency:
-            return f"{freq.frequency} {freq.mode or ''}".strip()
-        elif freq.network:
-            return f"{freq.network} TG{freq.talkgroup or ''}"
-        return ""
+    # The net's own fields (FLDIGI, ...) that it turned on and someone filled
+    # in. The built-in columns stay fixed, because the CSV import matches on
+    # their names (services/csv_import.py).
+    custom_fields = net_log_fields(
+        net.field_config, await load_field_definitions(db), net.check_ins, custom_only=True,
+    )
 
     # Display times in the requesting user's timezone preference (falls back to
     # UTC if they prefer UTC or haven't got a timezone on file yet)
@@ -96,9 +101,10 @@ async def export_net_csv(
 
     # Build headers - add topic/poll columns if enabled
     headers = [
-        "Check-in Time", "Callsign", "Name", "Location",
+        "Check-in Time", "Callsign", "Name", "Location", "Frequency",
         "Available Frequencies", "Spotter #", "Weather Observation",
-        "Power Src", "Power", "Feedback", "Notes", "Relayed By", "Status"
+        "Power Src", "Power", "Feedback", "Notes", "Relayed By",
+        *(field.label for field in custom_fields), "Status",
     ]
     if net.topic_of_week_enabled:
         headers.append("Topic Response")
@@ -108,23 +114,13 @@ async def export_net_csv(
 
     # Write check-ins
     for check_in in sorted(net.check_ins, key=lambda x: x.checked_in_at):
-        # Get available frequencies list
-        available_freqs = []
-        if check_in.available_frequencies:
-            try:
-                freq_ids = json.loads(check_in.available_frequencies)
-                for fid in freq_ids:
-                    if fid in freq_map:
-                        available_freqs.append(format_freq(freq_map[fid]))
-            except (json.JSONDecodeError, TypeError):
-                pass
-
         row = [
             format_time_for_net(to_display_tz(check_in.checked_in_at, tz), display_started_at, display_closed_at),
             check_in.callsign,
             check_in.name,
             shown(check_in, "location"),
-            ', '.join(available_freqs) if available_freqs else "",
+            checked_in_frequency(check_in, freq_map),
+            available_frequencies(check_in, freq_map),
             check_in.skywarn_number or "",
             shown(check_in, "weather_observation") or "",
             check_in.power_source or "",
@@ -132,6 +128,7 @@ async def export_net_csv(
             shown(check_in, "feedback") or "",
             shown(check_in, "notes") or "",
             check_in.relayed_by or "",
+            *(field_value(check_in, field, redact) for field in custom_fields),
             check_in.status.value if check_in.status else ""
         ]
         if net.topic_of_week_enabled:
@@ -424,15 +421,7 @@ async def _build_ics309_data(db: AsyncSession, net: Net, current_user: Optional[
     that case check-in/chat free text is scrubbed of anything that looks
     like an email or phone number, same as the REST list endpoints."""
     redact = current_user is None
-    # Helper to format frequency
-    def format_freq(freq):
-        if freq.frequency:
-            return f"{freq.frequency} {freq.mode or ''}".strip()
-        elif freq.network:
-            return f"{freq.network} TG{freq.talkgroup or ''}"
-        return ""
-
-    freq_strings = [format_freq(f) for f in net.frequencies]
+    freq_strings = [format_frequency(f) for f in net.frequencies]
     freq_list = ", ".join(freq_strings) if freq_strings else "Multiple"
 
     # Get NCS info — every credited NCS, oldest assignment first, or "Not

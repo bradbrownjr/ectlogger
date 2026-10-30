@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fieldLabel, isRelayedByShown, withOnlyShownFields } from './checkInFields';
+import { DETAIL_FIELDS, fieldLabel, isRelayedByShown, logColumns, shownDetailFields, withOnlyShownFields } from './checkInFields';
 import { isValidSpotterNumber } from './spotterNumber';
 
 describe('withOnlyShownFields', () => {
@@ -71,5 +71,40 @@ describe('isRelayedByShown', () => {
 
   it('never hides a relayed-by callsign already logged', () => {
     expect(isRelayedByShown(off, [{ status: 'checked_in', relayed_by: 'K1COVE' }])).toBe(true);
+  });
+});
+
+describe('shownDetailFields', () => {
+  it('offers Feedback when the net turns it on', () => {
+    // Ken N1KWG's net, 2026-10-29: Feedback was on, but no form had a box for it.
+    expect(shownDetailFields({ feedback: { enabled: true }, notes: { enabled: true } })).toEqual(['feedback', 'notes']);
+  });
+
+  it('keeps the field list order', () => {
+    const allOn = Object.fromEntries(DETAIL_FIELDS.map((f) => [f, { enabled: true }]));
+    expect(shownDetailFields(allOn)).toEqual([...DETAIL_FIELDS]);
+  });
+});
+
+describe('logColumns', () => {
+  const definitions = [
+    { name: 'feedback', label: 'Feedback', is_builtin: true },
+    { name: 'fldigi', label: 'FLDIGI', field_type: 'checkbox', is_builtin: false },
+    { name: 'digital', label: 'Digital', field_type: 'text', is_builtin: false },
+  ];
+  const fieldConfig = { feedback: { enabled: true }, fldigi: { enabled: true }, digital: { enabled: true }, notes: { enabled: true } };
+
+  it('has a column for each field the net turned on and somebody filled in', () => {
+    const checkIns = [
+      { feedback: 'Good copy', custom_fields: { fldigi: 'true' } },
+      { relayed_by: 'K1COVE', custom_fields: { fldigi: 'false' } },
+    ];
+    expect(logColumns(fieldConfig, definitions, checkIns, [...DETAIL_FIELDS, 'relayed_by']).map((c) => c.label))
+      .toEqual(['Feedback', 'Relayed By', 'FLDIGI']);
+  });
+
+  it('leaves out a checkbox nobody ticked', () => {
+    const checkIns = [{ custom_fields: { fldigi: 'false' } }];
+    expect(logColumns(fieldConfig, definitions, checkIns, DETAIL_FIELDS)).toEqual([]);
   });
 });

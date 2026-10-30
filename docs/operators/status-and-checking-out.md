@@ -14,7 +14,7 @@ permalink: /docs/operators/status-and-checking-out/
 
 The check-in list has a legend across the top of the table. It looks like one flat row of icons, but it's actually describing three different kinds of thing at once, and most of the confusion about "statuses" in ECTLogger comes from not separating them:
 
-1. **Station statuses** — what you're doing right now, and the only thing you as a participant set on your own row.
+1. **Station statuses** — what you're doing right now, set from the dropdown on your own row. (The rest of your row you fix with its pencil; see [Fixing your check-in](/docs/operators/checking-in/#fixing-your-check-in).)
 2. **Role badges** — a standing job on the net (NCS, Logger), which replaces your status icon while you're in the default checked-in state.
 3. **The recheck marker** — a one-time flag on a specific check-in row, not a status at all.
 

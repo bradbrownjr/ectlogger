@@ -4,7 +4,7 @@ summary: Every control on the net view, what it does, and which ones you'll actu
 kind: Explanation
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-29
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/the-net-control-desk/
@@ -57,6 +57,7 @@ Every button is gated by who you are and what state the net is in, so a Standard
 - **Claim NCS** — a recovery button, shown to the net's manager or an admin only when a net has no assigned NCS at all.
 - **Raise hand** — a participant-side signal to get NCS's attention; NCS doesn't see this on their own row, since they run the queue rather than joining it.
 - **Step away** / **Just listening** / **Check out** — self-service status changes for your own check-in. Stepping away as the net's only active NCS asks you to confirm first, since it pauses the net until someone returns. See [Roles and stepping away](/docs/net-control/roles-and-stepping-away/).
+- **Edit check-in** — takes the place of **Check in** once you're on the list, and reopens the check-in form for your own row. The pencil on your row does the same. See [Fixing your check-in](/docs/operators/checking-in/#fixing-your-check-in).
 - **I hear** — records which stations you can hear, if the net has coverage logging on and allows self-reporting. See [Reporting what you hear](/docs/operators/reporting-what-you-hear/).
 - **Close net** — ends the session. See [Closing the net](/docs/net-control/closing-the-net/) for exactly what that does and doesn't undo.
 

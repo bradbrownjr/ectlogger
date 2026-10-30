@@ -473,6 +473,12 @@
     "caption": "Nets you can still take part in sort ahead of ones that are over.",
     "page": "/docs/operators/finding-a-net/"
   },
+  "operators/edit-check-in-button": {
+    "path": "/docs/img/operators/edit-check-in-button.png",
+    "alt": "The right-hand end of the net toolbar once you are checked in: Check out, then Edit check-in outlined in red.\n",
+    "caption": "Once you're on the list, Edit check-in takes the place of Check in.",
+    "page": "/docs/operators/checking-in/"
+  },
   "operators/i-hear-button": {
     "path": "/docs/img/operators/i-hear-button.png",
     "alt": "The right-hand end of the net toolbar once you are checked in: Just listening, then I hear outlined in red, then Check out.\n",

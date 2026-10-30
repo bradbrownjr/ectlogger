@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { fieldLabel } from '../../utils/checkInFields';
+import { MULTILINE_FIELDS, fieldLabel, shownDetailFields } from '../../utils/checkInFields';
 import {
   Autocomplete,
   Box,
@@ -19,6 +19,7 @@ import {
   useTheme,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import GroupIcon from '@mui/icons-material/Group';
 import HearingIcon from '@mui/icons-material/Hearing';
 import LockIcon from '@mui/icons-material/Lock';
@@ -112,6 +113,9 @@ interface CheckInTableProps {
   canReportCanHear: boolean;
   canHearReporterCheckInIds: number[];
   onOpenCanHearDialog: (checkInId: number) => void;
+  // Opens Edit your check-in (EditOwnCheckInDialog) from the pencil on the
+  // viewer's own row. Without it, no pencil.
+  onEditOwnCheckIn?: (checkInId: number) => void;
   // Check-in ids currently playing the "sneak-in" arrival flash -- see
   // sneakInHighlight.ts. Optional so existing callers aren't forced to wire
   // it up immediately.
@@ -172,12 +176,15 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   canReportCanHear,
   canHearReporterCheckInIds,
   onOpenCanHearDialog,
+  onEditOwnCheckIn,
   highlightedCheckInIds,
   onOpenIdentityVerify,
   sites = [],
   onInlineValuesChange,
 }) => {
   const showSite = netHasSites(sites);
+  // Spotter # through Notes, as the net has them on (utils/checkInFields.ts)
+  const detailFields = shownDetailFields(net?.field_config);
   // Frozen (sticky) trailing column: Actions and the hide-duplicates/detach
   // icons share a single pinned column at the right edge so per-row controls
   // stay reachable on wide nets or narrow screens, with no dead space between
@@ -199,12 +206,15 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   // keeps its slot on every row (an invisible stand-in where that row doesn't
   // get it), so Delete and the rest line up down the column instead of
   // shifting left on a checked-out row that only has Delete.
-  type ActionSlot = 'away' | 'hand' | 'speaker' | 'delete' | 'hear';
-  const ACTION_SLOTS: ActionSlot[] = ['away', 'hand', 'speaker', 'delete', 'hear'];
+  type ActionSlot = 'edit' | 'away' | 'hand' | 'speaker' | 'delete' | 'hear';
+  const ACTION_SLOTS: ActionSlot[] = ['edit', 'away', 'hand', 'speaker', 'delete', 'hear'];
   const actionSlotsFor = (checkIn: any): Record<ActionSlot, boolean> => {
     const own = checkIn.user_id === user?.id;
     const live = (net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out';
     return {
+      // Your own row only: a station fixes its own check-in here, which net
+      // control does by clicking the row.
+      edit: own && live && !!onEditOwnCheckIn,
       away: (canManage || own) && live,
       hand: (canManage || own) && live,
       speaker: canManage && live,
@@ -300,11 +310,10 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'name')} {net.field_config.name.required && '*'}</TableCell>}
                       {showSite && <TableCell sx={{ whiteSpace: 'nowrap' }}>Site</TableCell>}
                       {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'location')} {net.field_config.location.required && '*'}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'skywarn_number')} {net.field_config.skywarn_number.required && '*'}</TableCell>}
-                      {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'weather_observation')} {net.field_config.weather_observation.required && '*'}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'power_source')} {net.field_config.power_source.required && '*'}</TableCell>}
-                      {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'power')} {net.field_config.power.required && '*'}</TableCell>}
-                      {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'notes')} {net.field_config.notes.required && '*'}</TableCell>}
+                      {/* Spotter # through Notes, as the net has them on (utils/checkInFields.ts) */}
+                      {detailFields.map((field) => (
+                        <TableCell key={field} sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, field)} {isFieldRequired(field) && '*'}</TableCell>
+                      ))}
                       {/* Custom fields */}
                       {getEnabledCustomFields().map((field) => (
                         <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>
@@ -394,11 +403,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     if (net?.field_config?.name?.enabled) columnCount++;
                     if (showSite) columnCount++;
                     if (net?.field_config?.location?.enabled) columnCount++;
-                    if (net?.field_config?.skywarn_number?.enabled) columnCount++;
-                    if (net?.field_config?.weather_observation?.enabled) columnCount++;
-                    if (net?.field_config?.power_source?.enabled) columnCount++;
-                    if (net?.field_config?.power?.enabled) columnCount++;
-                    if (net?.field_config?.notes?.enabled) columnCount++;
+                    columnCount += detailFields.length;
                     columnCount += getEnabledCustomFields().length;
                     if (showRelayedBy) columnCount++;
                     
@@ -745,91 +750,23 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           ) : <CheckInLocation location={checkIn.location} gridSquare={checkIn.grid_square} />}
                         </TableCell>
                       )}
-                      {/* Skywarn Number - inline editable */}
-                      {net?.field_config?.skywarn_number?.enabled && (
-                        <TableCell data-field="skywarn_number" sx={{ width: 70 }}>
+                      {/* Spotter # through Notes - inline editable */}
+                      {detailFields.map((field) => (
+                        <TableCell key={field} data-field={field} sx={MULTILINE_FIELDS.has(field) ? undefined : { width: 70 }}>
                           {isInlineEditing ? (
                             <TextField
                               size="small"
-                              value={inlineEditValues.skywarn_number || ''}
-                              onChange={(e) => handleInlineFieldChange('skywarn_number', e.target.value)}
+                              value={inlineEditValues[field] || ''}
+                              onChange={(e) => handleInlineFieldChange(field, e.target.value)}
                               onKeyDown={handleInlineKeyDown}
                               onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'skywarn_number'}
+                              autoFocus={inlineEditFocusField === field}
                               inputProps={{ style: { padding: '4px 8px' } }}
                               sx={{ width: '100%' }}
                             />
-                          ) : checkIn.skywarn_number}
+                          ) : checkIn[field]}
                         </TableCell>
-                      )}
-                      {/* Weather Observation - inline editable */}
-                      {net?.field_config?.weather_observation?.enabled && (
-                        <TableCell data-field="weather_observation">
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.weather_observation || ''}
-                              onChange={(e) => handleInlineFieldChange('weather_observation', e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'weather_observation'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.weather_observation}
-                        </TableCell>
-                      )}
-                      {/* Power Source - inline editable */}
-                      {net?.field_config?.power_source?.enabled && (
-                        <TableCell data-field="power_source" sx={{ width: 70 }}>
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.power_source || ''}
-                              onChange={(e) => handleInlineFieldChange('power_source', e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'power_source'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.power_source}
-                        </TableCell>
-                      )}
-                      {/* Power - inline editable */}
-                      {net?.field_config?.power?.enabled && (
-                        <TableCell data-field="power" sx={{ width: 70 }}>
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.power || ''}
-                              onChange={(e) => handleInlineFieldChange('power', e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'power'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.power}
-                        </TableCell>
-                      )}
-                      {/* Notes - inline editable */}
-                      {net?.field_config?.notes?.enabled && (
-                        <TableCell data-field="notes">
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.notes || ''}
-                              onChange={(e) => handleInlineFieldChange('notes', e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'notes'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.notes}
-                        </TableCell>
-                      )}
+                      ))}
                       {/* Custom field values - inline editable */}
                       {getEnabledCustomFields().map((field) => (
                         <TableCell key={field.name} data-field={`custom_${field.name}`}>
@@ -929,7 +866,16 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       >
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         {tableSlots.map((slot) => {
-                          const button = slot === 'away' ? (
+                          const button = slot === 'edit' ? (
+                            <IconButton
+                              size="small"
+                              onClick={() => onEditOwnCheckIn?.(checkIn.id)}
+                              color="primary"
+                              title="Edit your check-in"
+                            >
+                              <EditNoteIcon fontSize="small" />
+                            </IconButton>
+                          ) : slot === 'away' ? (
                             <IconButton
                               size="small"
                               onClick={() => handleStatusChange(checkIn.id, checkIn.status === 'away' ? 'checked_in' : 'away')}

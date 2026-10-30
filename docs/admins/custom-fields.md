@@ -4,7 +4,7 @@ summary: Adding a field for a spotter number, a weather observation, or anything
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-10-29
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/custom-fields/
@@ -22,7 +22,7 @@ Every field a check-in form can ask for (Name, Location, Spotter #, Weather, Pow
 
 ## What ships built in
 
-Eight fields come with the instance and can never be archived: Name and Location (on by default, since practically every net wants these), and Spotter #, Weather, Power Src, Power, Feedback, and Notes (off by default, since not every net needs them). You can still edit a built-in field's label, placeholder text, and defaults; you just can't remove it from the list entirely.
+Nine fields come with the instance and can never be archived: Name and Location (on by default, since practically every net wants these), and Spotter #, Weather, Power Src, Power, Feedback, Notes, and Relayed By (off by default, since not every net needs them). You can still edit a built-in field's label, placeholder text, and defaults; you just can't remove it from the list entirely.
 
 ## Adding a field
 

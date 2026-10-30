@@ -4,7 +4,7 @@ summary: Get an account, find the net your club is running, and put your callsig
 kind: Tutorial
 audience: Anyone new to ECTLogger
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-10-29
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/start/first-check-in/
@@ -102,6 +102,7 @@ A few things worth knowing before you close the tab:
 
 - **Set your status honestly if it changes.** The dropdown on your own row is yours. If you step away from the radio, set **Away**; if you are only monitoring, set **Listening only**. Net Control works the list from top to bottom and calls people who say they are there.
 - **Or use the toolbar, which is quicker.** Now that you are checked in, the toolbar has grown **Step away** and **Just listening** buttons, which set those same two statuses in one click without you finding your row at all. Each one toggles: click it again to come back. There is a **Raise hand** button there too, for when you want Net Control to notice you without changing your status.
+- **Missed something?** Click **Edit check-in** in the toolbar, or the pencil on your row, to fix it. See [Fixing your check-in](/docs/operators/checking-in/#fixing-your-check-in).
 - **Check out when you leave.** Click **Check out** in the toolbar. It does not remove you from the log or the map, it just tells Net Control not to wait for you.
 
 <figure>

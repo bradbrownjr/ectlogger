@@ -4,7 +4,7 @@ summary: Talking alongside the net without talking over it: replying, editing, m
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-29
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/chat-and-polls/
@@ -42,7 +42,7 @@ Hovering anyone else's message shows a mute icon: **mute this station**, for you
 
 ## Topic of the Week and the poll
 
-If a net has a **Topic of the Week** or a **poll** running, you don't answer it in chat. You answer it right in the [check-in form](/docs/operators/checking-in/), which shows the live question as context above a text field for your response. Results (a tally for a poll, a list of responses for a topic) are shown as a summary once the net closes.
+If a net has a **Topic of the Week** or a **poll** running, you don't answer it in chat. You answer it right in the [check-in form](/docs/operators/checking-in/), which shows the live question as context above a text field for your response. To change your answer later, click **Edit check-in** on the toolbar. Results (a tally for a poll, a list of responses for a topic) are shown as a summary once the net closes.
 
 This is a separate feature from chat itself; the two happen to be enabled by the same kind of net (a community/club net rather than a formal traffic net), which is why they're covered on one page.
 

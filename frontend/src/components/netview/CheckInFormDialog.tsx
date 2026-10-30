@@ -21,15 +21,18 @@ import LockPersonIcon from '@mui/icons-material/LockPerson';
 import type { UseDialogResult } from '../../hooks/useDialog';
 import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING, FIELD_SPAM_WARNING } from '../../utils/nameFieldGuard';
 import api from '../../services/api';
-import { fieldLabel, isFieldShown } from '../../utils/checkInFields';
+import { DETAIL_FIELDS, MULTILINE_FIELDS, fieldLabel, isFieldShown, shownDetailFields } from '../../utils/checkInFields';
 import SiteField, { netHasSites } from './SiteField';
 import type { CoverageSite } from '../../utils/coverageSites';
 import { PARTICIPANTS_ONLY_HINT } from './ParticipantsOnlyChip';
+import CustomFieldInput, { type CustomFieldDefinition } from './CustomFieldInput';
 
 // ========== CHECK-IN FORM DIALOG ==========
-// The "Check In to {net}" modal. Renders the dynamic check-in form (fields shown
-// per the net's field_config) plus the optional frequency selector. Purely
-// presentational — the parent owns the form state, callsign lookup, and submit.
+// The "Check In to {net}" modal, and in edit mode "Edit your check-in"
+// (EditOwnCheckInDialog). Renders the dynamic check-in form (fields shown per
+// the net's field_config, custom fields included) plus the frequency
+// selectors. Purely presentational — the parent owns the form state, callsign
+// lookup, and submit.
 
 export interface CheckInFormState {
   callsign: string;
@@ -43,6 +46,9 @@ export interface CheckInFormState {
   notes: string;
   relayed_by: string;
   available_frequency_ids: number[];
+  // The frequency the station checked in on. Edit mode only: a new check-in
+  // gets its frequency from the net (routers/check_ins.py).
+  frequency_id?: number | null;
   custom_fields: Record<string, string>;
   topic_response: string;
   poll_response: string;
@@ -64,6 +70,11 @@ export interface CheckInFormState {
 
 interface CheckInFormDialogProps {
   dialog: UseDialogResult;
+  // 'edit' is a station correcting its own check-in: no role choice, and
+  // a Save button instead of Check In.
+  mode?: 'create' | 'edit';
+  // The admin-defined fields this net turns on (Admin > Check-in Fields).
+  customFields?: CustomFieldDefinition[];
   // A participants-only net (Net.participants_only): says so above the form.
   participantsOnly?: boolean;
   // The site's field list, for each built-in field's label.
@@ -73,7 +84,7 @@ interface CheckInFormDialogProps {
   frequencies: any[] | undefined;
   checkInForm: CheckInFormState;
   setCheckInForm: React.Dispatch<React.SetStateAction<CheckInFormState>>;
-  onCallsignLookup: (callsign: string) => void;
+  onCallsignLookup?: (callsign: string) => void;
   onCheckIn: () => void;
   formatFrequency: (freq: any) => string;
   // True when checking in would auto-grant the current user NCS (an active
@@ -104,6 +115,8 @@ interface CheckInFormDialogProps {
 
 const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
   dialog,
+  mode = 'create',
+  customFields = [],
   participantsOnly,
   fieldDefinitions,
   netName,
@@ -154,12 +167,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
   const hasSpammyField = [
     ['name', checkInForm.name],
     ['location', checkInForm.location],
-    ['skywarn_number', checkInForm.skywarn_number],
-    ['weather_observation', checkInForm.weather_observation],
-    ['power_source', checkInForm.power_source],
-    ['power', checkInForm.power],
-    ['feedback', checkInForm.feedback],
-    ['notes', checkInForm.notes],
+    ...DETAIL_FIELDS.map((field) => [field, checkInForm[field]]),
   ].some(([fieldName, value]) => isFieldShown(fieldConfig, fieldName) && isSpammy(fieldName, value));
 
   const submit = () => {
@@ -184,7 +192,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
         }
       }}
     >
-      <DialogTitle>Check In to {netName}</DialogTitle>
+      <DialogTitle>{mode === 'edit' ? 'Edit your check-in' : `Check In to ${netName}`}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           {/* Shows on a participants-only net: a notice, not a gate */}
@@ -197,13 +205,13 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
             label="Callsign"
             value={checkInForm.callsign}
             onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value.toUpperCase() })}
-            onBlur={(e) => onCallsignLookup(e.target.value)}
+            onBlur={(e) => onCallsignLookup?.(e.target.value)}
             fullWidth
             required
             inputProps={{ style: { textTransform: 'uppercase' } }}
           />
 
-          {(showNcsChoice || showLoggerChoice) && (
+          {mode === 'create' && (showNcsChoice || showLoggerChoice) && (
             <FormControl>
               <FormLabel sx={{ fontSize: '0.9rem' }}>Check in as</FormLabel>
               <RadioGroup
@@ -260,69 +268,36 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
             />
           )}
 
-          {fieldConfig?.skywarn_number?.enabled && (
+          {/* Spotter # through Notes, as the net has them on (utils/checkInFields.ts) */}
+          {shownDetailFields(fieldConfig).map((field) => (
             <TextField
-              label={labelOf('skywarn_number')}
-              value={checkInForm.skywarn_number}
-              onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
+              key={field}
+              label={labelOf(field)}
+              value={checkInForm[field]}
+              onChange={(e) => setCheckInForm({ ...checkInForm, [field]: e.target.value })}
               fullWidth
-              required={fieldConfig.skywarn_number.required}
-              error={isSpammy('skywarn_number', checkInForm.skywarn_number)}
-              helperText={isSpammy('skywarn_number', checkInForm.skywarn_number) ? FIELD_SPAM_WARNING : undefined}
+              multiline={MULTILINE_FIELDS.has(field)}
+              rows={MULTILINE_FIELDS.has(field) ? 2 : undefined}
+              required={!!fieldConfig?.[field]?.required}
+              error={isSpammy(field, checkInForm[field])}
+              helperText={isSpammy(field, checkInForm[field]) ? FIELD_SPAM_WARNING : undefined}
             />
-          )}
+          ))}
 
-          {fieldConfig?.weather_observation?.enabled && (
-            <TextField
-              label={labelOf('weather_observation')}
-              value={checkInForm.weather_observation}
-              onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
-              fullWidth
-              multiline
-              rows={2}
-              required={fieldConfig.weather_observation.required}
-              error={isSpammy('weather_observation', checkInForm.weather_observation)}
-              helperText={isSpammy('weather_observation', checkInForm.weather_observation) ? FIELD_SPAM_WARNING : undefined}
+          {/* Custom fields, after the built-in ones as on the staff entry forms */}
+          {customFields.map((field) => (
+            <CustomFieldInput
+              key={field.name}
+              field={field}
+              value={checkInForm.custom_fields[field.name]}
+              required={!!fieldConfig?.[field.name]?.required}
+              size="medium"
+              onChange={(value) => setCheckInForm({
+                ...checkInForm,
+                custom_fields: { ...checkInForm.custom_fields, [field.name]: value },
+              })}
             />
-          )}
-
-          {fieldConfig?.power_source?.enabled && (
-            <TextField
-              label={labelOf('power_source')}
-              value={checkInForm.power_source}
-              onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
-              fullWidth
-              required={fieldConfig.power_source.required}
-              error={isSpammy('power_source', checkInForm.power_source)}
-              helperText={isSpammy('power_source', checkInForm.power_source) ? FIELD_SPAM_WARNING : undefined}
-            />
-          )}
-
-          {fieldConfig?.power?.enabled && (
-            <TextField
-              label={labelOf('power')}
-              value={checkInForm.power}
-              onChange={(e) => setCheckInForm({ ...checkInForm, power: e.target.value })}
-              fullWidth
-              required={fieldConfig.power.required}
-              error={isSpammy('power', checkInForm.power)}
-              helperText={isSpammy('power', checkInForm.power) ? FIELD_SPAM_WARNING : undefined}
-            />
-          )}
-
-          {fieldConfig?.notes?.enabled && (
-            <TextField
-              label={labelOf('notes')}
-              value={checkInForm.notes}
-              onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
-              fullWidth
-              multiline
-              rows={2}
-              required={fieldConfig.notes.required}
-              error={isSpammy('notes', checkInForm.notes)}
-              helperText={isSpammy('notes', checkInForm.notes) ? FIELD_SPAM_WARNING : undefined}
-            />
-          )}
+          ))}
 
           {topicOfWeekEnabled && topicOfWeekPrompt && (
             <TextField
@@ -350,6 +325,17 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
                   helperText={`Poll: ${pollQuestion}`}
                 />
               )}
+            />
+          )}
+
+          {/* Shows when editing a check-in on a net with more than one frequency */}
+          {mode === 'edit' && frequencies && frequencies.length > 1 && (
+            <Autocomplete
+              options={frequencies}
+              getOptionLabel={(option: any) => formatFrequency(option)}
+              value={frequencies.find((f: any) => f.id === checkInForm.frequency_id) ?? null}
+              onChange={(_, freq: any) => setCheckInForm({ ...checkInForm, frequency_id: freq?.id ?? null })}
+              renderInput={(params) => <TextField {...params} label="Checked in on" />}
             />
           )}
 
@@ -410,7 +396,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
           color="primary"
           disabled={!checkInForm.callsign || hasSpammyField}
         >
-          Check In
+          {mode === 'edit' ? 'Save' : 'Check In'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { fieldLabel } from '../../utils/checkInFields';
+import { fieldLabel, shownDetailFields } from '../../utils/checkInFields';
 import {
   Box,
   Table,
@@ -196,11 +196,10 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
             <TableCell sx={{ whiteSpace: 'nowrap' }}>Callsign *</TableCell>
             {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'name')} {net.field_config.name.required && '*'}</TableCell>}
             {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'location')} {net.field_config.location.required && '*'}</TableCell>}
-            {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'skywarn_number')} {net.field_config.skywarn_number.required && '*'}</TableCell>}
-            {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'weather_observation')} {net.field_config.weather_observation.required && '*'}</TableCell>}
-            {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'power_source')} {net.field_config.power_source.required && '*'}</TableCell>}
-            {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'power')} {net.field_config.power.required && '*'}</TableCell>}
-            {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, 'notes')} {net.field_config.notes.required && '*'}</TableCell>}
+            {/* Spotter # through Notes, as the net has them on (utils/checkInFields.ts) */}
+            {shownDetailFields(net?.field_config).map((field) => (
+              <TableCell key={field} sx={{ whiteSpace: 'nowrap' }}>{fieldLabel(fieldDefinitions, field)} {isFieldRequired(field) && '*'}</TableCell>
+            ))}
             {getEnabledCustomFields().map((field) => (
               <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>
                 {field.label} {isFieldRequired(field.name) && '*'}
@@ -402,11 +401,9 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                 </TableCell>
                 {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.name}</TableCell>}
                 {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}><CheckInLocation location={checkIn.location} gridSquare={checkIn.grid_square} /></TableCell>}
-                {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.skywarn_number}</TableCell>}
-                {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.weather_observation}</TableCell>}
-                {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.power_source}</TableCell>}
-                {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.power}</TableCell>}
-                {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.notes}</TableCell>}
+                {shownDetailFields(net?.field_config).map((field) => (
+                  <TableCell key={field} sx={{ whiteSpace: 'nowrap' }}>{checkIn[field]}</TableCell>
+                ))}
                 {getEnabledCustomFields().map((field) => (
                   <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>
                     {field.field_type === 'checkbox'

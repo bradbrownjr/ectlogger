@@ -29,6 +29,8 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
+* **Check-in: Fix your own check-in** — Forgot something when you checked in? Click the pencil on your row, or Edit check-in on the toolbar, to fix it yourself instead of asking net control. Your topic of the week answer is changed there too. The check-in form also now shows the net's own fields, such as an FLDIGI checkbox, with labels on its checkboxes so they're harder to miss.
+* **Reports: All of your net's fields** — Some fields were missing from the net report, the CSV export and the closing email. They now include every field your net has turned on and filled in, such as Feedback and FLDIGI. Feedback also now has a box to fill in when you check in.
 * **Reminders: Talkgroups listed correctly** — The 1-hour subscriber reminder showed a DMR talkgroup's number where its name belonged, and the other way round. It now matches the other reminders.
 
 ---

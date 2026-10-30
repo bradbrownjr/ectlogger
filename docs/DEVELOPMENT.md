@@ -524,6 +524,20 @@ link was auto-filled into a hidden field, the spam guard rejected it, and
 the form (which keeps its values after a failed save) refused every later
 check-in too.
 
+**Never type out the list of fields again.** Every form, the check-in list,
+the phone list and inline edit go through
+`utils/checkInFields.ts::DETAIL_FIELDS` (Spotter # through Notes;
+Name and Location stay hand-placed because Site sits between them), and
+the report's check-in log goes through `logColumns`. On the server, the
+Export CSV, the closing email's table and CSV, and the ICS-309 email's
+check-in CSV go through `services/check_in_columns.py`
+(`net_log_fields`, `field_value`, `format_frequency`). A log shows a field
+when the net turned it on and at least one check-in filled it in. Until
+2026-10-29 each of these listed the fields by hand: Feedback had no box
+anywhere, and the exports dropped custom fields such as FLDIGI (N1KWG's
+net). The Export CSV keeps fixed built-in column names because the CSV
+import matches on them; only custom-field columns and Frequency vary.
+
 Profile values that get copied into check-ins are checked when the profile
 is saved (`schemas.py::UserUpdate`): Name and Location reject a link or
 email, and a spotter number must pass `utils.py::normalize_spotter_number`

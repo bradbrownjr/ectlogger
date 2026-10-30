@@ -4,7 +4,7 @@ summary: The net report, the PDF, the ICS-309 Communications Log, the per-sectio
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-28
+revised: 2026-10-29
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/reports-and-exports/
@@ -20,7 +20,7 @@ A closed net's toolbar carries four separate downloads, plus a fifth page of its
   <figcaption>Export and both ICS-309 buttons download a single file; Report opens the full multi-section report page.</figcaption>
 </figure>
 
-- **Export** downloads the raw check-in list as a CSV: every field the net collected, one row per check-in event (including rechecks), in the timezone your own profile prefers. Like the ICS-309 and the Report, anyone can download it; a visitor who isn't signed in gets the same copy with email addresses and phone numbers in free-text fields hidden.
+- **Export** downloads the raw check-in list as a CSV: every built-in field, the frequency each station checked in on, and each of the net's own fields that somebody filled in, one row per check-in event (including rechecks), in the timezone your own profile prefers. Like the ICS-309 and the Report, anyone can download it; a visitor who isn't signed in gets the same copy with email addresses and phone numbers in free-text fields hidden.
 - **ICS-309** downloads the check-in and chat log formatted as an official ICS-309 Communications Log, as a CSV.
 - **ICS-309 PDF** downloads the same log as a form-accurate, printable PDF.
 - **Report** opens the full **Net Report** page, described below.
@@ -39,7 +39,7 @@ The ICS-309 log is the copy that leaves your group and reaches a served agency, 
   <figcaption>The report page needs no sign-in, so the link is safe to hand to anyone who needs the record. Export PNG saves a summary image and the map, ready to post.</figcaption>
 </figure>
 
-This page pulls together everything about the net into one document, in this order: check-in statistics and a map, who was at each site (if the net has [sites](/docs/net-managers/sites/)) and station-to-station coverage (if the net used it), the check-in log, chat, the ICS-309 log, and last, the activity log. **Export PDF** saves the whole thing as one file. The **Export PDF** button on a net's statistics page produces this same report.
+This page pulls together everything about the net into one document, in this order: check-in statistics and a map, who was at each site (if the net has [sites](/docs/net-managers/sites/)) and station-to-station coverage (if the net used it), the check-in log (with every [field](/docs/reference/check-in-fields/#in-reports-and-exports) the net used), chat, the ICS-309 log, and last, the activity log. **Export PDF** saves the whole thing as one file. The **Export PDF** button on a net's statistics page produces this same report.
 
 On screen, the report follows your light or dark setting like the rest of the app. The PDF is always in print colors on US Letter pages, and it comes out the same whether you export it from a phone or a computer, so it is ready to print either way.
 

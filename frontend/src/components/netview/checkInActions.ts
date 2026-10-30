@@ -3,7 +3,7 @@ import type { DeleteCheckInChoice } from '../../hooks/useDeleteCheckInPrompt';
 import { roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
 import api from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
-import { isFieldShown, withOnlyShownFields } from '../../utils/checkInFields';
+import { DETAIL_FIELDS, isFieldShown, withOnlyShownFields } from '../../utils/checkInFields';
 import { placeChoice } from '../../utils/stationPlace';
 import { withCheckIn } from '../../utils/checkInList';
 
@@ -329,11 +329,8 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       callsign: checkIn.callsign,
       name: checkIn.name || '',
       location: checkIn.location || '',
-      skywarn_number: checkIn.skywarn_number || '',
-      weather_observation: checkIn.weather_observation || '',
-      power_source: checkIn.power_source || '',
-      power: checkIn.power || '',
-      notes: checkIn.notes || '',
+      // Spotter # through Notes (utils/checkInFields.ts)
+      ...Object.fromEntries(DETAIL_FIELDS.map((field) => [field, checkIn[field] || ''])),
       relayed_by: checkIn.relayed_by || '',
       topic_response: checkIn.topic_response || '',
       poll_response: checkIn.poll_response || '',
@@ -366,11 +363,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         callsign: inlineEditValues.callsign || checkIn.callsign,
         name: inlineEditValues.name,
         location: inlineEditValues.location,
-        skywarn_number: inlineEditValues.skywarn_number,
-        weather_observation: inlineEditValues.weather_observation,
-        power_source: inlineEditValues.power_source,
-        power: inlineEditValues.power,
-        notes: inlineEditValues.notes,
+        ...Object.fromEntries(DETAIL_FIELDS.map((field) => [field, inlineEditValues[field]])),
         relayed_by: inlineEditValues.relayed_by,
         topic_response: inlineEditValues.topic_response,
         poll_response: inlineEditValues.poll_response,

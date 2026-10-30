@@ -2,24 +2,25 @@
 A built-in check-in field renamed by the admin ("Power" to "Power (W)") is
 called that wherever a person reads it. The app takes labels from the field
 list (frontend utils/checkInFields.ts::fieldLabel); the closing email takes
-them from services/field_labels.py. Reported 2026-10-23: the admin renamed
+them from the same rows (services/check_in_columns.py). Reported 2026-10-23: the admin renamed
 Power and the net still said "Power".
 """
 import pytest
 
+from types import SimpleNamespace
+
 from app.models import FieldDefinition
-from app.services.field_labels import DEFAULT_FIELD_LABELS, builtin_field_labels
+from app.services.check_in_columns import LogField, load_field_definitions, net_log_fields
+from app.services.field_labels import DEFAULT_FIELD_LABELS
 
 
 @pytest.mark.asyncio
 async def test_renamed_builtin_field_label_wins(db):
-    db.add(FieldDefinition(name="power", label="Power (W)", is_builtin=True))
-    db.add(FieldDefinition(name="digital", label="Digital", is_builtin=False))
+    db.add(FieldDefinition(name="power", label="Power (W)", is_builtin=True, sort_order=55))
     await db.commit()
-    labels = await builtin_field_labels(db)
-    assert labels["power"] == "Power (W)"
-    assert labels["notes"] == DEFAULT_FIELD_LABELS["notes"]
-    assert "digital" not in labels
+    check_in = SimpleNamespace(power="50", custom_fields="{}")
+    fields = net_log_fields({"power": {"enabled": True}}, await load_field_definitions(db), [check_in])
+    assert [f.label for f in fields] == ["Power (W)"]
 
 
 @pytest.mark.asyncio
@@ -35,10 +36,9 @@ async def test_closing_email_uses_the_admins_label(monkeypatch):
     monkeypatch.setattr("app.email.net_logs.send_email_with_attachment", _fake_send)
     await send_net_log(
         email="ncs@example.com", net_name="SET", net_description="", ncs_name="KC1OWN",
-        check_ins=[{"time": "10:00", "callsign": "KC1HILL", "power": "50"}],
+        check_ins=[{"time": "10:00", "callsign": "KC1HILL", "fields": {"power": "50"}}],
         started_at="2026-10-03 10:00:00", closed_at="2026-10-03 11:00:00",
-        field_config={"power": {"enabled": True}},
-        field_labels={**DEFAULT_FIELD_LABELS, "power": "Power (W)"},
+        log_fields=[LogField("power", "Power (W)")],
     )
     assert "<th>Power (W)</th>" in captured["html"]
 

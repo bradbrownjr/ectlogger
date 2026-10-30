@@ -4,7 +4,6 @@ import io
 from jinja2 import Template
 
 from app.config import settings
-from app.services.field_labels import DEFAULT_FIELD_LABELS
 from app.email.logo_svg import LOGO_SVG
 from app.email.base import (
     get_unsubscribe_footer,
@@ -21,7 +20,8 @@ async def send_net_log(
     started_at: str, 
     closed_at: str, 
     chat_messages: list = None,
-    field_config: dict = None,
+    log_fields: list = None,
+    show_frequency: bool = False,
     topic_of_week_enabled: bool = False,
     topic_of_week_prompt: str = None,
     poll_enabled: bool = False,
@@ -30,7 +30,6 @@ async def send_net_log(
     coverage_edges: list = None,
     site_coverage: dict = None,
     site_roster: list = None,
-    field_labels: dict = None,
     traffic_enabled: bool = False,
     traffic_summary: dict = None,
     unsubscribe_token: str = None
@@ -41,16 +40,12 @@ async def send_net_log(
     (draft/pending/relayed/delivered/cancelled/outstanding), rendered as a
     counts-only summary box -- never message content. See
     TRAFFIC-HANDLING-DESIGN.md section 3.5 ("Net log / PDF / close email").
+
+    log_fields: the check-in fields this net's log shows, from
+    services/check_in_columns.py::net_log_fields; each check-in dict carries
+    their values under 'fields'. show_frequency adds the frequency each
+    station checked in on, for a net with more than one.
     """
-    
-    # Parse field_config to determine which fields are enabled
-    fc = field_config or {}
-    # Helper to check if a field is enabled (default enabled if not in config)
-    def is_enabled(field_name):
-        if not fc:
-            return True  # Default behavior if no config
-        field = fc.get(field_name, {})
-        return field.get('enabled', False)
     
     # Calculate poll results if poll is enabled
     poll_results = []
@@ -275,33 +270,15 @@ async def send_net_log(
                     <tr>
                         <th>Time</th>
                         <th>Callsign</th>
-                        {% if show_name %}<th>{{ labels.name }}</th>{% endif %}
-                        {% if show_location %}<th>{{ labels.location }}</th>{% endif %}
-                        {% if has_frequencies %}<th>Frequencies</th>{% endif %}
-                        {% if show_skywarn %}<th>{{ labels.skywarn_number }}</th>{% endif %}
-                        {% if show_weather %}<th>{{ labels.weather_observation }}</th>{% endif %}
-                        {% if show_power_source %}<th>{{ labels.power_source }}</th>{% endif %}
-                        {% if show_power %}<th>{{ labels.power }}</th>{% endif %}
-                        {% if show_notes %}<th>{{ labels.notes }}</th>{% endif %}
-                        {% if topic_enabled %}<th>Topic</th>{% endif %}
-                        {% if poll_enabled %}<th>Poll</th>{% endif %}
+                        {% for heading in table_headings %}<th>{{ heading|e }}</th>{% endfor %}
                     </tr>
                 </thead>
                 <tbody>
-                    {% for check_in in check_ins %}
+                    {% for row in table_rows %}
                     <tr>
-                        <td>{{ check_in.time }}</td>
-                        <td><strong>{{ check_in.callsign }}</strong></td>
-                        {% if show_name %}<td>{{ check_in.name }}</td>{% endif %}
-                        {% if show_location %}<td>{{ check_in.location }}</td>{% endif %}
-                        {% if has_frequencies %}<td>{{ check_in.frequencies }}</td>{% endif %}
-                        {% if show_skywarn %}<td>{{ check_in.skywarn_number }}</td>{% endif %}
-                        {% if show_weather %}<td>{{ check_in.weather_observation }}</td>{% endif %}
-                        {% if show_power_source %}<td>{{ check_in.power_source }}</td>{% endif %}
-                        {% if show_power %}<td>{{ check_in.power }}</td>{% endif %}
-                        {% if show_notes %}<td>{{ check_in.notes }}</td>{% endif %}
-                        {% if topic_enabled %}<td>{{ check_in.topic_response }}</td>{% endif %}
-                        {% if poll_enabled %}<td>{{ check_in.poll_response }}</td>{% endif %}
+                        <td>{{ row.time|e }}</td>
+                        <td><strong>{{ row.callsign|e }}</strong></td>
+                        {% for cell in row.cells %}<td>{{ cell|e }}</td>{% endfor %}
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -318,14 +295,26 @@ async def send_net_log(
     </html>
     """)
     
-    # Check which optional fields have data (only show if enabled AND has data)
-    has_frequencies = any(c.get('frequencies') for c in check_ins)
-    
+    # The check-in table's columns, shared by the email and its CSV: the
+    # fields the net turned on and filled in (services/check_in_columns.py),
+    # then frequencies, topic and poll. (email heading, CSV heading, value)
+    columns = [(f.label, f.label, lambda c, n=f.name: c.get('fields', {}).get(n, '')) for f in (log_fields or [])]
+    if show_frequency and any(c.get('frequency') for c in check_ins):
+        columns.append(("Frequency", "Frequency", lambda c: c.get('frequency', '')))
+    if any(c.get('frequencies') for c in check_ins):
+        columns.append(("Frequencies", "Frequencies", lambda c: c.get('frequencies', '')))
+    if topic_of_week_enabled:
+        columns.append(("Topic", topic_of_week_prompt or "Topic", lambda c: c.get('topic_response', '')))
+    if poll_enabled:
+        columns.append(("Poll", poll_question or "Poll", lambda c: c.get('poll_response', '')))
+    table_rows = [
+        {'time': c.get('time', ''), 'callsign': c.get('callsign', ''), 'cells': [value(c) or '' for _, _, value in columns]}
+        for c in check_ins
+    ]
+
     # Calculate total poll responses for percentage
     total_poll_responses = sum(count for _, count in poll_results) if poll_results else 0
     
-    # The admin's wording for each built-in field (services/field_labels.py).
-    labels = {**DEFAULT_FIELD_LABELS, **(field_labels or {})}
     html_content = html_template.render(
         app_name=settings.app_name,
         net_name=net_name,
@@ -334,16 +323,8 @@ async def send_net_log(
         started_at=started_at,
         closed_at=closed_at,
         check_in_count=len(check_ins),
-        check_ins=check_ins,
-        has_frequencies=has_frequencies,
-        show_name=is_enabled('name'),
-        show_location=is_enabled('location'),
-        show_skywarn=is_enabled('skywarn_number'),
-        show_weather=is_enabled('weather_observation'),
-        show_power_source=is_enabled('power_source'),
-        show_power=is_enabled('power'),
-        show_notes=is_enabled('notes'),
-        labels=labels,
+        table_headings=[heading for heading, _, _ in columns],
+        table_rows=table_rows,
         topic_enabled=topic_of_week_enabled,
         topic_prompt=topic_of_week_prompt,
         poll_enabled=poll_enabled,
@@ -364,59 +345,12 @@ async def send_net_log(
     output = io.StringIO()
     writer = csv.writer(output)
     
-    # Build header row based on enabled fields
-    # Same headings as the email's table above. (The detailed CSV below keeps
+    # Same columns as the email's table above. (The detailed CSV export keeps
     # fixed column names, which the CSV import matches on.)
-    headers = ["Check-in Time", "Callsign"]
-    if is_enabled('name'):
-        headers.append(labels["name"])
-    if is_enabled('location'):
-        headers.append(labels["location"])
-    if has_frequencies:
-        headers.append("Frequencies")
-    if is_enabled('skywarn_number'):
-        headers.append(labels["skywarn_number"])
-    if is_enabled('weather_observation'):
-        headers.append(labels["weather_observation"])
-    if is_enabled('power_source'):
-        headers.append(labels["power_source"])
-    if is_enabled('power'):
-        headers.append(labels["power"])
-    if is_enabled('notes'):
-        headers.append(labels["notes"])
-    if topic_of_week_enabled:
-        headers.append(topic_of_week_prompt or "Topic")
-    if poll_enabled:
-        headers.append(poll_question or "Poll")
-    headers.append("Status")
-    
-    writer.writerow(headers)
-    
-    for check_in in check_ins:
-        row = [check_in.get('time', ''), check_in.get('callsign', '')]
-        if is_enabled('name'):
-            row.append(check_in.get('name', ''))
-        if is_enabled('location'):
-            row.append(check_in.get('location', ''))
-        if has_frequencies:
-            row.append(check_in.get('frequencies', ''))
-        if is_enabled('skywarn_number'):
-            row.append(check_in.get('skywarn_number', ''))
-        if is_enabled('weather_observation'):
-            row.append(check_in.get('weather_observation', ''))
-        if is_enabled('power_source'):
-            row.append(check_in.get('power_source', ''))
-        if is_enabled('power'):
-            row.append(check_in.get('power', ''))
-        if is_enabled('notes'):
-            row.append(check_in.get('notes', ''))
-        if topic_of_week_enabled:
-            row.append(check_in.get('topic_response', ''))
-        if poll_enabled:
-            row.append(check_in.get('poll_response', ''))
-        row.append(check_in.get('status', ''))
-        writer.writerow(row)
-    
+    writer.writerow(["Check-in Time", "Callsign", *(heading for _, heading, _ in columns), "Status"])
+    for row, check_in in zip(table_rows, check_ins):
+        writer.writerow([row['time'], row['callsign'], *row['cells'], check_in.get('status', '')])
+
     csv_data = output.getvalue()
     csv_filename = f"{net_name.replace(' ', '_')}_{closed_at.split()[0]}.csv"
     
@@ -485,6 +419,7 @@ async def send_ics309_log(
     log_entries: list = None,
     message_count: int = 0,
     frequencies: list = None,
+    log_fields: list = None,
     unsubscribe_token: str = None
 ):
     """Send ICS-309 Communications Log format after net is closed.
@@ -492,7 +427,9 @@ async def send_ics309_log(
     log_entries: the log's {time, from_station, to_station, message} rows,
     built by services/ics309_log.py::build_ics309_rows, the same builder as
     the ICS-309 export. check_ins is still needed for the detailed check-in
-    CSV attachment. message_count is the chat message total in the footer.
+    CSV attachment, which adds the frequency each station checked in on and
+    the net's own fields from log_fields (services/check_in_columns.py).
+    message_count is the chat message total in the footer.
     """
     
     # Format frequencies for display
@@ -685,27 +622,30 @@ async def send_ics309_log(
     # Also generate detailed check-in CSV
     detail_output = io.StringIO()
     detail_writer = csv.writer(detail_output)
+    custom_fields = [f for f in (log_fields or []) if f.custom]
     detail_writer.writerow([
-        "Check-in Time", "Callsign", "Name", "Location", 
+        "Check-in Time", "Callsign", "Name", "Location", "Frequency",
         "Spotter #", "Weather Observation", "Power Src", "Power",
-        "Feedback", "Notes", "Status"
+        "Feedback", "Notes", *(f.label for f in custom_fields), "Status"
     ])
-    
+
     for check_in in check_ins:
         detail_writer.writerow([
             check_in.get('time', ''),
             check_in.get('callsign', ''),
             check_in.get('name', ''),
             check_in.get('location', ''),
+            check_in.get('frequency', ''),
             check_in.get('skywarn_number', ''),
             check_in.get('weather_observation', ''),
             check_in.get('power_source', ''),
             check_in.get('power', ''),
             check_in.get('feedback', ''),
             check_in.get('notes', ''),
+            *(check_in.get('fields', {}).get(f.name, '') for f in custom_fields),
             check_in.get('status', '')
         ])
-    
+
     detail_csv_data = detail_output.getvalue()
     detail_csv_filename = f"{net_name.replace(' ', '_')}_{closed_at.split()[0]}_checkins.csv"
     

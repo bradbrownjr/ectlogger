@@ -253,7 +253,8 @@ interface NetViewHeaderProps {
   onToggleNCSRole: () => void;
   onCheckOut: () => void;
   onOpenCanHearDialog: (checkInId: number) => void;
-  onOpenEditTopicDialog: (checkInId: number) => void;
+  // Edit your own check-in (EditOwnCheckInDialog).
+  onOpenEditCheckIn: (checkInId: number) => void;
   onGoLive: () => void;
   onExportCSV: () => void;
   onExportICS309: () => void;
@@ -375,7 +376,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   onToggleNCSRole,
   onCheckOut,
   onOpenCanHearDialog,
-  onOpenEditTopicDialog,
+  onOpenEditCheckIn,
   onGoLive,
   onExportCSV,
   onExportICS309,
@@ -688,17 +689,6 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       tooltip: 'Record which stations you can hear', onClick: () => onOpenCanHearDialog(userActiveCheckIn?.id),
     },
     {
-      // Self-service edit for the topic answer given at check-in -
-      // CheckInFormDialog only ever offers the field once, during check-in
-      // itself, so there was previously no way to fix a typo or add more
-      // after the fact.
-      key: 'edit-topic', group: 'management', priority: 3,
-      visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn
-        && net.topic_of_week_enabled && !!net.topic_of_week_prompt,
-      Icon: EditNoteIcon, color: neutralIconColor, label: 'Edit topic',
-      tooltip: 'Edit your topic of the week answer', onClick: () => onOpenEditTopicDialog(userActiveCheckIn?.id),
-    },
-    {
       key: 'check-out', group: 'management', priority: 3,
       visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn,
       Icon: LogoutIcon, color: '#d32f2f', label: 'Check out',
@@ -712,6 +702,15 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       tooltip: 'Check into net', onClick: onOpenCheckIn,
       active: true, activeTone: 'success',
       extraSx: highlightCheckIn ? { animation: `${pulseAnimationGreen} 1s infinite` } : undefined,
+    },
+    {
+      // Takes Check in's place once you're checked in: reopens the check-in
+      // form on your own row, to fix anything you missed or answer the topic
+      // of the week. Same dialog as the pencil on your row.
+      key: 'edit-check-in', group: 'management', priority: 4,
+      visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn,
+      Icon: EditNoteIcon, color: theme.palette.primary.main, label: 'Edit check-in',
+      tooltip: 'Edit your check-in', onClick: () => onOpenEditCheckIn(userActiveCheckIn.id),
     },
     {
       key: 'go-live', group: 'management', priority: 4,

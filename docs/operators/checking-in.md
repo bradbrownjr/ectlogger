@@ -4,7 +4,7 @@ summary: The check-in form, which fields are required, and what happens the mome
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-10-28
+revised: 2026-10-29
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/checking-in/
@@ -40,7 +40,7 @@ A net with a red **Participants only** label, beside its status in the net or un
 - On a net with sites, such as the shelters of an ARES deployment, a **Site** box comes first: pick where you're operating from (one of the net's sites, **Home**, **Field Deployed**, or **Traveling**). Picking a site fills in Location with the site's place; your usual town is kept for next time.
 - If the net has a **Topic of the Week** or a **poll** running, the question shows above a text field for your answer, right in this same dialog.
 - On a net with more than one working frequency, an **Available Frequencies** picker lets you say which ones you can reach, which is mainly useful on SKYWARN nets that ask spotters to confirm coverage on more than one repeater.
-- Some nets add their own custom fields on top of the standard set (a text box, a number, or a dropdown), defined by whoever set up the net.
+- Some nets add their own custom fields on top of the standard set (a text box, a number, a dropdown, or a checkbox such as **FLDIGI**), defined by whoever set up the net.
 
 Your Name and Location auto-fill from your [profile](/docs/operators/account-and-profile/) if you've set a default there, or from the town your GPS position is in (such as `Waterboro, ME`) if you've turned on [location awareness](/docs/operators/location-and-the-map/), so net control can read it on the air. Spotter # does not carry over automatically; type it each time the field is on. All of it is still yours to edit before you submit.
 
@@ -53,6 +53,21 @@ Location, Notes, and the other free-text fields reject anything that looks like 
 Your row appears in the check-in list immediately for everyone watching, live, so nobody needs to refresh. A short line also appears in the net's Activity Log ("KC1HILL has checked in from Portland (logged by KC1HILL)") so anyone only half-watching the check-in table still sees activity go by; it always names who logged the check-in, even when that's you checking yourself in, and adds the frequency if you picked one. That's a separate stream from [chat](/docs/operators/chat-and-polls/) itself, which never mixes system events into the conversation.
 
 If your callsign is already checked into this net and you check in again, that's a **recheck**, not an error; see [Status, rechecks, and checking out](/docs/operators/status-and-checking-out/) for exactly what that does and how it shows up in the list.
+
+## Fixing your check-in
+
+Missed a box, or need to correct something? You don't need to check in again or ask net control. While the net is in its lobby or live, open the check-in form again for your own row in either of two ways:
+
+- Click the pencil in the right-hand column of your own row.
+- Click **Edit check-in** on the net's toolbar, where **Check in** was before you checked in. On a narrow screen it may have moved into the **More** menu at the end of the toolbar.
+
+<figure>
+  <img src="/docs/img/operators/edit-check-in-button.png"
+       alt="The right-hand end of the net toolbar once you are checked in: Check out, then Edit check-in outlined in red.">
+  <figcaption>Once you're on the list, Edit check-in takes the place of Check in.</figcaption>
+</figure>
+
+Everything in the form can be changed, including your callsign (handy if you've just been issued a new one and haven't updated your profile yet), your site, your topic or poll answer, and on a net with more than one frequency, which one you checked in on. Click **Save** and your row updates for everyone watching. Your status stays on the dropdown on your row.
 
 ## Next
 

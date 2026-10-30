@@ -29,6 +29,8 @@ import Announcements from '../components/Announcements';
 import ScheduleAnnouncements from '../components/ScheduleAnnouncements';
 import CheckInTable from '../components/netview/CheckInTable';
 import CanHearDialog from '../components/netview/CanHearDialog';
+import EditOwnCheckInDialog from '../components/netview/EditOwnCheckInDialog';
+import CompactDetailFields from '../components/netview/CompactDetailFields';
 import SiteCoverageView from '../components/netview/SiteCoverageView';
 import { useSiteCoverage } from '../hooks/useSiteCoverage';
 import SiteField, { netHasSites } from '../components/netview/SiteField';
@@ -94,6 +96,8 @@ const NetPaneWindow: React.FC = () => {
   // currently being reported for (dialog open when non-null) and the full
   // report list for this net, refetched on mount and on can_hear_changed.
   const [canHearDialogCheckInId, setCanHearDialogCheckInId] = useState<number | null>(null);
+  // Edit your own check-in (pencil on your row): same dialog as NetView.tsx.
+  const [editOwnCheckInId, setEditOwnCheckInId] = useState<number | null>(null);
   const [canHearReports, setCanHearReports] = useState<any[]>([]);
   // Authenticated nets: same shape as NetView.tsx.
   const [identityVerifyCheckIn, setIdentityVerifyCheckIn] = useState<{ id: number; callsign: string } | null>(null);
@@ -385,6 +389,9 @@ const NetPaneWindow: React.FC = () => {
   const canHearDialogCheckIn = canHearDialogCheckInId !== null
     ? checkIns.find((ci: any) => ci.id === canHearDialogCheckInId) || null
     : null;
+  const editOwnCheckIn = editOwnCheckInId !== null
+    ? checkIns.find((ci: any) => ci.id === editOwnCheckInId) || null
+    : null;
 
   // Currently-active NCS only -- a stepped-down NCS's role row persists as
   // inactive rather than being deleted (see toggle_self_net_role), so without
@@ -515,6 +522,7 @@ const NetPaneWindow: React.FC = () => {
         canReportCanHear={canReportCanHear}
         canHearReporterCheckInIds={canHearReporterCheckInIds}
         onOpenCanHearDialog={setCanHearDialogCheckInId}
+        onEditOwnCheckIn={setEditOwnCheckInId}
         sites={siteCoverage.sites}
         onInlineValuesChange={setInlineEditValues}
         onOpenIdentityVerify={setIdentityVerifyCheckIn}
@@ -536,6 +544,27 @@ const NetPaneWindow: React.FC = () => {
           existingContacts={siteCoverage.contacts}
           existingAccess={siteCoverage.access}
           onSaved={() => setCanHearDialogCheckInId(null)}
+          onToast={setToastMessage}
+        />
+      )}
+
+      {/* Edit your own check-in - same component NetView.tsx uses */}
+      {editOwnCheckIn && (
+        <EditOwnCheckInDialog
+          key={editOwnCheckIn.id}
+          checkIn={editOwnCheckIn}
+          net={net}
+          customFields={getEnabledCustomFields()}
+          fieldDefinitions={fieldDefinitions as any[]}
+          coverageSites={siteCoverage.sites}
+          savedTown={user?.location || ''}
+          pollResponses={pollResponses}
+          formatFrequency={formatFrequencyDisplay}
+          onClose={() => setEditOwnCheckInId(null)}
+          onSaved={(updated) => {
+            setCheckIns((prev: any[]) => prev.map(ci => (ci.id === updated.id ? updated : ci)));
+            setEditOwnCheckInId(null);
+          }}
           onToast={setToastMessage}
         />
       )}
@@ -595,12 +624,13 @@ const NetPaneWindow: React.FC = () => {
             {net?.field_config?.location?.enabled && (
               <TextField size="small" value={checkInForm.location} onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })} placeholder={labelOf('location')} sx={{ width: 150 }} />
             )}
-            {net?.field_config?.skywarn_number?.enabled && (
-              <TextField size="small" value={checkInForm.skywarn_number} onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })} placeholder={labelOf('skywarn_number')} sx={{ width: 100 }} />
-            )}
-            {net?.field_config?.notes?.enabled && (
-              <TextField size="small" value={checkInForm.notes} onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })} placeholder={labelOf('notes')} sx={{ flex: 1, minWidth: 150 }} />
-            )}
+            <CompactDetailFields
+              fieldConfig={net?.field_config}
+              customFields={getEnabledCustomFields()}
+              form={checkInForm}
+              setForm={setCheckInForm}
+              labelOf={labelOf}
+            />
             {net?.topic_of_week_enabled && (
               <Autocomplete
                 freeSolo

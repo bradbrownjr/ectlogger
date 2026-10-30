@@ -131,7 +131,8 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { netApi, statisticsApi, checkInApi, netRoleApi, canHearApi, coverageSiteApi } from '../services/api';
+import api, { netApi, statisticsApi, checkInApi, netRoleApi, canHearApi, coverageSiteApi } from '../services/api';
+import { DETAIL_FIELDS, logColumnValue, logColumns } from '../utils/checkInFields';
 import { ncsCreditLine } from '../utils/netLog';
 import { chatApi, ChatMessage, formatChatMessageText } from '../api/chat';
 import { formatDateTime, formatTimeWithDate, formatReportSpan, formatReportShortDate } from '../utils/dateUtils';
@@ -165,6 +166,8 @@ interface Net {
   name: string;
   description: string;
   status: string;
+  // Which check-in fields the net turned on (utils/checkInFields.ts)
+  field_config?: Record<string, { enabled?: boolean; required?: boolean }>;
   log_held_since?: string | null;
   // Credited NCS callsigns, comma-joined (services/ncs_attribution.py)
   ncs_callsign?: string | null;
@@ -214,6 +217,8 @@ interface CheckIn {
   frequency_id?: number;
   notes?: string;
   relayed_by?: string;
+  custom_fields?: Record<string, string>;
+  [field: string]: any;
 }
 
 interface TimeSeriesDataPoint {
@@ -267,6 +272,9 @@ const NetReport: React.FC = () => {
   const [siteCoverage, setSiteCoverage] = useState<SiteCoverageSummary>(EMPTY_SITE_COVERAGE);
   // The net's sites, for the Sites section (any net may have them).
   const [sites, setSites] = useState<CoverageSite[]>([]);
+  // The admin's field list, for the check-in log's labels and the net's own
+  // fields (utils/checkInFields.ts::logColumns).
+  const [fieldDefinitions, setFieldDefinitions] = useState<any[]>([]);
   const [ics309LogData, setIcs309LogData] = useState<Ics309LogData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -341,6 +349,10 @@ const NetReport: React.FC = () => {
           canHearApi.list(parseInt(netId)),
           netApi.getIcs309Log(parseInt(netId)),
         ]);
+        // The field list only adds columns to the check-in log. Never fatal to the report.
+        api.get('/settings/fields')
+          .then((res) => setFieldDefinitions(res.data))
+          .catch((e) => console.error('Failed to fetch field definitions:', e));
         // Sites on any net; coverage by site only on a coverage net. Never fatal to the report.
         coverageSiteApi.listSites(parseInt(netId))
           .then((res) => setSites(res.data))
@@ -372,6 +384,12 @@ const NetReport: React.FC = () => {
 
     fetchAllData();
   }, [netId]);
+
+  // The check-in log's field columns (Section 7).
+  const logFields = useMemo(
+    () => logColumns(net?.field_config, fieldDefinitions, checkIns, [...DETAIL_FIELDS, 'relayed_by']),
+    [net?.field_config, fieldDefinitions, checkIns],
+  );
 
   // Role lookup for the map's markers and legend, so a station is the same
   // color here as on the live map (see utils/checkInMarkers.ts).
@@ -1390,6 +1408,12 @@ const NetReport: React.FC = () => {
         )}
 
         {/* ========== SECTION 7: CHECK-IN LOG ========== */}
+        {/* Details: the net's fields that it turned on and somebody filled
+            in, Spotter # through Relayed By then its own fields such as
+            FLDIGI (utils/checkInFields.ts::logColumns), one "Label: value"
+            line each. One column rather than one per field, so the log stays
+            the page's width however many fields a net uses, and the PDF
+            never clips one off the right edge. */}
         <Box>
         <ReportSectionTitle
           sx={{ mb: 2 }}
@@ -1408,7 +1432,7 @@ const NetReport: React.FC = () => {
                 <TableCell sx={{ fontWeight: 'bold' }}>Location</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Frequency</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Notes</TableCell>
+                {logFields.length > 0 && <TableCell sx={{ fontWeight: 'bold' }}>Details</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -1446,14 +1470,20 @@ const NetReport: React.FC = () => {
                   <TableCell sx={{ fontSize: '0.75rem' }}>
                     {getFrequencyById(checkIn.frequency_id)}
                   </TableCell>
-                  <TableCell sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.75rem' }}>
-                    {checkIn.relayed_by ? `Via ${checkIn.relayed_by}` : ''}{checkIn.relayed_by && checkIn.notes ? ' - ' : ''}{checkIn.notes || ''}
-                  </TableCell>
+                  {logFields.length > 0 && (
+                    <TableCell sx={{ minWidth: 180, maxWidth: 320, fontSize: '0.75rem', overflowWrap: 'anywhere' }}>
+                      {logFields.filter((column) => logColumnValue(checkIn, column)).map((column) => (
+                        <div key={column.name}>
+                          <strong>{column.label}:</strong> {logColumnValue(checkIn, column)}
+                        </div>
+                      ))}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
               {checkIns.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} align="center">
+                  <TableCell colSpan={logFields.length > 0 ? 8 : 7} align="center">
                     <Typography color="text.secondary">No check-ins recorded</Typography>
                   </TableCell>
                 </TableRow>
