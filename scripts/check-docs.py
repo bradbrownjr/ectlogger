@@ -24,7 +24,7 @@ DOCS = REPO / "docs"
 # a page ends up linking to something the build never publishes: docs/DESIGN.md
 # and docs/DEVELOPMENT.md were excluded from the site but still counted as
 # valid link targets by this script until 2026-09-19.
-EXCLUDED_DIRS = {"concepts", "video-kit"}
+EXCLUDED_DIRS = {"concepts", "video-kit", "decks"}
 
 
 def unpublished():

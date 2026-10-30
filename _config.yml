@@ -57,6 +57,7 @@ exclude:
   - ectlogger.service
   - docs/concepts/
   - docs/training/video-kit/
+  - docs/training/decks/
   - docs/DEVELOPMENT.md
   - docs/DESIGN.md
   - docs/DOC-STYLE.md

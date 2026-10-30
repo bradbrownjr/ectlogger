@@ -1,0 +1,20 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-10-30T20:30:00Z"},
+  "lists": "css",
+  "title": "ECTLogger: WSSM Presentation",
+  "cover": "cover",
+  "order": ["cover", "about", "what", "stats", "who", "agenda", "p1", "p1-find", "p1-checkin", "p1-chat", "p1-demo", "p2", "p2-schedule", "p2-desk", "p2-close", "p2-demo", "p3", "p3-freq", "p3-coverage", "p3-more", "p3-demo", "help", "thanks"],
+  "sections": {
+    "s1": {"description": "Who I am, what ECTLogger is, and who is using it", "start": "cover"},
+    "s2": {"description": "Part 1: joining a net as a participant", "start": "p1"},
+    "s3": {"description": "Part 2: running a club net", "start": "p2"},
+    "s4": {"description": "Part 3: multi-frequency, multi-mode nets for ARES and SKYWARN", "start": "p3"},
+    "s5": {"description": "Where to get help, and questions", "start": "help"}
+  },
+  "faces": {
+    "oswald": {"family": "Oswald", "href": "https://fonts.googleapis.com/css2?family=Oswald:wght@400..700&display=swap"},
+    "public-sans": {"family": "Public Sans", "href": "https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap"}
+  },
+  "designSystems": []
+}
