@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   TRAINING_BANNER_LEAD_DAYS,
+  bannerStartsAt,
   formatBannerWhen,
   formatSessionRange,
   fromLocalInput,
@@ -58,10 +59,15 @@ describe('training banner', () => {
   const wssm = { id: 1, starts_at: '2026-11-13T00:00:00', banner_dismissed: false };
   const later = { id: 2, starts_at: '2026-11-14T00:00:00', banner_dismissed: false };
 
-  it('announces a session from a week before it starts', () => {
+  it('announces a session from midnight a week before its date, not from its time of day', () => {
     expect(TRAINING_BANNER_LEAD_DAYS).toBe(7);
-    expect(pickBannerSession([wssm], new Date('2026-11-05T23:59:00Z'))).toBeNull();
-    expect(pickBannerSession([wssm], new Date('2026-11-06T00:00:00Z'))).toBe(wssm);
+    // Local midnight on Thu Nov 5, in whatever zone the test runs in
+    const start = bannerStartsAt(wssm.starts_at);
+    const local = parseUtc(wssm.starts_at);
+    expect([start.getHours(), start.getMinutes()]).toEqual([0, 0]);
+    expect(start.getDate()).toBe(new Date(local.getFullYear(), local.getMonth(), local.getDate() - 7).getDate());
+    expect(pickBannerSession([wssm], new Date(start.getTime() - 60_000))).toBeNull();
+    expect(pickBannerSession([wssm], start)).toBe(wssm);
     expect(pickBannerSession([wssm], new Date('2026-11-13T00:30:00Z'))).toBe(wssm);
   });
 

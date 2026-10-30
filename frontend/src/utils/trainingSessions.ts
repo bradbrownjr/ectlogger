@@ -45,8 +45,21 @@ export const formatSessionRange = (startIso: string, endIso?: string | null, tim
 // ========== TRAINING BANNER ==========
 // components/TrainingBanner.tsx announces the next session on the main pages.
 
-/** How long before a session starts the banner begins announcing it. */
+/**
+ * How many days ahead the banner begins announcing a session. It starts at
+ * midnight on the viewer's clock that many days before the session's date, not
+ * at the session's own time of day: someone who visits only for an evening net
+ * a week earlier still has to catch it (Brad, 2026-10-30).
+ */
 export const TRAINING_BANNER_LEAD_DAYS = 7;
+
+/** When the banner starts announcing a session: local midnight, LEAD_DAYS before its date. */
+export const bannerStartsAt = (startIso: string): Date => {
+  const d = parseUtc(startIso);
+  // Calendar arithmetic rather than subtracting milliseconds, so a daylight
+  // saving change inside the week doesn't move it off midnight.
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - TRAINING_BANNER_LEAD_DAYS);
+};
 
 /**
  * The pages the banner shows on: the top bar's main pages. Never inside a net
@@ -64,8 +77,8 @@ interface BannerCandidate {
 }
 
 /**
- * The session to announce: the soonest one starting within the lead time that
- * this viewer hasn't closed. The list holds only sessions that are not over,
+ * The session to announce: the soonest one whose announcement has begun
+ * (bannerStartsAt) that this viewer hasn't closed. The list holds only sessions that are not over,
  * soonest first. guestClosed holds the ids a signed-out browser has closed.
  */
 export const pickBannerSession = <T extends BannerCandidate>(
@@ -73,9 +86,8 @@ export const pickBannerSession = <T extends BannerCandidate>(
   now: Date,
   guestClosed: ReadonlySet<number> = new Set(),
 ): T | null => {
-  const horizon = now.getTime() + TRAINING_BANNER_LEAD_DAYS * 24 * 60 * 60 * 1000;
   return sessions.find((s) =>
-    parseUtc(s.starts_at).getTime() <= horizon && !s.banner_dismissed && !guestClosed.has(s.id),
+    bannerStartsAt(s.starts_at).getTime() <= now.getTime() && !s.banner_dismissed && !guestClosed.has(s.id),
   ) ?? null;
 };
 

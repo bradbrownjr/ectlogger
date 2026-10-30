@@ -12,8 +12,8 @@ import { formatBannerWhen, isTrainingBannerPage, pickBannerSession } from '../ut
 import TrainingDialog from './TrainingDialog';
 
 // ========== TRAINING BANNER ==========
-// Announces the next training session on the main pages, from a week before it
-// starts until it is over. Purple: an announcement, below the red maintenance
+// Announces the next training session on the main pages, from midnight a week
+// before its date until it is over. Purple: an announcement, below the red maintenance
 // and yellow update banners in urgency (DESIGN.md "Sitewide Alert Banners").
 // Fixed colors rather than the theme's, so the meaning holds in every theme;
 // each passes 4.5:1 with white text and sits comfortably on its mode's page.

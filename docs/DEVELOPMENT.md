@@ -1164,9 +1164,12 @@ sessions an admin has posted. Documented for admins in `docs/admins/training-ses
   `details.changes` from `field_changes`, nothing logged for an unchanged save) and
   `training.session_deleted`, labelled in `utils/activityLog.ts`.
 - **The banner** (`components/TrainingBanner.tsx`, mounted in `App.tsx` under the
-  update banner) announces the soonest session starting within
-  `TRAINING_BANNER_LEAD_DAYS` (7) that the viewer hasn't closed
-  (`utils/trainingSessions.ts::pickBannerSession`). It shows only on the pages in
+  update banner) announces the soonest session the viewer hasn't closed
+  (`utils/trainingSessions.ts::pickBannerSession`), starting at local midnight
+  `TRAINING_BANNER_LEAD_DAYS` (7) days before the session's date (`bannerStartsAt`).
+  Midnight, not the session's time of day: a visitor who only comes for an evening
+  net the week before would otherwise reach the site just before the banner appears
+  (Brad, 2026-10-30). It shows only on the pages in
   `isTrainingBannerPage` (the top bar's main pages), never in a net or on a form. It
   reads the same list with `BACKGROUND_REQUEST_CONFIG` on load and every 30 minutes,
   so an open tab never counts as activity. Fixed purple, one shade per mode; see
