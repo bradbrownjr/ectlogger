@@ -111,7 +111,8 @@ const Scheduler: React.FC = () => {
   );
 
   // Favorites — stored in localStorage per user so each person's pins survive a page reload
-  const [favorites, toggleFavorite] = useFavorites(user?.id);
+  const [favoriteError, setFavoriteError] = useState<string | null>(null);
+  const [favorites, toggleFavorite] = useFavorites(user?.id, setFavoriteError);
 
   useEffect(() => {
     fetchSchedules();
@@ -1001,6 +1002,19 @@ const Scheduler: React.FC = () => {
       >
         <Alert severity="success" onClose={() => setMergeSuccess(null)}>
           {mergeSuccess}
+        </Alert>
+      </Snackbar>
+
+      {/* ========== STAR NOT SAVED SNACKBAR ========== */}
+      {/* Shows when starring or unstarring a schedule didn't reach the account */}
+      <Snackbar
+        open={!!favoriteError}
+        autoHideDuration={6000}
+        onClose={() => setFavoriteError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="error" onClose={() => setFavoriteError(null)}>
+          {favoriteError}
         </Alert>
       </Snackbar>
 

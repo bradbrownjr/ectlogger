@@ -391,6 +391,7 @@ class NetTemplate(Base):
     fifth_week_user = relationship("User", foreign_keys=[fifth_week_user_id])
     frequencies = relationship("Frequency", secondary=net_template_frequencies)
     subscriptions = relationship("NetTemplateSubscription", back_populates="template", cascade="all, delete-orphan")
+    favorites = relationship("ScheduleFavorite", cascade="all, delete-orphan")
     nets = relationship("Net", back_populates="template")
     staff = relationship("TemplateStaff", back_populates="template", cascade="all, delete-orphan")
     rotation_members = relationship("NCSRotationMember", back_populates="template", cascade="all, delete-orphan", order_by="NCSRotationMember.position")
@@ -409,6 +410,25 @@ class NetTemplateSubscription(Base):
     # Relationships
     template = relationship("NetTemplate", back_populates="subscriptions")
     user = relationship("User", back_populates="template_subscriptions")
+
+
+class ScheduleFavorite(Base):
+    """A schedule someone starred. Starred schedules lead the Schedule page and
+    their nets lead the dashboard (routers/schedule_favorites.py). Saved per
+    account so the stars follow the person to every device; until 2026-10-30
+    they lived in each browser's localStorage only (Brad). Account merge picks
+    this table up by its foreign key and drops a duplicate star via the
+    unique constraint (services/account_merge.py)."""
+    __tablename__ = "schedule_favorites"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'template_id', name='uq_schedule_favorite'),
+    )
 
 
 class Frequency(Base):

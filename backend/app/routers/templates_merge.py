@@ -12,6 +12,7 @@ from app.models import (
     Net,
     NetTemplate,
     NetTemplateSubscription,
+    ScheduleFavorite,
     TemplateStaff,
     TopicHistory,
     User,
@@ -289,6 +290,19 @@ async def merge_templates(
         else:
             await db.delete(sub)
     logger.info(f"Merge: moved {subs_moved} subscriptions, removed duplicates")
+
+    # 2b. Move stars (skip duplicates), so a starred schedule stays starred
+    target_fav_users = set((await db.execute(
+        select(ScheduleFavorite.user_id).where(ScheduleFavorite.template_id == target_id)
+    )).scalars())
+    for fav in (await db.execute(
+        select(ScheduleFavorite).where(ScheduleFavorite.template_id.in_(source_ids))
+    )).scalars().all():
+        if fav.user_id in target_fav_users:
+            await db.delete(fav)
+        else:
+            fav.template_id = target_id
+            target_fav_users.add(fav.user_id)
 
     # 3. Move staff (skip duplicates)
     target_staff_result = await db.execute(

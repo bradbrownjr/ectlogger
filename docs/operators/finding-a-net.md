@@ -72,7 +72,7 @@ Opening a closed net still shows its full check-in list and report; you don't ne
 
 ## Starring a net you check into often
 
-Click the star icon on a net card to favorite it. Favorited nets always sort to the top of the dashboard, ahead of even an Active net, so the one you show up to every Tuesday doesn't get lost in a long list. This is remembered on the device and browser you set it in, not synced to your account, so it won't follow you if you sign in from a different phone or computer. The star belongs to the net's schedule, so starring tonight's net keeps next week's net from the same schedule at the top too.
+Click the star icon on a net card to favorite it. Favorited nets always sort to the top of the dashboard, ahead of even an Active net, so the one you show up to every Tuesday doesn't get lost in a long list. When you're signed in, your stars are saved to your account, so they follow you to any phone or computer you sign in on. Stars you set in a browser before they were saved this way are added to your account the first time you sign in there. Without signing in, stars are kept in that browser only. The star belongs to the net's schedule, so starring tonight's net keeps next week's net from the same schedule at the top too.
 
 ## Catching up on a schedule's news
 

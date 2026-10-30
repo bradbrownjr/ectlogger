@@ -9,6 +9,7 @@ from app.config import settings
 from app.database import init_db, AsyncSessionLocal
 from app.routers import auth, users, nets, check_ins, frequencies, templates, chat, ncs_rotation, security, statistics, geocode, contacts, feedback, can_hear, coverage_sites, drill_plans, traffic, feeds, backups, off_net_log, audit, net_blocks
 from app.routers import settings as app_settings_router
+from app.routers import schedule_favorites
 from app.security import sanitize_html, get_client_ip
 from app.ncs_reminder_service import ncs_reminder_service
 from app.whats_new_service import whats_new_service
@@ -147,6 +148,8 @@ async def security_middleware(request: Request, call_next):
 # Include routers with /api prefix for reverse proxy compatibility
 # Caddy forwards /api/* to the backend, so all routes need this prefix
 app.include_router(auth.router, prefix="/api")
+# Before users.router, so /users/me/... is never read as a user id.
+app.include_router(schedule_favorites.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(nets.router, prefix="/api")
 app.include_router(check_ins.router, prefix="/api")

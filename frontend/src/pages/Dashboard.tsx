@@ -139,7 +139,7 @@ const Dashboard: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Share the same favorites store as the Scheduler page — keyed by schedule/template ID
-  const [favorites, toggleFavorite] = useFavorites(user?.id);
+  const [favorites, toggleFavorite] = useFavorites(user?.id, (message) => setSnackbar({ open: true, message, severity: 'error' }));
 
   useEffect(() => {
     fetchNets();

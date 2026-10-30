@@ -134,6 +134,12 @@ export const authApi = {
 
 // User API
 export const userApi = {
+  // The schedules the signed-in person starred (routers/schedule_favorites.py).
+  listFavoriteSchedules: () => api.get<number[]>('/users/me/favorite-schedules'),
+  addFavoriteSchedules: (templateIds: number[]) =>
+    api.post<number[]>('/users/me/favorite-schedules', { template_ids: templateIds }),
+  starSchedule: (templateId: number) => api.put(`/users/me/favorite-schedules/${templateId}`),
+  unstarSchedule: (templateId: number) => api.delete(`/users/me/favorite-schedules/${templateId}`),
   // Admin: schedule entries an account took over by callsign, and undoing one.
   listCallsignClaims: (userId: number) => api.get(`/users/${userId}/callsign-claims`),
   // An account's backup sign-in addresses (admin).
