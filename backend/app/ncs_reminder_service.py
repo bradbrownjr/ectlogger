@@ -13,7 +13,7 @@ from sqlalchemy.orm import selectinload
 from app.database import AsyncSessionLocal
 from app.net_start import auto_open_lobby, lobby_open_due
 from app.services.callsign_people import duty_ncs_role
-from app.services.ncs_attribution import net_ncs_attribution
+from app.services.ncs_attribution import ncs_on_duty
 from app.utils import display_callsign
 from app.audit import record_net_event
 from app.models import CheckIn, ChatMessage, NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus, TemplateStaff
@@ -49,26 +49,6 @@ def _reminder_frequencies(template: NetTemplate) -> list:
                 'talkgroup_id': freq.talkgroup,
             })
     return frequencies
-
-
-async def _reminder_ncs(db, net_id) -> tuple:
-    """(ncs_name, ncs_callsign) for a reminder's "NCS on duty" line.
-
-    Every *active* NCS, oldest assignment first (see
-    utils.format_ncs_attribution). ASC matters: _assign_duty_ncs stamps the
-    rotation's scheduled pick ~24h ahead, so most-recent-wins would let any
-    later grant displace the operator actually on duty. Shared by the staff
-    and subscriber reminders; Joel AA1GM asked 2026-10-29 for the subscriber
-    one to say who is NCS, which only the staff one did.
-    """
-    if not net_id:
-        return None, None
-    ncs_callsign, ncs_name = await net_ncs_attribution(db, net_id)
-    if ncs_callsign and not ncs_name:
-        # Several on duty (or no name on file): show the callsign list alone
-        # rather than "None (WO1J, NB1T)".
-        return ncs_callsign, None
-    return ncs_name, ncs_callsign
 
 
 class NCSReminderService:
@@ -521,7 +501,7 @@ class NCSReminderService:
                 lobby_url = f"{net_url}?open_lobby=1" if net_id else net_url
 
                 frequencies = _reminder_frequencies(template)
-                ncs_name, ncs_callsign = await _reminder_ncs(db, net_id)
+                ncs_name, ncs_callsign = await ncs_on_duty(db, net_id, template.id)
 
                 for staff_entry in active_staff:
                     user = staff_entry.user
@@ -898,7 +878,7 @@ class NCSReminderService:
         existing_net = result.scalar_one_or_none()
         if existing_net:
             net_url = f"{settings.frontend_url}/nets/{existing_net.id}"
-        ncs_name, ncs_callsign = await _reminder_ncs(db, existing_net.id if existing_net else None)
+        ncs_name, ncs_callsign = await ncs_on_duty(db, existing_net.id if existing_net else None, template.id)
 
         await EmailService.send_subscriber_reminder(
             to_email=user.email,

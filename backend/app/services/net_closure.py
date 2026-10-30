@@ -429,7 +429,7 @@ async def send_net_log(db: AsyncSession, net: Net) -> None:
             recipients_to_notify.append((role_holder.email, role_holder))
             existing_emails.add(role_holder.email)
 
-    # Format frequencies for ICS-309
+    # The net's frequencies, for the ICS-309 and the closing email's summary
     freq_strings = [label for label in (format_frequency(f) for f in net.frequencies) if label]
 
     # Send log email to all recipients based on their preference.
@@ -488,7 +488,7 @@ async def send_net_log(db: AsyncSession, net: Net) -> None:
                     closed_at=closed_at_str,
                     chat_messages=chat_messages_data if chat_messages_data else None,
                     log_fields=log_fields,
-                    show_frequency=len(net.frequencies) > 1,
+                    frequencies=freq_strings,
                     topic_of_week_enabled=net.topic_of_week_enabled,
                     topic_of_week_prompt=net.topic_of_week_prompt,
                     poll_enabled=net.poll_enabled,

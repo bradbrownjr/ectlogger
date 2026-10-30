@@ -25,12 +25,13 @@ All notable changes to ECTLogger are documented here.
 ## Improvements
 
 * **Check-in: Fix a station's frequency** — On a net with more than one frequency, net control can now change which frequency a station checked in on, and which others it can be reached on, by editing its row. Handy when nobody picked a frequency at check-in.
-* **Reminders: Who's NCS** — The 1-hour reminder for a net you subscribe to now names the NCS on duty, as the staff reminder already did.
+* **Reminders: Who's NCS** — The 1-hour reminder for a net you subscribe to now names the NCS on duty, as the staff reminder already did, and so does the email saying a net has started. A schedule with no rotation and no staff list names its manager when nobody has taken NCS yet.
 
 ## Bug Fixes
 
 * **Check-in: Fix your own check-in** — Forgot something when you checked in? Click the pencil on your row, or Edit check-in on the toolbar, to fix it yourself instead of asking net control. Your topic of the week answer is changed there too. The check-in form also now shows the net's own fields, such as an FLDIGI checkbox, with labels on its checkboxes so they're harder to miss.
 * **Reports: All of your net's fields** — Some fields were missing from the net report, the CSV export and the closing email. They now include every field your net has turned on and filled in, such as Feedback and FLDIGI. Feedback also now has a box to fill in when you check in.
+* **Closing email: Room for the check-in list** — On a net with one frequency, the closing email lists it once in the summary instead of on every row, so the check-in table fits better on a phone.
 * **Reminders: Talkgroups listed correctly** — The 1-hour subscriber reminder showed a DMR talkgroup's number where its name belonged, and the other way round. It now matches the other reminders.
 
 ---

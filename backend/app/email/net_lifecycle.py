@@ -7,7 +7,8 @@ from app.config import settings
 from app.email.logo_svg import LOGO_SVG
 from app.email.base import get_unsubscribe_footer, send_email
 
-async def send_net_notification(emails: List[str], net_name: str, net_id: int, unsubscribe_tokens: dict = None, self_checkin_enabled: bool = True):
+async def send_net_notification(emails: List[str], net_name: str, net_id: int, unsubscribe_tokens: dict = None, self_checkin_enabled: bool = True,
+                                ncs_name: str = None, ncs_callsign: str = None):
     """Send notification that a net has started, with magic link for instant login
 
     Args:
@@ -20,6 +21,9 @@ async def send_net_notification(emails: List[str], net_name: str, net_id: int, u
             subscribers, not staff, so the in-app toolbar hides that action for
             them too (see NetViewHeader.tsx), and offering it here would send
             them to a form the backend then rejects.
+        ncs_name/ncs_callsign: who is NCS, from
+            services/ncs_attribution.py::ncs_on_duty, the same line as the
+            reminders. This email had none until 2026-10-29.
     """
     from app.auth import create_magic_link_token
     
@@ -43,6 +47,7 @@ async def send_net_notification(emails: List[str], net_name: str, net_id: int, u
                 <strong>A net you're subscribed to has started!</strong>
             </div>
             <p>The <strong>{{ net_name }}</strong> net is now active and ready for check-ins.</p>
+            {% if ncs_name %}<p><strong>NCS on duty:</strong> {{ ncs_name|e }}{% if ncs_callsign %} ({{ ncs_callsign|e }}){% endif %}</p>{% endif %}
             <a href="{{ view_url }}" class="button" style="color: #ffffff;">View Net</a>
             {% if self_checkin_enabled %}<a href="{{ check_in_url }}" class="button" style="color: #ffffff;">Check-in to Net</a>{% endif %}
             <p>{% if self_checkin_enabled %}Click a button above to view the net or jump straight to checking in.{% else %}Click above to view the net. Net Control checks stations in for this net.{% endif %} You'll be automatically signed in.</p>
@@ -75,6 +80,8 @@ async def send_net_notification(emails: List[str], net_name: str, net_id: int, u
                 view_url=view_url,
                 check_in_url=check_in_url,
                 self_checkin_enabled=self_checkin_enabled,
+                ncs_name=ncs_name,
+                ncs_callsign=ncs_callsign,
                 unsubscribe_footer=get_unsubscribe_footer(unsub_token)
             )
             

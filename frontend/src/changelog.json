@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.29b",
+  "version": "2026.10.29c",
   "entries": [
     {
       "version": "2026.10.29",
@@ -26,7 +26,7 @@
               "docs": "/docs/net-control/logging-check-ins/#fixing-a-stations-frequency"
             },
             {
-              "text": "Reminders: Who's NCS — The 1-hour reminder for a net you subscribe to now names the NCS on duty, as the staff reminder already did.",
+              "text": "Reminders: Who's NCS — The 1-hour reminder for a net you subscribe to now names the NCS on duty, as the staff reminder already did, and so does the email saying a net has started. A schedule with no rotation and no staff list names its manager when nobody has taken NCS yet.",
               "userImpact": true,
               "docs": "/docs/reference/emails/"
             }
@@ -45,6 +45,11 @@
               "text": "Reports: All of your net's fields — Some fields were missing from the net report, the CSV export and the closing email. They now include every field your net has turned on and filled in, such as Feedback and FLDIGI. Feedback also now has a box to fill in when you check in.",
               "userImpact": true,
               "docs": "/docs/reference/check-in-fields/#in-reports-and-exports"
+            },
+            {
+              "text": "Closing email: Room for the check-in list — On a net with one frequency, the closing email lists it once in the summary instead of on every row, so the check-in table fits better on a phone.",
+              "userImpact": true,
+              "docs": "/docs/reference/emails/"
             },
             {
               "text": "Reminders: Talkgroups listed correctly — The 1-hour subscriber reminder showed a DMR talkgroup's number where its name belonged, and the other way round. It now matches the other reminders.",

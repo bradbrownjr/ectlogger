@@ -108,6 +108,7 @@ async def test_closing_email_shows_feedback_custom_fields_and_frequency(monkeypa
     for heading in ("<th>Feedback</th>", "<th>FLDIGI</th>", "<th>Frequency</th>"):
         assert heading in html
     assert "<th>Digital</th>" not in html
+    assert "<strong>Frequencies:</strong> 146.520 FM, 145.090 Packet" in html
     rows = list(csv.DictReader(io.StringIO(captured["csv"])))
     pine = next(row for row in rows if row["Callsign"] == "W1PINE")
     assert pine["FLDIGI"] == "Yes"
@@ -133,3 +134,29 @@ async def test_closing_email_escapes_check_in_text(monkeypatch):
     )
     assert "<b>hi</b>" not in captured["html"]
     assert "&lt;b&gt;hi&lt;/b&gt;" in captured["html"]
+
+
+@pytest.mark.asyncio
+async def test_a_one_frequency_net_lists_it_in_the_summary(monkeypatch):
+    """Office Hours Tech Net, 2026-10-29: one talkgroup, repeated in a column
+    on every row of the closing email, crowding the table on a phone."""
+    from app.email.net_logs import send_net_log
+    captured = {}
+
+    async def _fake_send(*, to_email, subject, html_content, attachment_data,
+                         attachment_filename, attachment_type="text/csv", unsubscribe_token=None):
+        captured["html"] = html_content
+        captured["csv"] = attachment_data
+
+    monkeypatch.setattr("app.email.net_logs.send_email_with_attachment", _fake_send)
+    check_in = {"time": "20:01", "callsign": "KC1HILL", "frequency": "NEDECN TG8801",
+                "frequencies": "NEDECN TG8801", "fields": {}}
+    await send_net_log(
+        email="ncs@example.com", net_name="Office Hours", net_description="", ncs_name="W1BKW",
+        check_ins=[check_in], started_at="2026-10-29 20:00:00", closed_at="2026-10-29 20:45:00",
+        frequencies=["NEDECN TG8801"],
+    )
+    html = captured["html"]
+    assert "<strong>Frequency:</strong> NEDECN TG8801" in html
+    assert "<th>Frequency</th>" not in html and "<th>Frequencies</th>" not in html
+    assert next(csv.DictReader(io.StringIO(captured["csv"])))["Frequency"] == "NEDECN TG8801"

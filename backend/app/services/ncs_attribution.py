@@ -26,11 +26,14 @@ when it closes (ncs_needed); see routers/nets_core.py::close_net.
 """
 from typing import Dict, Iterable, List, NamedTuple, Optional, Set, Tuple
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import ChatMessage, CheckIn, Net, NetCallsignRole, NetRole, NetStatus, User
-from app.utils import format_ncs_attribution
+from app.models import (
+    ChatMessage, CheckIn, Net, NetCallsignRole, NetRole, NetStatus, NetTemplate,
+    NCSRotationMember, TemplateStaff, User,
+)
+from app.utils import display_callsign, format_ncs_attribution
 
 # Shown wherever an ended net has no credited NCS (closing email, ICS-309,
 # report). Never the net manager's callsign: that credited someone who may
@@ -139,6 +142,54 @@ async def load_ncs_attribution(
 async def net_ncs_attribution(db: AsyncSession, net_id: int) -> Tuple[Optional[str], Optional[str]]:
     """(ncs_callsign, ncs_name) for one net; (None, None) when it has no NCS."""
     return (await load_ncs_attribution(db, [net_id])).get(net_id, (None, None))
+
+
+async def ncs_on_duty(
+    db: AsyncSession, net_id: Optional[int], template_id: Optional[int]
+) -> Tuple[Optional[str], Optional[str]]:
+    """(ncs_name, ncs_callsign) for the "NCS on duty" line in the reminders
+    and the net-started email; (None, None) when nobody can be named.
+
+    Whoever holds NCS on the net comes first (net_ncs_attribution). With
+    nobody holding it, a schedule with nobody but its manager on its staff
+    list and NCS rotation names the manager, the only person who can take
+    NCS there. Office Hours (W1BKW), York County, both East Rock schedules
+    and West Rockingham are run that way; on production every one of their
+    nets was run by the manager, yet the 1-hour reminder said nothing (Brad,
+    2026-10-29). A schedule with anyone else on staff gets no guess: whoever
+    turns up takes it (see "Unstaffed scheduled nets" in the instructions).
+    """
+    ncs_callsign = ncs_name = None
+    if net_id:
+        ncs_callsign, ncs_name = await net_ncs_attribution(db, net_id)
+    if not ncs_callsign and template_id:
+        manager = (await db.execute(
+            select(User).join(NetTemplate, NetTemplate.owner_id == User.id).where(NetTemplate.id == template_id)
+        )).scalar_one_or_none()
+        if manager and not await _has_other_ncs_candidates(db, template_id, manager.id):
+            ncs_callsign, ncs_name = display_callsign(manager) or None, manager.name
+    if ncs_callsign and not ncs_name:
+        # Several on duty (or no name on file): show the callsign list alone
+        # rather than "None (WO1J, NB1T)".
+        return ncs_callsign, None
+    return ncs_name, ncs_callsign
+
+
+async def _has_other_ncs_candidates(db: AsyncSession, template_id: int, manager_id: int) -> bool:
+    """Whether anyone besides the manager is on the schedule's staff list or
+    NCS rotation. A callsign-only entry (no account yet) counts: that
+    operator may run the net. .limit(1): rotation rows have no uniqueness."""
+    for model in (TemplateStaff, NCSRotationMember):
+        found = (await db.execute(
+            select(model.id).where(
+                model.template_id == template_id,
+                model.is_active == True,
+                or_(model.user_id.is_(None), model.user_id != manager_id),
+            ).limit(1)
+        )).scalar_one_or_none()
+        if found:
+            return True
+    return False
 
 
 async def ncs_needed(db: AsyncSession, net: Net) -> bool:

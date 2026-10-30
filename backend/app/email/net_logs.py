@@ -21,7 +21,7 @@ async def send_net_log(
     closed_at: str, 
     chat_messages: list = None,
     log_fields: list = None,
-    show_frequency: bool = False,
+    frequencies: list = None,
     topic_of_week_enabled: bool = False,
     topic_of_week_prompt: str = None,
     poll_enabled: bool = False,
@@ -43,8 +43,13 @@ async def send_net_log(
 
     log_fields: the check-in fields this net's log shows, from
     services/check_in_columns.py::net_log_fields; each check-in dict carries
-    their values under 'fields'. show_frequency adds the frequency each
-    station checked in on, for a net with more than one.
+    their values under 'fields'.
+
+    frequencies: the net's frequencies, listed in the summary. Only a net
+    with more than one gets the Frequency (checked in on) and Frequencies
+    (available) columns in the email's table: on a one-frequency net they
+    repeat the summary on every row and squeeze the table on a phone
+    (Office Hours Tech Net, 2026-10-29). The CSV keeps Frequency.
     """
     
     # Calculate poll results if poll is enabled
@@ -125,6 +130,7 @@ async def send_net_log(
                 <p><strong>NCS:</strong> {{ ncs_name }}</p>
                 <p><strong>Started:</strong> {{ started_at }}</p>
                 <p><strong>Closed:</strong> {{ closed_at }}</p>
+                {% if frequencies %}<p><strong>{{ 'Frequency' if frequencies|length == 1 else 'Frequencies' }}:</strong> {{ frequencies|join(', ')|e }}</p>{% endif %}
                 <p><strong>Total Check-ins:</strong> {{ check_in_count }}</p>
             </div>
 
@@ -297,18 +303,21 @@ async def send_net_log(
     
     # The check-in table's columns, shared by the email and its CSV: the
     # fields the net turned on and filled in (services/check_in_columns.py),
-    # then frequencies, topic and poll. (email heading, CSV heading, value)
-    columns = [(f.label, f.label, lambda c, n=f.name: c.get('fields', {}).get(n, '')) for f in (log_fields or [])]
-    if show_frequency and any(c.get('frequency') for c in check_ins):
-        columns.append(("Frequency", "Frequency", lambda c: c.get('frequency', '')))
-    if any(c.get('frequencies') for c in check_ins):
-        columns.append(("Frequencies", "Frequencies", lambda c: c.get('frequencies', '')))
+    # then frequencies, topic and poll.
+    # (email heading, CSV heading, value, shown in the email's table)
+    several_frequencies = len(frequencies or []) > 1
+    columns = [(f.label, f.label, lambda c, n=f.name: c.get('fields', {}).get(n, ''), True) for f in (log_fields or [])]
+    if any(c.get('frequency') for c in check_ins):
+        columns.append(("Frequency", "Frequency", lambda c: c.get('frequency', ''), several_frequencies))
+    if several_frequencies and any(c.get('frequencies') for c in check_ins):
+        columns.append(("Frequencies", "Frequencies", lambda c: c.get('frequencies', ''), True))
     if topic_of_week_enabled:
-        columns.append(("Topic", topic_of_week_prompt or "Topic", lambda c: c.get('topic_response', '')))
+        columns.append(("Topic", topic_of_week_prompt or "Topic", lambda c: c.get('topic_response', ''), True))
     if poll_enabled:
-        columns.append(("Poll", poll_question or "Poll", lambda c: c.get('poll_response', '')))
+        columns.append(("Poll", poll_question or "Poll", lambda c: c.get('poll_response', ''), True))
+    table_columns = [column for column in columns if column[3]]
     table_rows = [
-        {'time': c.get('time', ''), 'callsign': c.get('callsign', ''), 'cells': [value(c) or '' for _, _, value in columns]}
+        {'time': c.get('time', ''), 'callsign': c.get('callsign', ''), 'cells': [value(c) or '' for _, _, value, _ in table_columns]}
         for c in check_ins
     ]
 
@@ -323,7 +332,8 @@ async def send_net_log(
         started_at=started_at,
         closed_at=closed_at,
         check_in_count=len(check_ins),
-        table_headings=[heading for heading, _, _ in columns],
+        table_headings=[heading for heading, _, _, _ in table_columns],
+        frequencies=frequencies or [],
         table_rows=table_rows,
         topic_enabled=topic_of_week_enabled,
         topic_prompt=topic_of_week_prompt,
@@ -345,11 +355,13 @@ async def send_net_log(
     output = io.StringIO()
     writer = csv.writer(output)
     
-    # Same columns as the email's table above. (The detailed CSV export keeps
-    # fixed column names, which the CSV import matches on.)
-    writer.writerow(["Check-in Time", "Callsign", *(heading for _, heading, _ in columns), "Status"])
-    for row, check_in in zip(table_rows, check_ins):
-        writer.writerow([row['time'], row['callsign'], *row['cells'], check_in.get('status', '')])
+    # The email's columns, plus Frequency on a one-frequency net. (The
+    # detailed CSV export keeps fixed column names, which the CSV import
+    # matches on.)
+    writer.writerow(["Check-in Time", "Callsign", *(heading for _, heading, _, _ in columns), "Status"])
+    for check_in in check_ins:
+        writer.writerow([check_in.get('time', ''), check_in.get('callsign', ''),
+                         *(value(check_in) or '' for _, _, value, _ in columns), check_in.get('status', '')])
 
     csv_data = output.getvalue()
     csv_filename = f"{net_name.replace(' ', '_')}_{closed_at.split()[0]}.csv"

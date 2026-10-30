@@ -77,9 +77,12 @@ async def send_net_start_notifications(db: AsyncSession, net: Net) -> None:
         await db.commit()
 
         if emails_to_notify:
+            from app.services.ncs_attribution import ncs_on_duty
+            ncs_name, ncs_callsign = await ncs_on_duty(db, net.id, net.template_id)
             await EmailService.send_net_notification(
                 emails_to_notify, net.name, net.id, unsubscribe_tokens,
                 self_checkin_enabled=net.self_checkin_enabled is not False,
+                ncs_name=ncs_name, ncs_callsign=ncs_callsign,
             )
     except Exception as e:
         logger.error("NET_START", f"Failed to send net start notification for net {net.id}: {e}")
