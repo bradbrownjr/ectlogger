@@ -1049,16 +1049,22 @@ Use responsive padding on `<Paper>` to reclaim space on small screens:
 
 ---
 
-## Sitewide Alert Banners (`MaintenanceBanner.tsx`, `UpdateAvailableBanner.tsx`)
+## Sitewide Alert Banners (`MaintenanceBanner.tsx`, `UpdateAvailableBanner.tsx`, `TrainingBanner.tsx`)
 
-There are two sitewide banners, mounted next to each other in `App.tsx` below the
-navbar. They share the same layout/polling pattern below but are deliberately
-different severities:
+There are three sitewide banners, mounted one after another in `App.tsx` below the
+navbar. They share the same layout pattern below but are deliberately different
+levels:
 
 | Banner | Severity | Color | Meaning |
 |---|---|---|---|
 | `MaintenanceBanner` | `error` | red | A blocker — features may not work at all. |
 | `UpdateAvailableBanner` | `warning` | yellow | A brief, non-blocking interruption — reload when convenient. |
+| `TrainingBanner` | none (custom `bgcolor`) | purple: `#7b1fa2` light, `#6b3fa0` dark | An announcement — nothing is wrong. Main pages only, never in a net. |
+
+The training banner's purple is fixed, not taken from the theme, so it reads the
+same in every theme. Each shade carries white text at 4.5:1 or better (8.2:1 and
+7.4:1); the dark-mode one is softer so it doesn't glare against a dark page. Use it
+for announcements only, never for anything a user has to act on.
 
 Don't reuse `severity="error"` or `"warning"` for anything less urgent than these
 two meanings, and don't add a third sitewide banner at `severity="info"` without

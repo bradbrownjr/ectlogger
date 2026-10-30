@@ -354,10 +354,15 @@ export interface TrainingSessionPayload {
 export interface TrainingSession extends TrainingSessionPayload {
   id: number;
   has_online_link: boolean;
+  /** The signed-in viewer closed this session's banner (always false for a guest). */
+  banner_dismissed: boolean;
 }
 
 export const trainingApi = {
   list: () => api.get<TrainingSession[]>('/training/sessions'),
+  // The banner's own reads: a background poll, so an open tab doesn't count as activity
+  listForBanner: () => api.get<TrainingSession[]>('/training/sessions', BACKGROUND_REQUEST_CONFIG),
+  dismissBanner: (id: number) => api.post(`/training/sessions/${id}/dismiss-banner`),
   create: (data: TrainingSessionPayload) => api.post<TrainingSession>('/training/sessions', data),
   update: (id: number, data: TrainingSessionPayload) => api.put<TrainingSession>(`/training/sessions/${id}`, data),
   remove: (id: number) => api.delete(`/training/sessions/${id}`),

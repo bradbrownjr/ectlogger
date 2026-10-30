@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { formatSessionRange, fromLocalInput, isWebUrl, parseUtc, toLocalInput } from './trainingSessions';
+import {
+  TRAINING_BANNER_LEAD_DAYS,
+  formatBannerWhen,
+  formatSessionRange,
+  fromLocalInput,
+  isTrainingBannerPage,
+  isWebUrl,
+  parseUtc,
+  pickBannerSession,
+  toLocalInput,
+} from './trainingSessions';
 
 describe('parseUtc', () => {
   it('treats a time with no zone as UTC', () => {
@@ -40,5 +50,39 @@ describe('formatSessionRange', () => {
 
   it('shows the start alone with no end', () => {
     expect(formatSessionRange('2026-11-06T00:00:00', null, 'America/New_York')).not.toContain(' to ');
+  });
+});
+
+describe('training banner', () => {
+  // The WSSM session: Thu Nov 12, 2026 at 7 PM Eastern (00:00 UTC on the 13th).
+  const wssm = { id: 1, starts_at: '2026-11-13T00:00:00', banner_dismissed: false };
+  const later = { id: 2, starts_at: '2026-11-14T00:00:00', banner_dismissed: false };
+
+  it('announces a session from a week before it starts', () => {
+    expect(TRAINING_BANNER_LEAD_DAYS).toBe(7);
+    expect(pickBannerSession([wssm], new Date('2026-11-05T23:59:00Z'))).toBeNull();
+    expect(pickBannerSession([wssm], new Date('2026-11-06T00:00:00Z'))).toBe(wssm);
+    expect(pickBannerSession([wssm], new Date('2026-11-13T00:30:00Z'))).toBe(wssm);
+  });
+
+  it('skips a session this viewer closed, on the account or in a guest browser', () => {
+    const now = new Date('2026-11-10T12:00:00Z');
+    expect(pickBannerSession([{ ...wssm, banner_dismissed: true }, later], now)).toBe(later);
+    expect(pickBannerSession([wssm, later], now, new Set([1]))).toBe(later);
+    expect(pickBannerSession([wssm, later], now, new Set([1, 2]))).toBeNull();
+  });
+
+  it('shows only on the main pages', () => {
+    for (const p of ['/', '/dashboard', '/scheduler', '/traffic', '/statistics', '/profile', '/admin/users', '/dashboard/']) {
+      expect(isTrainingBannerPage(p)).toBe(true);
+    }
+    for (const p of ['/nets/12', '/nets/12/report', '/nets/12/pane/chat', '/nets/create', '/scheduler/create',
+      '/scheduler/3/edit', '/statistics/nets/12', '/login', '/subscribe/3']) {
+      expect(isTrainingBannerPage(p)).toBe(false);
+    }
+  });
+
+  it('says when, briefly, on the viewer clock', () => {
+    expect(formatBannerWhen(wssm.starts_at, 'America/New_York')).toBe('Thu, Nov 12 at 7:00 PM EST');
   });
 });

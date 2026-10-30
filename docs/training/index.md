@@ -20,6 +20,8 @@ The rest of this site is written to be read on your own, one task at a time. Tra
 
 Live sessions, in person or online, are posted in the app rather than here, because the app can show them in your own time zone and take them down once they are over. Open **Help** in the top bar, then **Training**. If a session has an online meeting link, sign in to see it.
 
+You don't have to go looking, either. From a week before a session, a purple banner across the top of the main pages announces it, says whether you can attend in person, online, or both, and opens the details with **More info**. Close it with the **✕** once you've seen it; when you're signed in, it stays closed on your other devices too.
+
 Running a session for your own club? An administrator can post it in the same place: see [Training sessions](/docs/admins/training-sessions/).
 
 ## Videos

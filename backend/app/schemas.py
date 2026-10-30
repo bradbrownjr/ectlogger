@@ -3485,3 +3485,6 @@ class TrainingSessionResponse(BaseModel):
     online_url: Optional[str] = None
     has_online_link: bool = False
     details: Optional[str] = None
+    # The signed-in viewer closed this session's banner. Always False for a
+    # guest, whose browser remembers it instead.
+    banner_dismissed: bool = False

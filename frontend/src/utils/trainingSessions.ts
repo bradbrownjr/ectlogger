@@ -41,3 +41,48 @@ export const formatSessionRange = (startIso: string, endIso?: string | null, tim
   const end = parseUtc(endIso);
   return day(end) === day(start) ? `${first} to ${time(end)}` : `${first} to ${day(end)}, ${time(end)}`;
 };
+
+// ========== TRAINING BANNER ==========
+// components/TrainingBanner.tsx announces the next session on the main pages.
+
+/** How long before a session starts the banner begins announcing it. */
+export const TRAINING_BANNER_LEAD_DAYS = 7;
+
+/**
+ * The pages the banner shows on: the top bar's main pages. Never inside a net
+ * or anything under one, a form, or the sign-in pages, where the room is needed.
+ */
+const BANNER_PAGES = ['/', '/dashboard', '/scheduler', '/traffic', '/statistics', '/profile', '/admin/users'];
+
+export const isTrainingBannerPage = (pathname: string): boolean =>
+  BANNER_PAGES.includes(pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname);
+
+interface BannerCandidate {
+  id: number;
+  starts_at: string;
+  banner_dismissed: boolean;
+}
+
+/**
+ * The session to announce: the soonest one starting within the lead time that
+ * this viewer hasn't closed. The list holds only sessions that are not over,
+ * soonest first. guestClosed holds the ids a signed-out browser has closed.
+ */
+export const pickBannerSession = <T extends BannerCandidate>(
+  sessions: T[],
+  now: Date,
+  guestClosed: ReadonlySet<number> = new Set(),
+): T | null => {
+  const horizon = now.getTime() + TRAINING_BANNER_LEAD_DAYS * 24 * 60 * 60 * 1000;
+  return sessions.find((s) =>
+    parseUtc(s.starts_at).getTime() <= horizon && !s.banner_dismissed && !guestClosed.has(s.id),
+  ) ?? null;
+};
+
+/** "Thu, Nov 12 at 7:00 PM EST" on the viewer's clock (or the given zone, for tests). */
+export const formatBannerWhen = (startIso: string, timeZone?: string): string => {
+  const d = parseUtc(startIso);
+  const day = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone });
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone });
+  return `${day} at ${time} ${zoneOf(d, timeZone)}`;
+};

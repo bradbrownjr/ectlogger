@@ -13,6 +13,9 @@ export const STORAGE_KEYS = {
   ADMIN_SIMULATE_USER: 'admin_simulate_user',
   CHECKIN_HIDE_DUPLICATES: 'checkin_hideDuplicates',
   CHANGELOG_LAST_READ_VERSION: 'changelog_last_read_version',
+  // Training banner sessions a signed-out browser closed (ids, JSON). A
+  // signed-in user's closes are saved to the account instead.
+  TRAINING_BANNER_CLOSED: 'training_banner_closed',
   // Master on/off for all Net View layout persistence below (Profile ->
   // Settings). Deliberately outside every prefix swept by
   // clearNetViewLayoutPrefs() - it's a preference ABOUT remembering, not

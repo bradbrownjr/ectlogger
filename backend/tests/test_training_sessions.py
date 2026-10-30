@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import select
 
-from app.models import AuditEvent, TrainingSession
+from app.models import AuditEvent, TrainingBannerDismissal, TrainingSession
 from tests.conftest import auth_headers
 
 URL = "/api/training/sessions"
@@ -159,3 +159,52 @@ async def test_each_change_is_in_the_activity_log(client, db, admin):
                                           "training.session_deleted"]
     assert all(e.actor_user_id == admin.id and e.target_id == made["id"] for e in events)
     assert json.loads(events[1].details)["changes"]["title"] == ["Net control basics", "Renamed"]
+
+
+# ========== TRAINING BANNER DISMISSALS ==========
+
+async def _dismissals(db):
+    return (await db.execute(select(TrainingBannerDismissal.user_id, TrainingBannerDismissal.session_id))).all()
+
+
+@pytest.mark.asyncio
+async def test_closing_the_banner_is_saved_to_the_account(client, db, owner, other):
+    first = await _add(db, title="First")
+    second = await _add(db, title="Second", starts_at=_utc(30))
+    for _ in range(2):  # closing twice is fine
+        resp = await client.post(f"{URL}/{first.id}/dismiss-banner", headers=auth_headers(owner))
+        assert resp.status_code == 204
+
+    mine = {r["title"]: r["banner_dismissed"] for r in (await client.get(URL, headers=auth_headers(owner))).json()}
+    assert mine == {"First": True, "Second": False}
+    # Nobody else's banner, and never a guest's.
+    theirs = (await client.get(URL, headers=auth_headers(other))).json()
+    assert not any(r["banner_dismissed"] for r in theirs)
+    assert not any(r["banner_dismissed"] for r in (await client.get(URL)).json())
+    assert await _dismissals(db) == [(owner.id, first.id)]
+
+
+@pytest.mark.asyncio
+async def test_closing_needs_a_sign_in_and_a_real_session(client, db, owner):
+    session = await _add(db)
+    assert (await client.post(f"{URL}/{session.id}/dismiss-banner")).status_code == 401
+    assert (await client.post(f"{URL}/9999/dismiss-banner", headers=auth_headers(owner))).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_closes_are_deleted_once_the_session_is_over_or_removed(client, db, owner, admin):
+    ended = await _add(db, title="Ended", starts_at=_utc(-5), ends_at=_utc(-4))
+    removed = await _add(db, title="Removed")
+    upcoming = await _add(db, title="Upcoming", starts_at=_utc(30))
+    db.add_all([TrainingBannerDismissal(user_id=owner.id, session_id=ended.id),
+                TrainingBannerDismissal(user_id=owner.id, session_id=removed.id)])
+    await db.commit()
+
+    # Removing a session takes its closes with it, and clears any that are over.
+    assert (await client.delete(f"{URL}/{removed.id}", headers=auth_headers(admin))).status_code == 204
+    assert await _dismissals(db) == []
+
+    db.add(TrainingBannerDismissal(user_id=owner.id, session_id=ended.id))
+    await db.commit()
+    await client.post(f"{URL}/{upcoming.id}/dismiss-banner", headers=auth_headers(owner))
+    assert await _dismissals(db) == [(owner.id, upcoming.id)]

@@ -1124,6 +1124,9 @@ async def delete_user(
     # Its starred schedules too, or the account that reuses the id has them.
     from app.models import ScheduleFavorite
     await db.execute(sql_delete(ScheduleFavorite).where(ScheduleFavorite.user_id == user.id))
+    # And its closed training banners, for the same reason.
+    from app.models import TrainingBannerDismissal
+    await db.execute(sql_delete(TrainingBannerDismissal).where(TrainingBannerDismissal.user_id == user.id))
     await db.flush()
     await forget_user(db, user.id)
     record_event(db, "user.deleted", current_user, target_type="user", target_label=user_label(user),

@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.30d",
+  "version": "2026.10.30e",
   "entries": [
     {
       "version": "2026.10.30",
@@ -10,7 +10,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Help: Training — Help now has a Training page that lists upcoming training sessions, with where to go or how to join online, and links to the training materials and the ECTLogger YouTube channel. The videos and slide decks are still being made, and they'll appear there as they're ready.",
+              "text": "Help: Training — Help now has a Training page that lists upcoming training sessions, with where to go or how to join online, and links to the training materials and the ECTLogger YouTube channel. A week before a session, a purple banner on the main pages announces it, with a button for the details. The videos and slide decks are still being made, and they'll appear there as they're ready.",
               "userImpact": true,
               "docs": "/docs/training/"
             }

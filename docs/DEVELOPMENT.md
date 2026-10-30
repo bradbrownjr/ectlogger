@@ -1150,7 +1150,7 @@ sessions an admin has posted. Documented for admins in `docs/admins/training-ses
 - **Reads:** `GET /training/sessions` is open to guests (`get_current_user_optional`).
   A session is listed until `ends_at` passes, or until two hours after `starts_at` when
   it has no end (`OPEN_ENDED_SESSION_HOURS`), soonest first. Nothing is stored about
-  "over": the filter runs on every read, so there is no cleanup job.
+  "over": the filter runs on every read, so there is no cleanup job for sessions.
 - **The online link is withheld from guests.** A signed-out response has
   `online_url: null` and `has_online_link: true`, so the dialog can say "Sign in to
   see the online meeting link" without a Zoom room ever being served to the open web.
@@ -1163,6 +1163,22 @@ sessions an admin has posted. Documented for admins in `docs/admins/training-ses
 - **Audit events:** `training.session_created`, `training.session_changed` (with
   `details.changes` from `field_changes`, nothing logged for an unchanged save) and
   `training.session_deleted`, labelled in `utils/activityLog.ts`.
+- **The banner** (`components/TrainingBanner.tsx`, mounted in `App.tsx` under the
+  update banner) announces the soonest session starting within
+  `TRAINING_BANNER_LEAD_DAYS` (7) that the viewer hasn't closed
+  (`utils/trainingSessions.ts::pickBannerSession`). It shows only on the pages in
+  `isTrainingBannerPage` (the top bar's main pages), never in a net or on a form. It
+  reads the same list with `BACKGROUND_REQUEST_CONFIG` on load and every 30 minutes,
+  so an open tab never counts as activity. Fixed purple, one shade per mode; see
+  DESIGN.md "Sitewide Alert Banners".
+- **Closing the banner** is saved per account: `POST /training/sessions/{id}/dismiss-banner`
+  writes a `training_banner_dismissals` row (migration 096, unique per user and
+  session), and the list returns `banner_dismissed` for the signed-in viewer. Brad
+  asked for per-account so a closed announcement doesn't come back on another device
+  (2026-10-30). The rows are deleted once their session is over or removed
+  (`_prune_dismissals`, run on every dismiss, post and delete; SQLite doesn't enforce
+  the CASCADE), and with the account on user delete. A guest's closes live in
+  `localStorage` (`STORAGE_KEYS.TRAINING_BANNER_CLOSED`), trimmed to listed sessions.
 - Tests: `backend/tests/test_training_sessions.py`, `frontend/src/utils/trainingSessions.test.ts`.
 
 ---

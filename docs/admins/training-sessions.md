@@ -31,6 +31,14 @@ There is no admin-panel tab for it. The sessions are edited in the same **Traini
 
 The session shows straight away, in date order with the soonest first.
 
+## The banner on the main pages
+
+A week before a session starts, a purple banner announces it across the top of the main pages: **Nets**, **Schedule**, **Traffic**, **Stats**, your profile, and the admin panel. It gives the title and time, and **In person** or **Online** (or both) for a session with a location or a meeting link, so people know how they can attend without opening anything. **More info** opens the Training window.
+
+It never shows inside a net, on a net's report, or on the create and edit forms, where the room is needed. It stays up until the session is over, unless the reader closes it with the **✕**. A signed-in user's close is saved to their account, so it stays closed on every device. A visitor who isn't signed in closes it for that browser only. Either way, the next session gets its own banner.
+
+When two sessions fall in the same week, the banner shows the sooner one first, and the other once that one is closed or over.
+
 ## Change or remove a session
 
 Each session has a pencil and a trash can at its top right, which only admins see.

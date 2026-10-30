@@ -20,7 +20,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Help: Training** — Help now has a Training page that lists upcoming training sessions, with where to go or how to join online, and links to the training materials and the ECTLogger YouTube channel. The videos and slide decks are still being made, and they'll appear there as they're ready.
+* **Help: Training** — Help now has a Training page that lists upcoming training sessions, with where to go or how to join online, and links to the training materials and the ECTLogger YouTube channel. A week before a session, a purple banner on the main pages announces it, with a button for the details. The videos and slide decks are still being made, and they'll appear there as they're ready.
 
 ## Improvements
 

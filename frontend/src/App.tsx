@@ -33,6 +33,7 @@ import ProfileSetupDialog from './components/ProfileSetupDialog';
 import ChangelogNotification from './components/ChangelogNotification';
 import MaintenanceBanner from './components/MaintenanceBanner';
 import UpdateAvailableBanner from './components/UpdateAvailableBanner';
+import TrainingBanner from './components/TrainingBanner';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const getDesignTokens = (mode: PaletteMode, themeKey: string, customTheme: ThemeDefinition | null) => {
@@ -182,6 +183,8 @@ const AppRoutes: React.FC = () => {
       {!isPaneWindow && <Navbar />}
       {!isPaneWindow && <MaintenanceBanner />}
       {!isPaneWindow && <UpdateAvailableBanner />}
+      {/* Announces the next training session; shows on the main pages only */}
+      {!isPaneWindow && <TrainingBanner />}
       {isAuthenticated && !isPaneWindow && <ProfileSetupDialog />}
       {showChangelog && !isPaneWindow && <ChangelogNotification />}
       <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', display: 'flex', flexDirection: 'column', overflow: 'auto', minHeight: 0 }}>

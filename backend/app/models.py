@@ -1687,3 +1687,23 @@ class TrainingSession(Base):
     created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class TrainingBannerDismissal(Base):
+    """A signed-in user closed the training banner for one session
+    (components/TrainingBanner.tsx, routers/training.py, migration 096). Saved
+    per account so a dismissed announcement stays gone on every device (Brad,
+    2026-10-30: "I don't want to hound my users"). A row is only useful until
+    its session is over, so the router deletes it then, and with its session.
+    Account merge picks it up by its foreign key and drops a duplicate via the
+    unique constraint."""
+    __tablename__ = "training_banner_dismissals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    session_id = Column(Integer, ForeignKey("training_sessions.id", ondelete="CASCADE"), nullable=False)
+    dismissed_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'session_id', name='uq_training_banner_dismissal'),
+    )
