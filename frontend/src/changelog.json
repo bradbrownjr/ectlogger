@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.30",
+  "version": "2026.10.30b",
   "entries": [
     {
       "version": "2026.10.30",
@@ -10,7 +10,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Schedule: Scheduled and ad-hoc nets apart — In the card and list views, schedules that run at a regular time are listed under Scheduled nets and on-demand ones under Ad-hoc nets, as the calendar already does. Starred schedules still lead within each group.",
+              "text": "Schedule: Favorites first, then scheduled and ad-hoc nets — In the card and list views, schedules you've starred are listed first under Favorites. The rest are listed under Scheduled nets for ones that run at a regular time and Ad-hoc nets for on-demand ones, as the calendar already does.",
               "userImpact": true,
               "docs": "/docs/operators/finding-a-net/#finding-a-net-that-runs-on-a-schedule"
             }

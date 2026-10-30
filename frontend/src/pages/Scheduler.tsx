@@ -302,6 +302,22 @@ const Scheduler: React.FC = () => {
     }
   };
 
+  // ========== SCHEDULE GROUPS ==========
+  // The card and list views split the schedules into groups, each with its
+  // own heading and its own grid of cards or table: the viewer's favorites,
+  // then scheduled nets, then ad-hoc (on demand) ones, as the calendar view
+  // lists ad-hoc nets apart. Favorites lead regardless of type, or a starred
+  // ad-hoc net sits below every scheduled one (Brad, 2026-10-30).
+  const SCHEDULE_GROUPS = [
+    { key: 'favorites', label: 'Favorites' },
+    { key: 'scheduled', label: 'Scheduled nets' },
+    { key: 'adhoc', label: 'Ad-hoc nets' },
+  ] as const;
+  const scheduleGroupKey = (schedule: Schedule) =>
+    favorites.has(schedule.id) ? 'favorites' : isAdHocSchedule(schedule) ? 'adhoc' : 'scheduled';
+  const scheduleGroupOrder = (schedule: Schedule) =>
+    SCHEDULE_GROUPS.findIndex((group) => group.key === scheduleGroupKey(schedule));
+
   // ========== SCHEDULE FILTERING ==========
   const filteredSchedules = schedules
     .filter((schedule) => {
@@ -321,15 +337,10 @@ const Scheduler: React.FC = () => {
       );
     })
     .sort((a, b) => {
-      // Scheduled nets, then ad-hoc ones, each under its own heading
-      // (see SCHEDULE GROUPS below); favorites lead within each group.
-      const aAdHoc = isAdHocSchedule(a) ? 1 : 0;
-      const bAdHoc = isAdHocSchedule(b) ? 1 : 0;
-      if (aAdHoc !== bAdHoc) return aAdHoc - bAdHoc;
-
-      const aFav = favorites.has(a.id) ? 0 : 1;
-      const bFav = favorites.has(b.id) ? 0 : 1;
-      if (aFav !== bFav) return aFav - bFav;
+      // Favorites, scheduled nets, then ad-hoc ones, each under its own
+      // heading (see SCHEDULE GROUPS above).
+      const groupDiff = scheduleGroupOrder(a) - scheduleGroupOrder(b);
+      if (groupDiff !== 0) return groupDiff;
 
       if (sortOrder === 'date') {
         // one_time nets always sort after recurring nets
@@ -352,20 +363,15 @@ const Scheduler: React.FC = () => {
     schedulePage * SCHEDULE_PAGE_SIZE
   );
 
-  // ========== SCHEDULE GROUPS ==========
-  // Scheduled nets and ad-hoc (on demand) nets each get their own heading
-  // and their own table or grid of cards, as the calendar view lists ad-hoc
-  // nets apart. The filter and paging work on the whole list first, so a
-  // group is whatever of it lands on this page. With only one kind in the
-  // filtered list there is one unheaded group: a heading over everything
-  // says nothing.
-  const showGroupHeadings = filteredSchedules.some(isAdHocSchedule)
-    && filteredSchedules.some((schedule) => !isAdHocSchedule(schedule));
+  // ========== SCHEDULE GROUPS ON THIS PAGE ==========
+  // The filter and paging work on the whole list first, so a group is
+  // whatever of it lands on this page. With only one group in the filtered
+  // list there is one unheaded group: a heading over everything says nothing.
+  const showGroupHeadings = new Set(filteredSchedules.map(scheduleGroupKey)).size > 1;
   const pageGroups: { label: string | null; schedules: Schedule[] }[] = showGroupHeadings
-    ? [
-        { label: 'Scheduled nets', schedules: pagedSchedules.filter((schedule) => !isAdHocSchedule(schedule)) },
-        { label: 'Ad-hoc nets', schedules: pagedSchedules.filter(isAdHocSchedule) },
-      ].filter((group) => group.schedules.length > 0)
+    ? SCHEDULE_GROUPS
+        .map((group) => ({ label: group.label, schedules: pagedSchedules.filter((schedule) => scheduleGroupKey(schedule) === group.key) }))
+        .filter((group) => group.schedules.length > 0)
     : [{ label: null, schedules: pagedSchedules }];
   const renderGroups = (renderGroup: (schedules: Schedule[]) => React.ReactNode) => (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>

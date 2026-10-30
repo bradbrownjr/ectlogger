@@ -20,7 +20,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Schedule: Scheduled and ad-hoc nets apart** — In the card and list views, schedules that run at a regular time are listed under Scheduled nets and on-demand ones under Ad-hoc nets, as the calendar already does. Starred schedules still lead within each group.
+* **Schedule: Favorites first, then scheduled and ad-hoc nets** — In the card and list views, schedules you've starred are listed first under Favorites. The rest are listed under Scheduled nets for ones that run at a regular time and Ad-hoc nets for on-demand ones, as the calendar already does.
 
 ---
 

@@ -94,7 +94,7 @@ A net manager may also send you a **subscribe link**. It opens a page for that o
 
 Many nets aren't one-off events. They run weekly, monthly, or on some other recurrence. Recurring nets are set up as a **schedule** (the [net managers](/docs/net-managers/) path covers creating one). You don't need any special access to look at `/scheduler` and see what schedules exist and roughly when they next run; once ECTLogger auto-creates the next occurrence, it shows up on the dashboard the same as any other Scheduled net.
 
-In the card and list views, schedules with a regular time are listed first under **Scheduled nets**, and ones started on demand follow under **Ad-hoc nets**, the same split the calendar uses. Starred schedules sort first within each group.
+In the card and list views, schedules you've starred come first under **Favorites**. The rest are split the way the calendar splits them: schedules with a regular time under **Scheduled nets**, then ones started on demand under **Ad-hoc nets**.
 
 ## Seeing the month on a calendar
 
