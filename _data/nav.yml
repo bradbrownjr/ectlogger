@@ -136,6 +136,8 @@
       url: /docs/admins/backups/
     - title: The activity log
       url: /docs/admins/activity-log/
+    - title: Training sessions
+      url: /docs/admins/training-sessions/
 
 - title: Self-hosting
   url: /docs/self-hosting/
@@ -184,6 +186,11 @@
       url: /docs/reference/feeds/
     - title: Glossary
       url: /docs/reference/glossary/
+
+- title: Training
+  url: /docs/training/
+  eyebrow: Training
+  summary: Videos, live sessions, and slide decks for learning ECTLogger, and the kit used to make them. Still being built.
 
 - title: About
   url: /docs/about/

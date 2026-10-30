@@ -314,9 +314,9 @@ npm audit
 
 2. **Rate Limiting Scope**: Current rate limiting is per-IP. Consider adding per-user rate limits for authenticated endpoints.
 
-3. **Session Management**: Session lifetime (default 90 days) and rolling renewal are configurable in Admin → Security → Session Settings. When rolling renewal is on, tokens refresh silently when fewer than 7 days remain. No token revocation mechanism is implemented; consider adding a token blacklist for logout/ban functionality.
+3. **Session Management**: Session lifetime (default 90 days) and rolling renewal are configurable in Admin → Security → Session Settings. When rolling renewal is on, tokens refresh silently when fewer than 7 days remain. Banning, deactivating or deleting an account cuts off its existing tokens at once, because every request checks that the account still exists and is active, and a token older than its account is refused. There is no per-session sign-out: a single stolen token cannot be revoked on its own while the account stays active, short of waiting for it to expire.
 
-4. **Audit Logging**: Basic logging implemented. Consider adding comprehensive audit trail for sensitive operations.
+4. **Audit Logging**: Admins have an activity log (Admin panel) recording actions that destroy a record, change who may do what, or touch sign-in, each with the acting account, time, and (for a year) IP address and browser. Rows are deleted after three years. See DEVELOPMENT.md "Activity log". Ordinary request logging is separate and is not an audit trail.
 
 ## Security Testing
 

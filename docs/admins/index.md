@@ -4,7 +4,7 @@ summary: The admin panel of a running instance: who gets in, what the check-in f
 kind: Explanation
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-30
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/
@@ -28,6 +28,7 @@ That last part is the reason this is its own path. "Administrator" gets used for
 - Decide which traffic form types the instance offers
 - Schedule encrypted backups of the whole instance and send copies off-site
 - See who deleted, cancelled, or changed a net, schedule, or account, and from what address
+- Post live training sessions that show in everyone's Help menu
 
 ## Two things to know before you start
 
@@ -56,6 +57,8 @@ That last part is the reason this is its own path. "Administrator" gets used for
 **[Backups](/docs/admins/backups/)** — Setting the backup passphrase, the schedule, and off-site copies, and checking or downloading a backup.
 
 **[The activity log](/docs/admins/activity-log/)** — Who deleted, cancelled, or changed a net, schedule, or account, every sign-in and failed attempt, and from what address.
+
+**[Training sessions](/docs/admins/training-sessions/)** — Posting a live training session so it shows in everyone's Help menu, and who can see its online meeting link.
 
 ## Not here
 

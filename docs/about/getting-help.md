@@ -4,7 +4,7 @@ summary: How to ask, what to include, and the Diagnostics tool that collects it 
 kind: How-to
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-10-30
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/about/getting-help/
@@ -12,7 +12,10 @@ permalink: /docs/about/getting-help/
 
 # Getting help
 
-Everything here is reached from the **Help** menu in the top navigation bar. Open it and you'll see: User Guide, Known Issues, Roadmap, Privacy Policy, Start Walkthrough, Submit Feedback, Diagnostics, and About ECTLogger.
+Everything here is reached from the **Help** menu in the top navigation bar. Open it and you'll see: User Guide, Training, Known Issues, Roadmap, Privacy Policy, Start Walkthrough, Submit Feedback, Diagnostics, and About ECTLogger.
+
+- **Training** lists upcoming live training sessions, with a link to the written training materials and the YouTube channel. Anyone can open it, signed in or not. The online meeting link for a session shows only once you're signed in.
+- **Start Walkthrough** asks whether you check into nets or run them, then takes you through that path. Your first sign-in starts the walkthrough for you on the checking-in path, and you can run either one again from here at any time.
 
 ## Report a bug or ask for a feature
 

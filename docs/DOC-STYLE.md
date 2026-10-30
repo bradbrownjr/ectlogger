@@ -19,7 +19,7 @@ for users), ITIL 4 knowledge management, Diataxis, and WCAG 2.2 AA.
 
 ### The site is organized by audience, never by feature
 
-Seven top-level directories, each addressed to one person doing one job:
+The top-level directories, each addressed to one person doing one job:
 
 | Path | Reader | Question it answers |
 |---|---|---|
@@ -31,6 +31,7 @@ Seven top-level directories, each addressed to one person doing one job:
 | `docs/reference/` | Anyone, mid-task | "What exactly are the values?" |
 | `docs/about/` | Anyone deciding or stuck | "What is this, and who do I ask?" |
 | `docs/self-hosting/` | Somebody running their own copy | "How do I deploy it?" |
+| `docs/training/` | Anyone who would rather be shown | "Where are the videos and sessions?" |
 
 A feature that three audiences touch gets written three times, from three
 seats, not once in a shared page all three are sent to. Chat is the worked
@@ -309,6 +310,14 @@ This is the part that decides whether the site is still accurate in a year.
   needs its row in `station-statuses.md`, and every account and net role must
   be named in `roles-and-permissions.md` (net roles in the glossary too). That
   check is why those pages are hand-written rather than generated.
+- **Known Issues is reviewed with every bug-fix release.** Clear the rows a
+  release fixed and add any defect confirmed but not fixed, each with its own
+  anchor and a link from the page it affects. `check-docs.py` fails while the
+  page's `revised` is older than the newest release with a Bug Fixes section.
+- **The walkthrough is documentation too.** Its cards
+  (`frontend/src/components/walkthroughSteps.ts`) name real buttons and link real
+  pages here. A change that renames or moves something a card names updates the
+  card, and its test fails if a Learn more page disappears.
 - **Re-run the figures** after any release that changes the check-in table, the
   net toolbar, or the card buttons.
 - **Re-walk the tutorials in a browser** after any change to signing in, the

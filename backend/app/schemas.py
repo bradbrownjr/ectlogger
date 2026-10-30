@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional, List, Literal, Dict, Any, Union
-from datetime import datetime
+from datetime import datetime, timezone
 from app.models import LOCKABLE_USER_FIELDS, UserRole, NetStatus, StationStatus, FormDisposition, TrafficAction, RelayMethod, TrafficTestCategory
 from app.auth import validate_password_strength
 from app.utils import normalize_email, normalize_spotter_number, looks_like_email_or_url, safe_redirect_path
@@ -3406,3 +3406,82 @@ class OffNetLogListResponse(BaseModel):
     can_review: bool = False
     own_callsign: Optional[str] = None
     pending_count: int = 0
+
+
+# ========== TRAINING SESSIONS (Help > Training) ==========
+
+def _naive_utc(v: Optional[datetime]) -> Optional[datetime]:
+    """A posted time as naive UTC, the way every instant is stored. The app
+    sends an ISO string ending in Z; a value with no zone is taken as UTC."""
+    if v is not None and v.tzinfo is not None:
+        return v.astimezone(timezone.utc).replace(tzinfo=None)
+    return v
+
+
+class TrainingSessionBase(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    starts_at: datetime
+    ends_at: Optional[datetime] = None
+    location: Optional[str] = Field(None, max_length=300)
+    online_url: Optional[str] = Field(None, max_length=500)
+    details: Optional[str] = Field(None, max_length=4000)  # Markdown
+
+    @field_validator('title')
+    @classmethod
+    def strip_title(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError('Title is required')
+        return v
+
+    @field_validator('location', 'details')
+    @classmethod
+    def blank_to_none(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        v = v.strip()
+        return v or None
+
+    @field_validator('online_url')
+    @classmethod
+    def http_url_only(cls, v: Optional[str]) -> Optional[str]:
+        # Only web links: the link is rendered as a button that opens in a new tab.
+        if v is None:
+            return None
+        v = v.strip()
+        if not v:
+            return None
+        if not re.match(r'^https?://\S+$', v, re.IGNORECASE):
+            raise ValueError('The online meeting link must start with http:// or https://')
+        return v
+
+    @field_validator('starts_at', 'ends_at')
+    @classmethod
+    def to_naive_utc(cls, v: Optional[datetime]) -> Optional[datetime]:
+        return _naive_utc(v)
+
+    @model_validator(mode='after')
+    def ends_after_starts(self):
+        if self.ends_at is not None and self.ends_at <= self.starts_at:
+            raise ValueError('The end time must be after the start time')
+        return self
+
+
+class TrainingSessionCreate(TrainingSessionBase):
+    pass
+
+
+class TrainingSessionUpdate(TrainingSessionBase):
+    """The edit form sends every field, so an update replaces the whole session."""
+
+
+class TrainingSessionResponse(BaseModel):
+    id: int
+    title: str
+    starts_at: datetime
+    ends_at: Optional[datetime] = None
+    location: Optional[str] = None
+    # Null for a signed-out visitor, who is told one exists via has_online_link.
+    online_url: Optional[str] = None
+    has_online_link: bool = False
+    details: Optional[str] = None

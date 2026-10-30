@@ -1666,3 +1666,24 @@ class UserEmail(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     email = Column(String(255), nullable=False, unique=True, index=True)  # normalized (app.utils.normalize_email)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class TrainingSession(Base):
+    """A scheduled training session an admin posted (routers/training.py,
+    migration 095), listed in the top bar's Help > Training dialog until it is
+    over. Times are naive UTC like every other stored instant (see
+    DEVELOPMENT.md "Date & Time Handling"); the browser converts them. The
+    online link is withheld from signed-out visitors by the router. Account
+    merge picks created_by_id up by its foreign key."""
+    __tablename__ = "training_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    starts_at = Column(DateTime, nullable=False)
+    ends_at = Column(DateTime, nullable=True)
+    location = Column(String(300), nullable=True)
+    online_url = Column(String(500), nullable=True)
+    details = Column(Text, nullable=True)  # Markdown
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

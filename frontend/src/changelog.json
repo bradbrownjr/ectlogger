@@ -1,14 +1,30 @@
 {
-  "version": "2026.10.30c",
+  "version": "2026.10.30d",
   "entries": [
     {
       "version": "2026.10.30",
       "date": "2026-10-30",
       "sections": [
         {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Help: Training — Help now has a Training page that lists upcoming training sessions, with where to go or how to join online, and links to the training materials and the ECTLogger YouTube channel. The videos and slide decks are still being made, and they'll appear there as they're ready.",
+              "userImpact": true,
+              "docs": "/docs/training/"
+            }
+          ]
+        },
+        {
           "title": "Improvements",
           "type": "improvement",
           "items": [
+            {
+              "text": "Help: A walkthrough for your role — Start Walkthrough now asks whether you check into nets or run them, shows the screens as they look today, and links each step to its page in the user guide. A brand-new account starts with checking into nets, then can carry on to running one.",
+              "userImpact": true,
+              "docs": "/docs/start/first-check-in/"
+            },
             {
               "text": "Schedule: Favorites first, then scheduled and ad-hoc nets — In the card and list views, schedules you've starred are listed first under Favorites. The rest are listed under Scheduled nets for ones that run at a regular time and Ad-hoc nets for on-demand ones, as the calendar already does.",
               "userImpact": true,
@@ -18,6 +34,17 @@
               "text": "Schedule: Your stars follow you — Schedules you star are now saved to your account, so they're at the top on every phone and computer you sign in on. Stars you'd already set in a browser are kept.",
               "userImpact": true,
               "docs": "/docs/operators/finding-a-net/#starring-a-net-you-check-into-often"
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Profile: Menu shortcuts — Notifications and Personal Stats in your account menu now open those tabs. Since late August they opened Security and Notifications instead.",
+              "userImpact": false,
+              "docs": "/docs/operators/account-and-profile/"
             }
           ]
         }

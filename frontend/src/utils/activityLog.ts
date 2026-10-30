@@ -34,6 +34,7 @@ export const ACTION_GROUPS: { prefix: string; label: string }[] = [
   { prefix: 'off_net_log.', label: 'Off-net log' },
   { prefix: 'admin.', label: 'Site settings' },
   { prefix: 'frequency.', label: 'Frequencies' },
+  { prefix: 'training.', label: 'Training' },
   { prefix: 'contact.', label: 'Contacts' },
   { prefix: 'backup.', label: 'Backups' },
 ];
@@ -119,6 +120,10 @@ export const ACTION_LABELS: Record<string, string> = {
   'admin.emailed_all_users': 'Emailed all users',
   'frequency.deleted': 'Frequency deleted',
   'contact.deleted': 'Contact deleted',
+
+  'training.session_created': 'Training session posted',
+  'training.session_changed': 'Training session changed',
+  'training.session_deleted': 'Training session removed',
 
   'backup.downloaded': 'Backup downloaded',
   'backup.key_changed': 'Backup key changed',

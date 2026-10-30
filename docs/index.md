@@ -85,6 +85,11 @@ Nothing stops you jumping straight to the path you need. The paths do not build 
     <span class="card-title">Reference</span>
     <span class="card-body">The complete lists. Station statuses, the roles and permissions matrix, check-in fields, speed entry syntax, location formats, the emails we send, feeds, and the glossary.</span>
   </a>
+  <a class="path-card" href="/docs/training/">
+    <span class="card-eyebrow">Training</span>
+    <span class="card-title">Training</span>
+    <span class="card-body">Videos, live sessions, and slide decks for learning ECTLogger, plus the kit used to make them. Still being built.</span>
+  </a>
   <a class="path-card" href="/docs/about/">
     <span class="card-eyebrow">About</span>
     <span class="card-title">About and support</span>

@@ -4,7 +4,7 @@ summary: Get an account, find the net your club is running, and put your callsig
 kind: Tutorial
 audience: Anyone new to ECTLogger
 owner: KC1JMH
-revised: 2026-10-29
+revised: 2026-10-30
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/start/first-check-in/
@@ -48,7 +48,7 @@ Put your real name in **Name**, and your callsign in **Primary Call Sign**. Net 
 
 If you hold more than one callsign, or a GMRS callsign as well, add the rest later in your profile. See [your account and profile](/docs/operators/account-and-profile/).
 
-Click **Continue**. A short **ECTLogger Walkthrough** follows, a few cards introducing the main screens. Step through it with **Next**, or click **Skip**. It does not come back on its own, but **Help**, then **Start Walkthrough**, reopens it any time.
+Click **Continue**. A short **ECTLogger Walkthrough** follows. It walks a new operator through finding a net, checking in, chat, the map and traffic, and its last card links on to a second set of cards about running a net. Step through it with **Next**, or click **Skip**. It does not come back on its own, but **Help**, then **Start Walkthrough**, reopens it any time, and there you can choose either set: **I check into nets** or **I run or manage nets**.
 
 ## 3. Find the net
 

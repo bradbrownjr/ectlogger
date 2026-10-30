@@ -9,7 +9,7 @@ from app.config import settings
 from app.database import init_db, AsyncSessionLocal
 from app.routers import auth, users, nets, check_ins, frequencies, templates, chat, ncs_rotation, security, statistics, geocode, contacts, feedback, can_hear, coverage_sites, drill_plans, traffic, feeds, backups, off_net_log, audit, net_blocks
 from app.routers import settings as app_settings_router
-from app.routers import schedule_favorites
+from app.routers import schedule_favorites, training
 from app.security import sanitize_html, get_client_ip
 from app.ncs_reminder_service import ncs_reminder_service
 from app.whats_new_service import whats_new_service
@@ -171,6 +171,7 @@ app.include_router(drill_plans.router, prefix="/api")
 app.include_router(traffic.router, prefix="/api")
 app.include_router(backups.router, prefix="/api")
 app.include_router(audit.router, prefix="/api")
+app.include_router(training.router, prefix="/api")
 
 # Feeds are mounted bare (no /api prefix) so URLs read as /feed/schedule.xml --
 # Caddy needs its own route pointing /feed/* at this backend, same as /api/* and /ws/*.

@@ -211,6 +211,12 @@ replaced by it; do not recreate a single all-audiences guide.
 | Administrators | `docs/admins/` | The admin panel and the instance's own settings |
 | Reference | `docs/reference/` | Lookup tables: statuses, permissions, fields, syntax, emails |
 | About | `docs/about/` | What it is, known issues, how to get help |
+| Training | `docs/training/` | Anyone learning ECTLogger from videos, live sessions, or slide decks |
+
+`docs/training/video-kit/` is the OBS graphics kit for the training videos. It is
+committed so it is backed up and can be pulled onto whatever machine records the
+videos, and the Training page links to it on GitHub, but `_config.yml` keeps it off
+the site because it is production material, not a page.
 
 **When adding or changing a feature, name the paths it touches and update them:**
 
@@ -226,6 +232,35 @@ replaced by it; do not recreate a single all-audiences guide.
 - **A page that documents an unshipped feature is a bug.** The site describes
   production. A feature baking on a branch gets its pages written on that branch and
   merged with it.
+
+### Keeping Known Issues, the walkthrough, and the Roadmap current
+
+These three are what a user reaches from the Help menu, and each had quietly gone
+stale by 2026-10-30: Known Issues said "nothing open" through 46 bug fixes, the
+walkthrough described a Dashboard tab and a Create Net button that had been gone
+for months, and every design-doc link on the Roadmap was a 404. Brad asked for them
+to stay current as the app changes (2026-10-30), so:
+
+- **Known Issues (`docs/about/known-issues.md`).** When a defect is confirmed and is
+  not fixed in the same change, add a row with its own anchor, name it on the page it
+  affects with a link to that anchor (DOC-STYLE "Voice"), and file a GitHub issue
+  labelled `known-issue`. When a Bug Fixes changelog item ships, clear any row it
+  fixed. Either way, set the page's `revised` to that day. `check-docs.py` fails while
+  the page's `revised` is older than the newest release with a Bug Fixes section, so a
+  bug-fix release cannot go out without somebody looking at this page.
+- **Start Walkthrough (`frontend/src/components/walkthroughSteps.ts`).** The cards
+  name real screens and buttons. A change that renames, moves, or removes a nav item,
+  toolbar button, check-in choice, or Help menu item a card names updates that card in
+  the same change, and a new everyday feature gets a card on the path it belongs to
+  (operator or net control). `walkthroughSteps.test.ts` fails if a card's Learn more
+  link names a page that does not exist, and `check-docs.py` checks every
+  `https://ectlogger.us/docs/` link anywhere in `frontend/src`.
+- **Roadmap (`docs/ROADMAP.md`).** A new user-facing item gets a row in "At a glance"
+  (one plain sentence, a stage, and its design doc if it has one); a shipped item
+  leaves the table and its section together. Link design docs and other unpublished
+  files by their GitHub URL, never a relative `.md` path: `docs/concepts/` is not
+  published, and `check-docs.py` now fails on a relative link to anything the site
+  does not publish.
 
 **Before writing or changing a `docs/` page, read
 [`docs/DOC-STYLE.md`](../docs/DOC-STYLE.md).** It is to the documentation site
@@ -788,6 +823,8 @@ A change is complete when:
   path table and the front-matter rules.
 - Related documentation is updated (`docs/CHANGELOG.md`, `README.md`,
   `docs/DEVELOPMENT.md` as applicable).
+- Known Issues, the walkthrough cards, and the Roadmap's "At a glance" table still
+  match the app (see "Keeping Known Issues, the walkthrough, and the Roadmap current").
 - If user-impacting: `ChangelogNotification.tsx` version is bumped and an entry is added.
 - Changes are committed and pushed to GitHub before being deployed to any server.
 
@@ -890,6 +927,8 @@ split patterns themselves.
 | Backups (encrypted, scheduled, off-site, restore) | `backend/app/backup/` (`keys`, `archive`, `retention`, `schedule`, `targets`, `runner`, `monitor`, `process`); `backend/app/routers/backups.py`; `backend/scripts/backup.py`; `frontend/src/components/admin/AdminBackupsTab.tsx` + `components/admin/backups/` | `BackupSettings` (singleton), `BackupTarget`, `BackupRun` (migration 078). The passphrase is never stored: backups are age-encrypted to `key_recipient`, and the private key exists only passphrase-wrapped (`key_wrapped_identity`, and `ectlogger-backup-key-<fp>.age` beside the backups). The web service never builds/decrypts a backup itself; it starts the CLI (`backup/process.py`), which shares one `fcntl` lock with cron -- "running" means the lock is held, never a `running` row. `BACKUP_SCHEDULER` (`cron`/`internal`/`off`) and `BACKUP_DIR` are `.env`-only, never admin-editable. The overdue alert runs in the web service (`backup/monitor.py`) precisely because a dead cron entry is what it must catch. SFTP host keys are pinned; remote pruning is off by default. Downloads need a fresh TOTP code and email every admin. See DEVELOPMENT.md "Backups". Tests: `backend/tests/test_backups.py` |
 | Activity log (admin-only), security alerts, and self-service email change | `backend/app/audit.py` (`record_event`, `record_net_event`, `record_schedule_event`, `field_changes`, `forget_user`, `AuditPruneService`); `routers/audit.py`; `app/security_alerts.py`, `app/geoip.py`; `services/account_email.py`; `routers/auth.py` (`/auth/email-change/*`); `frontend/src/components/admin/AdminActivityTab.tsx`, `utils/activityLog.ts`, `pages/ConfirmEmailChange.tsx`, `components/profile/SecurityTab.tsx` | `AuditEvent` (migration 088, which folded in and dropped `admin_audit_log`). Any action that destroys a record, changes who may do what, or touches sign-in writes an event in the same transaction as the change; a new one needs a label in `activityLog.ts` (`tests/test_activity_log_labels.py` enforces it). IP and browser come from a context variable set in `main.py`'s middleware; they are blanked after 1 year, rows deleted after 3 (Brad, 2026-10-23). Readable by admins only, never net managers. Every `User.email` change goes through `apply_email_change`, which also moves `oauth_id`: a magic link is matched on `oauth_id` first, so changing only `email` left the old address able to sign in. Self-service change confirms from the new address and honours the admin Email padlock. **Security alerts** (`app/security_alerts.py`, `email/security_alerts.py`, migration 089) count activity-log events: failed sign-ins email the owner and admins, a station muted by several people emails admins only (never the station). Personal mutes are logged `private=True` with only `private_actor_code` for the muter, so they are counted and never named; never log a personal mute's actor. Each event's `location` comes from a local DB-IP Lite file (`app/geoip.py`); never call an online IP lookup service. See DEVELOPMENT.md "Activity log". Tests: `backend/tests/test_activity_log.py`, `test_security_alerts.py` |
 | Backup sign-in addresses and account merge | `backend/app/services/account_email.py` (`find_user_by_email`, `email_in_use`, `account_addresses`, `make_backup_primary`), `services/account_merge.py` (`user_columns`, `merge_accounts`, `preview`), `services/account_duplicates.py` (`find_possible_duplicates`, `GET /users/duplicates`); `routers/auth.py` (`/auth/backup-emails/*`), `routers/users.py` (`/users/{id}/backup-emails`, `/users/{id}/merge`, `/merge-preview`); `frontend/src/components/profile/BackupEmailsSection.tsx`, `components/admin/BackupEmailsAdminSection.tsx`, `components/admin/MergeAccountDialog.tsx`, `pages/ConfirmEmailChange.tsx` (`kind=backup`) | `UserEmail` (migration 092). **Never look an account up by `User.email` alone** and never write a backup into `oauth_id`; one address belongs to one account across both columns, enforced only by `email_in_use`. Merge derives every account reference from the models' foreign keys, so a new `user_id`-style column must have a foreign key or `test_account_merge.py` fails. A primary callsign already held by another account gets `callsign_taken_message` (never the other address) and admins `alert.callsign_taken` (once a day per account), which links to the merge. A first name, a shared sign-in IP, or a /suffix-only callsign match never flags a duplicate pair on its own (clubs run per-station accounts like WS1EC/HF). Tests: `backend/tests/test_backup_emails.py`, `test_account_merge.py`, `test_account_duplicates.py`, `test_security_alerts.py` |
+| Start Walkthrough (operator and net-control paths) | `frontend/src/components/WalkthroughModal.tsx`, `walkthroughSteps.ts` (+ `.test.ts`); launched from `Navbar.tsx` | Static cards, not a spotlight tour: a new user usually has no open net to point at. First sign-in (`User.walkthrough_seen` false) opens the operator path with "Next: running a net" at its end; Help > Start Walkthrough opens a chooser. Every card links its user-guide page, and the test fails if that page is gone. Keep the cards current (see "Keeping Known Issues, the walkthrough, and the Roadmap current") |
+| Help > Training (sessions, materials, YouTube) | `backend/app/routers/training.py`; `frontend/src/components/TrainingDialog.tsx`; `docs/training/index.md` | `TrainingSession` (migration 095). Admins post, edit and remove sessions inside the dialog; a session drops off once it ends (two hours after its start when it has no end). The online meeting link is sent only to signed-in viewers; a guest gets `has_online_link` and a sign-in note, so a Zoom link is never posted publicly. Writes are logged in the activity log. See DEVELOPMENT.md "Training sessions" |
 | Template subscriptions / email digest | `backend/app/routers/templates_subscriptions.py`; `backend/app/email/digest.py` | `NetTemplateSubscription`, "What's New" opt-in |
 | Net Script / Announcements / Notes panels (edit, PDF, pop-out) | `frontend/src/components/shared/MarkdownDocPanel.tsx` (the one panel); thin wrappers `components/NetScript.tsx`, `ScheduleAnnouncements.tsx`, `Announcements.tsx` (= Net Notes); `utils/markdownDocsPdf.tsx` + `components/netview/NetPaperworkPrintView.tsx` (print layout); `pages/NetPaneWindow.tsx` (`/nets/{id}/pane/script|announcements|notes`) | Never fork the panel back into per-document copies: the three ~400-line copies drifted until 2026-10-15 (the script's own "Open in new window" converter rendered every `##` heading as `$2`, and wrote unescaped script text into a same-origin window). Floating, docked and popped-out are one component; the pop-out is a real pane window via `usePoppedOutWindow`, like Chat and Map. Each panel's PDF button and the toolbar's Paperwork button share `exportMarkdownDocsPdf`; the print view draws numbered-list markers from a CSS counter because html2canvas 1.4 misplaces native ones. The Script pencil saves to the net **and** its schedule (until 2026-10-15 only the schedule, so the edit vanished from the net on reload); Script and Notes pencils are gated on `actions.edit`, Announcements (schedule only) on `canManage` |
 | Schedule subscribe link | `frontend/src/pages/SubscribeToSchedule.tsx`, `components/scheduler/SubscribeLinkField.tsx`, `utils/subscribeLink.ts`, `utils/redirectPath.ts`; `backend/app/routers/templates_core.py::get_template`/`_template_response_for_viewer`; `backend/app/utils.py::safe_redirect_path`; `routers/auth.py::_send_magic_link`, `email/auth.py::send_magic_link` | `/subscribe/{schedule id}` is a public page for one schedule; staff copy the link from Staff > Subscribers and the schedule editor's Net Staff tab (same people who can see the subscriber list). **Opening the link never subscribes anyone** -- it is always a click on the page by a signed-in user (Brad, 2026-10-13), so a crafted URL or a link preview cannot do it. A signed-out visitor goes through `/login?redirect=...` and returns; the `redirect` on a magic-link request ends up on an emailed link, so it is validated server-side to a same-site path and must stay that way. `GET /templates/{id}` is optional-auth and shares one response builder with the list, so a guest sees the same fields from both. See DEVELOPMENT.md "Subscribe links and returning after sign-in". Tests: `backend/tests/test_subscribe_link.py`, `frontend/src/utils/redirectPath.test.ts` |

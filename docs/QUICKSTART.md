@@ -208,8 +208,8 @@ See the full documentation:
 - **[Self-Hosting Guide](/docs/self-hosting/)** - Overview and requirements
 - **[Manual Installation](MANUAL-INSTALLATION.md)** - Step-by-step manual installation
 - **[Production Deployment](PRODUCTION-DEPLOYMENT.md)** - Deploy with SSL/HTTPS
-- **[Development Guide](DEVELOPMENT.md)** - Development guide and project structure
-- **[README](../README.md)** - Feature overview
+- **[Development Guide](https://github.com/bradbrownjr/ectlogger/blob/main/docs/DEVELOPMENT.md)** - Development guide and project structure
+- **[README](https://github.com/bradbrownjr/ectlogger/blob/main/README.md)** - Feature overview
 
 ## Getting Help
 

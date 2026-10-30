@@ -4,7 +4,7 @@ summary: Every message ECTLogger sends, what triggers it, who gets it, and how t
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-29
+revised: 2026-10-30
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/emails/
@@ -65,7 +65,7 @@ Only relevant on a net with [traffic](/docs/reference/glossary/) enabled.
 
 | Email | Trigger | Recipients | To stop it |
 |---|---|---|---|
-| Traffic reminder | Escalating: while you're still holding a piece of formal traffic, at intervals set by its precedence — Emergency at 1h/4h/12h held, Priority at 4h/12h/24h, Routine/Welfare at 24h/72h/168h. A message carrying an HXB(n) handling instruction ignores the precedence ladder entirely and gets one reminder instead, at half of the HXB deadline. | Whoever currently holds the message | The master switch only. There's a per-message preference behind this in the data model (on by default, described as an operational obligation rather than a passive preference), but as of this writing no Profile screen exposes a way to turn it off separately from the master switch. |
+| Traffic reminder | Escalating: while you're still holding a piece of formal traffic, at intervals set by its precedence — Emergency at 1h/4h/12h held, Priority at 4h/12h/24h, Routine/Welfare at 24h/72h/168h. A message carrying an HXB(n) handling instruction ignores the precedence ladder entirely and gets one reminder instead, at half of the HXB deadline. | Whoever currently holds the message | The master switch only. There's a per-message preference behind this in the data model (on by default, described as an operational obligation rather than a passive preference), but as of this writing no Profile screen exposes a way to turn it off separately from the master switch (see [Known issues](/docs/about/known-issues/#traffic-reminder-switch)). |
 | HXB final notice | A message carrying an HXB(n) handling instruction (an expiration time) reaches that deadline | Whoever currently holds the message | Same as above |
 | Weekly stale traffic digest | Once a week, only for a schedule that opted into the digest, if it has traffic that's gone stale | The schedule's manager and active co-managers | Same as above |
 

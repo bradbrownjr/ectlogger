@@ -4,7 +4,7 @@ summary: Recording who can hear whom during a net, reading the coverage table an
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-24
+revised: 2026-10-30
 review_by: 2027-10-21
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/station-coverage/
@@ -23,6 +23,8 @@ It's off unless the net's manager turned on **Enable Station-to-Station Coverage
 - **Schedule staff who haven't taken a role on this net** can only record their own. To record for others, take NCS or Logger first by checking yourself in as one (see [Roles and stepping away](/docs/net-control/roles-and-stepping-away/)).
 
 ## Record a station's report
+
+If the station has rechecked, open its first check-in row; see [Known issues](/docs/about/known-issues/#who-can-hear-recheck).
 
 1. Ask the station, on the air, which stations it can hear.
 2. Click the ear icon at the end of that station's row. A solid blue ear means the station already has a report; a faded one means it doesn't yet, which makes the rows still to do easy to spot down the list.

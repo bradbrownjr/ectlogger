@@ -18,10 +18,19 @@ All notable changes to ECTLogger are documented here.
 
 # October 30, 2026
 
+## New Features
+
+* **Help: Training** — Help now has a Training page that lists upcoming training sessions, with where to go or how to join online, and links to the training materials and the ECTLogger YouTube channel. The videos and slide decks are still being made, and they'll appear there as they're ready.
+
 ## Improvements
 
+* **Help: A walkthrough for your role** — Start Walkthrough now asks whether you check into nets or run them, shows the screens as they look today, and links each step to its page in the user guide. A brand-new account starts with checking into nets, then can carry on to running one.
 * **Schedule: Favorites first, then scheduled and ad-hoc nets** — In the card and list views, schedules you've starred are listed first under Favorites. The rest are listed under Scheduled nets for ones that run at a regular time and Ad-hoc nets for on-demand ones, as the calendar already does.
 * **Schedule: Your stars follow you** — Schedules you star are now saved to your account, so they're at the top on every phone and computer you sign in on. Stars you'd already set in a browser are kept.
+
+## Bug Fixes
+
+* **Profile: Menu shortcuts** — Notifications and Personal Stats in your account menu now open those tabs. Since late August they opened Security and Notifications instead.
 
 ---
 

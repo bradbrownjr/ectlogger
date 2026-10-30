@@ -4,7 +4,7 @@ summary: Telling the net which other stations you can hear directly, why that ma
 kind: How-to
 audience: Anyone checking into a net
 owner: KC1JMH
-revised: 2026-10-21
+revised: 2026-10-30
 review_by: 2027-10-21
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/operators/reporting-what-you-hear/
@@ -48,6 +48,8 @@ The most common report on a simplex net is "I can hear everybody except two." Fo
 While only some stations are ticked, the **All stations** box shows a dash instead of a tick.
 
 ## The parts that surprise people
+
+**Open it from the first row after a recheck.** From a station's second check-in row the dialog shows only the reports saved on that row; see [Known issues](/docs/about/known-issues/#who-can-hear-recheck).
 
 **Saving replaces your last report, it doesn't add to it.** The dialog opens with your previous answers already ticked. Change what's different and save again; whatever is unticked when you save is removed.
 

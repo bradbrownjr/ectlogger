@@ -33,6 +33,7 @@ import UserAvatar from './UserAvatar';
 import FeedbackModal from './FeedbackModal';
 import DiagnosticsModal from './DiagnosticsModal';
 import AboutModal from './AboutModal';
+import TrainingDialog from './TrainingDialog';
 import WalkthroughModal from './WalkthroughModal';
 import { userApi } from '../services/api';
 import LoginIcon from '@mui/icons-material/Login';
@@ -55,6 +56,7 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import MapIcon from '@mui/icons-material/Map';
 import TourIcon from '@mui/icons-material/Tour';
+import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -179,11 +181,16 @@ const Navbar: React.FC = () => {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+  const [trainingOpen, setTrainingOpen] = useState(false);
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
+  // Which path the walkthrough opens on. undefined shows the chooser (Help >
+  // Start Walkthrough); the first-sign-in launch goes straight to the operator path.
+  const [walkthroughStartPath, setWalkthroughStartPath] = useState<'operator' | 'net-control' | undefined>(undefined);
 
   // Auto-launch walkthrough for first-time users (per-user DB flag, not localStorage)
   useEffect(() => {
     if (isAuthenticated && user && user.walkthrough_seen === false) {
+      setWalkthroughStartPath('operator');
       setWalkthroughOpen(true);
     }
   }, [isAuthenticated, user?.walkthrough_seen]);
@@ -218,7 +225,14 @@ const Navbar: React.FC = () => {
   const handleOpenWalkthrough = () => {
     closeHelpMenu();
     setDrawerOpen(false);
+    setWalkthroughStartPath(undefined);  // ask which path
     setWalkthroughOpen(true);
+  };
+
+  const handleOpenTraining = () => {
+    closeHelpMenu();
+    setDrawerOpen(false);
+    setTrainingOpen(true);
   };
 
   const handleOpenDiagnostics = () => {
@@ -243,6 +257,11 @@ const Navbar: React.FC = () => {
       icon: <MenuBookIcon fontSize="small" />,
       action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us/docs/', '_blank', 'noopener,noreferrer'); },
       external: true,
+    },
+    {
+      label: 'Training',
+      icon: <SchoolOutlinedIcon fontSize="small" />,
+      action: handleOpenTraining,
     },
     {
       label: 'Known Issues',
@@ -372,19 +391,19 @@ const Navbar: React.FC = () => {
                         </ListItemButton>
                       </ListItem>
                       <ListItem disablePadding>
-                        <ListItemButton onClick={() => handleNavigate('/profile?tab=1')}>
+                        <ListItemButton onClick={() => handleNavigate('/profile?tab=settings')}>
                           <ListItemIcon><SettingsIcon /></ListItemIcon>
                           <ListItemText primary="Settings" />
                         </ListItemButton>
                       </ListItem>
                       <ListItem disablePadding>
-                        <ListItemButton onClick={() => handleNavigate('/profile?tab=2')}>
+                        <ListItemButton onClick={() => handleNavigate('/profile?tab=notifications')}>
                           <ListItemIcon><NotificationsIcon /></ListItemIcon>
                           <ListItemText primary="Notifications" />
                         </ListItemButton>
                       </ListItem>
                       <ListItem disablePadding>
-                        <ListItemButton onClick={() => handleNavigate('/profile?tab=3')}>
+                        <ListItemButton onClick={() => handleNavigate('/profile?tab=activity')}>
                           <ListItemIcon><BarChartIcon /></ListItemIcon>
                           <ListItemText primary="Personal Stats" />
                         </ListItemButton>
@@ -506,15 +525,15 @@ const Navbar: React.FC = () => {
                       <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
                       Profile
                     </MenuItem>
-                    <MenuItem onClick={() => handleNavigate('/profile?tab=1')}>
+                    <MenuItem onClick={() => handleNavigate('/profile?tab=settings')}>
                       <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
                       Settings
                     </MenuItem>
-                    <MenuItem onClick={() => handleNavigate('/profile?tab=2')}>
+                    <MenuItem onClick={() => handleNavigate('/profile?tab=notifications')}>
                       <ListItemIcon><NotificationsIcon fontSize="small" /></ListItemIcon>
                       Notifications
                     </MenuItem>
-                    <MenuItem onClick={() => handleNavigate('/profile?tab=3')}>
+                    <MenuItem onClick={() => handleNavigate('/profile?tab=activity')}>
                       <ListItemIcon><BarChartIcon fontSize="small" /></ListItemIcon>
                       Personal Stats
                     </MenuItem>
@@ -565,8 +584,10 @@ const Navbar: React.FC = () => {
       <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
       <DiagnosticsModal open={diagnosticsOpen} onClose={() => setDiagnosticsOpen(false)} />
+      <TrainingDialog open={trainingOpen} onClose={() => setTrainingOpen(false)} />
       <WalkthroughModal
         open={walkthroughOpen}
+        startPath={walkthroughStartPath}
         onClose={() => {
           setWalkthroughOpen(false);
           if (user && !user.walkthrough_seen) {

@@ -4,7 +4,7 @@ summary: Every step the quick start performs, done by hand, for when you need to
 kind: How-to
 audience: Server operators
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-10-30
 review_by: 2027-09-19
 applies_to: ECTLogger, self-hosted
 permalink: /docs/MANUAL-INSTALLATION/
@@ -213,7 +213,7 @@ chmod +x *.sh
 > code for a token is an unimplemented stub (`HTTPException(501)`). Configuring the values
 > below registers the client but sign-in via any of these providers will fail at the
 > callback step. Magic link and password (see [PASSWORD-MFA.md](PASSWORD-MFA.md)) are the
-> only working sign-in methods today. See [SECURITY.md](SECURITY.md) for detail.
+> only working sign-in methods today. See [SECURITY.md](SECURITY.md) for detail, and [Known issues](/docs/about/known-issues/#oauth-sign-in).
 
 ### Google OAuth
 

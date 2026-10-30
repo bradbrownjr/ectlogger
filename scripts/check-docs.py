@@ -24,7 +24,7 @@ DOCS = REPO / "docs"
 # a page ends up linking to something the build never publishes: docs/DESIGN.md
 # and docs/DEVELOPMENT.md were excluded from the site but still counted as
 # valid link targets by this script until 2026-09-19.
-EXCLUDED_DIRS = {"concepts"}
+EXCLUDED_DIRS = {"concepts", "video-kit"}
 
 
 def unpublished():
@@ -50,6 +50,18 @@ REQUIRED_FRONT_MATTER = [
 VALID_KINDS = {"Tutorial", "How-to", "Reference", "Explanation"}
 
 LINK = re.compile(r"\]\((/[^)\s]*)\)")
+# A relative link to another Markdown file. jekyll-relative-links turns one
+# into the target's URL, but only when the target is published: a link into
+# docs/concepts/ stays a bare .md link and 404s on the site. The Roadmap's
+# design-doc links all did, Teams included, until 2026-10-30, because LINK
+# above only ever looked at absolute paths.
+RELATIVE_LINK = re.compile(r"\]\((?![a-z]+:|/|#)([^)\s#]+\.md)(?:#[^)\s]*)?\)")
+# A page's own explicit anchors, besides the ones kramdown derives from headings.
+EXPLICIT_ID = re.compile(r'\{:?\s*#([\w-]+)\s*\}|\bid="([\w-]+)"')
+# A link from the app into the site: the Help menu, the walkthrough, Training.
+APP_DOCS_URL = re.compile(r"https://ectlogger\.us(/docs/[^'\"`\s#)]*)(?:#([\w-]+))?")
+APP_SOURCES = REPO / "frontend" / "src"
+KNOWN_ISSUES = DOCS / "about" / "known-issues.md"
 IMG = re.compile(r"<img\s+([^>]*?)>", re.S)
 SRC = re.compile(r'src="([^"]+)"')
 ALT = re.compile(r'alt="([^"]*)"')
@@ -134,9 +146,38 @@ def heading_ids(path):
     """The anchors kramdown gives a page's headings: lower case, punctuation
     dropped, spaces to hyphens. A renamed heading breaks every link to it."""
     ids = set()
-    for heading in re.findall(r"^#{1,6}\s+(.+?)\s*$", path.read_text(encoding="utf-8"), re.M):
+    text = path.read_text(encoding="utf-8")
+    for heading in re.findall(r"^#{1,6}\s+(.+?)\s*$", text, re.M):
+        heading = re.sub(r"\s*\{:?\s*#[\w-]+\s*\}$", "", heading)
         ids.add(re.sub(r"[^\w\- ]", "", heading.lower()).replace(" ", "-"))
+    for explicit in EXPLICIT_ID.findall(text):
+        ids.add(explicit[0] or explicit[1])
     return ids
+
+
+def known_issues_freshness():
+    """The known-issues page has to be looked at every time a release fixes
+    something, because a fix is exactly when a row on it goes stale. It said
+    "nothing open" for five weeks and 46 bug fixes without anyone checking
+    (found 2026-10-30), so the check is mechanical: the page's revised date may
+    not be older than the newest release with a Bug Fixes section."""
+    changelog = REPO / "frontend" / "src" / "changelog.json"
+    if not (changelog.exists() and KNOWN_ISSUES.exists()):
+        return []
+    newest = None
+    for entry in json.loads(changelog.read_text(encoding="utf-8")).get("entries", []):
+        if any(section.get("type") == "bugfix" for section in entry.get("sections", [])):
+            day = re.match(r"(\d{4})\.(\d{2})\.(\d{2})", entry.get("version", ""))
+            if day and (newest is None or "-".join(day.groups()) > newest):
+                newest = "-".join(day.groups())
+    revised = re.search(r"^revised:\s*(\S+)", KNOWN_ISSUES.read_text(encoding="utf-8"), re.M)
+    if newest and revised and revised.group(1) < newest:
+        return [
+            f"docs/about/known-issues.md: revised {revised.group(1)} is older than the {newest} release's "
+            "Bug Fixes. Clear any row that release fixed, add any problem confirmed but not fixed, "
+            "then set revised to today"
+        ]
+    return []
 
 
 def main():
@@ -176,6 +217,7 @@ def main():
             permalinks[fields["permalink"].rstrip("/") + "/"] = rel
 
     # Second pass, now that every permalink is known.
+    published = {path.resolve() for path in pages()}
     for path in pages():
         text = path.read_text(encoding="utf-8")
         rel = path.relative_to(REPO)
@@ -185,12 +227,30 @@ def main():
         if re.search(r"\{\{|\}\}", RAW_BLOCK.sub("", text)):
             problems.append(f"{rel}: contains bare double braces, which Jekyll reads as Liquid")
 
-        for target in LINK.findall(text):
-            target = target.split("#")[0]
+        for link in LINK.findall(text):
+            target, _, anchor = link.partition("#")
             if not target.startswith("/docs/"):
                 continue
-            if target.rstrip("/") + "/" not in permalinks:
+            page = permalinks.get(target.rstrip("/") + "/")
+            if page is None:
                 problems.append(f"{rel}: links to {target}, which no page claims")
+            elif anchor and anchor not in heading_ids(REPO / page):
+                problems.append(f"{rel}: links to {target}#{anchor}, which is not an anchor on that page")
+
+        for target in RELATIVE_LINK.findall(text):
+            resolved = (path.parent / target).resolve()
+            try:
+                inside = resolved.relative_to(REPO)
+            except ValueError:
+                problems.append(f"{rel}: links to {target}, outside the repository")
+                continue
+            if not resolved.exists():
+                problems.append(f"{rel}: links to {target}, which does not exist")
+            elif resolved not in published:
+                problems.append(
+                    f"{rel}: links to {target}, which the site does not publish; "
+                    f"link to https://github.com/bradbrownjr/ectlogger/blob/main/{inside} instead"
+                )
 
         for attrs in IMG.findall(text):
             src = SRC.search(attrs)
@@ -232,6 +292,19 @@ def main():
                             "which is not a heading on that page"
                         )
 
+    # Every link from the app into the site has to land on a page (and a
+    # heading, when it names one). Nothing checked these until 2026-10-30, so a
+    # renamed page left a Help menu item or a walkthrough card pointing nowhere.
+    for source in sorted(APP_SOURCES.rglob("*.ts*")):
+        for target, anchor in APP_DOCS_URL.findall(source.read_text(encoding="utf-8")):
+            page = permalinks.get(target.rstrip("/") + "/")
+            where = source.relative_to(REPO)
+            if page is None:
+                problems.append(f"{where}: links to {target}, which no page claims")
+            elif anchor and anchor not in heading_ids(REPO / page):
+                problems.append(f"{where}: links to {target}#{anchor}, which is not an anchor on that page")
+
+    problems.extend(known_issues_freshness())
     problems.extend(reference_drift())
 
     if problems:

@@ -6,98 +6,157 @@ import {
   DialogActions,
   Button,
   Box,
+  Link,
   Typography,
   MobileStepper,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import RadioIcon from '@mui/icons-material/Radio';
-import EditNoteIcon from '@mui/icons-material/EditNote';
+import LoginIcon from '@mui/icons-material/Login';
+import PanToolIcon from '@mui/icons-material/PanTool';
+import ChatIcon from '@mui/icons-material/Chat';
+import MapIcon from '@mui/icons-material/Map';
 import EventIcon from '@mui/icons-material/Event';
-import BarChartIcon from '@mui/icons-material/BarChart';
+import MailIcon from '@mui/icons-material/Mail';
 import PersonIcon from '@mui/icons-material/Person';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
+import GroupIcon from '@mui/icons-material/Group';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import FastForwardIcon from '@mui/icons-material/FastForward';
+import CellTowerIcon from '@mui/icons-material/CellTower';
+import CloseIcon from '@mui/icons-material/Close';
+import GroupsIcon from '@mui/icons-material/Groups';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import {
+  WALKTHROUGH_STEPS,
+  WalkthroughIconName,
+  WalkthroughPath,
+  docsUrl,
+} from './walkthroughSteps';
 
-interface Step {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}
+// Maps the icon names used by the step data to Material icons.
+const ICONS: Record<WalkthroughIconName, React.ElementType> = {
+  nets: RadioIcon,
+  checkIn: LoginIcon,
+  status: PanToolIcon,
+  chat: ChatIcon,
+  map: MapIcon,
+  schedule: EventIcon,
+  traffic: MailIcon,
+  profile: PersonIcon,
+  help: HelpOutlineIcon,
+  create: AddCircleIcon,
+  lobby: MeetingRoomIcon,
+  roles: GroupIcon,
+  desk: DashboardIcon,
+  bulk: FastForwardIcon,
+  offNet: CellTowerIcon,
+  close: CloseIcon,
+  staff: GroupsIcon,
+  reports: BarChartIcon,
+};
 
-const STEPS: Step[] = [
-  {
-    icon: <RadioIcon sx={{ fontSize: 48, color: 'primary.main' }} />,
-    title: 'Dashboard — Your Nets',
-    description:
-      'The Dashboard lists all active and recent nets. Click any net to join as a ' +
-      'participant and view the live check-in list. Use the Create Net button to start ' +
-      'a new session as Net Control Station (NCS).',
-  },
-  {
-    icon: <EditNoteIcon sx={{ fontSize: 48, color: 'primary.main' }} />,
-    title: 'Running a Net',
-    description:
-      'Inside a net, the check-in entry form is at the bottom of the check-in panel. ' +
-      'Enter a callsign and any configured fields (name, location, weather, etc.) and ' +
-      'click Check In. Real-time chat and a map are available as floating panels you ' +
-      'can move and resize.',
-  },
-  {
-    icon: <EventIcon sx={{ fontSize: 48, color: 'primary.main' }} />,
-    title: 'Schedule',
-    description:
-      'The Scheduler shows upcoming net sessions for all schedules you manage or ' +
-      'are assigned to. Click any session to see the NCS rotation, open a lobby ' +
-      'early, or manage the schedule details.',
-  },
-  {
-    icon: <BarChartIcon sx={{ fontSize: 48, color: 'primary.main' }} />,
-    title: 'Statistics',
-    description:
-      'The Statistics page tracks operator check-in history, net frequency, and ' +
-      'participation trends. Drill into a specific net or schedule from the list to ' +
-      'see historical breakdowns and schedule-level stats.',
-  },
-  {
-    icon: <PersonIcon sx={{ fontSize: 48, color: 'primary.main' }} />,
-    title: 'Profile & Settings',
-    description:
-      'Click your avatar in the top-right corner to access your profile. From there ' +
-      'you can update your callsign, location, and grid square, manage notification ' +
-      'preferences, and view your personal check-in statistics.',
-  },
-  {
-    icon: <HelpOutlineIcon sx={{ fontSize: 48, color: 'primary.main' }} />,
-    title: 'Help Menu',
-    description:
-      'You can relaunch this walkthrough any time from the Help menu in the top ' +
-      'navigation bar. Use Submit Feedback to report bugs or suggest features — ' +
-      'your message goes directly to the site administrator.',
-  },
-];
+const PATH_LABEL: Record<WalkthroughPath, string> = {
+  operator: 'Checking into nets',
+  'net-control': 'Running a net',
+};
 
 interface WalkthroughModalProps {
   open: boolean;
   onClose: () => void;
+  /**
+   * Where to begin. Omitted (Help menu): show the chooser. 'operator': open on the
+   * first operator card, used for a brand-new user's first sign-in.
+   */
+  startPath?: WalkthroughPath;
 }
 
-const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ open, onClose }) => {
+const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ open, onClose, startPath }) => {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  // null = the chooser screen
+  const [path, setPath] = useState<WalkthroughPath | null>(startPath ?? null);
   const [step, setStep] = useState(0);
 
-  // Reset to step 0 when the dialog opens so re-launching always starts fresh
-  // without snapping back to step 0 during the close animation.
+  // Reset to the starting state whenever the dialog opens, so relaunching always
+  // starts fresh without snapping back during the close animation.
   useEffect(() => {
-    if (open) setStep(0);
-  }, [open]);
+    if (open) {
+      setPath(startPath ?? null);
+      setStep(0);
+    }
+  }, [open, startPath]);
 
-  const handleClose = () => {
-    onClose();
+  const choosePath = (p: WalkthroughPath) => {
+    setPath(p);
+    setStep(0);
   };
 
-  const current = STEPS[step];
-  const isLast = step === STEPS.length - 1;
+  // ========== CHOOSER SCREEN ==========
+  // Shown when opened from the Help menu: pick which set of cards to read.
+  if (path === null) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={fullScreen}>
+        <DialogTitle>ECTLogger Walkthrough</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Which describes you? You can switch to the other at the end.
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Button
+              variant="outlined"
+              onClick={() => choosePath('operator')}
+              sx={{ minHeight: 72, justifyContent: 'flex-start', textAlign: 'left', textTransform: 'none', p: 2 }}
+            >
+              <Box>
+                <Typography variant="subtitle1" fontWeight="bold">I check into nets</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Find a net, check in, chat and file traffic.
+                </Typography>
+              </Box>
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => choosePath('net-control')}
+              sx={{ minHeight: 72, justifyContent: 'flex-start', textAlign: 'left', textTransform: 'none', p: 2 }}
+            >
+              <Box>
+                <Typography variant="subtitle1" fontWeight="bold">I run or manage nets</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Create nets, work as net control, close out and report.
+                </Typography>
+              </Box>
+            </Button>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} color="inherit" sx={{ minHeight: 44 }}>
+            Skip
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+
+  // ========== CARD SCREEN ==========
+  const steps = WALKTHROUGH_STEPS[path];
+  const current = steps[Math.min(step, steps.length - 1)];
+  const Icon = ICONS[current.icon];
+  const isFirst = step === 0;
+  const isLast = step === steps.length - 1;
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ pb: 0 }}>ECTLogger Walkthrough</DialogTitle>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={fullScreen}>
+      <DialogTitle sx={{ pb: 0 }}>
+        ECTLogger Walkthrough
+        <Typography variant="body2" color="text.secondary">
+          {PATH_LABEL[path]}: {step + 1} of {steps.length}
+        </Typography>
+      </DialogTitle>
       <DialogContent>
         <Box
           sx={{
@@ -109,17 +168,26 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ open, onClose }) =>
             minHeight: 220,
           }}
         >
-          {current.icon}
-          <Typography variant="h6" textAlign="center" fontWeight="bold">
+          <Icon sx={{ fontSize: 48, color: 'primary.main' }} />
+          <Typography variant="h6" component="h2" textAlign="center" fontWeight="bold">
             {current.title}
           </Typography>
           <Typography variant="body2" color="text.secondary" textAlign="center">
-            {current.description}
+            {current.body}
           </Typography>
+          <Link
+            href={docsUrl(current.learnMore)}
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="body2"
+            sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, minHeight: 44 }}
+          >
+            Learn more <OpenInNewIcon sx={{ fontSize: 16 }} />
+          </Link>
         </Box>
         <MobileStepper
           variant="dots"
-          steps={STEPS.length}
+          steps={steps.length}
           position="static"
           activeStep={step}
           sx={{ bgcolor: 'transparent', justifyContent: 'center', pt: 0 }}
@@ -127,24 +195,38 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ open, onClose }) =>
           backButton={<Box />}
         />
       </DialogContent>
-      <DialogActions sx={{ justifyContent: 'space-between' }}>
-        <Button onClick={handleClose} color="inherit">
+      <DialogActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+        <Button onClick={onClose} color="inherit" sx={{ minHeight: 44 }}>
           Skip
         </Button>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            onClick={() => setStep((s) => s - 1)}
-            disabled={step === 0}
-          >
-            Back
-          </Button>
-          {isLast ? (
-            <Button variant="contained" onClick={handleClose}>
-              Done
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {/* Back to the chooser only when the first card of a path was reached from it */}
+          {isFirst && !startPath ? (
+            <Button onClick={() => setPath(null)} sx={{ minHeight: 44 }}>
+              Back to choices
             </Button>
           ) : (
-            <Button variant="contained" onClick={() => setStep((s) => s + 1)}>
+            <Button onClick={() => setStep((s) => s - 1)} disabled={isFirst} sx={{ minHeight: 44 }}>
+              Back
+            </Button>
+          )}
+          {!isLast ? (
+            <Button variant="contained" onClick={() => setStep((s) => s + 1)} sx={{ minHeight: 44 }}>
               Next
+            </Button>
+          ) : path === 'operator' ? (
+            // Last operator card: offer the net control cards, or finish
+            <>
+              <Button onClick={onClose} sx={{ minHeight: 44 }}>
+                Done
+              </Button>
+              <Button variant="contained" onClick={() => choosePath('net-control')} sx={{ minHeight: 44 }}>
+                Next: running a net
+              </Button>
+            </>
+          ) : (
+            <Button variant="contained" onClick={onClose} sx={{ minHeight: 44 }}>
+              Done
             </Button>
           )}
         </Box>

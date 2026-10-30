@@ -194,8 +194,7 @@ N1DUNE ready to check in. Have 4 or 5 roster callsigns on a note to "hear" on th
 3. Log two stations by hand with the check-in form, one by clicking a row to edit it
    inline, then N1DUNE checks themselves in from browser 2.
 4. Log three at once with **Bulk add** (link the speed-entry clip).
-5. **Close net** while checked in as the NCS. (Known issue: net staff who haven't taken
-   a role see the button but get refused. See about/known-issues.)
+5. **Close net** while checked in as the NCS.
 
 ### B2. The net control desk
 

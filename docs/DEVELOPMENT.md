@@ -1137,6 +1137,36 @@ Rules to keep:
 Tests: `backend/tests/test_callsign_placeholders.py`, `frontend/src/utils/staffPeople.test.ts`,
 `frontend/src/utils/stationRoles.test.ts`, `frontend/src/components/netview/checkInSort.test.ts`.
 
+## Training sessions
+
+Help > Training (`frontend/src/components/TrainingDialog.tsx`) lists the live training
+sessions an admin has posted. Documented for admins in `docs/admins/training-sessions.md`.
+
+- **Table:** `training_sessions` (`models.TrainingSession`, migration 095): title,
+  `starts_at`, optional `ends_at`, location, `online_url`, Markdown `details`, and
+  `created_by_id` (a foreign key to users, `SET NULL`, so account merge picks it up).
+  Times are naive UTC like every other stored instant; the schema turns the app's
+  `...Z` string into naive UTC, the dialog turns it back into the viewer's clock.
+- **Reads:** `GET /training/sessions` is open to guests (`get_current_user_optional`).
+  A session is listed until `ends_at` passes, or until two hours after `starts_at` when
+  it has no end (`OPEN_ENDED_SESSION_HOURS`), soonest first. Nothing is stored about
+  "over": the filter runs on every read, so there is no cleanup job.
+- **The online link is withheld from guests.** A signed-out response has
+  `online_url: null` and `has_online_link: true`, so the dialog can say "Sign in to
+  see the online meeting link" without a Zoom room ever being served to the open web.
+  `online_url` must be an `http://` or `https://` link (schema validator), because the
+  dialog renders it as a button; never relax that to other schemes.
+- **Writes** (`POST`, `PUT`, `DELETE /training/sessions`) use `get_admin_user`, so they
+  need the Admin role and enrolled MFA, like the rest of the admin panel. The dialog
+  shows its edit controls from `user.role === 'admin'`, which follows "View as Regular
+  User". A response never includes who posted a session.
+- **Audit events:** `training.session_created`, `training.session_changed` (with
+  `details.changes` from `field_changes`, nothing logged for an unchanged save) and
+  `training.session_deleted`, labelled in `utils/activityLog.ts`.
+- Tests: `backend/tests/test_training_sessions.py`, `frontend/src/utils/trainingSessions.test.ts`.
+
+---
+
 ## Backups
 
 Encrypted backups of the database, `backend/data/` and both `.env` files.

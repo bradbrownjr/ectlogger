@@ -339,6 +339,30 @@ export const offNetLogApi = {
   remove: (netId: number, entryId: number) => api.delete(`/nets/${netId}/off-net-log/${entryId}`),
 };
 
+// Training sessions listed in Help > Training (backend routers/training.py).
+// Reads are open to guests, who get no online_url (has_online_link says one
+// exists); writes are admin only. Times are UTC, sometimes without the 'Z'.
+export interface TrainingSessionPayload {
+  title: string;
+  starts_at: string;
+  ends_at: string | null;
+  location: string | null;
+  online_url: string | null;
+  details: string | null;
+}
+
+export interface TrainingSession extends TrainingSessionPayload {
+  id: number;
+  has_online_link: boolean;
+}
+
+export const trainingApi = {
+  list: () => api.get<TrainingSession[]>('/training/sessions'),
+  create: (data: TrainingSessionPayload) => api.post<TrainingSession>('/training/sessions', data),
+  update: (id: number, data: TrainingSessionPayload) => api.put<TrainingSession>(`/training/sessions/${id}`, data),
+  remove: (id: number) => api.delete(`/training/sessions/${id}`),
+};
+
 // Stations net control removed from a net and blocked from checking back in
 // (backend routers/net_blocks.py).
 export interface NetBlock {

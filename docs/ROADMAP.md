@@ -4,7 +4,7 @@ summary: What is planned, what is being considered, and what was found along the
 kind: Explanation
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-10-30
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/ROADMAP/
@@ -12,195 +12,37 @@ permalink: /docs/ROADMAP/
 
 # Roadmap
 
-*Last updated: 2026-09-18*  
+*Last updated: 2026-10-30*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, N1GSK, KC1JMH*
 
-> **Canonical location:** `docs/ROADMAP.md`.
+## At a glance
 
-> **Pruning policy:** completed items are removed from this file, not struck through. The changelog is the record of what shipped; this file is the record of what has not. Before deleting an item, confirm its user-facing outcome is in `docs/CHANGELOG.md` and any convention or decision worth keeping has been moved to `docs/DEVELOPMENT.md` or `docs/DESIGN.md`. This file does not keep a per-prune narrative of what was removed or why — that history lives in `docs/CHANGELOG.md` (user-facing outcome) and git history (implementation detail), not here.
+This page lists what may come to ECTLogger next. It is a list of intentions, not a schedule, and nothing here has a promised date. Each feature name below jumps to its full plan further down. Things that already shipped are removed from this page; the [changelog](CHANGELOG.md) is where to find those.
 
----
+| Feature | What it means for you | Stage | Design notes |
+|---|---|---|---|
+| [Public Service Event Support](#public-service-event-support) | Run a parade, race, or other public event with posts, volunteer shifts, and tactical callsigns, all in one place. | Designing | [Design notes](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/PUBLIC-SERVICE-EVENTS.md) |
+| [Optional supporter page (Ko-fi)](#supporter--funding-integration) | A hosted instance can show a Support page and credit the people who help pay for it. | Planned | — |
+| [Add a net to your calendar](#schedule-visibility--calendar) | Put a net on your own calendar with one click, and later subscribe to a schedule so it stays current. | Planned | — |
+| [Net View usability](#net-view-usability) | Tell "stepped away" apart from "did not answer when called", and see a row flash when a station returns. | Planned | — |
+| [Reopening a closed net](#reopening-a-closed-net) | Bring back a net that was closed by mistake, or closed automatically while it was still running. | Planned | — |
+| [Net Report Builder and coverage statistics](#net-report-builder-and-coverage-statistics) | One report per net, with sections you can switch on or off, and a count of how well a drill covered each location and channel. | On hold | — |
+| [Incident log and situational awareness feed](#incident-operations-log--situational-awareness-feed) | Log what you hear once, then get an ICS-214, a spreadsheet row, and a chat post from it. | Designing | [Design notes](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-INCIDENT-PLANNER.md) |
+| [Agency liaison access](#agency-liaison-access) | Give a served agency's staff a limited account for one incident, with no view of your roster. | Designing | — |
+| [Account deletion and erasure](#account-deletion-anonymization--right-to-erasure) | Deleting an account keeps the net history intact, and a separate action erases personal data on request. | Designing | — |
+| [Team Management (Teams)](#team-management-module) | Roster, readiness, equipment custody, callouts, and incident planning for an ARES or SKYWARN team. | Long-term | [Design notes](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-MANAGEMENT-NOTES.md) (hub; also [callouts](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-ACTIVATION-CALLOUTS.md), [assets](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-ASSETS-CUSTODY.md), [incident planner](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-INCIDENT-PLANNER.md)) |
+| [Offline-capable web app](#offline-capable-web-client-pwa) | Keep logging check-ins when your connection drops, and sync when it comes back. | Long-term | — |
+| [Desktop app](#native-desktop-client) | A standalone net control program for Windows, macOS, and Linux. Likely replaced by the offline web app. | Long-term | — |
+| [Terminal and packet client](#tui--packet-client) | Run a net from a text terminal, or over a slow packet radio link. | Long-term | [Design notes](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TUI-PACKET-CLIENT.md) |
+| [Terminal over SSH](#ssh-hosted-tui) | Run `ssh ectlogger.us` and use a text version of the app with nothing to install. | Long-term | [Design notes](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/SSH-HOSTED-TUI.md) |
+| [Self-hosting enhancements](#self-hosting-enhancements) | A ready-made Docker image, moving net templates between servers, and staying useful if the hosted server is down. | Long-term | — |
+| [Behind-the-scenes groundwork](#milestone-2--longer-term--architectural) | Database, schema tooling, and time handling work that nobody sees, but that lets the site grow. See Database Migration Path, Schema Tooling Decision, and UTC-Aware Datetime Hardening under Milestone 2. | Long-term | — |
+| [Auto-check-in for subscribed stations](#backburner-ideas) | Be checked in automatically on nets you subscribe to, if both the net and you opt in. | Backburner | — |
+| [Net trivia](#trivia-integration) | Pose a trivia question to a station during a net and log the answer. | Backburner | — |
 
-## How to Read This Document
+**Stages:** *Planned* means the idea is settled and waiting its turn. *Designing* means the approach is still being worked out, with open questions. *On hold* means it was started or approved and then paused. *Long-term* means a large piece of work that depends on other things first. *Backburner* means a good idea that is not worth building right now.
 
-Items are grouped by milestone tier, then by theme within each tier. Each item carries a type tag:
-
-- 🐛 **Bug** — confirmed broken behavior
-- 🔧 **Improvement** — working feature that needs polish
-- ✨ **Feature** — new capability
-- 🔬 **Investigative** — needs reproduction before scoping
-
-Priority within each tier is roughly top-to-bottom. Items from conversations are attributed to their source where useful for context.
-
-### Model recommendations for sub-agents
-
-As of rev 25, each item carries a **Model:** line recommending which Claude model a sub-agent should use to implement it:
-
-- **Haiku** — single-file, mechanical, precisely specified changes (delete dead code, fix a known line, add a badge column). Safe once the task is spelled out exactly.
-- **Sonnet** — multi-file features and refactors that follow an established pattern with a clear spec. The workhorse tier for this codebase.
-- **Opus** — architecture, security-sensitive design, data modeling, and anything touching auth/payments/time handling. Also used as a *review gate* on Sonnet work where noted.
-
-Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once files are small and patterns are extracted. That groundwork shipped with Milestone 0.4 (2026-07-06), so Milestone 1 items can now be assigned to smaller models as their **Model:** lines indicate.
-
-### Thinking levels for sub-agents
-
-The model tier decides *who* does the work. The thinking level decides *how much reasoning budget is spent before the first edit*. They are independent, and the second one is the more common source of waste: an expensive model on a transcription task burns tokens restating a design that is already settled, while a cheap model with no budget at all on a concurrency question writes something that looks right and passes its own tests.
-
-- **none** — the task is fully specified and the work is transcription. Repeated instances of a verified pattern, blank template files, one more field mapping against a proven builder.
-- **think** — ordinary feature work against an established pattern with a clear spec. The default for Sonnet.
-- **think hard** — more than one implementation looks correct and the wrong one fails quietly: concurrency, recurrence and timezone math, idempotency, and anything where running the same operation twice must not produce two records.
-- **ultrathink** — schema, invariants, permission boundaries, and every review gate. Deliberately rare. If a plan has ultrathink on most of its packages, the packages are the problem, not the budget.
-
-Items carrying a **Model:** line but no **Think:** line predate this convention; read them as `think` for Sonnet and Opus and `none` for Haiku.
-
-### Documentation coverage for sub-agents
-
-Every item that changes user-facing behavior carries a **Docs:** line naming which of the help site's audience paths (see [DOC-STYLE.md](DOC-STYLE.md)) the work has to land in: **operators**, **net-control**, **net-managers**, **admins**, **self-hosting**, **reference**, or **none**.
-
-The line is not a reminder to write documentation afterward. It is part of the item's scope, the same as its migrations and its tests, and an item is not done until those pages exist. A feature that reaches production undocumented is a feature most of its audience will never find, which is how a net manager ends up asking for something that shipped four months ago.
-
-Two rules make this survive contact with a real build:
-
-- **Name the paths, not the files.** "Docs: net-managers, reference" is checkable by whoever reviews the merge. "Update the docs" is not.
-- **`none` has to be argued.** Write `Docs: none (no user-visible change)` and mean it. Infrastructure, refactors, and test work legitimately take it; anything a user can see or click does not.
-
-Items predating this convention get a **Docs:** line when they are picked up, not retroactively in bulk. The Public Service Event Support item below already carries the long-form version of this as its own "Documentation deliverables" phase, which is the pattern generalized here.
-
----
-
-## Milestone 0 — Codebase Health & Maintainability
-
-*The bulk of this milestone (0.1 confirmed bugs, 0.2 orphaned code, 0.3 guardrails, 0.4 the modularity and componentization program) completed between 2026-07-03 and 2026-07-06 and has been pruned. What it delivered: a test suite and CI pipeline, React error boundaries, WebSocket resilience, SMTP timeouts, IANA timezone validation, composite indexes, shared frontend hooks, `app/permissions.py`, the backend router facades, and the frontend page splits. The patterns those splits established are documented in [`docs/DEVELOPMENT.md`](DEVELOPMENT.md) ("Backend router-split (facade) pattern", "Frontend component-split pattern", "Post-split verification checklist").*
-
-***Milestone 0 is complete as of 2026-07-29.** Every section has shipped and been pruned. Section numbers are not reused, so commit messages and docs referencing "Milestone 0.4" or "Milestone 0.7" still resolve against the changelog. New codebase-health work should open a new section here rather than reopening a pruned one.*
-
-### 0.8 — Add swap to the production host *(operator task — needs root)*
-
-**⚠️ Manual task for Brad.** Not a code change and not something the agent can do: the
-deploy account's passwordless sudo covers only the `ectlogger` service, so these need an
-interactive sudo password.
-
-**Why:** on 2026-09-03 a routine `npm run build` on production was OOM-killed partway
-through. Vite empties `frontend/dist/` before it writes anything, so the kill left the site
-with **no `index.html` at all** — a full outage (Caddy's `try_files {path} /index.html` had
-nothing to serve) whose only symptom was the single word `Killed` at the end of otherwise
-normal build output. The API stayed up; the web app did not. Recovery was a rebuild, about
-three minutes.
-
-The host is **1880 MB with no swap**, and the frontend is a single ~2.9 MB chunk that keeps
-growing. The immediate mitigation is already in place and documented in
-`.github/copilot-instructions.md`: builds now run with
-`NODE_OPTIONS=--max-old-space-size=1024` plus a mandatory post-build check that
-`dist/index.html` exists. That narrows the window but doesn't remove it — the bundle will
-eventually outgrow the cap.
-
-**Before running:** take a snapshot/backup of the VPS first. These commands write a 2 GB
-file to `/` (79 GB total, 63 GB free as of 2026-09-03) and edit `/etc/fstab` and
-`/etc/sysctl.conf`. A bad `/etc/fstab` line can prevent the host from booting cleanly, so
-have a way back.
-
-```bash
-ssh ectlogger@app.ectlogger.us
-
-sudo fallocate -l 2G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-
-# Persist across reboots
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-
-# Only fall back to swap under real pressure (default 60 is too eager for a server)
-sudo sysctl -w vm.swappiness=10
-echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
-
-# Verify
-swapon --show
-free -m
-```
-
-**Verify `/etc/fstab` before rebooting:** `sudo findmnt --verify --verbose` should report no
-errors. Once swap is live, an unbounded build should no longer be able to take the site
-down, though the heap cap and post-build check are worth keeping either way.
-
-**Follow-up worth considering separately:** the 2.9 MB single chunk is the underlying cause.
-Code-splitting it (`manualChunks` / dynamic imports) would cut build memory *and* speed up
-first load for users. That's a real refactor with its own regression risk, so it belongs on
-its own rather than bundled into this.
-
-### 0.9 — Second test instance on the dev host *(partly an operator task — needs root)*
-
-**🔧 A place for `feature/teams` to bake that does not cost us beta** *(KC1JMH)*
-**Model:** Sonnet for the one code change. **Think:** think. The rest is configuration and operator steps.
-
-The Teams module is a long-running feature branch measured in months. Under the current setup, testing it on beta means beta stops mirroring production, and every bug report that arrives in the meantime has nowhere to be reproduced. A second instance on this host solves it, and the host is nowhere near its limits: 96 GB of RAM and 12 cores, currently running one instance.
-
-**Which branch goes where, and it is the opposite of the obvious assignment.** Existing beta stays on `main` — it is the instance that must keep mirroring production so bug reports can be reproduced against what users are actually running. The **new** instance tracks `feature/teams`. The unstable work goes on the new box, not the established one.
-
-**Prerequisite code change, and it lands on `main` rather than the feature branch.** `BACKEND_PORT` is already read from `backend/.env`, so the backend side is free. The frontend port is hardcoded in three places — `--port 3000` in `start.sh`, and `port: 3000` in both the `server` and `preview` blocks of `frontend/vite.config.ts`. Add a `FRONTEND_PORT` env var following exactly the pattern `BACKEND_PORT` already uses, defaulting to 3000 so nothing existing changes. **Port 3001 is already in use** by something outside this container's process view, so the second instance takes 3002 and 8002.
-
-**Check disk before starting.** `/` is 3.7 TB at **100 % with about 7.2 GB free**. A second checkout is roughly 660 MB with `node_modules` and the venv, and a Vite build wants scratch on top of that. It fits, but not comfortably — clear space first rather than discovering this mid-build.
-
-**Steps that do not need root** (run directly on this host — it is the session's own host, never an SSH target):
-
-```bash
-# 1. Clone the feature branch into its own directory
-git clone "$(git -C /home/bradb/ectlogger remote get-url origin)" /home/bradb/ectlogger-teams
-cd /home/bradb/ectlogger-teams && git checkout feature/teams
-
-# 2. Backend environment
-python3 -m venv backend/venv
-backend/venv/bin/pip install -r backend/requirements.txt
-
-# 3. Frontend dependencies
-cd /home/bradb/ectlogger-teams/frontend && npm ci
-
-# 4. Config: its own ports, its own database, and its own SECRET_KEY.
-#    Write backend/.env with BACKEND_PORT=8002, a DATABASE_URL pointing at this
-#    instance's own SQLite file, EMAIL_ENABLED=false and SMTP_HOST=127.0.0.1.
-#    Write frontend/.env with FRONTEND_PORT=3002, VITE_SERVE_MODE=preview, and
-#    VITE_API_URL pointing at whatever hostname this instance ends up served on.
-
-# 5. Build the frontend (vite preview serves a static build; git pull alone is never enough)
-npm run build
-```
-
-**The email guards are the one step that must not be skipped or improvised.** A fresh `.env` on a new instance is a brand-new way to mail real operators from a test, and Teams introduces reminders, review requests, invitations, and callout notices — every one of them a new sender. `EMAIL_ENABLED=false` and `SMTP_HOST=127.0.0.1` go in before the service ever starts, not after the first send.
-
-**Start this instance on a fresh database with de-identified fixtures, not a copy of production.** The Teams concept documents already require de-identified fixtures for this module's testing, and a third copy of production's real member data is a privacy cost with no matching benefit. Teams migrations must never run against beta's database, which holds that copy. Where a real-data smoke test is genuinely needed, run it against beta's existing copy rather than making another one.
-
-**Steps that need root, so they are Brad's** (`! sudo ...` from the prompt runs them in-session). First `/etc/systemd/system/ectlogger-teams.service`, which is the existing unit with the paths changed:
-
-```ini
-[Unit]
-Description=ECTLogger Teams branch test instance
-After=network.target
-
-[Service]
-Type=simple
-User=bradb
-Group=bradb
-WorkingDirectory=/home/bradb/ectlogger-teams
-Environment="PATH=/home/bradb/ectlogger-teams/backend/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-Environment="NODE_PATH=/home/bradb/ectlogger-teams/frontend/node_modules"
-ExecStart=/bin/bash /home/bradb/ectlogger-teams/start.sh --service
-KillMode=mixed
-KillSignal=SIGTERM
-TimeoutStopSec=30
-Restart=on-failure
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Then a `/etc/sudoers.d/ectlogger-teams` granting the same five verbs the existing file grants for `ectlogger` (start, stop, restart, is-active, status), so this instance can be managed without a password the way the first one is. Then `systemctl daemon-reload && systemctl enable --now ectlogger-teams`. Finally, nothing on this host proxies `ectbeta.lynwood.us`, so a hostname for the new instance is a change wherever that reverse proxy actually lives.
-
-**Verify** with `systemctl is-active ectlogger-teams`, a request to `:8002/docs`, and a request to `:3002/` — then confirm the original instance is still answering on 3000 and 8000 and still on `main`.
-
-**This does not change how production is built.** Building production's frontend here and shipping the artifact has been standard since 2026-09-15 because production's 1.8 GB VPS gets OOM-killed building its own. The one rule when Teams eventually ships: the production build comes from **`main` after the merge**, never from the teams instance's branch checkout, and still with `VITE_API_URL=https://app.ectlogger.us/api` passed explicitly on the build command.
+**Reading the item headings below:** 🐛 broken behavior, 🔧 polish to something that already works, ✨ a new capability, 🔬 needs investigating before it can be scoped.
 
 ---
 
@@ -214,7 +56,7 @@ Then a `/etc/sudoers.d/ectlogger-teams` granting the same five verbs the existin
 
 **Model:** Opus for Phase 1-2 (new domain model, and a change to what `CheckIn.callsign` means app-wide); Sonnet for Phases 3-6 build-out against the settled design; **Opus review gate on Phase 1** before merge, since every statistics, export, and dedup path reads that column.
 
-Full spec and design notes: [`docs/concepts/PUBLIC-SERVICE-EVENTS.md`](concepts/PUBLIC-SERVICE-EVENTS.md)
+Full spec and design notes: [`docs/concepts/PUBLIC-SERVICE-EVENTS.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/PUBLIC-SERVICE-EVENTS.md)
 
 Marathons, bicycle rides, dog sled races, and parades are a structurally different kind of net from an ARES exercise or a SKYWARN spotter net. Amateur operators ride alongside public volunteers in SAG vehicles, at checkpoints, and at start and finish lines. **A station is a place, not a person:** "AID 3" is a table at mile 14 that exists from 06:30 to 16:00 and is worked by whoever is standing there — three different licensed operators over a fourteen-hour ride, a dozen over a four-day sled race.
 
@@ -553,7 +395,7 @@ must not change. Concretely:
 
 ### Incident Operations Log & Situational Awareness Feed
 
-**✨ Log what you hear once, and let it render as an ICS-214, a spreadsheet row, and a Slack post** *(KC1JMH — from the statewide drill of 2026-09-17, see [`USER-STORIES.md`](USER-STORIES.md))*  
+**✨ Log what you hear once, and let it render as an ICS-214, a spreadsheet row, and a Slack post** *(KC1JMH — from the statewide drill of 2026-09-17, see [`USER-STORIES.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/USER-STORIES.md))*  
 **Model:** Opus for the record-type boundaries, the provenance model, and the incident record's schema — the failure here is an unverified overheard report reaching a decision-maker as a fact, which is a judgment problem, not a CRUD problem. Sonnet for the log UI, the ICS-214 exporter, and the outbound dispatcher, all of which follow the Traffic module's existing patterns. Haiku for additional export field mappings once the first one is built and verified.
 **Think:** ultrathink for the record-type boundaries, the provenance model, and the incident schema; think for the log UI and exporters; think hard for the dispatcher, where a retry must not repost; none for additional field mappings.
 
@@ -588,12 +430,12 @@ The fourth is the discovery, **and it is its own record rather than a kind of tr
 
 **These records belong to an incident, not to a net, and an incident must be something you can stand up on its own.** A storm is three days, six nets, two tag boards, forty SA entries, and a dozen ICS-213s. Today the app's only container is the net, so nothing ties one operation's records together — and worse, **an operation with no net has nowhere to live at all.** That is not an edge case. Monitoring public safety radio during a storm involves no net. A shelter tag board with three people in it involves no net. A single supply request relayed by phone involves no net. The net is one thing a team might do during an incident, not the thing an incident is.
 
-**This is a deliberate decision to cross a tripwire this document set out itself.** An earlier revision resolved the incident question as a correlation label that records carry, and stated that the moment it grew a lifecycle it would have become the top-level `Incident` entity [`TEAM-INCIDENT-PLANNER.md`](concepts/TEAM-INCIDENT-PLANNER.md) refuses. Standing an incident up before any record exists *is* a lifecycle. So the tripwire has done its job: this is the decision it asked for, made in the open rather than reached by accretion.
+**This is a deliberate decision to cross a tripwire this document set out itself.** An earlier revision resolved the incident question as a correlation label that records carry, and stated that the moment it grew a lifecycle it would have become the top-level `Incident` entity [`TEAM-INCIDENT-PLANNER.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-INCIDENT-PLANNER.md) refuses. Standing an incident up before any record exists *is* a lifecycle. So the tripwire has done its job: this is the decision it asked for, made in the open rather than reached by accretion.
 
 **What survives the change is the actual refusal, which was never about lifecycle.** The planner refuses a **container that owns staffing** — a second shift table, assignment board, or attendance clock. That stands, and it is what keeps this from becoming a parallel Events module:
 
 - **The incident record holds identity and status, nothing else.** A name, a type (real-world, drill, exercise, planned event), the served agency and its own reference number, when it opened and closed, who opened it, and which teams are participating. No shifts. No assignments. No roster. No attendance clock. No staffing role of any kind.
-- **It creates nothing and closes nothing.** Nets, tag boards, traffic, SA entries, and activity entries each reference it optionally. Closing an incident closes no net and no board, and closing either of those closes no incident — the same independence rule [`TEAM-ACTIVATION-CALLOUTS.md`](concepts/TEAM-ACTIVATION-CALLOUTS.md) already enforces between a board and a net, for the same reason: two things that close each other will do it at the worst moment.
+- **It creates nothing and closes nothing.** Nets, tag boards, traffic, SA entries, and activity entries each reference it optionally. Closing an incident closes no net and no board, and closing either of those closes no incident — the same independence rule [`TEAM-ACTIVATION-CALLOUTS.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-ACTIVATION-CALLOUTS.md) already enforces between a board and a net, for the same reason: two things that close each other will do it at the worst moment.
 - **Independent in both directions.** A net with no incident is the ordinary weekly training net. An incident with no net is the ordinary small activation. One incident may carry many nets, many boards, and many teams, and none of those is required for it to exist.
 - **Prefer the agency's own incident number.** Section 5.14 already records an "incident/reference number if supplied" from the served agency, and that is the seed of this. The EMA or the state assigns the identifier; the app records it rather than minting a competing one, consistent with how this module treats every other externally-owned fact. Mint a local reference only when nobody supplied one — and when a local one has been minted and the agency's number arrives later, adopting it must not orphan the records already pointing at the local one.
 - **Three different things get called "multiple teams", and conflating them produces the wrong schema.** The statewide drill of 2026-09-17 contained two of them at once:
@@ -638,7 +480,7 @@ We author and hand over the ICS-213, 214, and 309 outright. The 205 and 205A we 
 - **Corrections revise, they never erase.** The traffic module's chain of custody is already append-only; a corrected form is a new revision beside the issued one, not an edit over it.
 - **Received documents belong to the set too, stored verbatim.** The ICS-205 issued to us, the agency's roster template, the injects — kept as received with their source and edition, never normalized into our own formatting, on the same principle that keeps an agency's footer text verbatim on its roster.
 - **The log stays the system of record for the facts; the issued snapshot is the record of what we communicated.** Those are different claims and the app needs both. Neither replaces the other.
-- **The incident is the natural retention unit**, which is a useful consequence: "hold everything for this storm" becomes one operation. The period itself is a team policy agreed with the served agency, never a timer this project chose — see section 8 of [`TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md), where federal award records run three years from the final expenditure report and a hold extends that silently.
+- **The incident is the natural retention unit**, which is a useful consequence: "hold everything for this storm" becomes one operation. The period itself is a team policy agreed with the served agency, never a timer this project chose — see section 8 of [`TEAM-MANAGEMENT-NOTES.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-MANAGEMENT-NOTES.md), where federal award records run three years from the final expenditure report and a hold extends that silently.
 
 Teams phase M6 already plans versioning, approval, and issued snapshots for the plan package. That is the same mechanism and must reuse it rather than building a second one.
 
@@ -658,11 +500,11 @@ Teams phase M6 already plans versioning, approval, and issued snapshots for the 
 
 **Inviting the EMA staff member as a user is a second, larger step — and the export may make it unnecessary.** The cheapest version of "help them manage their situational awareness" is that she keeps ArcGIS and stops retyping. If an account is still wanted after that, it is a new kind of principal and needs its own design rather than a role added to an existing one: someone outside the organization, without a callsign, who can see one incident's observations and contribute her own, and who must never reach the team roster, whereabouts detail, member contact information, or net staffing. Her contributions are attributed to her with their own provenance — an EOC report is not something we heard on the radio — and her access is scoped to the incident and expires with it. That is a permission boundary between two organizations, which puts it in the same tier as the Teams permission helper, and it is tracked as its own item below rather than folded in here.
 
-**Do not manufacture entries.** An ICS-214 is written from what happened, never generated from assignments, a plan, or a shift roster — the same rule [`TEAM-INCIDENT-PLANNER.md`](concepts/TEAM-INCIDENT-PLANNER.md) already states for ICS-211 and ICS-214 mappings. A fabricated activity log is worse than none, because it is signed and filed.
+**Do not manufacture entries.** An ICS-214 is written from what happened, never generated from assignments, a plan, or a shift roster — the same rule [`TEAM-INCIDENT-PLANNER.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-INCIDENT-PLANNER.md) already states for ICS-211 and ICS-214 mappings. A fabricated activity log is worse than none, because it is signed and filed.
 
 **Reuse, do not rebuild.** The Traffic module already owns form definitions, chain of custody, per-net export integration, and form-accurate PDFs. This feature is a fifth form family and a dispatcher beside it, not a second traffic system. ICS-309 stays where it is.
 
-**Open questions — and the answers are settings, not constants.** Cumberland County EMA is the source of the questions below, and it does not speak for the next county, for MEMA, or for any other served agency. An answer obtained from one agency becomes **that team's configured value with that answer as its default**, never a hardcoded rule, column set, or validation. The test is simple: if standing this up for the next county over requires a code change, the answer was written in the wrong place. See the policy register in [`TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md) section 5.20 — settings that are genuinely the agency's policy rather than the team's attach to the served-agency record, so a team serving both a county EMA and the state does not have to average two answers into one.
+**Open questions — and the answers are settings, not constants.** Cumberland County EMA is the source of the questions below, and it does not speak for the next county, for MEMA, or for any other served agency. An answer obtained from one agency becomes **that team's configured value with that answer as its default**, never a hardcoded rule, column set, or validation. The test is simple: if standing this up for the next county over requires a code change, the answer was written in the wrong place. See the policy register in [`TEAM-MANAGEMENT-NOTES.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-MANAGEMENT-NOTES.md) section 5.20 — settings that are genuinely the agency's policy rather than the team's attach to the served-agency record, so a team serving both a county EMA and the state does not have to average two answers into one.
 
 - What does the EMA's policy actually permit for scanner-derived content — logged internally only, shared within the county, or repeatable outward? This gates the outbound dispatcher for a whole source type. **Setting**, defaulting to log-internally-and-never-dispatch, because that is the only default that is safe when nobody has answered.
 - Where does an incident reference get created in practice, given the app is rarely the first system to know an incident exists? Most likely it arrives with the section 5.14 activation record and everything else adopts it, but confirm against a real storm rather than a drill. **Setting** for who may open an incident and whether an agency reference is required before one can be opened.
@@ -847,10 +689,10 @@ In other words, the SQLite→Postgres migration will **break time handling app-w
 
 Full spec and design notes, in four interlinked documents. The hub is the entry point; section numbers are global across all four:
 
-- [`TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md) — hub. Problem, scope, personas, user stories, data model, permissions, privacy, guided setup and the policy register, phase overview, references. Phases M0, M1, M1B, M2, M3, M4.
-- [`TEAM-ACTIVATION-CALLOUTS.md`](concepts/TEAM-ACTIVATION-CALLOUTS.md) — activation authority and PACE, the tag board, optional SMS, procedure library. Phases M1A, M3B.
-- [`TEAM-ASSETS-CUSTODY.md`](concepts/TEAM-ASSETS-CUSTODY.md) — asset register, kit manifests, custody, maintenance, SWR sweeps. Phase M3A.
-- [`TEAM-INCIDENT-PLANNER.md`](concepts/TEAM-INCIDENT-PLANNER.md) — plan context, requirements, staffing integration, ICS package. Phases M5, M6.
+- [`TEAM-MANAGEMENT-NOTES.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-MANAGEMENT-NOTES.md) — hub. Problem, scope, personas, user stories, data model, permissions, privacy, guided setup and the policy register, phase overview, references. Phases M0, M1, M1B, M2, M3, M4.
+- [`TEAM-ACTIVATION-CALLOUTS.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-ACTIVATION-CALLOUTS.md) — activation authority and PACE, the tag board, optional SMS, procedure library. Phases M1A, M3B.
+- [`TEAM-ASSETS-CUSTODY.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-ASSETS-CUSTODY.md) — asset register, kit manifests, custody, maintenance, SWR sweeps. Phase M3A.
+- [`TEAM-INCIDENT-PLANNER.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-INCIDENT-PLANNER.md) — plan context, requirements, staffing integration, ICS package. Phases M5, M6.
 
 Summary: a new **Teams** section (menu between Schedule and Stats) to replace spreadsheet-based ARES/SKYWARN team tracking with a role-controlled, self-service platform. Members manage their own profiles; team managers handle roster, approvals, and reporting. Net participation rolls up to team records. Designed to facilitate ARES Form 2 and EMA hour reporting.
 
@@ -1007,7 +849,7 @@ A package that cannot be briefed this way is too large. Split it.
 | M4-6 | Historical participation and manual-activity CSV template | Haiku | none | 5.11 |
 | M4-G | **Gate:** attribution reconciled against hand-calculated samples with overlaps, transfers, and missing hours | Opus | ultrathink | M4 exit criteria |
 
-**M5 — Incident and Drill Requirements with Staffing Integration.** Requires Events. M5-2 starts from the net-scoped drill plan and M4-5 from the coverage sites that shipped 2026-10-21; see "Built Ahead of Teams" in [`concepts/TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md) before writing either.
+**M5 — Incident and Drill Requirements with Staffing Integration.** Requires Events. M5-2 starts from the net-scoped drill plan and M4-5 from the coverage sites that shipped 2026-10-21; see "Built Ahead of Teams" in [`concepts/TEAM-MANAGEMENT-NOTES.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-MANAGEMENT-NOTES.md) before writing either.
 
 | # | Package | Model | Think | Reads |
 |---|---|---|---|---|
@@ -1084,7 +926,7 @@ A packaged desktop GUI application for NCS operators connecting to a hosted or s
 **✨ Terminal-first NCS client for low-bandwidth and degraded-link operations** *(KC1JMH — back-burner)*  
 **Model:** Opus (protocol design for the packet command mode is the hard part; the TUI itself is Sonnet work afterward).
 
-Full spec and design notes: [`docs/concepts/TUI-PACKET-CLIENT.md`](concepts/TUI-PACKET-CLIENT.md)
+Full spec and design notes: [`docs/concepts/TUI-PACKET-CLIENT.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TUI-PACKET-CLIENT.md)
 
 Summary: a terminal UI (TUI) client and packet-optimized command protocol for running nets over SSH, local console, or packet radio links (~1200 baud). Two command modes — full terminal and abbreviated packet — with offline command queuing and replay on reconnect. Future phase includes a Winlink gateway for form-based check-in submission. Distinct from the desktop GUI client above: this is the degraded-connectivity and emergency deployment path.
 
@@ -1097,7 +939,7 @@ Its offline command queuing and replay overlaps directly with the Offline-Capabl
 **✨ Server-hosted terminal UI reachable over SSH** *(KC1JMH — idea capture)*  
 **Model:** Opus (lands in the auth path and stands up a new internet-facing network service; both are squarely in the Opus tier per the model guidance above).
 
-Full concept notes: [`docs/concepts/SSH-HOSTED-TUI.md`](concepts/SSH-HOSTED-TUI.md)
+Full concept notes: [`docs/concepts/SSH-HOSTED-TUI.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/SSH-HOSTED-TUI.md)
 
 Summary: an operator runs `ssh ectlogger.us`, authenticates against the existing user database, and gets a Textual TUI for checking into and running nets. Nothing is installed on their machine — the app runs on our server, one forked PTY per SSH session. Auth is password plus TOTP first (registered SSH public keys later), reusing `POST /auth/login` verbatim so the existing lockout, rate limiting, and Fail2Ban jail all apply unchanged.
 
@@ -1155,6 +997,191 @@ Let a station be automatically checked in on nets they're subscribed to (surface
 
 **Why backburnered:** this request traces back to stations not realizing they needed to manually check in after opening the net view. That underlying discoverability problem has since been addressed directly — the command-bar rewrite, the flashing Check In button, and the check-in prompt dialog all now surface the action itself, which was the actual gap. Revisit only if reports of missed check-ins continue despite those fixes.
 
+## For contributors
+
+*Everything below is for people working on the code and the server. If you only want to know what is coming, the table above and the plans in Milestones 1 and 2 are all you need.*
+
+> **Canonical location:** `docs/ROADMAP.md`.
+
+> **Pruning policy:** completed items are removed from this file, not struck through. The changelog is the record of what shipped; this file is the record of what has not. Before deleting an item, confirm its user-facing outcome is in `docs/CHANGELOG.md` and any convention or decision worth keeping has been moved to `docs/DEVELOPMENT.md` or `docs/DESIGN.md`. This file does not keep a per-prune narrative of what was removed or why — that history lives in `docs/CHANGELOG.md` (user-facing outcome) and git history (implementation detail), not here.
+
+### How the items are written
+
+Items are grouped by milestone tier, then by theme within each tier. Each item carries a type tag:
+
+- 🐛 **Bug** — confirmed broken behavior
+- 🔧 **Improvement** — working feature that needs polish
+- ✨ **Feature** — new capability
+- 🔬 **Investigative** — needs reproduction before scoping
+
+Priority within each tier is roughly top-to-bottom. Items from conversations are attributed to their source where useful for context.
+
+#### Model recommendations for sub-agents
+
+As of rev 25, each item carries a **Model:** line recommending which Claude model a sub-agent should use to implement it:
+
+- **Haiku** — single-file, mechanical, precisely specified changes (delete dead code, fix a known line, add a badge column). Safe once the task is spelled out exactly.
+- **Sonnet** — multi-file features and refactors that follow an established pattern with a clear spec. The workhorse tier for this codebase.
+- **Opus** — architecture, security-sensitive design, data modeling, and anything touching auth/payments/time handling. Also used as a *review gate* on Sonnet work where noted.
+
+Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once files are small and patterns are extracted. That groundwork shipped with Milestone 0.4 (2026-07-06), so Milestone 1 items can now be assigned to smaller models as their **Model:** lines indicate.
+
+#### Thinking levels for sub-agents
+
+The model tier decides *who* does the work. The thinking level decides *how much reasoning budget is spent before the first edit*. They are independent, and the second one is the more common source of waste: an expensive model on a transcription task burns tokens restating a design that is already settled, while a cheap model with no budget at all on a concurrency question writes something that looks right and passes its own tests.
+
+- **none** — the task is fully specified and the work is transcription. Repeated instances of a verified pattern, blank template files, one more field mapping against a proven builder.
+- **think** — ordinary feature work against an established pattern with a clear spec. The default for Sonnet.
+- **think hard** — more than one implementation looks correct and the wrong one fails quietly: concurrency, recurrence and timezone math, idempotency, and anything where running the same operation twice must not produce two records.
+- **ultrathink** — schema, invariants, permission boundaries, and every review gate. Deliberately rare. If a plan has ultrathink on most of its packages, the packages are the problem, not the budget.
+
+Items carrying a **Model:** line but no **Think:** line predate this convention; read them as `think` for Sonnet and Opus and `none` for Haiku.
+
+#### Documentation coverage for sub-agents
+
+Every item that changes user-facing behavior carries a **Docs:** line naming which of the help site's audience paths (see [DOC-STYLE.md](https://github.com/bradbrownjr/ectlogger/blob/main/docs/DOC-STYLE.md)) the work has to land in: **operators**, **net-control**, **net-managers**, **admins**, **self-hosting**, **reference**, or **none**.
+
+The line is not a reminder to write documentation afterward. It is part of the item's scope, the same as its migrations and its tests, and an item is not done until those pages exist. A feature that reaches production undocumented is a feature most of its audience will never find, which is how a net manager ends up asking for something that shipped four months ago.
+
+Two rules make this survive contact with a real build:
+
+- **Name the paths, not the files.** "Docs: net-managers, reference" is checkable by whoever reviews the merge. "Update the docs" is not.
+
+---
+
+### Milestone 0 — Codebase Health & Maintainability
+
+*The bulk of this milestone (0.1 confirmed bugs, 0.2 orphaned code, 0.3 guardrails, 0.4 the modularity and componentization program) completed between 2026-07-03 and 2026-07-06 and has been pruned. What it delivered: a test suite and CI pipeline, React error boundaries, WebSocket resilience, SMTP timeouts, IANA timezone validation, composite indexes, shared frontend hooks, `app/permissions.py`, the backend router facades, and the frontend page splits. The patterns those splits established are documented in [`docs/DEVELOPMENT.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/DEVELOPMENT.md) ("Backend router-split (facade) pattern", "Frontend component-split pattern", "Post-split verification checklist").*
+
+***Milestone 0 is complete as of 2026-07-29.** Every section has shipped and been pruned. Section numbers are not reused, so commit messages and docs referencing "Milestone 0.4" or "Milestone 0.7" still resolve against the changelog. New codebase-health work should open a new section here rather than reopening a pruned one.*
+
+#### 0.8 — Add swap to the production host *(operator task — needs root)*
+
+**⚠️ Manual task for Brad.** Not a code change and not something the agent can do: the
+deploy account's passwordless sudo covers only the `ectlogger` service, so these need an
+interactive sudo password.
+
+**Why:** on 2026-09-03 a routine `npm run build` on production was OOM-killed partway
+through. Vite empties `frontend/dist/` before it writes anything, so the kill left the site
+with **no `index.html` at all** — a full outage (Caddy's `try_files {path} /index.html` had
+nothing to serve) whose only symptom was the single word `Killed` at the end of otherwise
+normal build output. The API stayed up; the web app did not. Recovery was a rebuild, about
+three minutes.
+
+The host is **1880 MB with no swap**, and the frontend is a single ~2.9 MB chunk that keeps
+growing. The immediate mitigation is already in place and documented in
+`.github/copilot-instructions.md`: builds now run with
+`NODE_OPTIONS=--max-old-space-size=1024` plus a mandatory post-build check that
+`dist/index.html` exists. That narrows the window but doesn't remove it — the bundle will
+eventually outgrow the cap.
+
+**Before running:** take a snapshot/backup of the VPS first. These commands write a 2 GB
+file to `/` (79 GB total, 63 GB free as of 2026-09-03) and edit `/etc/fstab` and
+`/etc/sysctl.conf`. A bad `/etc/fstab` line can prevent the host from booting cleanly, so
+have a way back.
+
+```bash
+ssh ectlogger@app.ectlogger.us
+
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Persist across reboots
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# Only fall back to swap under real pressure (default 60 is too eager for a server)
+sudo sysctl -w vm.swappiness=10
+echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
+
+# Verify
+swapon --show
+free -m
+```
+
+**Verify `/etc/fstab` before rebooting:** `sudo findmnt --verify --verbose` should report no
+errors. Once swap is live, an unbounded build should no longer be able to take the site
+down, though the heap cap and post-build check are worth keeping either way.
+
+**Follow-up worth considering separately:** the 2.9 MB single chunk is the underlying cause.
+Code-splitting it (`manualChunks` / dynamic imports) would cut build memory *and* speed up
+first load for users. That's a real refactor with its own regression risk, so it belongs on
+its own rather than bundled into this.
+
+#### 0.9 — Second test instance on the dev host *(partly an operator task — needs root)*
+
+**🔧 A place for `feature/teams` to bake that does not cost us beta** *(KC1JMH)*
+**Model:** Sonnet for the one code change. **Think:** think. The rest is configuration and operator steps.
+
+The Teams module is a long-running feature branch measured in months. Under the current setup, testing it on beta means beta stops mirroring production, and every bug report that arrives in the meantime has nowhere to be reproduced. A second instance on this host solves it, and the host is nowhere near its limits: 96 GB of RAM and 12 cores, currently running one instance.
+
+**Which branch goes where, and it is the opposite of the obvious assignment.** Existing beta stays on `main` — it is the instance that must keep mirroring production so bug reports can be reproduced against what users are actually running. The **new** instance tracks `feature/teams`. The unstable work goes on the new box, not the established one.
+
+**Prerequisite code change, and it lands on `main` rather than the feature branch.** `BACKEND_PORT` is already read from `backend/.env`, so the backend side is free. The frontend port is hardcoded in three places — `--port 3000` in `start.sh`, and `port: 3000` in both the `server` and `preview` blocks of `frontend/vite.config.ts`. Add a `FRONTEND_PORT` env var following exactly the pattern `BACKEND_PORT` already uses, defaulting to 3000 so nothing existing changes. **Port 3001 is already in use** by something outside this container's process view, so the second instance takes 3002 and 8002.
+
+**Check disk before starting.** `/` is 3.7 TB at **100 % with about 7.2 GB free**. A second checkout is roughly 660 MB with `node_modules` and the venv, and a Vite build wants scratch on top of that. It fits, but not comfortably — clear space first rather than discovering this mid-build.
+
+**Steps that do not need root** (run directly on this host — it is the session's own host, never an SSH target):
+
+```bash
+# 1. Clone the feature branch into its own directory
+git clone "$(git -C /home/bradb/ectlogger remote get-url origin)" /home/bradb/ectlogger-teams
+cd /home/bradb/ectlogger-teams && git checkout feature/teams
+
+# 2. Backend environment
+python3 -m venv backend/venv
+backend/venv/bin/pip install -r backend/requirements.txt
+
+# 3. Frontend dependencies
+cd /home/bradb/ectlogger-teams/frontend && npm ci
+
+# 4. Config: its own ports, its own database, and its own SECRET_KEY.
+#    Write backend/.env with BACKEND_PORT=8002, a DATABASE_URL pointing at this
+#    instance's own SQLite file, EMAIL_ENABLED=false and SMTP_HOST=127.0.0.1.
+#    Write frontend/.env with FRONTEND_PORT=3002, VITE_SERVE_MODE=preview, and
+#    VITE_API_URL pointing at whatever hostname this instance ends up served on.
+
+# 5. Build the frontend (vite preview serves a static build; git pull alone is never enough)
+npm run build
+```
+
+**The email guards are the one step that must not be skipped or improvised.** A fresh `.env` on a new instance is a brand-new way to mail real operators from a test, and Teams introduces reminders, review requests, invitations, and callout notices — every one of them a new sender. `EMAIL_ENABLED=false` and `SMTP_HOST=127.0.0.1` go in before the service ever starts, not after the first send.
+
+**Start this instance on a fresh database with de-identified fixtures, not a copy of production.** The Teams concept documents already require de-identified fixtures for this module's testing, and a third copy of production's real member data is a privacy cost with no matching benefit. Teams migrations must never run against beta's database, which holds that copy. Where a real-data smoke test is genuinely needed, run it against beta's existing copy rather than making another one.
+
+**Steps that need root, so they are Brad's** (`! sudo ...` from the prompt runs them in-session). First `/etc/systemd/system/ectlogger-teams.service`, which is the existing unit with the paths changed:
+
+```ini
+[Unit]
+Description=ECTLogger Teams branch test instance
+After=network.target
+
+[Service]
+Type=simple
+User=bradb
+Group=bradb
+WorkingDirectory=/home/bradb/ectlogger-teams
+Environment="PATH=/home/bradb/ectlogger-teams/backend/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="NODE_PATH=/home/bradb/ectlogger-teams/frontend/node_modules"
+ExecStart=/bin/bash /home/bradb/ectlogger-teams/start.sh --service
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then a `/etc/sudoers.d/ectlogger-teams` granting the same five verbs the existing file grants for `ectlogger` (start, stop, restart, is-active, status), so this instance can be managed without a password the way the first one is. Then `systemctl daemon-reload && systemctl enable --now ectlogger-teams`. Finally, nothing on this host proxies `ectbeta.lynwood.us`, so a hostname for the new instance is a change wherever that reverse proxy actually lives.
+
+**Verify** with `systemctl is-active ectlogger-teams`, a request to `:8002/docs`, and a request to `:3002/` — then confirm the original instance is still answering on 3000 and 8000 and still on `main`.
+
+**This does not change how production is built.** Building production's frontend here and shipping the artifact has been standard since 2026-09-15 because production's 1.8 GB VPS gets OOM-killed building its own. The one rule when Teams eventually ships: the production build comes from **`main` after the merge**, never from the teams instance's branch checkout, and still with `VITE_API_URL=https://app.ectlogger.us/api` passed explicitly on the build command.
 ---
 
 ## Feedback Attribution
