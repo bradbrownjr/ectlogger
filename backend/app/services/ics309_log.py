@@ -9,7 +9,8 @@ other.
 
 Rows are {time, from_station, to_station, message} dicts, sorted by time.
 Sources, each with its own rule:
-  - check-ins
+  - check-ins, never one checked in In person (CheckIn.in_person): the
+    ICS-309 logs radio traffic, and an in-person station had no radio
   - chat messages, never system messages, and never a net-muted station's
     when the net hides them (Net.ics309_hide_muted_stations)
   - traffic hops logged on this net, metadata only (app/traffic/ics309.py)
@@ -79,6 +80,8 @@ def build_ics309_rows(
 
     rows = []
     for check_in in sorted(check_ins, key=lambda c: c.checked_in_at):
+        if getattr(check_in, 'in_person', False):
+            continue
         location = scrub(check_in.location)
         weather = scrub(check_in.weather_observation)
         location_info = f" from {location}" if location else ""

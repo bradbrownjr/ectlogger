@@ -21,7 +21,7 @@ A closed net's toolbar carries four separate downloads, plus a fifth page of its
 </figure>
 
 - **Export** downloads the raw check-in list as a CSV: every built-in field, the frequency each station checked in on, and each of the net's own fields that somebody filled in, one row per check-in event (including rechecks), in the timezone your own profile prefers. Like the ICS-309 and the Report, anyone can download it; a visitor who isn't signed in gets the same copy with email addresses and phone numbers in free-text fields hidden.
-- **ICS-309** downloads the check-in and chat log formatted as an official ICS-309 Communications Log, as a CSV.
+- **ICS-309** downloads the check-in and chat log formatted as an official ICS-309 Communications Log, as a CSV. The ICS-309 is a log of radio traffic, so a station checked in [In person](/docs/net-control/logging-check-ins/#checking-someone-in-in-person) isn't listed on it.
 - **ICS-309 PDF** downloads the same log as a form-accurate, printable PDF.
 - **Report** opens the full **Net Report** page, described below.
 

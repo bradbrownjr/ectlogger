@@ -85,7 +85,7 @@ When a station loses a channel, such as a repeater going down or a radio that qu
 
 ## Checking someone in in person
 
-Someone can be part of a net without being on the air: staff at the EOC or a shelter during an exercise or incident, who signed in at the door rather than over the radio. Give their check-in the **In person** status, a standing figure. Their row is tinted and has no frequency, so net control knows not to call them on the air. In [Bulk add](/docs/net-control/speed-entry/), end the line with `:ip`.
+Someone can be part of a net without being on the air: staff at the EOC or a shelter during an exercise or incident, who signed in at the door rather than over the radio. Give their check-in the **In person** status, a standing figure. Their row is tinted and has no frequency, so net control knows not to call them on the air. They count as taking part in the net and appear in its check-in list and report, but not on the ICS-309, which is a log of radio traffic, even after they check out. In [Bulk add](/docs/net-control/speed-entry/), end the line with `:ip`.
 
 Changing a check-in to In person removes its frequency. Changing it back to another status on a net with one frequency puts the station on that frequency again. On a net with several, choose it in the row's editor as above.
 

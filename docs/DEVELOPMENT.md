@@ -416,8 +416,15 @@ paper log, refused outside the net's own window. With no time the row gets
 `time_not_recorded=True` (migration 097) and the net's close as
 `checked_in_at` so it sorts last. Print its time with
 `utils.check_in_time_for_net` (backend) or `netLog.ts::checkInTimeText`; both
-print nothing for it, and time-based statistics leave it out. Tests:
-`backend/tests/test_held_log_time.py`, `test_check_in_contacts.py`,
+print nothing for it, and time-based statistics leave it out.
+
+**In person is remembered.** `CheckIn.in_person` (migration 099) is set from
+status by the model's `@validates('status')` hook: In person sets it, Checked
+out keeps it, anything else clears it. Checking out overwrites `status`, and
+"no frequency" also matches radio check-ins logged without one (net 10 has
+dozens), so neither can stand in for it. `build_ics309_rows` skips these rows;
+they still count as taking part everywhere else. Tests:
+`backend/tests/test_held_log_time.py`, `test_checkin_frequency_edit.py`, `test_check_in_contacts.py`,
 `test_station_rows.py`.
 
 ## Coverage by site

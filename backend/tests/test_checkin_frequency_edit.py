@@ -143,3 +143,58 @@ async def test_checking_out_from_in_person_adds_no_frequency(client, db, owner):
     saved = (await db.execute(select(CheckIn).where(CheckIn.id == row["id"]))).scalar_one()
     assert saved.frequency_id is None
     assert json.loads(saved.available_frequencies or "[]") == []
+
+
+async def _ics309_callsigns(db, net_id):
+    from app.services.ics309_log import build_ics309_rows
+    rows = (await db.execute(
+        select(CheckIn).where(CheckIn.net_id == net_id).execution_options(populate_existing=True)
+    )).scalars().all()
+    return [r["from_station"] for r in build_ics309_rows(check_ins=rows, chat_messages=[])]
+
+
+@pytest.mark.asyncio
+async def test_in_person_stays_off_the_ics309_after_checking_out(client, db, owner):
+    # The ICS-309 logs radio traffic; Andy KC1WGO at the CCEMA Bunker had no
+    # radio. Checking out overwrites the status, so the row keeps in_person.
+    net_id, (a, b) = await _net_with_frequencies(client, db, owner, 2)
+    row = await _check_in(client, owner, net_id, status="in_person")
+    resp = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins", json={"callsign": "W1AIR", "frequency_id": a},
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 201
+    logged = await _ics309_callsigns(db, net_id)
+    assert "W1AIR" in logged and "W1TEST" not in logged
+
+    resp = await _edit(client, owner, row["id"], status="checked_out")
+    assert resp.status_code == 200, resp.text
+    assert "W1TEST" not in await _ics309_callsigns(db, net_id)
+
+
+@pytest.mark.asyncio
+async def test_back_on_the_air_puts_the_check_in_on_the_ics309(client, db, owner):
+    net_id, (a, b) = await _net_with_frequencies(client, db, owner, 2)
+    row = await _check_in(client, owner, net_id, status="in_person")
+    resp = await _edit(client, owner, row["id"], status="checked_in", frequency_id=a)
+    assert resp.status_code == 200, resp.text
+    assert "W1TEST" in await _ics309_callsigns(db, net_id)
+
+
+@pytest.mark.asyncio
+async def test_migration_099_backfills_rows_still_in_person(tmp_path):
+    import importlib.util
+    import sqlite3
+    path = tmp_path / "db.sqlite"
+    conn = sqlite3.connect(path)
+    conn.execute("CREATE TABLE check_ins (id INTEGER PRIMARY KEY, status VARCHAR(20))")
+    conn.executemany("INSERT INTO check_ins (status) VALUES (?)", [("IN_PERSON",), ("CHECKED_IN",)])
+    conn.commit()
+    conn.close()
+    spec = importlib.util.spec_from_file_location("m099", "migrations/099_add_checkin_in_person.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.migrate(str(path))
+    module.migrate(str(path))  # safe to re-run
+    conn = sqlite3.connect(path)
+    assert conn.execute("SELECT status, in_person FROM check_ins ORDER BY id").fetchall() == [("IN_PERSON", 1), ("CHECKED_IN", 0)]

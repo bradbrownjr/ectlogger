@@ -1,5 +1,5 @@
 from sqlalchemy import BigInteger, Column, Float, Integer, String, Boolean, DateTime, ForeignKey, Text, Enum, Table, UniqueConstraint, Index
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql import func
 from app.database import Base
 from app.band_utils import band_from_frequency_string
@@ -549,8 +549,23 @@ class CheckIn(Base):
     # 097). checked_in_at is then the net's close, so the row sorts last;
     # reports print no time and time-based statistics leave it out.
     time_not_recorded = Column(Boolean, nullable=False, default=False)
+    # The station was checked in In person, with no radio. Kept after it
+    # checks out (which overwrites status), so the ICS-309, a log of radio
+    # traffic, can leave the row out. Set from status by _track_in_person.
+    in_person = Column(Boolean, nullable=False, default=False)
     checked_out_at = Column(DateTime(timezone=True))
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    @validates('status')
+    def _track_in_person(self, _key, status):
+        # Every way a status is set goes through here (check-in, edit,
+        # import). Checking out keeps the flag; any other status clears it,
+        # since the station is back on the air.
+        if status == StationStatus.IN_PERSON:
+            self.in_person = True
+        elif status is not None and status != StationStatus.CHECKED_OUT:
+            self.in_person = False
+        return status
 
     # Relationships
     net = relationship("Net", back_populates="check_ins")
