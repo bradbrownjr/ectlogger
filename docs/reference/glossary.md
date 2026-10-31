@@ -50,8 +50,11 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 **ICS-213**
 : FEMA's General Message form, one of the formal traffic types ECTLogger can log and export alongside the ARRL Radiogram and RRI strips.
 
+**ICS-214**
+: FEMA's Activity Log form: what a unit did, who was assigned, and when the notable things happened. Net control opens a closed net's ICS-214 from **Reports**, already filled in from the net's log. See [The ICS-214 activity log](/docs/net-control/ics-214/).
+
 **ICS-309**
-: FEMA's Communications Log form, and the format a net's closure log can be exported in, listing every check-in and message in a standard incident-management layout instead of ECTLogger's plain log. It also lists traffic handled on the net and accepted off-net log entries.
+: FEMA's Communications Log form, and the format a net's closure log can be exported in, listing every check-in (except In person ones) and message in a standard incident-management layout instead of ECTLogger's plain log. It also lists traffic handled on the net and accepted off-net log entries.
 
 **Off-net log**
 : A net's record of what its stations did away from the net, such as a check-in to another net or a Winlink message sent to another county. Each accepted entry is a line on the net's ICS-309. See [Logging off-net activity](/docs/net-control/off-net-log/).

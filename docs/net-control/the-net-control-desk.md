@@ -4,7 +4,7 @@ summary: Every control on the net view, what it does, and which ones you'll actu
 kind: Explanation
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-29
+revised: 2026-10-31
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/the-net-control-desk/
@@ -61,7 +61,7 @@ Every button is gated by who you are and what state the net is in, so a Standard
 - **I hear** — records which stations you can hear, if the net has coverage logging on and allows self-reporting. See [Reporting what you hear](/docs/operators/reporting-what-you-hear/).
 - **Close net** — ends the session. See [Closing the net](/docs/net-control/closing-the-net/) for exactly what that does and doesn't undo.
 
-Once a net is closed or archived, the management group swaps to **Export**, **ICS-309**, **ICS-309 PDF**, **Report**, and (staff only) **Archive** or **Delete**. These are covered in [Closing the net](/docs/net-control/closing-the-net/).
+Once a net is closed or archived, the management group swaps to **Reports** and (staff only) **Archive** or **Delete**. **Reports** opens a menu with the net report, the ICS-309 Communications Log as a PDF or CSV, net control's [ICS-214](/docs/net-control/ics-214/), and the check-in spreadsheet. These are covered in [Closing the net](/docs/net-control/closing-the-net/).
 
 ## The title row
 

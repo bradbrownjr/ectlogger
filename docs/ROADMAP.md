@@ -440,7 +440,7 @@ Builder item, it must never change how check-ins are counted anywhere else.
 |---|---|---|
 | Traffic (Radiogram, ICS-213, RRI strip) | A message **we handled** — we are in its chain of custody | Shipped |
 | ICS-309 Communications Log | What **our station** sent and received on a net | Shipped, per-net, fed by traffic |
-| ICS-214 Activity Log | What **our unit did** — notable activities, the reference for the after-action report | **Gap** |
+| ICS-214 Activity Log | What **our unit did** — notable activities, the reference for the after-action report | **Per net, shipped.** An incident's 214 across nets is still a gap |
 | Situational awareness entry | Something **we heard about somebody else**, logged because our county needs to know | **Gap, and the bulk of the drill's work** |
 
 The fourth is the discovery, **and it is its own record rather than a kind of traffic** — it has no addressee, no precedence, no custody chain, and no delivery, which is four of the things a traffic form exists to carry. An overheard report from another county is not our traffic, not our station's message log, and not our activity. It is an observation about a third party, its value is its content rather than its handling, and the app has nowhere to put it. That is what was being retyped into a spreadsheet and Slack all day.
@@ -485,7 +485,7 @@ The fourth is the discovery, **and it is its own record rather than a kind of tr
 |---|---|---|
 | **ICS-213** General Message | A message we handled, with originator, addressee, and reply | **Ships now.** Full form definition, the originated/received/relayed/delivered chain of custody, and a form-accurate PDF |
 | **ICS-309** Communications Log | What a station sent and received during an operational period | **Ships now.** Generated from the net's traffic log, CSV and JSON, per net, gated on that net's own toggle |
-| **ICS-214** Activity Log | What our unit did — the reference for the after-action report | **Gap, and this item closes it.** Rendered from log entries, never generated from a roster |
+| **ICS-214** Activity Log | What our unit did — the reference for the after-action report | **Per net, ships now** (Reports > ICS-214 on a closed net): rendered from the net's logged events, never a roster, with net control's lines in `ActivityEntry`, which this item reuses. **Still a gap, and this item closes it:** an incident's 214 spanning nets, and the issued copy |
 | **ICS-205** Incident Radio Communications Plan | The channel plan for an operational period | Teams phase M6, reusing the Events builder. Its inputs are the approved PACE and channel records from Teams M3B |
 | **ICS-205A** Communications List | Who is reachable how, by assignment | Teams phase M6 |
 | **ICS-211** Check-In List | Resources checking in to an incident | Teams phase M6, and it is **resource-oriented, not the EMA's attendance roster** — the attendance work in Teams M1A is a different document with a different purpose |

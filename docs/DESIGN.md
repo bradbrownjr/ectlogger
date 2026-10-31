@@ -654,7 +654,12 @@ block (`actions.block_station`).
 hand (hidden for the acting NCS — doesn't make sense to raise a hand to get
 your own attention), Step away, Role switch (labelled "Role: NCS" / "Role:
 Standard" depending on current state — click to toggle), Check out, Check in, Go live, Close
-net, Export, ICS-309, Report, Archive, Unarchive, Delete. Same visibility
+net, Reports, Archive, Unarchive, Delete. **Reports** (closed and archived
+nets) opens a menu rather than acting itself: Net report, ICS-309 PDF,
+ICS-309 CSV, ICS-214 (only with `actions.prepare_ics214`), and Check-ins CSV.
+It replaced four buttons (Export, ICS-309, ICS-309 PDF, Report) on
+2026-10-31; a closed net's other downloads belong in that menu, not on the
+bar. Paperwork stays its own button, since it is used while the net runs. Same visibility
 conditions as before the redesign (see `NetViewHeader.tsx` — each button's
 condition is unchanged, only the visual treatment and grouping moved), except
 Step Away: if the acting NCS is the only currently-active NCS on the net,

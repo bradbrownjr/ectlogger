@@ -59,13 +59,15 @@ When the log is complete, click **Send the log** on the banner at the top of the
 
 ## After closing
 
-Once a net is closed, its exports become available to **anyone who can see the net**, not just staff. Export (CSV), ICS-309, ICS-309 PDF, and the full Report are all open to any viewer, participant included, and to a visitor who isn't signed in. For a visitor, email addresses and phone numbers typed into notes and other free-text fields are hidden, the same as on the check-in list, and the ICS-309 leaves out the off-net log.
+Once a net is closed, the toolbar's **Reports** menu opens its report and logs to **anyone who can see the net**, not just staff. **Net report**, **ICS-309 PDF**, **ICS-309 CSV**, and **Check-ins CSV** are open to any viewer, participant included, and to a visitor who isn't signed in. For a visitor, email addresses and phone numbers typed into notes and other free-text fields are hidden, the same as on the check-in list, and the ICS-309 leaves out the off-net log.
 
 <figure>
   <img src="/docs/img/net-control/closed-net-exports.png"
-       alt="The toolbar on a closed net, as seen by a station with no staff role: Export, ICS-309, ICS-309 PDF, and Report.">
-  <figcaption>Once a net is closed, its exports are open to anyone who can see the net; only Archive and Delete stay staff-only.</figcaption>
+       alt="The Reports menu open on a closed net, as seen by a station with no staff role: Net report, ICS-309 PDF, ICS-309 CSV, and Check-ins CSV.">
+  <figcaption>Once a net is closed, its report and logs are open to anyone who can see the net; only Archive and Delete stay staff-only.</figcaption>
 </figure>
+
+Net control, meaning NCS, Logger, and the net's managers, also get **ICS-214** in the menu: the net's Activity Log, filled in from what was logged, for you to finish and download. See [The ICS-214 activity log](/docs/net-control/ics-214/).
 
 **Archive** and **Delete** stay restricted to staff. Right after closing, or after you send a held log, a reminder appears offering to archive the net. Archiving hides it from the active dashboard while keeping every check-in, chat message, statistic, and report intact and fully searchable in the Archived Nets list, and it can be undone at any time with Unarchive. Deleting is the one genuinely permanent option here: it removes the net and everything in it, including its statistics. The net drops out of the schedule's statistics and leaderboards and out of every operator's activity history, and its report and ICS-309 can't be produced again. Nobody can bring it back, not even an admin, and the confirmation says so before anything happens. The net's manager, an admin, an active NCS, and the schedule's manager or co-managers can delete a draft, closed, or archived net.
 

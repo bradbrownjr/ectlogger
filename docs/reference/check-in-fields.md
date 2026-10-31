@@ -4,7 +4,7 @@ summary: Every field a check-in can carry, what is always required, and what a n
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-29
+revised: 2026-10-31
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/check-in-fields/
@@ -54,7 +54,7 @@ Two fields buried in the model layer, `CustomField` and `CustomFieldValue`, look
 
 The net's [report](/docs/net-managers/reports-and-exports/) and its closing email show each field the net turned on **and at least one station filled in**, so a printed log never carries a field that is empty all the way down. The closing email gives each one a column. The report lists them in one **Details** column, a line per field, so the log stays the width of the page however many fields a net uses. A ticked checkbox reads **Yes**; an unticked one is left blank.
 
-The **Export** CSV always has the same built-in columns, whether the net uses them or not, because [Import](/docs/net-managers/importing-check-ins/) matches on those column names. It adds a column for each custom field the net turned on and somebody filled in.
+The **Check-ins CSV** (under **Reports** on a closed net) always has the same built-in columns, whether the net uses them or not, because [Import](/docs/net-managers/importing-check-ins/) matches on those column names. It adds a column for each custom field the net turned on and somebody filled in.
 
 Before 2026-10-29, Feedback and custom fields such as an FLDIGI checkbox were missing from most of these, and Feedback had no box on any check-in form.
 

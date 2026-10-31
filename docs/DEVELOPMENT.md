@@ -427,6 +427,40 @@ they still count as taking part everywhere else. Tests:
 `backend/tests/test_held_log_time.py`, `test_checkin_frequency_edit.py`, `test_check_in_contacts.py`,
 `test_station_rows.py`.
 
+## ICS-214 activity log
+
+A closed net's ICS-214 (`/nets/:netId/ics214`, `pages/Ics214.tsx`) is
+rendered from what was logged, every time it is read, by
+`services/ics214.py`: `build_activity_lines` (block 7) and
+`build_resources` (block 6), pure functions over plain values
+(`tests/test_ics214.py`). **Never generate a line from a roster, the
+rotation or a plan** (ROADMAP "Do not manufacture entries"); a new line kind
+needs a logged event behind it. Station lines come from
+`group_station_rows`, so they follow the same station-and-place rule as the
+check-in list; the wording is "on the air from", never "arrived".
+
+What's stored is only what net control changed: `Ics214Form` (migration
+100), one per net, holds the header blocks (null = the default
+`routers/ics214.py::_defaults` works out, so a fixed start time or exercise
+name still reaches the form) and JSON edit maps keyed by each line's `key`
+(`station:<row id>`, `out:<row id>`, `mark:<id>:off`, `role:<id>`,
+`traffic:<id>`, ...). Keep those keys stable: changing one orphans every
+saved edit. Lines written by hand are `ActivityEntry` rows, which the
+Incident Log will reuse, so `net_id` is optional. Deleting one writes
+`net.activity_entry_deleted`. Access is `permissions.may_prepare_ics214`
+(= `may_close_net`), surfaced as `NetActions.prepare_ics214`, and only on a
+closed or archived net.
+
+The PDF is drawn by `components/ics214/ICS214PrintView.tsx`, which lays out
+its own pages: a measuring pass renders every block and row once,
+`utils/ics214.ts::splitPages` splits the rows, and each page is
+`PRINT_PAGE_HEIGHT` tall so continuation pages repeat blocks 1, 2 and 8 as
+FEMA's continuation sheet does. `utils/pdfExport.ts::exportPagesToPdf`
+captures one image per `[data-pdf-page]`; slicing one tall capture (the other
+exports) can't repeat a header. A net with a drill plan prints the shared
+`ExerciseMarking` at the top and bottom of every page. Recording which copy
+was handed to an agency is the Incident Log's job, not this page's.
+
 ## Coverage by site
 
 A coverage drill with sites (an ARES SET) answers "which places can reach

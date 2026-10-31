@@ -20,6 +20,7 @@ export interface NetActions {
   log_off_net: boolean;       // Off-net log: add for any station, no review
   review_off_net_log: boolean; // Off-net log: accept, reject, edit any entry
   block_station: boolean;     // Remove and block a station from the net
+  prepare_ics214: boolean;    // ICS-214: open, edit and download (closed nets)
 }
 
 const NO_ACTIONS: NetActions = {
@@ -36,6 +37,7 @@ const NO_ACTIONS: NetActions = {
   log_off_net: false,
   review_off_net_log: false,
   block_station: false,
+  prepare_ics214: false,
 };
 
 interface WithActions {

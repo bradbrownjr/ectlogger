@@ -404,6 +404,17 @@ export const drillPlanApi = {
     api.post(`/nets/${netId}/drill-plan/events/${eventId}/send`, data),
 };
 
+// ICS-214 Activity Log of a closed net (routers/ics214.py), net control only
+export const ics214Api = {
+  get: (netId: number) => api.get(`/nets/${netId}/ics214`),
+  save: (netId: number, data: { header: any; line_edits: Record<string, any>; resource_edits: Record<string, any> }) =>
+    api.put(`/nets/${netId}/ics214`, data),
+  addEntry: (netId: number, data: { occurred_at: string; text: string }) => api.post(`/nets/${netId}/ics214/entries`, data),
+  updateEntry: (netId: number, entryId: number, data: { occurred_at: string; text: string }) =>
+    api.put(`/nets/${netId}/ics214/entries/${entryId}`, data),
+  deleteEntry: (netId: number, entryId: number) => api.delete(`/nets/${netId}/ics214/entries/${entryId}`),
+};
+
 // Template API
 export const templateApi = {
   create: (data: any) => api.post('/templates/', data),

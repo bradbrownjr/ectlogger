@@ -555,14 +555,34 @@ shots:
     route: /nets/{{net:closed}}
     as: KC1HILL
     wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'button:has-text("Reports")'
+      - wait_for: '[role="menu"] li:has-text("Check-ins CSV")'
     element:
-      - 'span[aria-label="Export check-ins to CSV"]'
-      - 'span[aria-label="Generate comprehensive net report (PDF)"]'
+      - 'button:has-text("Reports")'
+      - '[role="menu"]'
     pad: 10
     alt: >
-      The toolbar on a closed net, as seen by a station with no staff role:
-      Export, ICS-309, ICS-309 PDF, and Report.
-    caption: Once a net is closed, its exports are open to anyone who can see the net -- only Archive and Delete stay staff-only.
+      The Reports menu open on a closed net, as seen by a station with no
+      staff role: Net report, ICS-309 PDF, ICS-309 CSV, and Check-ins CSV.
+    caption: Once a net is closed, its report and logs are open to anyone who can see the net -- only Archive and Delete stay staff-only.
+
+  # ========== The ICS-214 activity log ==========
+  - id: ics214-page
+    section: net-control
+    page: /docs/net-control/ics-214/
+    route: /nets/{{net:closed}}/ics214
+    as: K1COVE
+    wait_for: 'button:has-text("Download PDF")'
+    viewport: {width: 960, height: 760}
+    annotate:
+      - selector: 'button:has-text("Download PDF")'
+        style: box
+    alt: >
+      The ICS-214 Activity Log page for a closed net: the header boxes for
+      blocks 1 to 5 and 8, filled in, with the Save and Download PDF buttons
+      at the top right and Download PDF outlined in red.
+    caption: Everything here starts filled in from the net's log; you only change what the log couldn't know.
 
   # ========== Station coverage ==========
   # From the seeded Example County ARES Simplex Drill ({{net:coverage}}) and,

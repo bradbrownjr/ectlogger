@@ -104,6 +104,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'check_in.deleted': 'Check-in deleted',
   'net.station_blocked': 'Station removed and blocked from the net',
   'net.station_unblocked': 'Station unblocked',
+  'net.activity_entry_deleted': 'ICS-214 line deleted',
   'chat.message_deleted': "Someone else's chat message deleted",
   'chat.station_muted': 'Station muted for everyone',
   'chat.station_unmuted': 'Station unmuted for everyone',

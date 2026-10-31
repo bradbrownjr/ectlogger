@@ -80,6 +80,8 @@
       url: /docs/net-control/multiple-monitors/
     - title: Closing the net
       url: /docs/net-control/closing-the-net/
+    - title: The ICS-214 activity log
+      url: /docs/net-control/ics-214/
 
 - title: Net managers
   url: /docs/net-managers/

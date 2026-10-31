@@ -823,6 +823,57 @@ class DrillEvent(Base):
     form = relationship("Form")
 
 
+class Ics214Form(Base):
+    """What net control changed on a net's ICS-214 Activity Log
+    (services/ics214.py renders the rest from what was logged). One per net.
+
+    Every header column is null while it is the default the service works
+    out (the net's name, its times, the credited NCS), so a default that
+    changes, such as a corrected start time, still reaches the form. The edit
+    maps hide or reword lines and resources by their key; manual lines are
+    ActivityEntry rows, never stored here. Nothing here records an issued
+    copy: that belongs to the Incident Log (docs/ROADMAP.md).
+    """
+    __tablename__ = "ics214_forms"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    incident_name = Column(String(200), nullable=True)      # block 1
+    period_from = Column(DateTime(timezone=True), nullable=True)  # block 2
+    period_to = Column(DateTime(timezone=True), nullable=True)
+    unit_name = Column(String(200), nullable=True)          # block 3
+    leader = Column(String(200), nullable=True)             # block 4
+    home_agency = Column(String(200), nullable=True)        # block 5
+    prepared_name = Column(String(200), nullable=True)      # block 8
+    prepared_position = Column(String(200), nullable=True)
+    # JSON: {line key: {"hidden": bool, "text": str or null}}
+    line_edits = Column(Text, nullable=False, default='{}')
+    # JSON: {CALLSIGN: {"hidden": bool, "name", "position", "agency": str or null}}
+    resource_edits = Column(Text, nullable=False, default='{}')
+    updated_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class ActivityEntry(Base):
+    """Something the unit did that nobody logged on the air, written by
+    hand: a briefing, a site setup, a supply run. A line on the ICS-214.
+
+    Not the admin activity log (AuditEvent). The Incident Log will write
+    these too and give them an incident, so net_id is optional from the
+    start: an incident can have no net (docs/ROADMAP.md, "Incident log").
+    """
+    __tablename__ = "activity_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=True, index=True)
+    occurred_at = Column(DateTime(timezone=True), nullable=False)
+    text = Column(Text, nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 class StationChannelMark(Base):
     """A channel a station had at one place, marked offline by net control:
     its radio failed, the repeater went down, the operator left the HF desk.

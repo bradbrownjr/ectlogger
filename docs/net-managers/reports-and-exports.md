@@ -1,6 +1,6 @@
 ---
 title: Reports, ICS-309, and exports
-summary: The net report, the PDF, the ICS-309 Communications Log, the per-section images, and who automatically receives what.
+summary: The net report, the PDF, the ICS-309 Communications Log, the ICS-214, the per-section images, and who automatically receives what.
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
@@ -12,20 +12,21 @@ permalink: /docs/net-managers/reports-and-exports/
 
 # Reports, ICS-309, and exports
 
-A closed net's toolbar carries four separate downloads, plus a fifth page of its own. None of them require reopening the net, and none of them affect the record — pulling a copy a second time doesn't re-send anything.
+A closed net's toolbar has one **Reports** button, which opens a menu of everything the net produced. None of it requires reopening the net, and none of it affects the record: pulling a copy a second time doesn't re-send anything.
 
 <figure>
   <img src="/docs/img/net-managers/net-export-toolbar.png"
-       alt="Four toolbar buttons on a closed net: Export, ICS-309, ICS-309 PDF, and Report, with Report outlined in red.">
-  <figcaption>Export and both ICS-309 buttons download a single file; Report opens the full multi-section report page.</figcaption>
+       alt="The Reports button on a closed net's toolbar, outlined in red, with its menu open: Net report, ICS-309 PDF, ICS-309 CSV, ICS-214, and Check-ins CSV.">
+  <figcaption>Net report and ICS-214 open a page of their own; the rest download a single file.</figcaption>
 </figure>
 
-- **Export** downloads the raw check-in list as a CSV: every built-in field, the frequency each station checked in on, and each of the net's own fields that somebody filled in, one row per check-in event (including rechecks), in the timezone your own profile prefers. Like the ICS-309 and the Report, anyone can download it; a visitor who isn't signed in gets the same copy with email addresses and phone numbers in free-text fields hidden.
-- **ICS-309** downloads the check-in and chat log formatted as an official ICS-309 Communications Log, as a CSV. The ICS-309 is a log of radio traffic, so a station checked in [In person](/docs/net-control/logging-check-ins/#checking-someone-in-in-person) isn't listed on it.
-- **ICS-309 PDF** downloads the same log as a form-accurate, printable PDF.
-- **Report** opens the full **Net Report** page, described below.
+- **Net report** opens the full **Net Report** page, described below.
+- **ICS-309 PDF** downloads the ICS-309 Communications Log as a form-accurate, printable PDF.
+- **ICS-309 CSV** downloads the same log as a spreadsheet. The ICS-309 is a log of radio traffic, so a station checked in [In person](/docs/net-control/logging-check-ins/#checking-someone-in-in-person) isn't listed on it.
+- **ICS-214**, for net control and the net's managers only, opens the net's Activity Log to finish and download. See [The ICS-214 activity log](/docs/net-control/ics-214/).
+- **Check-ins CSV** downloads the raw check-in list: every built-in field, the frequency each station checked in on, and each of the net's own fields that somebody filled in, one row per check-in event (including rechecks), in the timezone your own profile prefers. Like the ICS-309 and the net report, anyone can download it; a visitor who isn't signed in gets the same copy with email addresses and phone numbers in free-text fields hidden.
 
-ICS-309 export is available on any closed net regardless of whether that net turned on the **Enable ICS-309 Communications Log format** toggle — that toggle only decides whether the automatic closing email uses ICS-309 formatting for everyone. Anyone who turned on **Use ICS-309 format** in their own profile gets the closing email as an ICS-309 either way, so turning the net's toggle off doesn't stop it reaching them. The toolbar buttons here are a manual download either way.
+ICS-309 export is available on any closed net regardless of whether that net turned on the **Enable ICS-309 Communications Log format** toggle — that toggle only decides whether the automatic closing email uses ICS-309 formatting for everyone. Anyone who turned on **Use ICS-309 format** in their own profile gets the closing email as an ICS-309 either way, so turning the net's toggle off doesn't stop it reaching them. The menu's ICS-309 downloads work either way.
 
 ### Keeping spam out of the record you hand to a served agency
 

@@ -706,6 +706,7 @@ class NetActions(BaseModel):
     log_off_net: bool = False        # Off-net log: add for any station, no review
     review_off_net_log: bool = False # Off-net log: accept, reject, edit any entry
     block_station: bool = False      # Remove and block a station from the net
+    prepare_ics214: bool = False     # ICS-214: open, edit and download (closed nets)
 
 
 class NetResponse(NetBase):
@@ -2339,6 +2340,74 @@ class TopicHistoryUpdate(BaseModel):
 
 
 # ========== Can Hear (Station-to-Station Coverage) Schemas ==========
+
+# ========== ICS-214 ACTIVITY LOG (routers/ics214.py) ==========
+
+class Ics214Header(BaseModel):
+    """Blocks 1-5 and 8 of the ICS-214. On save, a value equal to its
+    default is stored as the default, so the form follows later fixes."""
+    incident_name: str = Field("", max_length=200)
+    period_from: Optional[datetime] = None
+    period_to: Optional[datetime] = None
+    unit_name: str = Field("", max_length=200)
+    leader: str = Field("", max_length=200)
+    home_agency: str = Field("", max_length=200)
+    prepared_name: str = Field("", max_length=200)
+    prepared_position: str = Field("", max_length=200)
+
+
+class Ics214Line(BaseModel):
+    key: str
+    at: Optional[datetime] = None   # None: no time was recorded
+    text: str
+    default_text: str
+    kind: str                       # net, role, station, channel, traffic, entry
+    hidden: bool = False
+    entry_id: Optional[int] = None  # a line written by hand (ActivityEntry)
+
+
+class Ics214Resource(BaseModel):
+    key: str
+    callsign: str
+    name: str
+    default_name: str
+    position: str
+    default_position: str
+    agency: str = ""
+    hidden: bool = False
+
+
+class Ics214Response(BaseModel):
+    header: Ics214Header
+    defaults: Ics214Header
+    resources: List[Ics214Resource]
+    lines: List[Ics214Line]
+    # The net has a drill plan: every page is marked EXERCISE
+    exercise: bool = False
+
+
+class Ics214LineEdit(BaseModel):
+    hidden: bool = False
+    text: Optional[str] = Field(None, max_length=2000)
+
+
+class Ics214ResourceEdit(BaseModel):
+    hidden: bool = False
+    name: Optional[str] = Field(None, max_length=200)
+    position: Optional[str] = Field(None, max_length=200)
+    agency: Optional[str] = Field(None, max_length=200)
+
+
+class Ics214Save(BaseModel):
+    header: Ics214Header
+    line_edits: Dict[str, Ics214LineEdit] = {}
+    resource_edits: Dict[str, Ics214ResourceEdit] = {}
+
+
+class ActivityEntryWrite(BaseModel):
+    occurred_at: datetime
+    text: str = Field(..., min_length=1, max_length=2000)
+
 
 class StationChannelMarkResponse(BaseModel):
     """A channel net control marked offline at a station's place
