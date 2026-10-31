@@ -13,7 +13,7 @@ permalink: /docs/ROADMAP/
 # Roadmap
 
 *Last updated: 2026-10-30*  
-*Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, N1GSK, KC1JMH*
+*Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, N1GSK, N1KWG, NA1T, KC1JMH*
 
 ## At a glance
 
@@ -27,6 +27,7 @@ This page lists what may come to ECTLogger next. It is a list of intentions, not
 | [Net View usability](#net-view-usability) | Tell "stepped away" apart from "did not answer when called", and see a row flash when a station returns. | Planned | — |
 | [Reopening a closed net](#reopening-a-closed-net) | Bring back a net that was closed by mistake, or closed automatically while it was still running. | Planned | — |
 | [Net Report Builder and coverage statistics](#net-report-builder-and-coverage-statistics) | One report per net, with sections you can switch on or off, and a count of how well a drill covered each location and channel. | On hold | — |
+| [Participation scoring](#participation-scoring) | Earn a point for each way you take part in a net, such as voice and digital, and see the totals across a schedule's nets. | Designing | — |
 | [Incident log and situational awareness feed](#incident-operations-log--situational-awareness-feed) | Log what you hear once, then get an ICS-214, a spreadsheet row, and a chat post from it. | Designing | [Design notes](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-INCIDENT-PLANNER.md) |
 | [Agency liaison access](#agency-liaison-access) | Give a served agency's staff a limited account for one incident, with no view of your roster. | Designing | — |
 | [Account deletion and erasure](#account-deletion-anonymization--right-to-erasure) | Deleting an account keeps the net history intact, and a separate action erases personal data on request. | Designing | — |
@@ -392,6 +393,36 @@ must not change. Concretely:
       stay out of anything public
 - [ ] Shows only on nets with reporting sites; the off-net section only when accepted
       entries exist. Regular nets are unchanged
+
+### Participation Scoring
+
+**✨ A point for each way a station takes part in a net, totalled across a schedule's nets** *(NA1T, Greater Nashua ARES, through N1KWG, 2026-10-29)*  
+**Model:** Opus for the counting rule and what a "method" is, since a station must score once per method and never once per check-in row. Sonnet for the schedule setting and the totals table.  
+**Think:** think hard for the counting rule; think for the rest.  
+**Docs:** net-managers (schedule settings, schedule statistics), operators (your activity on Profile), reference (fields).
+
+NA1T's group runs a voice net, then moves to a digital net, and gives each station one
+point for the voice part and one for the digital part. Today the only way to do that in
+ECTLogger is two separate nets, and the totals have to be added up by hand. Brad sees a
+wider use: a score that rewards checking in by more than one method may encourage
+operators to add modes and equipment, which is what an ARES team wants anyway.
+
+It builds on the station rows from the SET follow-up work (one row per station per site,
+with a chip for every channel the station was checked in on), which already says which
+channels and modes each station used on a net.
+
+**Constraint:** scoring is a new number. Like the coverage statistics in the Net Report
+Builder item, it must never change how check-ins are counted anywhere else.
+
+**Design questions to resolve:**
+- [ ] Get NA1T's requirements through Ken (N1KWG) before designing
+- [ ] What is a method: each channel, each mode, or categories the net manager defines
+      (for example "voice" and "digital") from the net's frequencies? Recommendation:
+      manager-defined categories, since an FM repeater and a DMR talkgroup are both voice
+- [ ] Does an In person check-in, or an off-net entry (a Winlink message), earn a point?
+- [ ] Is scoring a setting on the schedule, so regular nets are unchanged?
+- [ ] Where totals show: schedule statistics (per station, over a date range) and the
+      station's own Profile activity
 
 ### Incident Operations Log & Situational Awareness Feed
 
@@ -1193,4 +1224,6 @@ Then a `/etc/sudoers.d/ectlogger-teams` granting the same five verbs the existin
 | W1BKW — Brian Wall | Regular participant, ham.live nets |
 | W1MTW — Mark Carlson | Net participant (mobile user) |
 | N1GSK | Net participant (mobile user), Maine Dirigo Net |
+| N1KWG — Ken Geddes | NH ARES Assistant SEC (SKYWARN), Greater Manchester ARES |
+| NA1T — Steve | Emergency Coordinator, Greater Nashua ARES |
 | KC1JMH — Brad Brown | Developer / net manager / WSSM Club Secretary / Cumberland County ARES EC |
