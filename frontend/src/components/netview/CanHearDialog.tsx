@@ -27,7 +27,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { canHearApi, coverageSiteApi } from '../../services/api';
 import { CoverageAccess, CoverageContact, CoverageSite, coverageFrequencies, infrastructureSites, reportingSites, stationSiteName } from '../../utils/coverageSites';
-import { POSITION_OPTIONS } from '../../utils/stationPlace';
+import { POSITION_OPTIONS, stationPlaceKey } from '../../utils/stationPlace';
 
 // ========== "WHO CAN THIS STATION HEAR?" COVERAGE REPORTING DIALOG ==========
 // Phase 2 of the "can hear" inter-station propagation logging feature (see
@@ -101,17 +101,12 @@ interface StationGroup {
   ids: number[]; // every check-in row in the group
 }
 
-const placeKey = (ci: any): string =>
-  ci.coverage_site_id != null
-    ? `site:${ci.coverage_site_id}`
-    : `pos:${(ci.operating_position || ci.location || '').trim().toLowerCase()}`;
-
-const stationKey = (ci: any): string => `${(ci.callsign || '').trim().toUpperCase()}|${placeKey(ci)}`;
-
+// Keyed the same way the server matches stations for two-way coverage
+// (utils/stationPlace.ts stationPlaceKey).
 function groupStations(checkIns: any[]): StationGroup[] {
   const groups = new Map<string, any[]>();
   checkIns.forEach((ci) => {
-    const key = stationKey(ci);
+    const key = stationPlaceKey(ci);
     groups.set(key, [...(groups.get(key) ?? []), ci]);
   });
   return Array.from(groups.values()).map((rows) => {
@@ -119,6 +114,25 @@ function groupStations(checkIns: any[]): StationGroup[] {
     const station = byTime.find((ci) => ci.status !== 'checked_out') ?? byTime[0];
     return { station, ids: byTime.map((ci) => ci.id) };
   });
+}
+
+// ========== WHERE EACH STATION IS NOW ==========
+// A station that moved has a group at each place it has been. Only the
+// place of its newest check-in is offered, or a report made after KD1OM
+// left Gorham for Westbrook credits Gorham with what was heard (SET net 137,
+// 2026-10-24). Earlier places are a click away, for a report from earlier
+// in the net, and one already reported stays shown.
+function currentPlaceKeys(checkIns: any[]): Set<string> {
+  const newest = new Map<string, any>();
+  checkIns.forEach((ci) => {
+    const callsign = (ci.callsign || '').trim().toUpperCase();
+    const held = newest.get(callsign);
+    if (!held || (ci.checked_in_at || '') > (held.checked_in_at || '')
+        || ((ci.checked_in_at || '') === (held.checked_in_at || '') && ci.id > held.id)) {
+      newest.set(callsign, ci);
+    }
+  });
+  return new Set(Array.from(newest.values()).map(stationPlaceKey));
 }
 
 type AccessDraft = Record<number, { result: 'reached' | 'failed'; note: string }>;
@@ -295,6 +309,7 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
   // the grid can show one frequency's column instead of all of them. Both
   // only change what's shown; hidden ticks are kept and still saved.
   const [stationFilter, setStationFilter] = useState('');
+  const [showEarlierPlaces, setShowEarlierPlaces] = useState(false);
   const [columnFilter, setColumnFilter] = useState<number | ''>('');
 
   // Changing the frequency re-derives which checkboxes are pre-checked, since
@@ -324,12 +339,20 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
     return aOut - bOut;
   });
 
+  const currentPlaces = currentPlaceKeys(allCheckIns);
+  const reportedIds = new Set<number>(
+    existingReports.filter((r: any) => r.reporter_check_in_id === reporterCheckIn.id).map((r: any) => r.heard_check_in_id),
+  );
+  const isEarlierPlace = (group: StationGroup) =>
+    !currentPlaces.has(stationPlaceKey(group.station)) && !group.ids.some((id) => reportedIds.has(id));
+  const earlierPlaceCount = otherStations.filter(isEarlierPlace).length;
+
   const filterText = stationFilter.trim().toLowerCase();
-  const visibleStations = filterText
-    ? otherStations.filter((group) =>
-      [group.station.callsign, stationSiteName(group.station, sitesById), group.station.operating_position, group.station.location]
-        .some((text) => (text || '').toLowerCase().includes(filterText)))
-    : otherStations;
+  const visibleStations = otherStations
+    .filter((group) => showEarlierPlaces || !isEarlierPlace(group))
+    .filter((group) => !filterText
+      || [group.station.callsign, stationSiteName(group.station, sitesById), group.station.operating_position, group.station.location]
+        .some((text) => (text || '').toLowerCase().includes(filterText)));
   const visibleFrequencies = columnFilter === '' ? netFrequencies : netFrequencies.filter((f) => f.id === columnFilter);
 
   const isGroupChecked = (checked: Set<number> | undefined, group: StationGroup) =>
@@ -496,6 +519,14 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
               onChange={(e) => setStationFilter(e.target.value)}
               sx={{ flex: '1 1 200px' }}
             />
+            {/* Shows when a station has been somewhere else earlier in the net */}
+            {earlierPlaceCount > 0 && (
+              <FormControlLabel
+                control={<Checkbox checked={showEarlierPlaces} onChange={(e) => setShowEarlierPlaces(e.target.checked)} />}
+                label={`Show earlier places (${earlierPlaceCount})`}
+                sx={{ flex: '0 0 auto', m: 0 }}
+              />
+            )}
             {gridMode && (
               <FormControl size="small" sx={{ flex: '1 1 200px' }}>
                 <InputLabel id="can-hear-column-filter">Show frequencies</InputLabel>

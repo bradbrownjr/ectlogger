@@ -63,12 +63,6 @@ L.Marker.prototype.options.icon = DefaultIcon;
 export const COVERAGE_TWO_WAY_COLOR = '#ffab00'; // amber - confirmed both directions
 export const COVERAGE_ONE_WAY_COLOR = '#616161'; // neutral gray - reported one direction only
 
-// Mirrors CoverageReport.tsx's edgeKey exactly (same Set-membership approach
-// for detecting a confirmed two-way pair) rather than reinventing it.
-function canHearEdgeKey(reporterId: number, heardId: number, frequencyId: number | null): string {
-  return `${reporterId}-${heardId}-${frequencyId ?? 'none'}`;
-}
-
 // Custom marker colors based on status
 const createColoredIcon = (color: string) => {
   return L.divIcon({
@@ -475,9 +469,6 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       return true;
     });
 
-    const allKeys = new Set(
-      filtered.map((r) => canHearEdgeKey(r.reporter_check_in_id, r.heard_check_in_id, r.frequency_id))
-    );
     const drawnPairs = new Set<string>();
     const lines: { key: string; positions: [number, number][]; twoWay: boolean }[] = [];
 
@@ -486,8 +477,9 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       const to = positionByCheckInId.get(r.heard_check_in_id) ?? positionByCallsign.get(r.heard_callsign.toLowerCase());
       if (!from || !to) continue; // unmappable station on either end - skip silently
 
-      const reverseKey = canHearEdgeKey(r.heard_check_in_id, r.reporter_check_in_id, r.frequency_id);
-      const isTwoWay = allKeys.has(reverseKey);
+      // Two-way as the server decided it, the same as the coverage table
+      // (CoverageReport.tsx buildCoverageRows).
+      const isTwoWay = r.two_way;
 
       if (isTwoWay) {
         const pair = [r.reporter_check_in_id, r.heard_check_in_id].sort((a, b) => a - b);

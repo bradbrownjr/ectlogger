@@ -2355,6 +2355,12 @@ class CanHearReportResponse(BaseModel):
     band: Optional[str] = None
     reported_by_user_id: Optional[int] = None
     reported_at: datetime
+    # The other station heard this one back on the same frequency, from the
+    # same places (site_coverage.station_reach): it reported so, or one of
+    # them logged the other's check-in, which is a two-way contact.
+    two_way: bool = False
+    # Two-way only because of a logged check-in, not a second report.
+    two_way_by_check_in: bool = False
 
     class Config:
         from_attributes = True

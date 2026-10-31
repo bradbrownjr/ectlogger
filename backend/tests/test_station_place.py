@@ -274,3 +274,13 @@ async def test_correcting_a_site_in_place_moves_nothing_and_home_gets_the_saved_
         select(Contact).where(Contact.callsign == "KC1HILL").execution_options(populate_existing=True)
     )).scalar_one()
     assert contact.location == "Gorham, ME"
+
+
+def test_station_place_key():
+    # The same keys as frontend utils/stationPlace.test.ts "stationPlaceKey".
+    from app.services.station_place import station_place_key
+    assert station_place_key("kd1om", 4, None, "checked_in") == "KD1OM|site:4"
+    assert station_place_key("W1MTW", None, "Home ", "checked_in") == "W1MTW|position:home"
+    assert station_place_key("W1AEK", 13, None, "mobile") == "W1AEK|traveling"
+    assert station_place_key("W1AW", None, None, "checked_in", "Newington, CT") == "W1AW|location:newington, ct"
+    assert station_place_key("W1AW", None, None, "checked_in") == "W1AW|"

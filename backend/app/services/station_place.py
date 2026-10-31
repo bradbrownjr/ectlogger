@@ -38,6 +38,19 @@ def place_key(coverage_site_id: Optional[int], operating_position: Optional[str]
     return f"position:{position}" if position else None
 
 
+def station_place_key(callsign: str, coverage_site_id: Optional[int], operating_position: Optional[str],
+                      status, location: Optional[str] = None) -> str:
+    """One station at one place: its callsign and place_key, or, when the
+    row's place is unknown, the location typed for it. Two rows with the
+    same key are the same station in the same spot, whatever channel each
+    was logged on."""
+    place = place_key(coverage_site_id, operating_position, status)
+    if place is None:
+        town = (location or "").strip().lower()
+        place = f"location:{town}" if town else ""
+    return f"{(callsign or '').strip().upper()}|{place}"
+
+
 def is_home_position(operating_position: Optional[str]) -> bool:
     """Loose on purpose, the same match routers/users.py uses for the
     profile's home-station statistics: the can-hear dialog lets an operator

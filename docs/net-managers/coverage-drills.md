@@ -4,7 +4,7 @@ summary: Setting up a drill that tests where you can reach, not who, such as an 
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-31
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/coverage-drills/
@@ -72,7 +72,7 @@ Open **Coverage** in the toolbar. On a net with sites it opens on **By site**; *
 
 **Reaching the primary sites** checks every site against each starred office:
 
-- **Two-way** - both places heard each other on one frequency.
+- **Two-way** - both places heard each other on one frequency. A check-in counts: when net control at one site checks in a station at another on a frequency, the two sites have worked each other there, as of wherever net control was checked in at that moment.
 - **Through a relay** - no direct path, but both heard the same third station or site both ways. The station or site that bridges them is named underneath.
 - **One-way only** - only one of the two has heard the other.
 - **No path** - nothing reported either way. Before reading it as a gap, check the site was actually asked.

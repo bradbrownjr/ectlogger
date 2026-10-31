@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CoverageSite } from './coverageSites';
-import { TRAVELING, applyPlaceChoice, buildSiteBoard, placeChoice, placeChoices } from './stationPlace';
+import { TRAVELING, applyPlaceChoice, buildSiteBoard, placeChoice, placeChoices, stationPlaceKey } from './stationPlace';
 
 const site = (id: number, name: string, location: string | null, extra: Partial<CoverageSite> = {}): CoverageSite => ({
   id, net_id: 1, name, location, site_type: 'shelter', is_primary: false, sort_order: id, frequency_id: null,
@@ -84,5 +84,19 @@ describe('buildSiteBoard', () => {
     const board = buildSiteBoard(rows, SITES, false);
     expect(board.find((g) => g.label === 'Bonny Eagle HS')?.stations.map((s) => s.callsign)).toEqual(['K1ONE']);
     expect(board.find((g) => g.label === 'Windham EMA')?.stations.map((s) => s.callsign)).toEqual(['K1ONE']);
+  });
+});
+
+describe('stationPlaceKey', () => {
+  // The same keys as backend tests/test_station_place.py::test_station_place_key.
+  it('keys a station by callsign and place, whatever the channel', () => {
+    expect(stationPlaceKey({ callsign: 'kd1om', coverage_site_id: 4 })).toBe('KD1OM|site:4');
+    expect(stationPlaceKey({ callsign: 'W1MTW', operating_position: 'Home ' })).toBe('W1MTW|position:home');
+    expect(stationPlaceKey({ callsign: 'W1AEK', coverage_site_id: 13, status: 'mobile' })).toBe(`W1AEK|${TRAVELING}`);
+  });
+
+  it('falls back to the location, then to the callsign alone', () => {
+    expect(stationPlaceKey({ callsign: 'W1AW', location: 'Newington, CT' })).toBe('W1AW|location:newington, ct');
+    expect(stationPlaceKey({ callsign: 'W1AW' })).toBe('W1AW|');
   });
 });

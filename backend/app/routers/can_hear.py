@@ -27,7 +27,8 @@ from app.schemas import CanHearReportResponse, CanHearReportSave, CanHearReportF
 from app.dependencies import get_current_user, get_current_user_optional
 from app.permissions import may_record_coverage, net_access
 from app.band_utils import band_from_frequency_string
-from app.services.site_coverage import parse_excluded_frequency_ids
+from app.services.station_place import station_place_key
+from app.services.site_coverage import CheckInIn, ReportIn, parse_excluded_frequency_ids, station_reach
 
 router = APIRouter(prefix="/nets", tags=["can-hear"])
 
@@ -67,9 +68,33 @@ async def _build_report_responses(db: AsyncSession, net: Net, reports: List[CanH
     if not reports:
         return []
 
-    check_in_ids = {r.reporter_check_in_id for r in reports} | {r.heard_check_in_id for r in reports}
-    result = await db.execute(select(CheckIn).where(CheckIn.id.in_(check_in_ids)))
-    callsigns_by_id = {c.id: c.callsign for c in result.scalars().all()}
+    # Every row and report on the net, not just these: whether a report is
+    # two-way depends on the rest of the net (site_coverage.station_reach).
+    net_check_ins = (await db.execute(select(CheckIn).where(CheckIn.net_id == net.id))).scalars().all()
+    callsigns_by_id = {c.id: c.callsign for c in net_check_ins}
+    net_reports = (await db.execute(
+        select(CanHearReport.reporter_check_in_id, CanHearReport.heard_check_in_id, CanHearReport.frequency_id)
+        .where(CanHearReport.net_id == net.id)
+    )).all()
+    rows = [
+        CheckInIn(c.id, c.callsign, c.coverage_site_id, c.user_id, c.checked_in_by_id, c.frequency_id,
+                  c.checked_in_at, c.checked_out_at, bool(c.time_not_recorded),
+                  c.operating_position, c.status, c.location)
+        for c in net_check_ins
+    ]
+    reach, proved = station_reach(rows, [ReportIn(*r) for r in net_reports])
+    place_by_id = {
+        c.id: station_place_key(c.callsign, c.coverage_site_id, c.operating_position, c.status, c.location)
+        for c in net_check_ins
+    }
+
+    reported = {
+        (place_by_id.get(x.reporter_check_in_id), place_by_id.get(x.heard_check_in_id), x.frequency_id)
+        for x in net_reports
+    }
+
+    def _reverse(report: CanHearReport) -> tuple:
+        return (place_by_id.get(report.heard_check_in_id), place_by_id.get(report.reporter_check_in_id), report.frequency_id)
 
     freq_ids = {r.frequency_id for r in reports if r.frequency_id is not None}
     frequencies_by_id = {}
@@ -104,6 +129,8 @@ async def _build_report_responses(db: AsyncSession, net: Net, reports: List[CanH
             band=_band_for(r),
             reported_by_user_id=r.reported_by_user_id,
             reported_at=r.reported_at,
+            two_way=_reverse(r) in reach,
+            two_way_by_check_in=_reverse(r) in proved and _reverse(r) not in reported,
         )
         for r in reports
     ]
