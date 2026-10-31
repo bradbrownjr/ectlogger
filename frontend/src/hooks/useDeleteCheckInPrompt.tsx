@@ -13,6 +13,9 @@ export type DeleteCheckInChoice = 'delete' | 'block' | null;
 
 interface Pending {
   callsign: string;
+  // More than one: every check-in for one station at one place (its row
+  // in the check-in list, utils/stationRows.ts).
+  count: number;
   resolve: (choice: DeleteCheckInChoice) => void;
 }
 
@@ -20,8 +23,8 @@ export function useDeleteCheckInPrompt(canBlock: boolean) {
   const [pending, setPending] = useState<Pending | null>(null);
 
   const ask = useCallback(
-    (checkIn: { callsign: string }) =>
-      new Promise<DeleteCheckInChoice>((resolve) => setPending({ callsign: checkIn.callsign, resolve })),
+    (checkIn: { callsign: string }, count = 1) =>
+      new Promise<DeleteCheckInChoice>((resolve) => setPending({ callsign: checkIn.callsign, count, resolve })),
     [],
   );
 
@@ -32,9 +35,15 @@ export function useDeleteCheckInPrompt(canBlock: boolean) {
 
   const dialog = (
     <Dialog open={!!pending} onClose={() => finish(null)} maxWidth="xs" fullWidth>
-      <DialogTitle>Delete {pending?.callsign}'s check-in?</DialogTitle>
+      <DialogTitle>
+        {(pending?.count ?? 1) > 1 ? `Delete ${pending?.callsign}'s ${pending?.count} check-ins here?` : `Delete ${pending?.callsign}'s check-in?`}
+      </DialogTitle>
       <DialogContent>
-        <DialogContentText>Delete removes this check-in from the log.</DialogContentText>
+        <DialogContentText>
+          {(pending?.count ?? 1) > 1
+            ? `Delete removes all ${pending?.count} of ${pending?.callsign}'s check-ins at this place from the log. To remove just one, open its timeline instead.`
+            : 'Delete removes this check-in from the log.'}
+        </DialogContentText>
         {canBlock && (
           <DialogContentText sx={{ mt: 1.5 }}>
             Remove and block takes {pending?.callsign} off this net: every check-in under that callsign is removed,

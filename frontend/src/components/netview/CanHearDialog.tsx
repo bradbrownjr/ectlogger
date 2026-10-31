@@ -138,10 +138,10 @@ function currentPlaceKeys(checkIns: any[]): Set<string> {
 type AccessDraft = Record<number, { result: 'reached' | 'failed'; note: string }>;
 
 // This station's saved repeater and node results, keyed by target site.
-const accessFor = (existing: CoverageAccess[], checkInId: number): AccessDraft => {
+const accessFor = (existing: CoverageAccess[], rowIds: Set<number>): AccessDraft => {
   const drafts: AccessDraft = {};
   existing
-    .filter((a) => a.reporter_check_in_id === checkInId)
+    .filter((a) => rowIds.has(a.reporter_check_in_id))
     .forEach((a) => { drafts[a.target_site_id] = { result: a.reached ? 'reached' : 'failed', note: a.note || '' }; });
   return drafts;
 };
@@ -167,11 +167,11 @@ interface CanHearDialogProps {
 // Reports are scoped per (reporter, frequency), so which boxes are pre-checked
 // depends on whatever frequency is currently selected in the dialog. Normalize
 // null/undefined frequency ids to null so "no frequency" reports match cleanly.
-function deriveCheckedIds(reports: any[], reporterCheckInId: number, frequencyId: number | null): Set<number> {
+function deriveCheckedIds(reports: any[], rowIds: Set<number>, frequencyId: number | null): Set<number> {
   const normalizedFreq = frequencyId ?? null;
   return new Set(
     reports
-      .filter((r: any) => r.reporter_check_in_id === reporterCheckInId && (r.frequency_id ?? null) === normalizedFreq)
+      .filter((r: any) => rowIds.has(r.reporter_check_in_id) && (r.frequency_id ?? null) === normalizedFreq)
       .map((r: any) => r.heard_check_in_id)
   );
 }
@@ -229,8 +229,15 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
     netFrequencies.some((f) => f.id === net?.active_frequency_id) ? net.active_frequency_id
       : netFrequencies.length === 1 ? netFrequencies[0].id : null;
   const [selectedFrequencyId, setSelectedFrequencyId] = useState<number | null>(initialFrequencyId);
+  // The report is the station's at its place, whichever of its rows the
+  // dialog was opened from: a recheck on another channel there is the same
+  // station (the server saves it the same way, services/station_rows.py).
+  const reporterKey = stationPlaceKey(reporterCheckIn);
+  const reporterRowIds = new Set<number>(
+    [reporterCheckIn.id, ...allCheckIns.filter((ci: any) => stationPlaceKey(ci) === reporterKey).map((ci: any) => ci.id)],
+  );
   const [checkedIds, setCheckedIds] = useState<Set<number>>(() =>
-    deriveCheckedIds(existingReports, reporterCheckIn.id, initialFrequencyId)
+    deriveCheckedIds(existingReports, reporterRowIds, initialFrequencyId)
   );
   // Grid mode: one checked-set per net frequency, keyed by frequency_id -
   // each column reconciles independently server-side, so this just mirrors
@@ -240,7 +247,7 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
   const [checkedByFrequency, setCheckedByFrequency] = useState<Record<number, Set<number>>>(() => {
     const initial: Record<number, Set<number>> = {};
     netFrequencies.forEach((freq) => {
-      initial[freq.id] = deriveCheckedIds(existingReports, reporterCheckIn.id, freq.id);
+      initial[freq.id] = deriveCheckedIds(existingReports, reporterRowIds, freq.id);
     });
     return initial;
   });
@@ -259,7 +266,7 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
     sites.find((site) => site.name.toLowerCase() === text.trim().toLowerCase());
 
   const [contacts, setContacts] = useState<ContactDraft[]>(() =>
-    existingContacts.filter((c) => c.reporter_check_in_id === reporterCheckIn.id).map(toDraft)
+    existingContacts.filter((c) => reporterRowIds.has(c.reporter_check_in_id)).map(toDraft)
   );
   const [contactsChanged, setContactsChanged] = useState(false);
   // The net's contacts and access results load alongside its sites and can
@@ -267,7 +274,7 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
   // what's saved, or the section opens empty and Save erases it.
   useEffect(() => {
     if (!contactsChanged) {
-      setContacts(existingContacts.filter((c) => c.reporter_check_in_id === reporterCheckIn.id).map(toDraft));
+      setContacts(existingContacts.filter((c) => reporterRowIds.has(c.reporter_check_in_id)).map(toDraft));
     }
   }, [existingContacts, reporterCheckIn.id, contactsChanged]);
   const updateContact = (index: number, patch: Partial<ContactDraft>) => {
@@ -286,10 +293,10 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
     setContactsChanged(true);
   };
   // Repeaters and nodes: 'reached', 'failed', or absent for "didn't try".
-  const [access, setAccess] = useState<AccessDraft>(() => accessFor(existingAccess, reporterCheckIn.id));
+  const [access, setAccess] = useState<AccessDraft>(() => accessFor(existingAccess, reporterRowIds));
   const [accessChanged, setAccessChanged] = useState(false);
   useEffect(() => {
-    if (!accessChanged) setAccess(accessFor(existingAccess, reporterCheckIn.id));
+    if (!accessChanged) setAccess(accessFor(existingAccess, reporterRowIds));
   }, [existingAccess, reporterCheckIn.id, accessChanged]);
   const setAccessResult = (targetId: number, result: '' | 'reached' | 'failed') => {
     setAccess((prev) => {
@@ -319,7 +326,7 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
   // mode only.
   const handleFrequencyChange = (newFrequencyId: number | null) => {
     setSelectedFrequencyId(newFrequencyId);
-    setCheckedIds(deriveCheckedIds(existingReports, reporterCheckIn.id, newFrequencyId));
+    setCheckedIds(deriveCheckedIds(existingReports, reporterRowIds, newFrequencyId));
   };
 
   // Every other station in the net, one row per callsign and place (see
@@ -341,7 +348,7 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
 
   const currentPlaces = currentPlaceKeys(allCheckIns);
   const reportedIds = new Set<number>(
-    existingReports.filter((r: any) => r.reporter_check_in_id === reporterCheckIn.id).map((r: any) => r.heard_check_in_id),
+    existingReports.filter((r: any) => reporterRowIds.has(r.reporter_check_in_id)).map((r: any) => r.heard_check_in_id),
   );
   const isEarlierPlace = (group: StationGroup) =>
     !currentPlaces.has(stationPlaceKey(group.station)) && !group.ids.some((id) => reportedIds.has(id));

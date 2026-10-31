@@ -47,7 +47,7 @@ Add each one as a site of type **Repeater or node**. Instead of a star it has an
 
 ### Checking stations in at their sites
 
-Net control picks each station's site in the check-in form's **Site** box, and a station that moves to another site is checked in again there, which checks it out of the first. [Stations at sites](/docs/net-control/stations-at-sites/) covers both. Each check-in keeps its own site and its own results, so what a team reached from the first shelter stays with the first shelter. Leave **Hide duplicate rows** off while the drill runs so both visits stay in view.
+Net control picks each station's site in the check-in form's **Site** box, and a station that moves to another site is checked in again there, which checks it out of the first. [Stations at sites](/docs/net-control/stations-at-sites/) covers both. The list keeps one row for the station at each site, and what a team reached from the first shelter stays with the first shelter's row.
 
 ### Recording what a site reached
 

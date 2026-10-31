@@ -254,6 +254,16 @@ export const checkInApi = {
     api.post(`/check-ins/check-ins/${id}/verify-identity`, { verified }),
 };
 
+// Channels marked offline at a station's place (routers/channel_marks.py)
+export const channelMarkApi = {
+  list: (netId: number, background = false) =>
+    api.get(`/check-ins/nets/${netId}/channel-marks`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
+  offline: (checkInId: number, frequencyId: number) =>
+    api.post(`/check-ins/check-ins/${checkInId}/channels/${frequencyId}/offline`),
+  online: (checkInId: number, frequencyId: number) =>
+    api.post(`/check-ins/check-ins/${checkInId}/channels/${frequencyId}/online`),
+};
+
 // "Can hear" propagation logging API
 export const canHearApi = {
   list: (netId: number, background = false) =>

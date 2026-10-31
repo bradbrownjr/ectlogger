@@ -4,7 +4,6 @@ import { MULTILINE_FIELDS, fieldLabel, isRelayedByShown, shownDetailFields } fro
 import { useDeleteCheckInPrompt } from '../hooks/useDeleteCheckInPrompt';
 import { formatFrequencyDisplay } from '../utils/frequencyList';
 import useDialog from '../hooks/useDialog';
-import useLocalStorage from '../hooks/useLocalStorage';
 import { useNetWebSocket } from '../hooks/useNetWebSocket';
 import { useNetData } from '../hooks/useNetData';
 import { usePoppedOutWindow } from '../hooks/usePoppedOutWindow';
@@ -19,6 +18,7 @@ import AutoCloseWarningBanner from '../components/netview/AutoCloseWarningBanner
 import DraftLogBanner from '../components/netview/DraftLogBanner';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
 import { buildStaffRoleRank, compareCheckInsByRole } from '../components/netview/checkInSort';
+import { visibleStationRows } from '../utils/stationRows';
 import { activeNcsRoles, mergeStationRoles, roleMatchesCheckIn } from '../utils/stationRoles';
 import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
 import { STATUS_SELECT_MENU_PROPS } from '../components/netview/statusSelectMenuProps';
@@ -190,6 +190,7 @@ const NetView: React.FC = () => {
   const {
     net, setNet,
     checkIns, setCheckIns,
+    channelMarks,
     netRoles,
     callsignRoles,
     netStats,
@@ -232,7 +233,6 @@ const NetView: React.FC = () => {
   // would be destroyed mid-radiogram. See FileTrafficDialog.tsx.
   const [fileTrafficOpen, setFileTrafficOpen] = useState(false);
   const bulkCheckIn = useDialog();
-  const [hideDuplicates, setHideDuplicates] = useLocalStorage<boolean>(STORAGE_KEYS.CHECKIN_HIDE_DUPLICATES, false);
   const search = useDialog();
   const [searchQuery, setSearchQuery] = useState('');
   const closeNetDialog = useDialog();
@@ -1477,18 +1477,6 @@ const NetView: React.FC = () => {
     return user.callsign || '';
   };
 
-  // Compute the latest checked_in_at per callsign (for graying prior rows)
-  // Must be above all early returns so hook count never changes between renders.
-  const latestCheckedInAtByCallsign = React.useMemo(() => {
-    const map = new Map<string, string>();
-    for (const ci of checkIns) {
-      const prev = map.get(ci.callsign);
-      if (!prev || ci.checked_in_at > prev) {
-        map.set(ci.callsign, ci.checked_in_at);
-      }
-    }
-    return map;
-  }, [checkIns]);
 
   // Check-in ids that already have at least one outgoing "can hear" report,
   // for the ear icon's row indicator color. Must be above the early return
@@ -1619,6 +1607,7 @@ const NetView: React.FC = () => {
     handleCheckIn,
     handleStatusChange,
     handleDeleteCheckIn,
+    handleMarkChannel,
     handleStartInlineEdit,
     handleInlineFieldChange,
     handleInlineKeyDown,
@@ -1660,16 +1649,22 @@ const NetView: React.FC = () => {
       if (!hasMatchingFreq) return false;
     }
 
-    // Hide-duplicates: if enabled, hide prior rows (only show the latest row per callsign)
-    if (hideDuplicates) {
-      const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
-      if (latest && checkIn.checked_in_at < latest) return false;
-    }
-    
     return true;
   }).sort((a: CheckIn, b: CheckIn) =>
     compareCheckInsByRole(a, b, staffRoleRank, net?.mobile_priority_sort !== false)
   );
+
+  // The check-in list itself: one row per station per place, with its
+  // channels and its check-ins as a timeline (utils/stationRows.ts). It
+  // replaced the "Hide duplicate rows" toggle, which kept only the newest
+  // row per callsign and with it only the newest row's channel. Maps and
+  // chat still take every row (filteredCheckIns above).
+  const stationRows = visibleStationRows(checkIns, channelMarks, {
+    searchQuery,
+    frequencyIds: filteredFrequencyIds,
+    alwaysShow: (row) => ncsRoles.some((r) => roleMatchesCheckIn(r, row)),
+    compare: (a, b) => compareCheckInsByRole(a, b, staffRoleRank, net?.mobile_priority_sort !== false),
+  });
 
   // Shared by the floating and docked CheckInMap instances below. The split
   // itself lives in utils/checkInMarkers.ts so this page, the net report
@@ -1975,15 +1970,13 @@ const NetView: React.FC = () => {
               {/* ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ========== */}
               <CheckInTable
                 net={net}
-                filteredCheckIns={filteredCheckIns}
+                stationRows={stationRows}
                 netRoles={stationRoles}
                 ncsRoles={ncsRoles}
                 user={user}
                 onlineUserIds={onlineUserIds}
                 activeSpeakerId={activeSpeakerId}
-                latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
                 showRelayedBy={showRelayedBy}
-                hideDuplicates={hideDuplicates}
                 canManage={canManage}
                 canManageCheckIns={canManageCheckIns}
                 inlineEditingId={inlineEditingId}
@@ -2000,7 +1993,6 @@ const NetView: React.FC = () => {
                 getStatusTooltip={getStatusTooltip}
                 getStatusLabel={getStatusLabel}
                 getNcsIcon={getNcsIcon}
-                setHideDuplicates={setHideDuplicates}
                 handleDetachCheckInList={handleDetachCheckInList}
                 handlePopOutCheckInList={handlePopOutCheckIns}
                 handleStartInlineEdit={handleStartInlineEdit}
@@ -2011,6 +2003,7 @@ const NetView: React.FC = () => {
                 handleToggleHand={handleToggleHand}
                 handleSetActiveSpeaker={handleSetActiveSpeaker}
                 handleDeleteCheckIn={handleDeleteCheckIn}
+                handleMarkChannel={handleMarkChannel}
                 setProfileUserId={setProfileUserId}
                 onShowGuestProfile={setProfileCallsign}
                 canReportCanHear={canReportCanHear}
@@ -2026,13 +2019,12 @@ const NetView: React.FC = () => {
             {/* ========== CHECK-IN LIST TABLE 2: Mobile View (xs only) ========== */}
             <CheckInMobileList
               net={net}
-              filteredCheckIns={filteredCheckIns}
+              stationRows={stationRows}
               netRoles={stationRoles}
               ncsRoles={ncsRoles}
               user={user}
               onlineUserIds={onlineUserIds}
               activeSpeakerId={activeSpeakerId}
-              latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
               showRelayedBy={showRelayedBy}
               canManage={canManage}
               canManageCheckIns={canManageCheckIns}
@@ -2047,6 +2039,8 @@ const NetView: React.FC = () => {
               onRefreshRoles={fetchNetRoles}
               onRefreshCheckIns={fetchCheckIns}
               onDeleteCheckIn={handleDeleteCheckIn}
+              onMarkChannel={handleMarkChannel}
+              formatFrequencyDisplay={formatFrequencyDisplay}
               onShowProfile={setProfileUserId}
               onShowGuestProfile={setProfileCallsign}
               canReportCanHear={canReportCanHear}
@@ -2706,15 +2700,13 @@ const NetView: React.FC = () => {
               <CheckInTable
                 detached
                 net={net}
-                filteredCheckIns={filteredCheckIns}
+                stationRows={stationRows}
                 netRoles={stationRoles}
                 ncsRoles={ncsRoles}
                 user={user}
                 onlineUserIds={onlineUserIds}
                 activeSpeakerId={activeSpeakerId}
-                latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
                 showRelayedBy={showRelayedBy}
-                hideDuplicates={hideDuplicates}
                 canManage={canManage}
                 canManageCheckIns={canManageCheckIns}
                 inlineEditingId={inlineEditingId}
@@ -2731,7 +2723,6 @@ const NetView: React.FC = () => {
                 getStatusTooltip={getStatusTooltip}
                 getStatusLabel={getStatusLabel}
                 getNcsIcon={getNcsIcon}
-                setHideDuplicates={setHideDuplicates}
                 handleDetachCheckInList={handleDetachCheckInList}
                 handlePopOutCheckInList={handlePopOutCheckIns}
                 handleStartInlineEdit={handleStartInlineEdit}
@@ -2742,6 +2733,7 @@ const NetView: React.FC = () => {
                 handleToggleHand={handleToggleHand}
                 handleSetActiveSpeaker={handleSetActiveSpeaker}
                 handleDeleteCheckIn={handleDeleteCheckIn}
+                handleMarkChannel={handleMarkChannel}
                 setProfileUserId={setProfileUserId}
                 onShowGuestProfile={setProfileCallsign}
                 canReportCanHear={canReportCanHear}

@@ -28,6 +28,11 @@ import CheckInLocation from './CheckInLocation';
 import HandRaisedIndicator from './HandRaisedIndicator';
 import { findCheckInRole, roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
 import { checkInTimeText, isLogOpen } from '../../utils/netLog';
+import { StationRow } from '../../utils/stationRows';
+import StationChannels from './StationChannels';
+import StationTimeline from './StationTimeline';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 // ========== CHECK-IN LIST TABLE 2: Mobile View ==========
 // The small-screen (xs only) check-in table. Intentionally simpler than the
@@ -42,14 +47,14 @@ interface CheckInMobileListProps {
   // The site's field list, for each built-in field's heading (utils/checkInFields.ts::fieldLabel).
   fieldDefinitions?: { name: string; label?: string | null }[];
   net: any;
-  filteredCheckIns: any[];
+  // One row per station per place (utils/stationRows.ts), same as the desktop table.
+  stationRows: StationRow<any>[];
   // Account and callsign-only roles merged (utils/stationRoles.ts).
   netRoles: StationRole[];
   ncsRoles: StationRole[];
   user: any;
   onlineUserIds: number[];
   activeSpeakerId: number | null;
-  latestCheckedInAtByCallsign: Map<string, string>;
   // Relayed By column: the net has the field on, or it's in use (utils/checkInFields.ts::isRelayedByShown)
   showRelayedBy: boolean;
   canManage: boolean;
@@ -63,7 +68,10 @@ interface CheckInMobileListProps {
   onStatusChange: (checkInId: number, newStatus: string) => Promise<any> | void;
   onRefreshRoles: () => Promise<any> | void;
   onRefreshCheckIns: () => Promise<any> | void;
-  onDeleteCheckIn: (checkInId: number) => void;
+  onDeleteCheckIn: (checkInId: number, groupIds?: number[]) => void;
+  // Net control marks a station's channel offline or back (StationChannels).
+  onMarkChannel?: (checkInId: number, frequencyId: number, offline: boolean) => void;
+  formatFrequencyDisplay: (freq: any) => string;
   onShowProfile: (userId: number) => void;
   // Opens the guest/accountless profile popup for a check-in with no linked
   // user_id. Only offered to standard/view-only users, matching the desktop
@@ -85,13 +93,12 @@ interface CheckInMobileListProps {
 
 const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
   net,
-  filteredCheckIns,
+  stationRows,
   netRoles,
   ncsRoles,
   user,
   onlineUserIds,
   activeSpeakerId,
-  latestCheckedInAtByCallsign,
   showRelayedBy,
   canManage,
   canManageCheckIns,
@@ -106,6 +113,8 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
   onRefreshRoles,
   onRefreshCheckIns,
   onDeleteCheckIn,
+  onMarkChannel,
+  formatFrequencyDisplay,
   onShowProfile,
   onShowGuestProfile,
   canReportCanHear,
@@ -126,6 +135,17 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
   // an empty column on their own row and nothing on anyone else's.
   const showCanHear = !!net?.propagation_logging_enabled && canReportCanHear;
   const showActions = canManage || showCanHear;
+  // Every column, for the channels and timeline row under a station.
+  const columnCount = 4 + (net?.field_config?.name?.enabled ? 1 : 0) + (net?.field_config?.location?.enabled ? 1 : 0)
+    + shownDetailFields(net?.field_config).length + getEnabledCustomFields().length
+    + (net?.topic_of_week_enabled ? 1 : 0) + (net?.poll_enabled ? 1 : 0) + (showRelayedBy ? 1 : 0) + (showActions ? 1 : 0);
+  // Which stations have their timeline open, by station key.
+  const [openTimelines, setOpenTimelines] = useState<Set<string>>(new Set());
+  const toggleTimeline = (key: string) => setOpenTimelines((prev) => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
 
   // A shadow on the frozen Actions column's left edge signals "there's more
   // to the left" only while that's actually true — see CheckInTable.tsx for
@@ -149,7 +169,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
       el.removeEventListener('scroll', update);
       observer.disconnect();
     };
-  }, [filteredCheckIns.length]);
+  }, [stationRows.length]);
 
   // Sneak-in off-screen arrow -- see sneakInHighlight.ts for the shared
   // arrival-detection/dismissal hook, and OffscreenArrivalArrow.tsx for the
@@ -227,15 +247,16 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
           </TableRow>
         </TableHead>
         <TableBody>
-          {filteredCheckIns.map((checkIn, index) => {
-            const isOnActiveFrequency = net.active_frequency_id && checkIn.available_frequencies?.includes(net.active_frequency_id);
+          {stationRows.map((group, index) => {
+            // The station's newest check-in at this place
+            const checkIn = group.row;
+            const timelineOpen = openTimelines.has(group.key);
+            const hasChannels = net.frequencies?.length > 1 && group.worked.length + group.listed.length > 0;
+            const isOnActiveFrequency = net.active_frequency_id
+              && (group.worked.includes(net.active_frequency_id) || group.listed.includes(net.active_frequency_id));
             // Get NCS color if this user is an NCS
             const ncsColor = getNcsColor(checkIn);
             const isNcsUser = ncsRoles.some((r: any) => roleMatchesCheckIn(r, checkIn));
-            const isPriorRowMobile = (() => {
-              const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
-              return latest !== undefined && checkIn.checked_in_at < latest;
-            })();
 
             // Row background reflects status/role state, resolved (not a function) so
             // the sticky Actions cell can layer it over an opaque backdrop below.
@@ -259,15 +280,16 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
             const isSneakInHighlighted = !!highlightedCheckInIds?.has(checkIn.id);
 
             return (
+              <React.Fragment key={group.key}>
               <TableRow
-                key={checkIn.id}
                 ref={(el: HTMLTableRowElement | null) => {
                   if (el) rowElRefs.current.set(checkIn.id, el);
                   else rowElRefs.current.delete(checkIn.id);
                 }}
                 sx={{
                   backgroundColor: rowBgColor,
-                  opacity: isPriorRowMobile ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
+                  opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
+                  ...((hasChannels || timelineOpen) ? { '& td': { borderBottom: 0 } } : {}),
                   // Add left border for NCS users
                   ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
                     borderLeft: `3px solid ${ncsColor.border}`,
@@ -279,7 +301,20 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                   }),
                 }}
               >
-                <TableCell sx={{ whiteSpace: 'nowrap' }}>{index + 1}</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                  {index + 1}
+                  {/* Shows when the station has checked in more than once here */}
+                  {group.rows.length > 1 && (
+                    <IconButton
+                      size="small"
+                      onClick={() => toggleTimeline(group.key)}
+                      title={timelineOpen ? 'Hide timeline' : `Show all ${group.rows.length} check-ins here`}
+                      sx={{ p: 0.25 }}
+                    >
+                      {timelineOpen ? <ExpandLessIcon sx={{ fontSize: 16 }} /> : <ExpandMoreIcon sx={{ fontSize: 16 }} />}
+                    </IconButton>
+                  )}
+                </TableCell>
                 <TableCell sx={{ whiteSpace: 'nowrap' }}>
                   {/* Also editable on a closed/archived net: a backfilled import or a
                       misattributed NCS/Logger role still needs correcting after the fact,
@@ -427,15 +462,21 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                     }}
                   >
                     {canManage && (
-                      <IconButton size="small" onClick={() => onDeleteCheckIn(checkIn.id)}><DeleteIcon fontSize="small" /></IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => onDeleteCheckIn(checkIn.id, group.rows.map((r) => r.id))}
+                        title={group.rows.length > 1 ? `Delete all ${group.rows.length} check-ins here` : 'Delete check-in'}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
                     )}
                     {showCanHear && isLogOpen(net) && checkIn.status !== 'checked_out' && (
                       <IconButton
                         size="small"
                         onClick={() => onOpenCanHearDialog(checkIn.id)}
-                        color={canHearReporterCheckInIds.includes(checkIn.id) ? 'info' : 'default'}
+                        color={group.rows.some((r) => canHearReporterCheckInIds.includes(r.id)) ? 'info' : 'default'}
                         title="Who can this station hear?"
-                        sx={{ opacity: canHearReporterCheckInIds.includes(checkIn.id) ? 1 : 0.4 }}
+                        sx={{ opacity: group.rows.some((r) => canHearReporterCheckInIds.includes(r.id)) ? 1 : 0.4 }}
                       >
                         <HearingIcon fontSize="small" />
                       </IconButton>
@@ -443,6 +484,38 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                   </TableCell>
                 )}
               </TableRow>
+              {/* ========== CHANNELS AND TIMELINE under the station ========== */}
+              {(hasChannels || timelineOpen) && (
+                <TableRow sx={{ backgroundColor: rowBgColor, opacity: checkIn.status === 'checked_out' ? 0.6 : 1 }}>
+                  <TableCell colSpan={columnCount - (showActions ? 1 : 0)} sx={{ pt: 0, pb: 0.75 }}>
+                    <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      {hasChannels && (
+                        <StationChannels
+                          group={group}
+                          frequencies={net.frequencies}
+                          formatFrequencyDisplay={formatFrequencyDisplay}
+                          preferUtc={user?.prefer_utc || false}
+                          netStartedAt={net?.started_at}
+                          onMark={canManageCheckIns && isLogOpen(net) ? onMarkChannel : undefined}
+                        />
+                      )}
+                      {timelineOpen && (
+                        <StationTimeline
+                          group={group}
+                          frequencies={net.frequencies || []}
+                          formatFrequencyDisplay={formatFrequencyDisplay}
+                          getStatusLabel={getStatusLabel}
+                          preferUtc={user?.prefer_utc || false}
+                          netStartedAt={net?.started_at}
+                          onDelete={canManage ? (id) => onDeleteCheckIn(id) : undefined}
+                        />
+                      )}
+                    </Box>
+                  </TableCell>
+                  {showActions && <TableCell sx={{ position: 'sticky', right: 0, zIndex: 1, ...stickyCellSx, pt: 0, pb: 0.75 }} />}
+                </TableRow>
+              )}
+              </React.Fragment>
             );
           })}
         </TableBody>

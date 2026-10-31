@@ -131,7 +131,9 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import api, { netApi, statisticsApi, checkInApi, netRoleApi, canHearApi, coverageSiteApi } from '../services/api';
+import api, { netApi, statisticsApi, checkInApi, channelMarkApi, netRoleApi, canHearApi, coverageSiteApi } from '../services/api';
+import { ChannelMark, groupStationRows } from '../utils/stationRows';
+import { placeChoice, placeChoiceLabel } from '../utils/stationPlace';
 import { DETAIL_FIELDS, logColumnValue, logColumns } from '../utils/checkInFields';
 import { ncsCreditLine } from '../utils/netLog';
 import { chatApi, ChatMessage, formatChatMessageText } from '../api/chat';
@@ -271,6 +273,8 @@ const NetReport: React.FC = () => {
   const [pollResults, setPollResults] = useState<PollResult[]>([]);
   const [canHearReports, setCanHearReports] = useState<CanHearReportEntry[]>([]);
   const [siteCoverage, setSiteCoverage] = useState<SiteCoverageSummary>(EMPTY_SITE_COVERAGE);
+  // Channels net control marked offline, for the check-in log's channels.
+  const [channelMarks, setChannelMarks] = useState<ChannelMark[]>([]);
   // The net's sites, for the Sites section (any net may have them).
   const [sites, setSites] = useState<CoverageSite[]>([]);
   // The admin's field list, for the check-in log's labels and the net's own
@@ -354,6 +358,10 @@ const NetReport: React.FC = () => {
         api.get('/settings/fields')
           .then((res) => setFieldDefinitions(res.data))
           .catch((e) => console.error('Failed to fetch field definitions:', e));
+        // Channels marked offline. Never fatal to the report.
+        channelMarkApi.list(parseInt(netId))
+          .then((res) => setChannelMarks(res.data))
+          .catch((e) => console.error('Failed to fetch channel marks:', e));
         // Sites on any net; coverage by site only on a coverage net. Never fatal to the report.
         coverageSiteApi.listSites(parseInt(netId))
           .then((res) => setSites(res.data))
@@ -572,6 +580,11 @@ const NetReport: React.FC = () => {
     () => computeCheckInTimeline(stats?.check_ins_timeline),
     [stats]
   );
+
+  // The check-in log: one row per station per place (utils/stationRows.ts),
+  // with every channel it had there. Every single check-in is still on the
+  // ICS-309.
+  const stationLog = groupStationRows(checkIns as any[], channelMarks);
 
   // ========== SOCIAL-MEDIA IMAGES (Export PNG) ==========
   // One row per station, first check-in first: the summary image lists who
@@ -1419,7 +1432,7 @@ const NetReport: React.FC = () => {
         <ReportSectionTitle
           sx={{ mb: 2 }}
         >
-          Check-in Log ({checkIns.length} event{checkIns.length !== 1 ? 's' : ''} &mdash; {stats.unique_callsigns} unique station{stats.unique_callsigns !== 1 ? 's' : ''}{stats.rechecks > 0 ? `, ${stats.rechecks} re-check${stats.rechecks !== 1 ? 's' : ''}` : ''})
+          Check-in Log ({stationLog.length} station{stationLog.length !== 1 ? 's' : ''}{stationLog.length !== checkIns.length ? `, ${checkIns.length} check-ins` : ''})
         </ReportSectionTitle>
 
         <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
@@ -1430,58 +1443,63 @@ const NetReport: React.FC = () => {
                 <TableCell sx={{ fontWeight: 'bold' }}>Time</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Callsign</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Location</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>{netHasSites(sites) ? 'Site / Location' : 'Location'}</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Frequency</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Channels</TableCell>
                 {logFields.length > 0 && <TableCell sx={{ fontWeight: 'bold' }}>Details</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
-              {checkIns.map((checkIn, index) => (
-                <TableRow key={checkIn.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover }, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+              {stationLog.map((group, index) => {
+                const checkIn = group.row;
+                const first = group.rows[0];
+                const place = placeChoice(checkIn);
+                return (
+                <TableRow key={group.key} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover }, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
-                    {checkInTimeText(checkIn, (at) => formatTimeWithDate(at, user?.prefer_utc || false))}
+                    {checkInTimeText(first, (at) => formatTimeWithDate(at, user?.prefer_utc || false))}
+                    {/* More than one check-in here: how many, and the last */}
+                    {group.rows.length > 1 && (
+                      <Typography component="div" variant="caption" color="text.secondary">
+                        {group.rows.length} check-ins, last {checkInTimeText(checkIn, (at) => formatTimeWithDate(at, user?.prefer_utc || false))}
+                      </Typography>
+                    )}
                   </TableCell>
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Typography variant="body2" fontWeight="medium">
-                        {checkIn.callsign}
-                      </Typography>
-                      {checkIn.is_recheck && (
-                        <span style={{ 
-                          display: 'inline-block',
-                          padding: '0 4px', 
-                          borderRadius: '8px', 
-                          backgroundColor: theme.palette.grey[400],
-                          color: '#ffffff',
-                          fontSize: '0.6rem',
-                          fontWeight: 600,
-                        }}>R</span>
-                      )}
-                    </Box>
+                    <Typography variant="body2" fontWeight="medium">{checkIn.callsign}</Typography>
                   </TableCell>
                   <TableCell>{checkIn.name || '—'}</TableCell>
-                  <TableCell sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {checkIn.location || '—'}
+                  <TableCell sx={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {place && place.startsWith('site:') ? placeChoiceLabel(place, sites) : (checkIn.location || (place ? placeChoiceLabel(place, sites) : '—'))}
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={checkIn.status} />
                   </TableCell>
+                  {/* Checked in on: plain. Listed, not worked: in brackets. Offline: struck through. */}
                   <TableCell sx={{ fontSize: '0.75rem' }}>
-                    {getFrequencyById(checkIn.frequency_id)}
+                    {group.worked.length + group.listed.length === 0 ? '—' : (
+                      [...group.worked.map((fid) => ({ fid, worked: true })), ...group.listed.map((fid) => ({ fid, worked: false }))].map(({ fid, worked }) => (
+                        <div key={fid} style={group.offline[fid] ? { textDecoration: 'line-through', opacity: 0.6 } : undefined}>
+                          {worked ? getFrequencyById(fid) : `(${getFrequencyById(fid)})`}
+                        </div>
+                      ))
+                    )}
                   </TableCell>
                   {logFields.length > 0 && (
                     <TableCell sx={{ minWidth: 180, maxWidth: 320, fontSize: '0.75rem', overflowWrap: 'anywhere' }}>
-                      {logFields.filter((column) => logColumnValue(checkIn, column)).map((column) => (
-                        <div key={column.name}>
-                          <strong>{column.label}:</strong> {logColumnValue(checkIn, column)}
-                        </div>
-                      ))}
+                      {logFields.map((column) => ({ column, value: [...group.rows].reverse().map((r) => logColumnValue(r, column)).find(Boolean) }))
+                        .filter(({ value }) => value)
+                        .map(({ column, value }) => (
+                          <div key={column.name}>
+                            <strong>{column.label}:</strong> {value}
+                          </div>
+                        ))}
                     </TableCell>
                   )}
                 </TableRow>
-              ))}
+                );
+              })}
               {checkIns.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={logFields.length > 0 ? 8 : 7} align="center">
@@ -1492,6 +1510,12 @@ const NetReport: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        {/* What the brackets and strikes in Channels mean, when any appear */}
+        {stationLog.some((g) => g.listed.length > 0 || Object.keys(g.offline).length > 0) && (
+          <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: -2, mb: 3 }}>
+            Channels in brackets were listed as reachable but not checked in on. Struck-through channels were marked offline.
+          </Typography>
+        )}
         </Box>
 
         {/* ========== SECTION 8: TOPIC OF THE WEEK (if enabled and responses exist) ========== */}

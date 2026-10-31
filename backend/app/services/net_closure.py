@@ -308,6 +308,16 @@ async def send_net_log(db: AsyncSession, net: Net) -> None:
 
     traffic_summary = await compute_net_traffic_counts(db, net_id) if net.traffic_enabled else None
 
+    # The email's check-in table: one row per station per place, with every
+    # channel it had there (services/station_rows.py). The CSV attachment and
+    # the ICS-309 keep every check-in.
+    from app.models import StationChannelMark
+    from app.services.station_rows import group_station_rows
+    channel_marks = (await db.execute(
+        select(StationChannelMark).where(StationChannelMark.net_id == net_id)
+    )).scalars().all()
+    station_groups = group_station_rows(sorted_check_ins, channel_marks)
+
     def build_log_payload(tz):
         started_at_local = to_display_tz(net.started_at, tz)
         closed_at_local = to_display_tz(net.closed_at, tz)
@@ -365,9 +375,34 @@ async def send_net_log(db: AsyncSession, net: Net) -> None:
             closed_at=closed_at_local,
         )
 
+        stations_data = []
+        for group in station_groups:
+            rows = group["rows"]
+            newest = group["row"]
+
+            def latest(read):
+                return next((v for v in (read(r) for r in reversed(rows)) if v), "")
+
+            channels = [
+                format_freq(freq_map[fid]) + (" (offline)" if fid in group["offline"] else "")
+                for fid in group["worked"] if fid in freq_map
+            ]
+            listed = [format_freq(freq_map[fid]) for fid in group["listed"] if fid in freq_map]
+            stations_data.append({
+                'time': check_in_time_for_net(rows[0], tz, started_at_local, closed_at_local),
+                'callsign': newest.callsign,
+                'check_in_count': len(rows),
+                'frequency': ", ".join(channels),
+                'frequencies': ", ".join(listed),
+                'topic_response': latest(lambda r: r.topic_response),
+                'poll_response': latest(lambda r: r.poll_response),
+                'fields': {field.name: latest(lambda r, f=field: field_value(r, f)) for field in log_fields},
+                'status': newest.status.value if newest.status else '',
+            })
+
         started_at_str = started_at_local.strftime("%Y-%m-%d %H:%M:%S") if started_at_local else "N/A"
         closed_at_str = closed_at_local.strftime("%Y-%m-%d %H:%M:%S") if closed_at_local else "N/A"
-        return check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data, ics309_rows
+        return check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data, ics309_rows, stations_data
 
     # Cache built payloads by tz key so recipients sharing a display preference
     # (the common case: everyone on UTC/no-timezone-set) don't redo the work.
@@ -457,7 +492,7 @@ async def send_net_log(db: AsyncSession, net: Net) -> None:
             # Get unsubscribe token for compliance
             unsub_token = getattr(recipient, 'unsubscribe_token', None)
 
-            check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data, ics309_rows = log_payload_for(
+            check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data, ics309_rows, stations_data = log_payload_for(
                 resolve_display_tz(recipient)
             )
 
@@ -484,6 +519,7 @@ async def send_net_log(db: AsyncSession, net: Net) -> None:
                     net_description=net.description or "",
                     ncs_name=ncs_name,
                     check_ins=check_ins_data,
+                    stations=stations_data,
                     started_at=started_at_str,
                     closed_at=closed_at_str,
                     chat_messages=chat_messages_data if chat_messages_data else None,

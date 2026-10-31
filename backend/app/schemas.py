@@ -2340,6 +2340,22 @@ class TopicHistoryUpdate(BaseModel):
 
 # ========== Can Hear (Station-to-Station Coverage) Schemas ==========
 
+class StationChannelMarkResponse(BaseModel):
+    """A channel net control marked offline at a station's place
+    (models.StationChannelMark). Open while restored_at is null."""
+    id: int
+    net_id: int
+    station_key: str
+    frequency_id: int
+    offline_at: datetime
+    offline_by_id: Optional[int] = None
+    restored_at: Optional[datetime] = None
+    restored_by_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
 class CanHearReportResponse(BaseModel):
     id: int
     net_id: int

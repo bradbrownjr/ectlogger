@@ -4,7 +4,6 @@ import {
   Autocomplete,
   Box,
   Checkbox,
-  Chip,
   IconButton,
   MenuItem,
   Select,
@@ -20,7 +19,8 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditNoteIcon from '@mui/icons-material/EditNote';
-import GroupIcon from '@mui/icons-material/Group';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import HearingIcon from '@mui/icons-material/Hearing';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
@@ -42,6 +42,9 @@ import HandRaisedIndicator from './HandRaisedIndicator';
 import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
 import { findCheckInRole, roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
 import { checkInTimeText, isLogOpen } from '../../utils/netLog';
+import { StationRow } from '../../utils/stationRows';
+import StationChannels from './StationChannels';
+import StationTimeline from './StationTimeline';
 
 // ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ==========
 // The full-featured desktop check-in table: sticky header, inline click-to-edit
@@ -60,17 +63,17 @@ interface CheckInTableProps {
   // The site's field list, for each built-in field's heading (utils/checkInFields.ts::fieldLabel).
   fieldDefinitions?: { name: string; label?: string | null }[];
   net: any;
-  filteredCheckIns: any[];
+  // One row per station per place (utils/stationRows.ts), filtered and
+  // sorted by the page. Each row's own check-ins are its timeline.
+  stationRows: StationRow<any>[];
   // Account and callsign-only roles merged (utils/stationRoles.ts).
   netRoles: StationRole[];
   ncsRoles: StationRole[];
   user: any;
   onlineUserIds: number[];
   activeSpeakerId: number | null;
-  latestCheckedInAtByCallsign: Map<string, string>;
   // Relayed By column: the net has the field on, or it's in use (utils/checkInFields.ts::isRelayedByShown)
   showRelayedBy: boolean;
-  hideDuplicates: boolean;
   canManage: boolean;
   canManageCheckIns: boolean | undefined;
   // When true, render for the popped-out floating window: no mobile-hide media
@@ -91,7 +94,6 @@ interface CheckInTableProps {
   getStatusTooltip: (status: string, checkIn?: any) => string;
   getStatusLabel: (status: string) => string;
   getNcsIcon: (checkIn: any) => string;
-  setHideDuplicates: (v: boolean) => void;
   handleDetachCheckInList: () => void;
   handlePopOutCheckInList?: () => void;
   handleStartInlineEdit: (checkIn: any, focusField?: string) => void;
@@ -101,7 +103,9 @@ interface CheckInTableProps {
   handleStatusChange: (checkInId: number, newStatus: string) => Promise<any> | void;
   handleToggleHand: (checkInId: number) => void;
   handleSetActiveSpeaker: (checkInId: number | null) => void;
-  handleDeleteCheckIn: (checkInId: number) => void;
+  handleDeleteCheckIn: (checkInId: number, groupIds?: number[]) => void;
+  // Net control marks a station's channel offline or back (StationChannels).
+  handleMarkChannel?: (checkInId: number, frequencyId: number, offline: boolean) => void;
   setProfileUserId: (userId: number | null) => void;
   // Opens the guest/accountless profile popup for a check-in with no linked
   // user_id (callsign-keyed, backed by the Contact table). Only offered to
@@ -134,15 +138,13 @@ interface CheckInTableProps {
 
 const CheckInTable: React.FC<CheckInTableProps> = ({
   net,
-  filteredCheckIns,
+  stationRows,
   netRoles,
   ncsRoles,
   user,
   onlineUserIds,
   activeSpeakerId,
-  latestCheckedInAtByCallsign,
   showRelayedBy,
-  hideDuplicates,
   canManage,
   canManageCheckIns,
   detached = false,
@@ -160,7 +162,6 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   getStatusTooltip,
   getStatusLabel,
   getNcsIcon,
-  setHideDuplicates,
   handleDetachCheckInList,
   handlePopOutCheckInList,
   handleStartInlineEdit,
@@ -171,6 +172,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   handleToggleHand,
   handleSetActiveSpeaker,
   handleDeleteCheckIn,
+  handleMarkChannel,
   setProfileUserId,
   onShowGuestProfile,
   canReportCanHear,
@@ -226,7 +228,16 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
         && isLogOpen(net) && checkIn.status !== 'checked_out',
     };
   };
-  const tableSlots = ACTION_SLOTS.filter((slot) => filteredCheckIns.some((ci) => actionSlotsFor(ci)[slot]));
+  const tableSlots = ACTION_SLOTS.filter((slot) => stationRows.some((group) => actionSlotsFor(group.row)[slot]));
+
+  // Which stations have their timeline open, by station key.
+  const [openTimelines, setOpenTimelines] = useState<Set<string>>(new Set());
+  const toggleTimeline = (key: string) => setOpenTimelines((prev) => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
+  const markChannel = canManageCheckIns && isLogOpen(net) ? handleMarkChannel : undefined;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -243,7 +254,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
       el.removeEventListener('scroll', update);
       observer.disconnect();
     };
-  }, [detached, filteredCheckIns.length]);
+  }, [detached, stationRows.length]);
 
   // Every row registers its DOM node here (cheap -- just a ref write) so
   // that when a row starts a sneak-in flash, we can check whether it's
@@ -350,14 +361,6 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 0.25 }}>
                           {canManage ? <Box component="span">Actions</Box> : <Box component="span" />}
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                            <IconButton
-                              size="small"
-                              onClick={() => setHideDuplicates(!hideDuplicates)}
-                              title={hideDuplicates ? 'Show all rows (including re-checks)' : 'Hide duplicate rows (show latest per station)'}
-                              sx={{ p: 0.25, color: hideDuplicates ? 'primary.main' : 'text.secondary' }}
-                            >
-                              <GroupIcon sx={{ fontSize: 14 }} />
-                            </IconButton>
                             {!detached && (
                               <>
                                 <IconButton
@@ -386,18 +389,22 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                  {/* Existing check-ins */}
-                  {filteredCheckIns.map((checkIn, index) => {
+                  {/* Existing check-ins: one row per station per place */}
+                  {stationRows.map((group, index) => {
+                    // The station's newest check-in here: its status, fields and actions
+                    const checkIn = group.row;
+                    const timelineOpen = openTimelines.has(group.key);
                     // Check if this station is available on the active frequency
-                    const isOnActiveFrequency = net.active_frequency_id && 
-                      checkIn.available_frequencies && 
-                      checkIn.available_frequencies.includes(net.active_frequency_id);
+                    const isOnActiveFrequency = net.active_frequency_id &&
+                      (group.worked.includes(net.active_frequency_id) || group.listed.includes(net.active_frequency_id));
                     // Get NCS color if this user is an NCS
                     const ncsColor = getNcsColor(checkIn);
                     const isNcsUser = ncsRoles.some((r: any) => roleMatchesCheckIn(r, checkIn));
                     
                     // Calculate column count for frequency chip row colspan
-                    const hasFrequencyChips = net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0;
+                    const hasFrequencyChips = net.frequencies && net.frequencies.length > 1 && group.worked.length + group.listed.length > 0;
+                    // The timeline row follows when it's open
+                    const hasSubRow = hasFrequencyChips || timelineOpen;
                     const rowSlots = actionSlotsFor(checkIn);
                     let columnCount = 5; // #, Status, Callsign, Time, Actions (merged with pop-out icon column)
                     if (net?.field_config?.name?.enabled) columnCount++;
@@ -410,12 +417,6 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     // Check if this row is being inline edited
                     const isInlineEditing = inlineEditingId === checkIn.id;
                     
-                    // Gray out rows that are not the latest for this callsign
-                    const isPriorRow = (() => {
-                      const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
-                      return latest !== undefined && checkIn.checked_in_at < latest;
-                    })();
-
                     // Row background reflects status/role state (active speaker, checked-out,
                     // away, NCS coloring, active-frequency highlight). Extracted to a resolved
                     // (non-function) value so the sticky Actions/utility cells can layer it
@@ -451,7 +452,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     // color and fading as the row above, so the two read as one check-in.
                     const subRowSx = {
                       backgroundColor: rowBgColor,
-                      opacity: isPriorRow ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
+                      opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
                       // Add left border for NCS users
                       ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
                         borderLeft: `3px solid ${ncsColor.border}`,
@@ -460,7 +461,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     const editFrequencies = isInlineEditing && net.frequencies?.length > 1 && checkIn.status !== 'in_person';
 
                     return (
-                    <React.Fragment key={checkIn.id}>
+                    <React.Fragment key={group.key}>
                     <TableRow
                       ref={(el: HTMLTableRowElement | null) => {
                         if (isInlineEditing && inlineEditRowRef && typeof inlineEditRowRef !== 'function') {
@@ -485,7 +486,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       }}
                       sx={{
                         backgroundColor: rowBgColor,
-                        opacity: isPriorRow ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
+                        opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
                         border: checkIn.id === activeSpeakerId ? 2 : 0,
                         borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
                         // Add left border for NCS users
@@ -510,11 +511,26 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           verticalAlign: 'middle',
                           whiteSpace: 'nowrap',
                           // Remove bottom border and padding if frequency chips row follows
-                          ...(hasFrequencyChips ? { border: 0, paddingBottom: 0 } : {}),
+                          ...(hasSubRow ? { border: 0, paddingBottom: 0 } : {}),
                         }
                       }}
                     >
-                      <TableCell sx={{ width: 35 }}>{index + 1}</TableCell>
+                      <TableCell sx={{ width: 35 }} onClick={group.rows.length > 1 ? (e) => e.stopPropagation() : undefined}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          {index + 1}
+                          {/* Shows when the station has checked in more than once here */}
+                          {group.rows.length > 1 && (
+                            <IconButton
+                              size="small"
+                              onClick={() => toggleTimeline(group.key)}
+                              title={timelineOpen ? 'Hide timeline' : `Show all ${group.rows.length} check-ins here`}
+                              sx={{ p: 0.25 }}
+                            >
+                              {timelineOpen ? <ExpandLessIcon sx={{ fontSize: 16 }} /> : <ExpandMoreIcon sx={{ fontSize: 16 }} />}
+                            </IconButton>
+                          )}
+                        </Box>
+                      </TableCell>
                       <TableCell sx={{ width: 75 }} onClick={(e) => e.stopPropagation()}>
                         {/* Also editable on a closed/archived net: a backfilled import or a
                             misattributed NCS/Logger role still needs correcting after the fact,
@@ -908,8 +924,8 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           ) : slot === 'delete' ? (
                             <IconButton
                               size="small"
-                              onClick={() => handleDeleteCheckIn(checkIn.id)}
-                              title="Delete check-in"
+                              onClick={() => handleDeleteCheckIn(checkIn.id, group.rows.map((r) => r.id))}
+                              title={group.rows.length > 1 ? `Delete all ${group.rows.length} check-ins here` : 'Delete check-in'}
                             >
                               <DeleteIcon fontSize="small" />
                             </IconButton>
@@ -917,9 +933,9 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                             <IconButton
                               size="small"
                               onClick={() => onOpenCanHearDialog(checkIn.id)}
-                              color={canHearReporterCheckInIds.includes(checkIn.id) ? 'info' : 'default'}
+                              color={group.rows.some((r) => canHearReporterCheckInIds.includes(r.id)) ? 'info' : 'default'}
                               title="Who can this station hear?"
-                              sx={{ opacity: canHearReporterCheckInIds.includes(checkIn.id) ? 1 : 0.4 }}
+                              sx={{ opacity: group.rows.some((r) => canHearReporterCheckInIds.includes(r.id)) ? 1 : 0.4 }}
                             >
                               <HearingIcon fontSize="small" />
                             </IconButton>
@@ -978,46 +994,42 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     {hasFrequencyChips && !editFrequencies && (
                       <TableRow sx={subRowSx}>
                         {/* One column short: the row's own Actions cell closes it below. */}
-                        <TableCell colSpan={columnCount - 1} sx={{ pt: 0, pb: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', pl: 4 }}>
-                            {checkIn.available_frequencies!.map((freqId: number) => {
-                              const freq = net.frequencies.find((f: any) => f.id === freqId);
-                              const isActive = freqId === checkIn.frequency_id;
-                              // Get NCS color for this frequency
-                              const freqNcsColor = getNcsColorForFrequency(freqId);
-                              return freq ? (
-                                <Chip 
-                                  key={freqId}
-                                  label={isActive ? `📡 ${formatFrequencyDisplay(freq)}` : formatFrequencyDisplay(freq)}
-                                  size="small"
-                                  variant="filled"
-                                  sx={{ 
-                                    height: 18, 
-                                    fontSize: '0.7rem',
-                                    // Use NCS color if available, otherwise default styling
-                                    ...(freqNcsColor ? {
-                                      backgroundColor: freqNcsColor.bg,
-                                      borderColor: freqNcsColor.border,
-                                      border: `1px solid ${freqNcsColor.border}`,
-                                      '& .MuiChip-label': {
-                                        color: freqNcsColor.text,
-                                      },
-                                    } : isActive ? {
-                                      backgroundColor: 'primary.main',
-                                      '& .MuiChip-label': { color: 'white' },
-                                    } : {
-                                      backgroundColor: 'action.selected',
-                                    }),
-                                  }}
-                                />
-                              ) : null;
-                            })}
+                        <TableCell colSpan={columnCount - 1} sx={{ pt: 0, pb: 0.5, ...(timelineOpen ? { border: 0 } : { borderBottom: 1, borderColor: 'divider' }) }}>
+                          <Box sx={{ pl: 4 }}>
+                            <StationChannels
+                              group={group}
+                              frequencies={net.frequencies}
+                              formatFrequencyDisplay={formatFrequencyDisplay}
+                              getNcsColorForFrequency={getNcsColorForFrequency}
+                              preferUtc={user?.prefer_utc || false}
+                              netStartedAt={net?.started_at}
+                              onMark={markChannel}
+                            />
                           </Box>
                         </TableCell>
                         {/* The frozen Actions column continues under the buttons, painted
                             exactly like the cell above. One cell stretched over both rows
                             was drawn in two shades on a faded row: the faded chips row is
                             its own layer and painted over the stretched cell's lower half. */}
+                        <TableCell sx={{ position: 'sticky', right: 0, zIndex: 1, ...stickyCellSx, boxShadow: stickyShadow, pt: 0, pb: 0.5, ...(timelineOpen ? { border: 0 } : { borderBottom: 1, borderColor: 'divider' }) }} />
+                      </TableRow>
+                    )}
+                    {/* ========== STATION TIMELINE: every check-in here, when opened ========== */}
+                    {timelineOpen && (
+                      <TableRow sx={subRowSx}>
+                        <TableCell colSpan={columnCount - 1} sx={{ pt: 0.5, pb: 1, borderBottom: 1, borderColor: 'divider' }}>
+                          <Box sx={{ pl: 4 }}>
+                            <StationTimeline
+                              group={group}
+                              frequencies={net.frequencies || []}
+                              formatFrequencyDisplay={formatFrequencyDisplay}
+                              getStatusLabel={getStatusLabel}
+                              preferUtc={user?.prefer_utc || false}
+                              netStartedAt={net?.started_at}
+                              onDelete={canManage ? (id) => handleDeleteCheckIn(id) : undefined}
+                            />
+                          </Box>
+                        </TableCell>
                         <TableCell sx={{ position: 'sticky', right: 0, zIndex: 1, ...stickyCellSx, boxShadow: stickyShadow, pt: 0, pb: 0.5, borderBottom: 1, borderColor: 'divider' }} />
                       </TableRow>
                     )}

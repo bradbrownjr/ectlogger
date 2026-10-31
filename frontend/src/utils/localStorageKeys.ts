@@ -11,7 +11,6 @@ export const STORAGE_KEYS = {
   SCHEDULER_VIEW_MODE: 'scheduler-view-mode',
   SCHEDULER_SORT_ORDER: 'scheduler-sort-order',
   ADMIN_SIMULATE_USER: 'admin_simulate_user',
-  CHECKIN_HIDE_DUPLICATES: 'checkin_hideDuplicates',
   CHANGELOG_LAST_READ_VERSION: 'changelog_last_read_version',
   // Training banner sessions a signed-out browser closed (ids, JSON). A
   // signed-in user's closes are saved to the account instead.

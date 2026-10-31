@@ -1,4 +1,4 @@
-import { callsignRoleApi, checkInApi, netApi, netBlockApi, netRoleApi, userApi } from '../../services/api';
+import { callsignRoleApi, channelMarkApi, checkInApi, netApi, netBlockApi, netRoleApi, userApi } from '../../services/api';
 import type { DeleteCheckInChoice } from '../../hooks/useDeleteCheckInPrompt';
 import { roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
 import api from '../../services/api';
@@ -62,14 +62,16 @@ export interface CheckInActionsDeps {
   fetchNetRoles: () => Promise<void>;
   // Confirms a delete, and for net control offers Remove and block
   // (hooks/useDeleteCheckInPrompt.tsx).
-  askDelete: (checkIn: { callsign: string }) => Promise<DeleteCheckInChoice>;
+  askDelete: (checkIn: { callsign: string }, count?: number) => Promise<DeleteCheckInChoice>;
 }
 
 export interface CheckInActions {
   handleCallsignLookup: (callsign: string) => Promise<void>;
   handleCheckIn: () => Promise<void>;
   handleStatusChange: (checkInId: number, newStatus: string) => Promise<void>;
-  handleDeleteCheckIn: (checkInId: number) => Promise<void>;
+  // groupIds: every row of one station at one place, deleted together.
+  handleDeleteCheckIn: (checkInId: number, groupIds?: number[]) => Promise<void>;
+  handleMarkChannel: (checkInId: number, frequencyId: number, offline: boolean) => Promise<void>;
   handleStartInlineEdit: (checkIn: any, focusField?: string) => void;
   handleSaveInlineEdit: () => Promise<void>;
   handleCancelInlineEdit: () => void;
@@ -307,10 +309,11 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     }
   };
 
-  const handleDeleteCheckIn = async (checkInId: number) => {
+  const handleDeleteCheckIn = async (checkInId: number, groupIds?: number[]) => {
     const checkIn = checkIns.find((ci: any) => ci.id === checkInId);
     if (!checkIn) return;
-    const choice = await askDelete(checkIn);
+    const ids = groupIds && groupIds.length > 0 ? groupIds : [checkInId];
+    const choice = await askDelete(checkIn, ids.length);
     if (!choice) return;
     try {
       if (choice === 'block') {
@@ -321,13 +324,25 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         setToastMessage(`${checkIn.callsign} removed and blocked from this net`);
         return;
       }
-      await checkInApi.delete(checkInId);
-      // Drop the row locally rather than re-reading the list; the server's
+      for (const id of ids) await checkInApi.delete(id);
+      // Drop the rows locally rather than re-reading the list; the server's
       // check_in_deleted broadcast does the same for every other client.
-      setCheckIns((prev: any[]) => prev.filter(ci => ci.id !== checkInId));
+      setCheckIns((prev: any[]) => prev.filter(ci => !ids.includes(ci.id)));
     } catch (error) {
       console.error('Failed to delete check-in:', error);
       setToastMessage(getErrorMessage(error, 'Failed to delete check-in'));
+    }
+  };
+
+  // A channel a station lost (or got back) at its place. It stays on the
+  // station's row either way (utils/stationRows.ts); the server's
+  // status_change broadcast re-reads the list for everyone, this tab included.
+  const handleMarkChannel = async (checkInId: number, frequencyId: number, offline: boolean) => {
+    try {
+      if (offline) await channelMarkApi.offline(checkInId, frequencyId);
+      else await channelMarkApi.online(checkInId, frequencyId);
+    } catch (error) {
+      setToastMessage(getErrorMessage(error, offline ? 'Failed to mark the channel offline' : 'Failed to bring the channel back'));
     }
   };
 
@@ -588,6 +603,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     handleCheckIn,
     handleStatusChange,
     handleDeleteCheckIn,
+    handleMarkChannel,
     handleStartInlineEdit,
     handleSaveInlineEdit,
     handleCancelInlineEdit,

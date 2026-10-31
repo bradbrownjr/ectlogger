@@ -4,7 +4,7 @@ summary: The net report, the PDF, the ICS-309 Communications Log, the per-sectio
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-29
+revised: 2026-10-31
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/reports-and-exports/
@@ -39,7 +39,9 @@ The ICS-309 log is the copy that leaves your group and reaches a served agency, 
   <figcaption>The report page needs no sign-in, so the link is safe to hand to anyone who needs the record. Export PNG saves a summary image and the map, ready to post.</figcaption>
 </figure>
 
-This page pulls together everything about the net into one document, in this order: check-in statistics and a map, who was at each site (if the net has [sites](/docs/net-managers/sites/)) and station-to-station coverage (if the net used it), the check-in log (with every [field](/docs/reference/check-in-fields/#in-reports-and-exports) the net used), chat, the ICS-309 log, and last, the activity log. **Export PDF** saves the whole thing as one file. The **Export PDF** button on a net's statistics page produces this same report.
+This page pulls together everything about the net into one document, in this order: check-in statistics and a map, who was at each site (if the net has [sites](/docs/net-managers/sites/)) and station-to-station coverage (if the net used it), the check-in log (one row per station per place, with every [field](/docs/reference/check-in-fields/#in-reports-and-exports) the net used), chat, the ICS-309 log, and last, the activity log. **Export PDF** saves the whole thing as one file. The **Export PDF** button on a net's statistics page produces this same report.
+
+In the check-in log, a station that checked in more than once at a place has one row, whose time reads how many check-ins it made and when the last one was. Its **Channels** column lists each channel the station checked in on, with the ones it only listed as reachable in brackets and any marked offline struck through. The ICS-309 and the CSV export still list every check-in.
 
 On screen, the report follows your light or dark setting like the rest of the app. The PDF is always in print colors on US Letter pages, and it comes out the same whether you export it from a phone or a computer, so it is ready to print either way.
 

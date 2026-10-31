@@ -40,6 +40,7 @@ from app.schemas import (
     CoverageSiteResponse, SiteCoverageResponse, SiteFileResponse,
 )
 from app.services.site_coverage import coverage_site_in_use, load_site_coverage
+from app.services.station_rows import station_row_ids
 
 router = APIRouter(prefix="/nets", tags=["coverage-sites"])
 
@@ -318,8 +319,10 @@ async def save_coverage_contacts(
     for item in payload.contacts:
         await validate_coverage_frequency(db, net, item.frequency_id)
 
+    # The station's, at its place: every row it has there (station_row_ids).
+    reporter_row_ids = await station_row_ids(db, reporter)
     existing = (await db.execute(
-        select(CoverageContact).where(CoverageContact.reporter_check_in_id == reporter.id)
+        select(CoverageContact).where(CoverageContact.reporter_check_in_id.in_(reporter_row_ids))
     )).scalars().all()
     for row in existing:
         await db.delete(row)
@@ -341,7 +344,7 @@ async def save_coverage_contacts(
     await _broadcast_coverage_changed(net_id, reporter_check_in_id=reporter.id)
 
     rows = (await db.execute(
-        select(CoverageContact).where(CoverageContact.reporter_check_in_id == reporter.id).order_by(CoverageContact.id)
+        select(CoverageContact).where(CoverageContact.reporter_check_in_id.in_(reporter_row_ids)).order_by(CoverageContact.id)
     )).scalars().all()
     return [CoverageContactResponse.model_validate(c) for c in rows]
 
@@ -392,7 +395,9 @@ async def save_coverage_access(
         if valid != set(target_ids):
             raise HTTPException(status_code=400, detail="One or more of those aren't this net's repeaters or nodes")
 
-    await db.execute(delete(CoverageAccess).where(CoverageAccess.reporter_check_in_id == reporter.id))
+    # The station's, at its place: every row it has there (station_row_ids).
+    reporter_row_ids = await station_row_ids(db, reporter)
+    await db.execute(delete(CoverageAccess).where(CoverageAccess.reporter_check_in_id.in_(reporter_row_ids)))
     now = dt.datetime.utcnow()
     for r in payload.results:
         db.add(CoverageAccess(
@@ -403,7 +408,7 @@ async def save_coverage_access(
     await db.commit()
     await _broadcast_coverage_changed(net_id, reporter_check_in_id=reporter.id)
     rows = (await db.execute(
-        select(CoverageAccess).where(CoverageAccess.reporter_check_in_id == reporter.id).order_by(CoverageAccess.id)
+        select(CoverageAccess).where(CoverageAccess.reporter_check_in_id.in_(reporter_row_ids)).order_by(CoverageAccess.id)
     )).scalars().all()
     return [CoverageAccessResponse.model_validate(a) for a in rows]
 

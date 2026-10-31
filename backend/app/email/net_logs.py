@@ -20,6 +20,7 @@ async def send_net_log(
     started_at: str, 
     closed_at: str, 
     chat_messages: list = None,
+    stations: list = None,
     log_fields: list = None,
     frequencies: list = None,
     topic_of_week_enabled: bool = False,
@@ -40,6 +41,11 @@ async def send_net_log(
     (draft/pending/relayed/delivered/cancelled/outstanding), rendered as a
     counts-only summary box -- never message content. See
     TRAFFIC-HANDLING-DESIGN.md section 3.5 ("Net log / PDF / close email").
+
+    stations: one entry per station per place (services/station_rows.py),
+    for the email's table, with every channel it had there and how many
+    check-ins. Left out, the table lists every check-in. The CSV always
+    lists every check-in.
 
     log_fields: the check-in fields this net's log shows, from
     services/check_in_columns.py::net_log_fields; each check-in dict carries
@@ -131,7 +137,7 @@ async def send_net_log(
                 <p><strong>Started:</strong> {{ started_at }}</p>
                 <p><strong>Closed:</strong> {{ closed_at }}</p>
                 {% if frequencies %}<p><strong>{{ 'Frequency' if frequencies|length == 1 else 'Frequencies' }}:</strong> {{ frequencies|join(', ')|e }}</p>{% endif %}
-                <p><strong>Total Check-ins:</strong> {{ check_in_count }}</p>
+                <p><strong>Total Check-ins:</strong> {{ check_in_count }}{% if station_count is not none and station_count != check_in_count %} from {{ station_count }} station{{ '' if station_count == 1 else 's' }}{% endif %}</p>
             </div>
 
             {% if topic_enabled and topic_prompt %}
@@ -307,18 +313,26 @@ async def send_net_log(
     # (email heading, CSV heading, value, shown in the email's table)
     several_frequencies = len(frequencies or []) > 1
     columns = [(f.label, f.label, lambda c, n=f.name: c.get('fields', {}).get(n, ''), True) for f in (log_fields or [])]
+    # A station's row lists every channel it checked in on there, and the
+    # ones it listed but wasn't worked on, so those headings say so.
     if any(c.get('frequency') for c in check_ins):
-        columns.append(("Frequency", "Frequency", lambda c: c.get('frequency', ''), several_frequencies))
+        columns.append(("Checked in on" if stations is not None else "Frequency", "Frequency",
+                        lambda c: c.get('frequency', ''), several_frequencies))
     if several_frequencies and any(c.get('frequencies') for c in check_ins):
-        columns.append(("Frequencies", "Frequencies", lambda c: c.get('frequencies', ''), True))
+        columns.append(("Also listed" if stations is not None else "Frequencies", "Frequencies",
+                        lambda c: c.get('frequencies', ''), True))
     if topic_of_week_enabled:
         columns.append(("Topic", topic_of_week_prompt or "Topic", lambda c: c.get('topic_response', ''), True))
     if poll_enabled:
         columns.append(("Poll", poll_question or "Poll", lambda c: c.get('poll_response', ''), True))
     table_columns = [column for column in columns if column[3]]
+    # One row per station per place when given, its check-in count beside
+    # the callsign; otherwise one per check-in.
     table_rows = [
-        {'time': c.get('time', ''), 'callsign': c.get('callsign', ''), 'cells': [value(c) or '' for _, _, value, _ in table_columns]}
-        for c in check_ins
+        {'time': c.get('time', ''),
+         'callsign': c.get('callsign', '') + (f" ({c['check_in_count']} check-ins)" if c.get('check_in_count', 1) > 1 else ''),
+         'cells': [value(c) or '' for _, _, value, _ in table_columns]}
+        for c in (stations if stations is not None else check_ins)
     ]
 
     # Calculate total poll responses for percentage
@@ -332,6 +346,7 @@ async def send_net_log(
         started_at=started_at,
         closed_at=closed_at,
         check_in_count=len(check_ins),
+        station_count=len(stations) if stations is not None else None,
         table_headings=[heading for heading, _, _, _ in table_columns],
         frequencies=frequencies or [],
         table_rows=table_rows,

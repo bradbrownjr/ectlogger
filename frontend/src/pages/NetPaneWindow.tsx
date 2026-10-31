@@ -38,6 +38,7 @@ import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
 import { getCheckInActions, type LookupFilled } from '../components/netview/checkInActions';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
 import { buildStaffRoleRank, compareCheckInsByRole } from '../components/netview/checkInSort';
+import { visibleStationRows } from '../utils/stationRows';
 import { activeNcsRoles, mergeStationRoles, roleMatchesCheckIn } from '../utils/stationRoles';
 import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
 import { CheckInFormState } from '../components/netview/CheckInFormDialog';
@@ -84,7 +85,6 @@ const NetPaneWindow: React.FC = () => {
   const [, setHighlightCheckIn] = useState(false);
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
   const [bulkCheckInActive, setBulkCheckInActive] = useState(false);
-  const [hideDuplicates, setHideDuplicates] = useState(false);
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
   const [inlineEditingId, setInlineEditingId] = useState<number | null>(null);
   const [inlineEditValues, setInlineEditValues] = useState<Partial<any>>({});
@@ -126,7 +126,7 @@ const NetPaneWindow: React.FC = () => {
   });
 
   const {
-    net, setNet, checkIns, setCheckIns, netRoles, callsignRoles, onlineUserIds, fieldDefinitions, owner,
+    net, setNet, checkIns, setCheckIns, channelMarks, netRoles, callsignRoles, onlineUserIds, fieldDefinitions, owner,
     pollResponses, topicResponses,
     fetchNet, fetchCheckIns, fetchNetRoles, fetchNetStats,
   } = useNetData(netId);
@@ -184,18 +184,6 @@ const NetPaneWindow: React.FC = () => {
     setBulkCheckInActive,
   });
 
-  // Must run every render (before any early return) so hook count never
-  // changes between renders — same constraint noted in NetView.tsx.
-  const latestCheckedInAtByCallsign = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const ci of checkIns) {
-      const prev = map.get(ci.callsign);
-      if (!prev || ci.checked_in_at > prev) {
-        map.set(ci.callsign, ci.checked_in_at);
-      }
-    }
-    return map;
-  }, [checkIns]);
 
   // Check-in ids that already have at least one outgoing "can hear" report -
   // must run before the early return below so hook count never changes.
@@ -443,6 +431,7 @@ const NetPaneWindow: React.FC = () => {
     handleCheckIn,
     handleStatusChange,
     handleDeleteCheckIn,
+    handleMarkChannel,
     handleStartInlineEdit,
     handleInlineFieldChange,
     handleInlineKeyDown,
@@ -458,23 +447,12 @@ const NetPaneWindow: React.FC = () => {
     fetchCheckIns, fetchNetRoles, askDelete: deletePrompt.ask,
   });
 
-  const filteredCheckIns = checkIns.filter((checkIn: any) => {
-    if (filteredFrequencyIds.length > 0) {
-      const isNcsUser = ncsRoles.some((r) => roleMatchesCheckIn(r, checkIn));
-      if (!isNcsUser) {
-        const checkInFreqs = checkIn.available_frequencies || [];
-        const hasMatchingFreq = filteredFrequencyIds.some((fid) => checkInFreqs.includes(fid));
-        if (!hasMatchingFreq) return false;
-      }
-    }
-    if (hideDuplicates) {
-      const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
-      if (latest && checkIn.checked_in_at < latest) return false;
-    }
-    return true;
-  }).sort((a: any, b: any) =>
-    compareCheckInsByRole(a, b, staffRoleRank, net?.mobile_priority_sort !== false)
-  );
+  // One row per station per place, the same list as the net page (utils/stationRows.ts).
+  const stationRows = visibleStationRows(checkIns, channelMarks, {
+    frequencyIds: filteredFrequencyIds,
+    alwaysShow: (row) => ncsRoles.some((r) => roleMatchesCheckIn(r, row)),
+    compare: (a, b) => compareCheckInsByRole(a, b, staffRoleRank, net?.mobile_priority_sort !== false),
+  });
 
   const showCheckInForm = (net.status === 'active' || net.status === 'lobby') && canManageCheckIns;
 
@@ -483,15 +461,13 @@ const NetPaneWindow: React.FC = () => {
       <CheckInTable
         detached
         net={net}
-        filteredCheckIns={filteredCheckIns}
+        stationRows={stationRows}
         netRoles={stationRoles}
         ncsRoles={ncsRoles}
         user={user}
         onlineUserIds={onlineUserIds}
         activeSpeakerId={activeSpeakerId}
-        latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
         showRelayedBy={showRelayedBy}
-        hideDuplicates={hideDuplicates}
         canManage={canManage}
         canManageCheckIns={canManageCheckIns}
         inlineEditingId={inlineEditingId}
@@ -508,7 +484,6 @@ const NetPaneWindow: React.FC = () => {
         getStatusTooltip={getStatusTooltip}
         getStatusLabel={getStatusLabel}
         getNcsIcon={getNcsIcon}
-        setHideDuplicates={setHideDuplicates}
         handleDetachCheckInList={() => {}}
         handleStartInlineEdit={handleStartInlineEdit}
         handleInlineFieldChange={handleInlineFieldChange}
@@ -518,6 +493,7 @@ const NetPaneWindow: React.FC = () => {
         handleToggleHand={handleToggleHand}
         handleSetActiveSpeaker={handleSetActiveSpeaker}
         handleDeleteCheckIn={handleDeleteCheckIn}
+        handleMarkChannel={handleMarkChannel}
         setProfileUserId={() => {}}
         canReportCanHear={canReportCanHear}
         canHearReporterCheckInIds={canHearReporterCheckInIds}

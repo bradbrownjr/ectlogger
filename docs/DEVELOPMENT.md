@@ -372,6 +372,54 @@ grid for a town costs the map no precision.
 
 ---
 
+## Stations, rechecks and logged contacts
+
+Every check-in, recheck included, is its own `CheckIn` row, because each is a
+timestamped event the ICS-309 and CSV export list. Everything that reads the
+log as stations goes through one key and one grouping:
+
+- **`services/station_place.py::station_place_key`** is `CALLSIGN|place`,
+  where place is the site (`site:<id>`), `traveling`, the operating position,
+  or else the lower-cased location. The frontend mirror is
+  `utils/stationPlace.ts::stationPlaceKey`; keep the two in step
+  (`tests/test_station_place.py`, `stationPlace.test.ts`).
+- **`services/station_rows.py::group_station_rows`** turns a net's rows into
+  one entry per key: `row` (newest), `rows` (oldest first, the timeline),
+  `worked` (channels checked in on), `listed` (`available_frequencies` not yet
+  worked) and `offline`. The check-in list, mobile list and report use the
+  mirror `utils/stationRows.ts` (`groupStationRows`, `visibleStationRows`);
+  the closing email uses the Python one. Statistics pages still count rows
+  their own way and must not be switched to this grouping.
+- **`StationChannelMark`** (migration 098) records a channel going offline for
+  a station at its place, one row per outage, with `restored_at` closing it.
+  A channel is never removed from a station, only marked
+  (`routers/channel_marks.py`, NCS/Logger while the log is open).
+- **Coverage saves are station-scoped.** Can-hear, outside contacts and
+  repeater access are reconciled across `station_row_ids(db, check_in)`, every
+  row at that station's place, so the dialog shows the same report from any
+  of them. Before this, each row kept its own set and a recheck row looked
+  empty (Known Issue #10).
+
+**A logged check-in is two-way contact.** `site_coverage.check_in_contacts`
+turns each check-in logged by someone else into a contact between the
+station's row and the logger's own row live at that moment (matched on
+`user_id == checked_in_by_id`), on the check-in's frequency. Self check-ins,
+rows with no frequency or no recorded time, and a logger with no live row are
+skipped. `station_reach` builds the directed edges from those plus can-hear
+reports, keyed by station place, and `CanHearReportResponse.two_way` /
+`two_way_by_check_in` come from it, so the coverage table, map and site
+rollup agree.
+
+**A time nobody wrote down.** While a log is held (closed with
+`log_held_since`), `CheckInCreate.checked_in_at` sets a check-in's time from a
+paper log, refused outside the net's own window. With no time the row gets
+`time_not_recorded=True` (migration 097) and the net's close as
+`checked_in_at` so it sorts last. Print its time with
+`utils.check_in_time_for_net` (backend) or `netLog.ts::checkInTimeText`; both
+print nothing for it, and time-based statistics leave it out. Tests:
+`backend/tests/test_held_log_time.py`, `test_check_in_contacts.py`,
+`test_station_rows.py`.
+
 ## Coverage by site
 
 A coverage drill with sites (an ARES SET) answers "which places can reach
@@ -384,9 +432,10 @@ each other", on top of the station-to-station `CanHearReport` rows. Migration
   primary, never a place a check-in is at, and the only type with a
   `frequency_id`. `routers/coverage_sites.py::save_coverage_sites` enforces
   all three rather than trusting the client.
-- `CheckIn.coverage_site_id`: the site is per check-in **row**, not per
-  callsign, so a team that checks out and rechecks from another shelter keeps
-  each visit's results apart. `create_check_in` fills an empty location from
+- `CheckIn.coverage_site_id`: the site is stored per check-in **row**, not
+  per callsign, so a team that checks out and rechecks from another shelter
+  keeps each visit's results apart. Results are saved per station **place**
+  (see "Stations, rechecks and logged contacts" below), not per row. `create_check_in` fills an empty location from
   `site_line()` so the station still geocodes.
 - `CoverageAccess` (one row per reporter check-in and infrastructure site:
   reached, note) and `CoverageContact` (stations reached that never checked

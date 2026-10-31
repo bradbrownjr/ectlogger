@@ -1,10 +1,10 @@
 ---
 title: Logging check-ins
-summary: Adding a station, editing a row in place, fixing a misheard callsign or a missed frequency, checking someone in in person, removing and blocking a station that shouldn't be on the net, and logging a station with no account.
+summary: Adding a station, editing a row in place, fixing a misheard callsign or a missed frequency, marking a channel offline, checking someone in in person, removing and blocking a station that shouldn't be on the net, and logging a station with no account.
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-29
+revised: 2026-10-31
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/logging-check-ins/
@@ -71,6 +71,18 @@ On a net with more than one frequency, opening a row for editing also opens two 
 
 Use them when a station was logged without the right frequency, for instance when nobody picked one at check-in. Choosing a **Checked in on** frequency adds it to **Also reachable on** as well. A net with only one frequency has nothing to choose between, so the boxes don't appear there.
 
+### A station's channels
+
+On a net with more than one frequency, each station's row has a chip for every channel it has at its place:
+
+- **Filled** means the station checked in on that channel, so it has been worked both ways.
+- **Outlined** means the station listed it under **Also reachable on** but hasn't checked in on it yet.
+- **Struck through, with a dashed edge** means net control marked it offline. Hover over it for the time.
+
+The radio icon is on the channel of the station's newest check-in.
+
+When a station loses a channel, such as a repeater going down or a radio that quit, click its chip and choose **Mark offline**. When it's back, click it again and choose **Back online**. The chat records both. A channel marked offline stays on the row, because it's still part of what happened tonight.
+
 ## Checking someone in in person
 
 Someone can be part of a net without being on the air: staff at the EOC or a shelter during an exercise or incident, who signed in at the door rather than over the radio. Give their check-in the **In person** status, a standing figure. Their row is tinted and has no frequency, so net control knows not to call them on the air. In [Bulk add](/docs/net-control/speed-entry/), end the line with `:ip`.
@@ -79,7 +91,7 @@ Changing a check-in to In person removes its frequency. Changing it back to anot
 
 ## Deleting a check-in
 
-Each row has a delete action that asks you to confirm before it removes the row. This is a real delete, not a status change, so use it for a genuine mistake (a duplicate entry, a callsign typed into the wrong net), not for a station leaving the net. A station that's done for the night should be checked out instead (see [Status, rechecks, and checking out](/docs/operators/status-and-checking-out/)), since checking out keeps their participation in the log and on the map; deleting removes the row entirely.
+Each row has a delete action that asks you to confirm before it removes the row. When the station has checked in more than once at that place, the row's delete removes all of those check-ins; to remove just one, open the row's timeline (see [Rechecks](#rechecks)) and use the delete beside that check-in. This is a real delete, not a status change, so use it for a genuine mistake (a duplicate entry, a callsign typed into the wrong net), not for a station leaving the net. A station that's done for the night should be checked out instead (see [Status, rechecks, and checking out](/docs/operators/status-and-checking-out/)), since checking out keeps their participation in the log and on the map; deleting removes the row entirely.
 
 ### Removing and blocking a station
 
@@ -116,7 +128,11 @@ If you fix a guest row's callsign, a role on it follows the correction. If the c
 
 ## Rechecks
 
-If a callsign that's already on the list checks in again, that's a **recheck**, not an error: it adds a second row rather than overwriting the first. On a net with sites, a recheck from a different site also checks the station out of the old one; see [Stations at sites](/docs/net-control/stations-at-sites/#when-a-station-moves). [Station statuses](/docs/reference/station-statuses/) covers exactly how that shows up and how to collapse duplicate rows if you'd rather see one line per callsign.
+If a callsign that's already on the list checks in again, that's a **recheck**, not an error. Each recheck is logged as its own check-in with its own time, but the list keeps one row per station per place: a station that checks in on the repeater and again on simplex from the same shelter is one row, with a chip for each channel (see [A station's channels](#a-stations-channels)).
+
+A station that has checked in more than once there has a small arrow beside its number. Click it to open the row's **timeline**: every check-in, oldest first, with the channel each was on, and any channel marked offline or back online in between.
+
+A station that moves gets a new row at its new place, and on a net with sites the old one is checked out; see [Stations at sites](/docs/net-control/stations-at-sites/#when-a-station-moves). [Station statuses](/docs/reference/station-statuses/#recheck-is-not-a-status) covers how rechecks show up.
 
 The counters at the top of the net count each callsign once, whatever its rechecks: **Checked Out** plus **Checked In** is every station that has taken part, and **Rechecks** counts the extra rows.
 

@@ -808,6 +808,29 @@ class DrillEvent(Base):
     form = relationship("Form")
 
 
+class StationChannelMark(Base):
+    """A channel a station had at one place, marked offline by net control:
+    its radio failed, the repeater went down, the operator left the HF desk.
+    The channel is never removed from the station's row (Brad, 2026-10-30:
+    "the site is still reachable there"), only greyed out with the time, and
+    can be brought back. One row per time it went offline; restored_at closes
+    it, and marking it offline again starts a new row, so the history stays.
+
+    Keyed by station_key (services/station_place.py::station_place_key), the
+    station at that place, not by check-in row: a station has a row per
+    channel it rechecked on there (migration 098)."""
+    __tablename__ = "station_channel_marks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False, index=True)
+    station_key = Column(String(200), nullable=False)
+    frequency_id = Column(Integer, ForeignKey("frequencies.id", ondelete="CASCADE"), nullable=False)
+    offline_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    offline_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    restored_at = Column(DateTime(timezone=True), nullable=True)
+    restored_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+
 class CanHearReport(Base):
     """Directional 'can hear' propagation edge: reporter_check_in can hear heard_check_in.
 

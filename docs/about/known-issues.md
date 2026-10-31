@@ -4,7 +4,7 @@ summary: Confirmed, currently open problems and limitations, with a workaround f
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-30
+revised: 2026-10-31
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/about/known-issues/
@@ -18,21 +18,12 @@ This page lists confirmed problems and limitations that are open right now, each
 
 | Problem | Who it affects | Workaround | Tracking |
 |---|---|---|---|
-| [Who can hear, from a recheck row](#who-can-hear-recheck) | Anyone recording or reading a station's "who can hear" report after that station has checked in again | Open it from the station's first check-in row | [#10](https://github.com/bradbrownjr/ectlogger/issues/10) |
 | [Google, Microsoft and GitHub sign-in](#oauth-sign-in) | Self-hosted servers whose administrator configures one of these providers | Sign in with an emailed link or a password | [#11](https://github.com/bradbrownjr/ectlogger/issues/11) |
 | [No separate switch for traffic reminder emails](#traffic-reminder-switch) | Anyone holding formal traffic who wants these reminders off but keeps other email | Turn off the main email switch | [#12](https://github.com/bradbrownjr/ectlogger/issues/12) |
 
 </div>
 
 Every row is also an open issue on GitHub, labelled [known-issue](https://github.com/bradbrownjr/ectlogger/issues?q=is%3Aopen+label%3Aknown-issue).
-
-## Who can hear, from a recheck row {#who-can-hear-recheck}
-
-When a station checks in again (a recheck), the net log gains a second row for it. If you open **Who can [callsign] hear?** from that second row (the ear icon at the end of the row, or **I hear** on the toolbar), the dialog shows only the reports saved on that row, and anything you save is stored against it. The reports saved on the station's first row don't appear, so the station can look as if it has reported nothing.
-
-**Workaround:** open the dialog from the station's first check-in row. This is tied to an open design decision about how rechecks are recorded.
-
-See [Reporting what you hear](/docs/operators/reporting-what-you-hear/) and [Station coverage](/docs/net-control/station-coverage/).
 
 ## Google, Microsoft and GitHub sign-in {#oauth-sign-in}
 

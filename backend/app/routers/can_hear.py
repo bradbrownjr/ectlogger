@@ -28,6 +28,7 @@ from app.dependencies import get_current_user, get_current_user_optional
 from app.permissions import may_record_coverage, net_access
 from app.band_utils import band_from_frequency_string
 from app.services.station_place import station_place_key
+from app.services.station_rows import station_row_ids
 from app.services.site_coverage import CheckInIn, ReportIn, parse_excluded_frequency_ids, station_reach
 
 router = APIRouter(prefix="/nets", tags=["can-hear"])
@@ -208,7 +209,12 @@ async def save_can_hear_report(
         from app.routers.check_ins import coverage_site_for_net
         await coverage_site_for_net(db, net_id, payload.coverage_site_id, current_user)
 
-    # Load existing edges for this (reporter, frequency) pair
+    # The report belongs to the station at its place, not to one check-in
+    # row: a station that rechecked on another channel there has a row per
+    # channel, and a report saved from any of them is the same station's
+    # report (known issue #10, until 2026-10-31: opening the dialog from a
+    # recheck row showed none of the reports saved on the first row).
+    reporter_row_ids = await station_row_ids(db, reporter_check_in)
     freq_filter = (
         CanHearReport.frequency_id.is_(None)
         if payload.frequency_id is None
@@ -216,26 +222,24 @@ async def save_can_hear_report(
     )
     result = await db.execute(
         select(CanHearReport).where(
-            CanHearReport.reporter_check_in_id == payload.reporter_check_in_id,
+            CanHearReport.reporter_check_in_id.in_(reporter_row_ids),
             freq_filter,
         )
     )
     existing_reports = result.scalars().all()
-    existing_by_heard_id = {r.heard_check_in_id: r for r in existing_reports}
-    existing_ids = set(existing_by_heard_id.keys())
+    existing_ids = {r.heard_check_in_id for r in existing_reports}
     incoming_ids = set(payload.heard_check_in_ids)
 
     to_insert = incoming_ids - existing_ids
-    to_delete = existing_ids - incoming_ids
-    to_touch = existing_ids & incoming_ids
 
     now = datetime.utcnow()
 
-    for heard_id in to_delete:
-        await db.delete(existing_by_heard_id[heard_id])
-
-    for heard_id in to_touch:
-        existing_by_heard_id[heard_id].reported_at = now
+    # Unticked: gone. Still ticked: reconfirmed, on whichever row holds it.
+    for report in existing_reports:
+        if report.heard_check_in_id in incoming_ids:
+            report.reported_at = now
+        else:
+            await db.delete(report)
 
     for heard_id in to_insert:
         db.add(CanHearReport(
@@ -276,7 +280,7 @@ async def save_can_hear_report(
 
     result = await db.execute(
         select(CanHearReport).where(
-            CanHearReport.reporter_check_in_id == payload.reporter_check_in_id,
+            CanHearReport.reporter_check_in_id.in_(reporter_row_ids),
             freq_filter,
         )
     )

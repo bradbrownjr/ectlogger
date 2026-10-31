@@ -24,8 +24,6 @@ It's off unless the net's manager turned on **Enable Station-to-Station Coverage
 
 ## Record a station's report
 
-If the station has rechecked, open its first check-in row; see [Known issues](/docs/about/known-issues/#who-can-hear-recheck).
-
 1. Ask the station, on the air, which stations it can hear.
 2. Click the ear icon at the end of that station's row. A solid blue ear means the station already has a report; a faded one means it doesn't yet, which makes the rows still to do easy to spot down the list.
 
