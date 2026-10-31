@@ -845,6 +845,7 @@ async def update_check_in(
         check_in.custom_fields = json.dumps(existing_custom)
     
     old_callsign = check_in.callsign
+    was_checked_out = check_in.status == StationStatus.CHECKED_OUT
 
     # The Site box: a site's name is its operating position, and a position
     # sent without a site ("Home") takes the row off any site. Same pairing
@@ -894,7 +895,17 @@ async def update_check_in(
     if 'location' in update_data:
         check_in.grid_square = live_location_for_check_in(check_in.user, check_in.location)
     
-    # When checking out, mark ALL rows for this callsign in this net as checked out
+    # When checking out, mark ALL rows for this callsign in this net as checked out.
+    # A row already out keeps its own time: it says when the station left
+    # that place. Restamping it is how net 137's W1MTW showed at Windham High
+    # School until the final 11:57 check-out, when he'd left at 09:38.
+    # The row itself gets the time too (until 2026-10-31 only its siblings
+    # did, so the row net control clicked had none), and a station put back
+    # on the air is no longer out, so a time from an earlier check-out goes.
+    if check_in.status == StationStatus.CHECKED_OUT and not was_checked_out:
+        check_in.checked_out_at = datetime.now(UTC)
+    elif check_in.status != StationStatus.CHECKED_OUT:
+        check_in.checked_out_at = None
     if check_in_update.status == StationStatus.CHECKED_OUT:
         checkout_time = check_in.checked_out_at or datetime.now(UTC)
         sibling_result = await db.execute(
@@ -902,6 +913,7 @@ async def update_check_in(
                 CheckIn.net_id == check_in.net_id,
                 CheckIn.callsign == check_in.callsign,
                 CheckIn.id != check_in.id,
+                CheckIn.status != StationStatus.CHECKED_OUT,
             )
         )
         siblings = sibling_result.scalars().all()
