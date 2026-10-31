@@ -6,6 +6,7 @@ import { getErrorMessage } from '../../utils/apiErrors';
 import { DETAIL_FIELDS, isFieldShown, withOnlyShownFields } from '../../utils/checkInFields';
 import { placeChoice } from '../../utils/stationPlace';
 import { withCheckIn } from '../../utils/checkInList';
+import { heldLogTimeToIso, isLogHeld } from '../../utils/netLog';
 
 // ========== CHECK-IN ACTIONS ==========
 // The check-in row action handlers: create/edit/delete a check-in, change
@@ -141,10 +142,21 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       // Send only the fields this net shows. The form keeps its values after
       // a failed save, so a rejected value in a hidden field would otherwise
       // block this station and every one after it.
-      const checkInData = withOnlyShownFields({
-        ...checkInForm,
+      const { held_time: heldTime, ...formValues } = checkInForm;
+      const checkInData: Record<string, any> = withOnlyShownFields({
+        ...formValues,
         custom_fields: checkInForm.custom_fields,
       }, net?.field_config);
+      // A station from a paper log, after the net closed: the time written
+      // down, or none (logged as "Not recorded").
+      if (isLogHeld(net) && heldTime) {
+        const at = heldLogTimeToIso(heldTime, net, user?.prefer_utc || false);
+        if (!at) {
+          setToastMessage('Enter the time as hours and minutes, or leave it blank if nobody wrote it down');
+          return;
+        }
+        checkInData.checked_in_at = at;
+      }
       const response = await checkInApi.create(Number(netId), checkInData);
       lookupFilledRef.current = {};
 
@@ -165,6 +177,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         topic_response: '',
         poll_response: '',
         status: 'checked_in',
+        held_time: '',
         // Reset to Standard, never NCS or Logger. This form is reused for
         // every subsequent check-in (staff logging stations by voice), so
         // leaving a role request latched here would silently promote an

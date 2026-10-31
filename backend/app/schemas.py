@@ -1165,6 +1165,11 @@ class CheckInCreate(CheckInBase):
     # the default either: 'standard' leaves any role alone, so a recheck or
     # a client that omits the field can't strip someone's role.
     self_role_choice: Optional[Literal['standard', 'participant', 'ncs', 'logger']] = 'standard'
+    # Only for a net closed to finish its log (Net.log_held_since): when the
+    # station was on the net, from a paper log. Left out, nobody recorded the
+    # time (CheckIn.time_not_recorded). Ignored on a running net, where a
+    # check-in is always stamped as it happens.
+    checked_in_at: Optional[datetime] = None
 
     # On CheckInCreate/CheckInUpdate only, never CheckInBase: CheckInResponse
     # inherits it, and a stored pre-rule value would then fail every read.
@@ -1233,6 +1238,8 @@ class CheckInResponse(CheckInBase):
     parent_check_in_id: Optional[int] = None
     checked_in_by_id: Optional[int] = None
     checked_in_at: datetime
+    # Added to a held log with no time: show "Not recorded", not checked_in_at.
+    time_not_recorded: bool = False
     checked_out_at: Optional[datetime] = None
     # Set by the server only (live_location_for_check_in), never accepted from
     # a client, so it can't disagree with the town shown in location.

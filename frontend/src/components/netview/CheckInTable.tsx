@@ -41,7 +41,7 @@ import { placeChoice, placeChoiceLabel } from '../../utils/stationPlace';
 import HandRaisedIndicator from './HandRaisedIndicator';
 import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
 import { findCheckInRole, roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
-import { isLogOpen } from '../../utils/netLog';
+import { checkInTimeText, isLogOpen } from '../../utils/netLog';
 
 // ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ==========
 // The full-featured desktop check-in table: sticky header, inline click-to-edit
@@ -848,7 +848,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                         </TableCell>
                       )}
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                        {formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}
+                        {checkInTimeText(checkIn, (at) => formatTimeWithDate(at, user?.prefer_utc || false, net?.started_at))}
                       </TableCell>
                       {/* Actions column - hand raise, active speaker and delete. Always
                           rendered (matching the header's always-present merged cell) so

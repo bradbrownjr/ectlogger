@@ -157,7 +157,7 @@ import { buildSiteBoard } from '../utils/stationPlace';
 import { SiteGroups } from '../components/netview/SitesBoard';
 import { netHasSites } from '../components/netview/SiteField';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
-import { DRAFT_LOG_NOTICE, isLogHeld } from '../utils/netLog';
+import { checkInTimeText, DRAFT_LOG_NOTICE, isLogHeld } from '../utils/netLog';
 
 // ========== INTERFACES ==========
 
@@ -214,6 +214,7 @@ interface CheckIn {
   status: string;
   is_recheck: boolean;
   checked_in_at: string;
+  time_not_recorded?: boolean;
   frequency_id?: number;
   notes?: string;
   relayed_by?: string;
@@ -1440,7 +1441,7 @@ const NetReport: React.FC = () => {
                 <TableRow key={checkIn.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover }, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
-                    {formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false)}
+                    {checkInTimeText(checkIn, (at) => formatTimeWithDate(at, user?.prefer_utc || false))}
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

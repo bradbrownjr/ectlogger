@@ -34,7 +34,7 @@ from app.services.check_in_columns import (
 from app.services.ics309_log import build_ics309_rows, get_accepted_off_net_entries
 from app.traffic.ics309 import get_ics309_muted_user_ids, get_net_traffic_log_entries
 from app.traffic.log import compute_net_traffic_counts
-from app.utils import display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
+from app.utils import check_in_time_for_net, display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ async def close_net_and_notify(
         if net.scheduled_start_time:
             net.started_at = net.scheduled_start_time
         elif net.check_ins:
-            times = [c.checked_in_at for c in net.check_ins if c.checked_in_at]
+            times = [c.checked_in_at for c in net.check_ins if c.checked_in_at and not c.time_not_recorded]
             if times:
                 net.started_at = min(times)
 
@@ -315,7 +315,7 @@ async def send_net_log(db: AsyncSession, net: Net) -> None:
         check_ins_data = []
         for check_in in sorted_check_ins:
             check_ins_data.append({
-                'time': format_time_for_net(to_display_tz(check_in.checked_in_at, tz), started_at_local, closed_at_local),
+                'time': check_in_time_for_net(check_in, tz, started_at_local, closed_at_local),
                 'callsign': check_in.callsign,
                 'name': check_in.name,
                 'location': check_in.location,

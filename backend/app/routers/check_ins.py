@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from datetime import datetime, UTC
@@ -206,6 +206,24 @@ async def _settle_frequencies(db: AsyncSession, net: Net, check_in: CheckIn, upd
         update_data['available_frequency_ids'] = available
 
 
+async def _held_log_time(db: AsyncSession, net: Net, given: Optional[datetime]) -> Optional[datetime]:
+    """When a station added to a held log was on the net, or None when
+    nobody recorded it. A time has to fall within the net: from its start
+    (or its first check-in, for a lobby that took check-ins before Go live)
+    to its close."""
+    if given is None:
+        return None
+    given = given if given.tzinfo else given.replace(tzinfo=UTC)
+    first = (await db.execute(
+        select(func.min(CheckIn.checked_in_at)).where(CheckIn.net_id == net.id, CheckIn.time_not_recorded == False)  # noqa: E712
+    )).scalar_one_or_none()
+    bounds = [t if t.tzinfo else t.replace(tzinfo=UTC) for t in (net.started_at, first) if t is not None]
+    closed = net.closed_at if net.closed_at.tzinfo else net.closed_at.replace(tzinfo=UTC)
+    if (bounds and given < min(bounds)) or given > closed:
+        raise HTTPException(status_code=400, detail="That time is outside the net. Pick a time while it ran, or leave it blank.")
+    return given
+
+
 @router.post("/nets/{net_id}/check-ins", response_model=CheckInResponse, status_code=status.HTTP_201_CREATED)
 async def create_check_in(
     net_id: int,
@@ -234,6 +252,13 @@ async def create_check_in(
         raise HTTPException(status_code=400, detail="Net is not active")
     if log_being_finished and not await check_net_permission(db, net, current_user, ["NCS", "LOGGER"]):
         raise HTTPException(status_code=403, detail="This net has closed. Net control is finishing its log.")
+
+    # A station from a paper log is logged at the time written on it, or as
+    # "Not recorded" (stamped with the net's close, so it sorts last). On a
+    # running net a check-in is always stamped as it happens.
+    held_time = await _held_log_time(db, net, check_in_data.checked_in_at) if log_being_finished else None
+    time_not_recorded = log_being_finished and held_time is None
+    logged_at = held_time or (net.closed_at if time_not_recorded else None)
 
     await _enforce_spam_guard(db, {
         'name': check_in_data.name,
@@ -415,6 +440,11 @@ async def create_check_in(
             detail=f"{check_in_data.callsign} is already checked in"
         )
 
+    # With no time recorded, nobody knows when the station moved, so the
+    # rows it already has stay as they are.
+    if time_not_recorded:
+        moved = False
+
     # Location: what was typed; else, at the same place as last time, the
     # last location; else a site's own place (so the map pin and the chat
     # message show the shelter); else, at home, the station's saved town.
@@ -471,6 +501,7 @@ async def create_check_in(
             parent_check_in_id=root_check_in.id,
             checked_in_by_id=current_user.id,
             status=status_in,
+            time_not_recorded=time_not_recorded,
         )
     else:
         location_changed = False
@@ -501,7 +532,10 @@ async def create_check_in(
             parent_check_in_id=None,
             checked_in_by_id=current_user.id,
             status=status_in,
+            time_not_recorded=time_not_recorded,
         )
+    if logged_at is not None:
+        check_in.checked_in_at = logged_at
     db.add(check_in)
 
     # Labels for the chat message, read before the moved rows change.
@@ -516,8 +550,13 @@ async def create_check_in(
         moved_to_label = place_label(
             check_in_data.coverage_site_id, check_in_data.operating_position, status_in, site_names,
         )
-        checkout_time = datetime.now(UTC)
+        # From a paper log, the station left when it was logged somewhere
+        # new, and only rows from before then are left behind.
+        checkout_time = held_time or datetime.now(UTC)
         for row in live_check_ins:
+            row_at = row.checked_in_at if row.checked_in_at.tzinfo else row.checked_in_at.replace(tzinfo=UTC)
+            if held_time is not None and row_at > held_time:
+                continue
             row.status = StationStatus.CHECKED_OUT
             row.checked_out_at = checkout_time
 
@@ -540,6 +579,8 @@ async def create_check_in(
         ci_suffix = f" (logged by {logger_cs})"
     else:
         ci_suffix = ""
+    if log_being_finished:
+        ci_suffix += " (added after the net closed)"
 
     # Post system message for check-in activity
     from app.main import post_system_message, manager as ws_manager

@@ -545,6 +545,10 @@ class CheckIn(Base):
     identity_verified_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     checked_in_at = Column(DateTime(timezone=True), server_default=func.now())
+    # A station added to a held log whose time nobody wrote down (migration
+    # 097). checked_in_at is then the net's close, so the row sorts last;
+    # reports print no time and time-based statistics leave it out.
+    time_not_recorded = Column(Boolean, nullable=False, default=False)
     checked_out_at = Column(DateTime(timezone=True))
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

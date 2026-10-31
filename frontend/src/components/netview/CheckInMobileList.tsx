@@ -27,7 +27,7 @@ import OffscreenArrivalArrow from './OffscreenArrivalArrow';
 import CheckInLocation from './CheckInLocation';
 import HandRaisedIndicator from './HandRaisedIndicator';
 import { findCheckInRole, roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
-import { isLogOpen } from '../../utils/netLog';
+import { checkInTimeText, isLogOpen } from '../../utils/netLog';
 
 // ========== CHECK-IN LIST TABLE 2: Mobile View ==========
 // The small-screen (xs only) check-in table. Intentionally simpler than the
@@ -414,7 +414,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                 {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.topic_response || ''}</TableCell>}
                 {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}
                 {showRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.relayed_by || ''}</TableCell>}
-                <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkInTimeText(checkIn, (at) => formatTimeWithDate(at, user?.prefer_utc || false, net?.started_at))}</TableCell>
                 {showActions && (
                   <TableCell
                     sx={{

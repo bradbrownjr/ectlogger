@@ -102,6 +102,7 @@ import { watchZoomAwarePopovers } from '../utils/zoomAwarePopovers';
 import { getNetActions } from '../utils/netActions';
 import { canOpenLobby, isBeforeScheduledStart } from '../utils/netStart';
 import { canArchiveNet, isLogHeld, isLogOpen, NCS_NEEDED_DETAIL } from '../utils/netLog';
+import HeldLogTimeField from '../components/netview/HeldLogTimeField';
 
 interface Frequency {
   id: number;
@@ -131,6 +132,7 @@ interface CheckIn {
   is_recheck: boolean;
   parent_check_in_id?: number;
   checked_in_at: string;
+  time_not_recorded?: boolean;
   frequency_id?: number;
   available_frequencies?: number[];
   user_id?: number;
@@ -2130,6 +2132,18 @@ const NetView: React.FC = () => {
                       the row on gaps, leaving the inputs too narrow to read */}
                   <TableRow sx={{ '& .MuiTableCell-root': { border: 0, py: 0.25, px: 0.5 } }}>
                     <TableCell>{checkIns.length + 1}</TableCell>
+                    {/* Time from a paper log, while the log is being finished after the net */}
+                    {isLogHeld(net) && (
+                      <TableCell sx={{ minWidth: 110 }}>
+                        <HeldLogTimeField
+                          value={checkInForm.held_time || ''}
+                          onChange={(held_time) => setCheckInForm({ ...checkInForm, held_time })}
+                          preferUtc={user?.prefer_utc || false}
+                          onEnter={handleCheckIn}
+                          textFieldProps={{ fullWidth: true, inputProps: { style: { fontSize: '0.875rem' } } }}
+                        />
+                      </TableCell>
+                    )}
                     {/* Callsign keeps room for a full portable call even when the row is crowded */}
                     <TableCell sx={{ minWidth: 110 }}>
                       <TextField
@@ -2430,6 +2444,16 @@ const NetView: React.FC = () => {
                 </Box>
                 <Collapse in={mobileCheckInExpanded} unmountOnExit>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {/* Time from a paper log, while the log is being finished after the net */}
+                  {isLogHeld(net) && (
+                    <HeldLogTimeField
+                      value={checkInForm.held_time || ''}
+                      onChange={(held_time) => setCheckInForm({ ...checkInForm, held_time })}
+                      preferUtc={user?.prefer_utc || false}
+                      textFieldProps={{ fullWidth: true, helperText: 'Leave blank if nobody wrote it down' }}
+                    />
+                  )}
+
                   {/* Callsign - always required */}
                   <TextField
                     size="small"

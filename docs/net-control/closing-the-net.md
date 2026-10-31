@@ -4,7 +4,7 @@ summary: What closing generates, who receives it, how to finish the log before i
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-28
+revised: 2026-10-31
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/closing-the-net/
@@ -48,7 +48,7 @@ If stations logged off-net activity that nobody has accepted yet, the dialog say
 
 A net closed with **Finish the log later** stays closed to stations while net control finishes its log:
 
-- NCS, Logger, and the net's manager can still add stations, one at a time or with **Bulk add**, and fix any check-in. A station added this way is stamped with the time you add it. To keep the times from a station's own log, **Import** it from a CSV instead.
+- NCS, Logger, and the net's manager can still add stations, one at a time or with **Bulk add**, and fix any check-in. The check-in form gains a **Time** box: type the time from the paper log, in your own time zone (or UTC, if your profile prefers it), and the station is logged then. The time has to fall while the net ran. Leave it blank when nobody wrote the time down, and the station is logged as **Not recorded**: it shows at the end of the check-in list, the ICS-309 and the closing email list it with no time, and the net's statistics leave it off the timeline. Stations added with **Bulk add** are always Not recorded. To keep every time from a station's own log, **Import** it from a CSV instead.
 - Off-net entries can still be logged and reviewed, and coverage can still be recorded.
 - Stations can't check themselves in, and chat stays closed, even if the net normally keeps chat open for a while after closing.
 - The net's page, report, and statistics are marked as a **draft copy**, noting that the log may change before net control approves and sends it. The mark appears on the report's PDF and images too.

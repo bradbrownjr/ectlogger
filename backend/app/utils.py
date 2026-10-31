@@ -296,6 +296,14 @@ def format_time_for_net(
     return timestamp.strftime("%m/%d %H:%M:%S") if is_multi_day else timestamp.strftime("%H:%M:%S")
 
 
+def check_in_time_for_net(check_in, tz: Optional[ZoneInfo], net_started_at: datetime, net_closed_at: datetime = None) -> str:
+    """A check-in's time for a log, or blank for one added to a held log
+    with no time recorded (CheckIn.time_not_recorded)."""
+    if getattr(check_in, 'time_not_recorded', False):
+        return ""
+    return format_time_for_net(to_display_tz(check_in.checked_in_at, tz), net_started_at, net_closed_at)
+
+
 def display_callsign(user) -> str:
     """Return the best available display callsign for a user.
 

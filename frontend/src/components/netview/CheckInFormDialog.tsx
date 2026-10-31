@@ -50,6 +50,9 @@ export interface CheckInFormState {
   // gets its frequency from the net (routers/check_ins.py).
   frequency_id?: number | null;
   custom_fields: Record<string, string>;
+  // "HH:MM" from a paper log, for a check-in added after the net closed
+  // (utils/netLog.ts heldLogTimeToIso). Blank means nobody recorded it.
+  held_time?: string;
   topic_response: string;
   poll_response: string;
   status: string;
