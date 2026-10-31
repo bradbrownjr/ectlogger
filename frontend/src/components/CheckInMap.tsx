@@ -17,7 +17,6 @@ import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
-import MapIcon from '@mui/icons-material/Map';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
@@ -33,6 +32,7 @@ import { useMappedCheckIns } from '../hooks/useMappedCheckIns';
 import { getCheckInMarkerColor, buildMarkerLegend } from '../utils/checkInMarkers';
 import { getStatusLabel } from './netview/checkInStatusHelpers';
 import { exportToPdf } from '../utils/pdfExport';
+import MaximizedPanel from './shared/MaximizedPanel';
 import { MAP_TILE_URL, MAP_TILE_ATTRIBUTION, getMapTileClassName } from '../utils/mapTiles';
 import type { CanHearReportEntry } from './netview/CoverageReport';
 
@@ -337,11 +337,13 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
         height: Math.min(page.height - 120, 500),
       };
     }
+    // Opens floating by default (Brad, 2026-10-31: docked, it was too
+    // squeezed to use), so big enough to read; fitted to smaller pages.
     return {
-      x: Math.max(20, page.width - 720),
+      x: Math.max(20, page.width - 920),
       y: 100,
-      width: 700,
-      height: 500,
+      width: 900,
+      height: 600,
     };
   });
 
@@ -696,6 +698,48 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     </Box>
   );
 
+  // ========== MAXIMIZED (from floating or docked) ==========
+  // The shared full-page view (shared/MaximizedPanel.tsx), the same one
+  // Station Coverage uses.
+  const mapTitle = (onBar: boolean) => (
+    <>
+      <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>📍 Check-in Map</Typography>
+      <Chip
+        label={`${mappedCheckIns.length} mapped`}
+        size="small"
+        sx={{ height: 20, ...(onBar && { bgcolor: 'rgba(255,255,255,0.2)', color: 'inherit' }) }}
+      />
+    </>
+  );
+  const pdfButton = (onBar: boolean) => (
+    <Tooltip title="Export to PDF">
+      <span>
+        <IconButton
+          size="small"
+          onClick={handleExportPdf}
+          disabled={exporting || loading}
+          sx={{ p: onBar ? 0.25 : 0.5, ...(onBar && { color: 'inherit' }) }}
+        >
+          {exporting ? <CircularProgress size={16} color="inherit" /> : <PictureAsPdfIcon fontSize="small" />}
+        </IconButton>
+      </span>
+    </Tooltip>
+  );
+  if (maximized && (open || embedded)) {
+    return (
+      <MaximizedPanel
+        title={mapTitle(true)}
+        actions={pdfButton(true)}
+        onRestore={toggleMaximize}
+        onPopOut={onPopOut}
+        onDock={onDock}
+        onClose={onClose}
+      >
+        {renderMapContent()}
+      </MaximizedPanel>
+    );
+  }
+
   if (embedded) {
     // Two callers use embedded mode: the standalone popped-out window
     // (NetPaneWindow.tsx, no onUndock - minimal chrome, just PDF export)
@@ -707,27 +751,18 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ py: 0.5, px: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'background.default', borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>📍 Check-in Map</Typography>
-            <Chip
-              label={`${mappedCheckIns.length} mapped`}
-              size="small"
-              sx={{ height: 20 }}
-            />
+            {mapTitle(false)}
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Tooltip title="Export to PDF">
-              <IconButton
-                size="small"
-                onClick={handleExportPdf}
-                disabled={exporting || loading}
-                sx={{ p: 0.5 }}
-              >
-                {exporting ? <CircularProgress size={16} /> : <PictureAsPdfIcon fontSize="small" />}
-              </IconButton>
-            </Tooltip>
+            {pdfButton(false)}
             {docked && (onDockedMinimize || onDockedRestore) && (
               <IconButton size="small" onClick={dockedMinimized ? onDockedRestore : onDockedMinimize} sx={{ p: 0.5 }} title={dockedMinimized ? 'Restore' : 'Minimize'}>
                 {dockedMinimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
+              </IconButton>
+            )}
+            {docked && (
+              <IconButton size="small" onClick={toggleMaximize} sx={{ p: 0.5 }} title="Maximize">
+                <FullscreenIcon fontSize="small" />
               </IconButton>
             )}
             {onUndock && (
@@ -753,110 +788,6 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   }
 
   if (!open) return null;
-
-  // Calculate maximized dimensions
-  const getMaximizedStyle = (): React.CSSProperties => {
-    const navbar = document.querySelector('header, nav, .MuiAppBar-root');
-    const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 48;
-    return {
-      position: 'fixed',
-      top: navbarHeight,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      width: '100vw',
-      height: `calc(100vh - ${navbarHeight}px)`,
-      zIndex: 1300,
-    };
-  };
-
-  // When maximized, render without Rnd to avoid positioning conflicts
-  if (maximized) {
-    return (
-      <div style={getMaximizedStyle()}>
-        <Paper
-          elevation={8}
-          sx={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Title bar */}
-          <Box
-            className="drag-handle"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              p: 1,
-              bgcolor: 'primary.main',
-              color: 'primary.contrastText',
-              cursor: 'default',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <MapIcon fontSize="small" />
-              <Typography variant="subtitle2">Check-In Map</Typography>
-            </Box>
-            <Box>
-              <Tooltip title="Export to PDF">
-                <IconButton 
-                  size="small" 
-                  onClick={handleExportPdf}
-                  disabled={exporting || loading}
-                  sx={{ color: 'inherit' }}
-                >
-                  {exporting ? <CircularProgress size={16} color="inherit" /> : <PictureAsPdfIcon fontSize="small" />}
-                </IconButton>
-              </Tooltip>
-              <IconButton
-                size="small"
-                onClick={toggleMaximize}
-                sx={{ color: 'inherit' }}
-                title="Restore"
-              >
-                <FullscreenExitIcon fontSize="small" />
-              </IconButton>
-              {onPopOut && (
-                <IconButton
-                  size="small"
-                  onClick={onPopOut}
-                  sx={{ color: 'inherit' }}
-                  title="Open in new window"
-                >
-                  <OpenInNewIcon fontSize="small" />
-                </IconButton>
-              )}
-              {onDock && (
-                <IconButton
-                  size="small"
-                  onClick={onDock}
-                  sx={{ color: 'inherit' }}
-                  title="Dock to layout"
-                >
-                  <ViewSidebarIcon fontSize="small" />
-                </IconButton>
-              )}
-              <IconButton
-                size="small"
-                onClick={onClose}
-                sx={{ color: 'inherit' }}
-                title="Close"
-              >
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          </Box>
-          
-          {/* Map content */}
-          {renderMapContent()}
-        </Paper>
-      </div>
-    );
-  }
 
   return (
     <Rnd

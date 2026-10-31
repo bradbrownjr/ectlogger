@@ -93,7 +93,9 @@ Below those are the **Repeaters and nodes** results by site, with their notes; a
   <figcaption>Repeater and node results keep their notes, which is what explains a failure afterward.</figcaption>
 </figure>
 
-**Export to CSV** downloads whichever view is showing.
+Each table keeps its heading row and first column in view as you scroll, so a square deep in a big grid still shows which two sites it's about. **Maximize** gives the grids the whole screen.
+
+**Export to PDF** saves whichever view is showing as pages to print or hand to the EMA, and **Export to CSV** downloads it as a spreadsheet.
 
 ## After the drill
 

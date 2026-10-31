@@ -653,8 +653,8 @@ shots:
       - hover: 'h1:visible'
       - wait: 500
     alt: >
-      The simplex drill's net page with the Station Coverage panel open on
-      the right. Each row lists a reporting station, a Two-way or One-way
+      The simplex drill's net page with the Station Coverage window open
+      over the check-in list. Each row lists a reporting station, a Two-way or One-way
       chip, the station it heard, and when. Two-way rows have a green chip
       with a double arrow; one-way rows have a grey chip with a single arrow.
     caption: >

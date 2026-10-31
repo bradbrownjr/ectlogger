@@ -782,6 +782,48 @@ Every in-page floating window (`FloatingWindow`, `MarkdownDocPanel`,
    no fitting at all: it opened 500px wide off the right edge of a phone,
    and in landscape it dropped below the page and disappeared.
 
+## A Panel Has the Same Buttons Everywhere
+
+A Net View panel can be docked, floating, maximized, or popped out into its
+own browser window, and its own buttons (filter, export, show on map) are the
+same in all four. Only the window controls change: minimize, maximize,
+detach or dock, pop out, close. Brad, 2026-10-31: Station Coverage's popped-out
+window had no buttons at all, because `NetPaneWindow.tsx` drew its own copy of
+the panel's contents, and the floating window showed the title twice.
+
+- **One component draws every mode.** `CoveragePanel` takes a `mode`
+  (`docked`, `floating`, `window`) and keeps maximized as its own state;
+  `CheckInMap` does the same with `embedded`/`onUndock`. A pop-out window
+  renders the real panel, never a hand-built copy of its contents.
+- **On a floating window the panel's buttons go on the title bar**
+  (`FloatingWindow`'s `actions`), not on a second header row under it.
+- **Maximize is `shared/MaximizedPanel.tsx`**, for the map and Coverage
+  alike, from docked or floating. It renders into `document.body`, so a docked
+  pane's `overflow: hidden` can't clip it.
+- **Map and Coverage open floating** until someone docks them: a map or a
+  coverage grid in the column beside Chat was too squeezed to use.
+
+## Frozen Tables
+
+A table someone reads across and down, like the coverage grids, keeps its
+heading row and first column in view while it scrolls (`utils/frozenTable.ts`).
+Spread `frozenTableSx(theme)` and `frozenTableProps` on the `TableContainer`.
+
+- **The table scrolls in its own box.** A sideways-scrolling table is its own
+  scroll container, so its heading can't stick to the panel's scroll. The box
+  is held to `FROZEN_TABLE_MAX_HEIGHT` of the nearest panel marked
+  `frozenPanelSx` (a CSS size container), never a fixed pixel height. Don't
+  mark a panel that has no height of its own, such as a docked pane on a
+  phone: a size container with an auto height collapses to nothing.
+- **Sticky cells are opaque.** The heading tint is drawn over the paper color.
+  A row stripe or highlight reaches the frozen first cell through
+  `frozenCellTint`, a CSS variable, because the table's own rule outranks a
+  cell's `sx`.
+- **The PDF prints it whole.** `frozenTableProps` carries
+  `data-export-unbound`, which `pdfExport.ts` uses to lift the height limit
+  and the sticky cells in the export copy.
+- Not in the net report: that is a page, and its tables already print whole.
+
 ---
 
 ## Docked Pane Width Gating

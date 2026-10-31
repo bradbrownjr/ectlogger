@@ -21,7 +21,8 @@ import Chat from '../components/Chat';
 import ActivityLog from '../components/ActivityLog';
 import CheckInMap from '../components/CheckInMap';
 import { getMarkerRoleIds } from '../utils/checkInMarkers';
-import CoverageReport from '../components/netview/CoverageReport';
+import CoveragePanel from '../components/netview/CoveragePanel';
+import { coverageFrequencyLabels, coverageFrequencyOptions } from '../utils/coverageFrequencies';
 import TrafficPanel from '../components/netview/TrafficPanel';
 import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import NetScript from '../components/NetScript';
@@ -31,7 +32,6 @@ import CheckInTable from '../components/netview/CheckInTable';
 import CanHearDialog from '../components/netview/CanHearDialog';
 import EditOwnCheckInDialog from '../components/netview/EditOwnCheckInDialog';
 import CompactDetailFields from '../components/netview/CompactDetailFields';
-import SiteCoverageView from '../components/netview/SiteCoverageView';
 import { useSiteCoverage } from '../hooks/useSiteCoverage';
 import SiteField, { netHasSites } from '../components/netview/SiteField';
 import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
@@ -105,6 +105,9 @@ const NetPaneWindow: React.FC = () => {
   // plain local toggle since there's no Coverage panel in this isolated
   // window to cross-link with (see CheckInMap.tsx's lifted-state comment).
   const [mapCoverageOverlayOn, setMapCoverageOverlayOn] = useState(false);
+  // The popped-out Coverage panel's own callsign highlight, for the same
+  // reason: there's no map beside it in this window to share it with.
+  const [coverageHighlight, setCoverageHighlight] = useState<string | null>(null);
   // Traffic composer for the popped-out Traffic pane (see NetView.tsx).
   const [fileTrafficOpen, setFileTrafficOpen] = useState(false);
   const [checkInForm, setCheckInForm] = useState<CheckInFormState>({
@@ -254,9 +257,7 @@ const NetPaneWindow: React.FC = () => {
           {...getMarkerRoleIds(netRoles)}
           embedded
           canHearReports={canHearReports}
-          frequencyLabels={Object.fromEntries(
-            (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
-          )}
+          frequencyLabels={coverageFrequencyLabels(net?.frequencies)}
           coverageOverlayOn={mapCoverageOverlayOn}
           onToggleCoverageOverlay={() => setMapCoverageOverlayOn((v) => !v)}
         />
@@ -265,25 +266,26 @@ const NetPaneWindow: React.FC = () => {
   }
 
   if (paneType === 'coverage') {
-    const paneFrequencyLabels = Object.fromEntries(
-      (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
-    );
-    const summary = siteCoverage.summary;
-    const hasSiteView = summary.nodes.some((n) => n.kind === 'site') || summary.targets.length > 0 || summary.contacts.length > 0;
+    // The same panel as in Net View, so it has the same buttons. The browser
+    // window's own controls stand in for minimize, maximize and close.
     return (
-      <Box sx={{ height: '100vh', width: '100vw', p: 0.5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-        {/* Coverage by site first on a drill with sites, then every report */}
-        {hasSiteView && (
-          <Box sx={{ mb: 2 }}>
-            <SiteCoverageView summary={summary} frequencyLabels={paneFrequencyLabels} />
-          </Box>
-        )}
-        <CoverageReport
+      <Box sx={{ height: '100vh', width: '100vw', p: 0.5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <CoveragePanel
+          mode="window"
           netId={Number(netId)}
+          netName={net.name}
           reports={canHearReports}
+          frequencyLabels={coverageFrequencyLabels(net.frequencies)}
           showFrequencyColumn={(net.frequencies || []).length > 1}
-          frequencyLabels={paneFrequencyLabels}
+          highlightedCallsign={coverageHighlight}
+          onHighlightCallsign={setCoverageHighlight}
+          netFrequencyOptions={coverageFrequencyOptions(net.frequencies)}
+          canManage={getNetActions(net, simulateRegularUser).record_coverage}
+          currentUserId={user?.id}
+          onToast={setToastMessage}
+          siteCoverage={siteCoverage.summary}
         />
+        <Snackbar open={toastMessage !== ''} autoHideDuration={6000} onClose={() => setToastMessage('')} message={toastMessage} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} />
       </Box>
     );
   }

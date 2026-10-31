@@ -85,7 +85,7 @@ For adding, editing, and correcting rows in that list, see [Logging check-ins](/
 
 ## What's docked beside the list
 
-On a wide enough screen, Chat and the Activity Log sit docked in a column beside the check-in list by default; on an ultrawide monitor, Script, Notes, and the schedule's Announcements can join a second column on the left. Every one of these panels, along with Map, Coverage, and Traffic when they're open, can be detached into a floating overlay or popped out into a genuinely separate browser window, so you can spread the desk across more than one monitor. That's its own page: [Multiple monitors and wide screens](/docs/net-control/multiple-monitors/).
+On a wide enough screen, Chat and the Activity Log sit docked in a column beside the check-in list by default; on an ultrawide monitor, Script, Notes, and the schedule's Announcements can join a second column on the left. Every one of these panels, along with Map, Coverage, and Traffic when they're open, can be detached into a floating overlay (the Map and Coverage open that way) or popped out into a genuinely separate browser window, so you can spread the desk across more than one monitor. That's its own page: [Multiple monitors and wide screens](/docs/net-control/multiple-monitors/).
 
 ## Which ones actually matter
 

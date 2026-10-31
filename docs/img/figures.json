@@ -175,7 +175,7 @@
   },
   "net-control/coverage-panel": {
     "path": "/docs/img/net-control/coverage-panel.png",
-    "alt": "The simplex drill's net page with the Station Coverage panel open on the right. Each row lists a reporting station, a Two-way or One-way chip, the station it heard, and when. Two-way rows have a green chip with a double arrow; one-way rows have a grey chip with a single arrow.\n",
+    "alt": "The simplex drill's net page with the Station Coverage window open over the check-in list. Each row lists a reporting station, a Two-way or One-way chip, the station it heard, and when. Two-way rows have a green chip with a double arrow; one-way rows have a grey chip with a single arrow.\n",
     "caption": "Two-way means both stations reported hearing each other. One-way means only one of them has said so.\n",
     "page": "/docs/net-control/station-coverage/"
   },

@@ -103,6 +103,7 @@ import { getNetActions } from '../utils/netActions';
 import { canOpenLobby, isBeforeScheduledStart } from '../utils/netStart';
 import { canArchiveNet, isLogHeld, isLogOpen, NCS_NEEDED_DETAIL } from '../utils/netLog';
 import HeldLogTimeField from '../components/netview/HeldLogTimeField';
+import { coverageFrequencyLabels } from '../utils/coverageFrequencies';
 
 interface Frequency {
   id: number;
@@ -337,8 +338,11 @@ const NetView: React.FC = () => {
   const [scriptDockedPref, setScriptDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCRIPT_DOCKED, true);
   const [announcementsDockedPref, setAnnouncementsDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_DOCKED, true);
   const [scheduleAnnouncementsDockedPref, setScheduleAnnouncementsDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_DOCKED, true);
-  const [mapDockedPref, setMapDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.MAP_DOCKED, true);
-  const [coverageDockedPref, setCoverageDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.COVERAGE_DOCKED, true);
+  // Map and Coverage open floating until someone docks them (Brad,
+  // 2026-10-31): in the right column beside Chat they were too squeezed to
+  // read, the coverage grids most of all. A saved choice still wins.
+  const [mapDockedPref, setMapDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.MAP_DOCKED, false);
+  const [coverageDockedPref, setCoverageDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.COVERAGE_DOCKED, false);
   const [trafficDockedPref, setTrafficDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.TRAFFIC_DOCKED, true);
   const scriptDocked = scriptDockedPref && isXlUp;
   const announcementsDocked = announcementsDockedPref && isXlUp;
@@ -2960,9 +2964,7 @@ const NetView: React.FC = () => {
         onPopOut={handlePopOutMap}
         onDock={handleDockMap}
         canHearReports={canHearReports}
-        frequencyLabels={Object.fromEntries(
-          (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
-        )}
+        frequencyLabels={coverageFrequencyLabels(net?.frequencies)}
         coverageOverlayOn={coverageOverlayOn}
         onToggleCoverageOverlay={handleToggleCoverageOverlay}
         highlightedCallsign={highlightedCallsign}

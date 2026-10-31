@@ -22,6 +22,7 @@ import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatTimeWithDate } from '../../utils/dateUtils';
 import useSortableTable from '../../hooks/useSortableTable';
+import { frozenTableProps, frozenTableSx, frozenCellTint } from '../../utils/frozenTable';
 
 // ========== STATION COVERAGE REPORT ==========
 // Phase 3 of the "can hear" inter-station propagation logging feature (see
@@ -101,6 +102,10 @@ interface CoverageReportProps {
   // presentational component knows about.
   canEditFrequency?: (report: CanHearReportEntry) => boolean;
   onFrequencyChange?: (reportId: number, frequencyId: number | null) => Promise<void>;
+  // In the Coverage panel: the heading row and Reporter column stay in view
+  // while the table scrolls (utils/frozenTable.ts), filling the panel's
+  // remaining height. Not in the net report.
+  frozen?: boolean;
 }
 
 // Frequency cell text: the looked-up label plus, when known, the band in
@@ -152,6 +157,7 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
   netFrequencyOptions,
   canEditFrequency,
   onFrequencyChange,
+  frozen = false,
 }) => {
   const theme = useTheme();
   const { user } = useAuth();
@@ -234,7 +240,11 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
   };
 
   return (
-    <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+    <TableContainer
+      component={Paper}
+      variant="outlined"
+      {...(frozen ? { sx: frozenTableSx(theme, { fill: true }), ...frozenTableProps } : { sx: { overflowX: 'auto' } })}
+    >
       <Table size="small">
         <TableHead>
           <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
@@ -298,11 +308,16 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
               </TableCell>
             </TableRow>
           ) : (
-            rows.map((r) => {
+            rows.map((r, index) => {
               const isHighlighted = !!highlightCallsign && (
                 r.reporter_callsign.toLowerCase() === highlightCallsign.toLowerCase() ||
                 r.heard_callsign.toLowerCase() === highlightCallsign.toLowerCase()
               );
+              // The frozen Reporter cell is opaque, so it carries the row's
+              // stripe or highlight itself rather than hiding it
+              const rowTint = isHighlighted
+                ? alpha(theme.palette.info.main, 0.16)
+                : index % 2 === 0 ? theme.palette.action.hover : null;
               return (
               <TableRow
                 key={r.id}
@@ -311,7 +326,7 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
                   ...(isHighlighted && { backgroundColor: alpha(theme.palette.info.main, 0.16) }),
                 }}
               >
-                <TableCell>
+                <TableCell sx={frozen ? frozenCellTint(rowTint) : undefined}>
                   {renderCallsign(r.reporter_callsign)}
                 </TableCell>
                 <TableCell align="center">

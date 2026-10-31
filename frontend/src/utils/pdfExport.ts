@@ -65,7 +65,11 @@ const PAPER_PX_PER_MM = PRINT_PAGE_WIDTH / (LETTER_MM.width - 20);
 //                             within this element, a color the screen uses in
 //                             place of a print color goes back to the print
 //                             color (a report accent lightened for dark mode)
+//   data-export-unbound       a box that scrolls on screen (a frozen table,
+//                             utils/frozenTable.ts) prints whole: no height
+//                             limit, no scrolling, no sticky cells
 const EXPORT_HIDE_ATTR = 'data-export-hide';
+export const EXPORT_UNBOUND_ATTR = 'data-export-unbound';
 const EXPORT_SHOW_ATTR = 'data-export-show';
 const EXPORT_COLORS_ATTR = 'data-export-colors';
 
@@ -572,6 +576,10 @@ const captureElementAsCanvas = async (
     });
     clone.querySelectorAll(`[${EXPORT_HIDE_ATTR}]`).forEach((el) => {
       (el as HTMLElement).style.display = 'none';
+    });
+    clone.querySelectorAll(`[${EXPORT_UNBOUND_ATTR}]`).forEach((el) => {
+      Object.assign((el as HTMLElement).style, { maxHeight: 'none', overflow: 'visible' });
+      el.querySelectorAll('th, td').forEach((cell) => { (cell as HTMLElement).style.position = 'static'; });
     });
     clone.querySelectorAll(`[${EXPORT_SHOW_ATTR}]`).forEach((el) => {
       (el as HTMLElement).style.display = el.getAttribute(EXPORT_SHOW_ATTR) || 'block';

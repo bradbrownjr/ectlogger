@@ -55,7 +55,7 @@ Click **Coverage** in the toolbar to open the **Station Coverage** panel. Anyone
 
 <figure>
   <img src="/docs/img/net-control/coverage-panel.png"
-       alt="The simplex drill's net page with the Station Coverage panel open on the right. Each row lists a reporting station, a Two-way or One-way chip, the station it heard, and when. Two-way rows have a green chip with a double arrow; one-way rows have a grey chip with a single arrow.">
+       alt="The simplex drill's net page with the Station Coverage window open over the check-in list. Each row lists a reporting station, a Two-way or One-way chip, the station it heard, and when. Two-way rows have a green chip with a double arrow; one-way rows have a grey chip with a single arrow.">
   <figcaption>Two-way means both stations heard each other. One-way means only one direction is known.</figcaption>
 </figure>
 
@@ -66,14 +66,16 @@ Each row is one report: the **Reporter**, a **Two-way** or **One-way** chip, the
 - **Two-way** (green, double arrow) means each station heard the other on the same frequency, from the same places. Either both reported it, or one of them checked the other in on that frequency: a check-in net control logged on the air is a two-way contact, so it counts. Hover over the chip to see when it was a check-in. A station that checked itself in through the app doesn't count, since that went over the internet.
 - **One-way** (grey, single arrow) means only one direction is known. It might be a genuinely one-way path, a big station and a small one, or it might just mean the other station hasn't been asked yet. Ask before you plan around it.
 
-The panel's own buttons, left to right:
+Coverage opens in its own window over the page, which you can drag and resize. **Maximize** fills the screen with it, and the dock button puts it in the column beside Chat instead. Its buttons are the same wherever it is:
 
 - **Search** filters the table to one callsign. It hides every other row, so clear it when you're done.
 - **Click a callsign** in the table instead to highlight that station's rows without hiding anything; it highlights the station's lines on the map overlay as well. Click it again, or the clear-highlight button, to undo it.
-- **Export to CSV** downloads exactly what the table is showing, filter included.
+- **Export to PDF** saves what the panel is showing as a page you can print or send, and **Export to CSV** downloads it as a spreadsheet, filter included.
 - **Show on map** opens the map with the coverage overlay already on.
 
-If a report was saved against the wrong frequency, staff (and the station that made it) can fix it from the **Frequency** column's dropdown without redoing the report. Like Chat and the map, the panel can be floated or popped out into its own window; see [Multiple monitors and wide screens](/docs/net-control/multiple-monitors/).
+The table's heading row and first column stay in view as you scroll down or to the right, so you can always tell which stations a row is about.
+
+If a report was saved against the wrong frequency, staff (and the station that made it) can fix it from the **Frequency** column's dropdown without redoing the report. Like Chat and the map, the panel can also be popped out into a browser window of its own, with all the same buttons; see [Multiple monitors and wide screens](/docs/net-control/multiple-monitors/).
 
 ## See it on the map
 

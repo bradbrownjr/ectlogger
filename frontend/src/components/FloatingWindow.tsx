@@ -11,6 +11,7 @@ import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import { isNetViewLayoutRemembered } from '../utils/localStorageKeys';
 import { useFloatingRect } from '../hooks/useFloatingRect';
 import { FLOATING_DRAG_CANCEL, FloatingRect, floatingPageSize } from '../utils/floatingWindow';
@@ -32,6 +33,13 @@ interface FloatingWindowProps {
   // Optional: lets a floated pane jump straight to a real popped-out window
   // without re-docking first. Only rendered when supplied.
   onPopOut?: () => void;
+  // Optional: the panel's own buttons (export, filter...), drawn on the
+  // title bar before the window controls, so a floating panel keeps the
+  // same buttons it has docked without a second header row under this one.
+  actions?: React.ReactNode;
+  // Optional: renders Maximize; the panel then shows itself in
+  // shared/MaximizedPanel.tsx instead of this window.
+  onMaximize?: () => void;
   defaultWidth?: number;
   defaultHeight?: number;
   minWidth?: number;
@@ -46,6 +54,8 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
   onAttach,
   onClose,
   onPopOut,
+  actions,
+  onMaximize,
   defaultWidth = 500,
   defaultHeight = 400,
   minWidth = 300,
@@ -178,7 +188,8 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
               (its docked pane only renders when the viewport is wide
               enough), so a floating panel with no real onClose would have
               no way to be dismissed at all. */}
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            {!isMinimized && actions}
             <IconButton
               size="small"
               onClick={() => setIsMinimized(!isMinimized)}
@@ -187,6 +198,16 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
             >
               {isMinimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
             </IconButton>
+            {onMaximize && (
+              <IconButton
+                size="small"
+                onClick={onMaximize}
+                title="Maximize"
+                sx={{ color: 'inherit', p: 0.25 }}
+              >
+                <FullscreenIcon fontSize="small" />
+              </IconButton>
+            )}
             {onPopOut && (
               <IconButton
                 size="small"
