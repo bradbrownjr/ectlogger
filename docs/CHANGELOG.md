@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-31
+revised: 2026-11-01
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -15,6 +15,18 @@ permalink: /docs/CHANGELOG/
 All notable changes to ECTLogger are documented here.
 
 ---
+
+# November 1, 2026
+
+## Improvements
+
+* **Net and Schedule: Reuse a logo** — When you edit a net or schedule, Choose Existing lets you pick a logo already on the site, so you don't have to find the original image and upload it again. When you replace a logo, you can update your other nets and schedules that still show the old one in the same step.
+
+* **Net View: Off-net on ICS-309 nets only** — The Off-net button now shows only on nets that keep an ICS-309, the one place its entries go, so club and social nets no longer carry an ARES tool they don't use.
+
+## Bug Fixes
+
+* **Net and Schedule: Past nets keep their logo** — Removing or replacing a schedule's logo no longer removes or changes the logo on nets the schedule has already run.
 
 # October 31, 2026
 

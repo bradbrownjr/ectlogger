@@ -236,6 +236,23 @@ export const netApi = {
   deleteLogo: (id: number) => api.delete(`/nets/${id}/logo`),
 };
 
+// Logo library (routers/net_logos.py): reuse a logo already on the site,
+// and pass a replaced logo on to the other nets and schedules showing it.
+export interface LogoLibraryEntry { logo_url: string; used_by: string[] }
+export interface LogoUses {
+  nets: { id: number; name: string; status: string; date: string | null }[];
+  schedules: { id: number; name: string }[];
+}
+export const logoApi = {
+  list: () => api.get<LogoLibraryEntry[]>('/logos'),
+  uses: (logoUrl: string, exclude: { netId?: number; scheduleId?: number }) =>
+    api.get<LogoUses>('/logos/uses', {
+      params: { logo_url: logoUrl, exclude_net_id: exclude.netId, exclude_schedule_id: exclude.scheduleId },
+    }),
+  apply: (logoUrl: string, netIds: number[], scheduleIds: number[]) =>
+    api.post('/logos/apply', { logo_url: logoUrl, net_ids: netIds, schedule_ids: scheduleIds }),
+};
+
 // Check-in API
 export const checkInApi = {
   create: (netId: number, data: any) => 

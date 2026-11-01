@@ -18,7 +18,10 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import ImageIcon from '@mui/icons-material/Image';
-import { netApi, templateApi } from '../services/api';
+import CollectionsIcon from '@mui/icons-material/Collections';
+import { logoApi, LogoUses, netApi, templateApi } from '../services/api';
+import LogoLibraryDialog from './logos/LogoLibraryDialog';
+import UpdateOtherLogosDialog from './logos/UpdateOtherLogosDialog';
 import { getErrorMessage } from '../utils/apiErrors';
 
 // ========== NET / SCHEDULE LOGO SECTION ==========
@@ -28,6 +31,11 @@ import { getErrorMessage } from '../utils/apiErrors';
 // /templates/{id}/logo). Square crop, same crop-dialog pattern as
 // ProfileAvatarSection.tsx, but cropShape="rect" (not "round") so a net logo
 // reads as a badge, distinct from circular user avatars.
+//
+// Choose existing picks a logo already on the site (LogoLibraryDialog). After
+// any replacement, by upload or by choosing, the manager is offered the other
+// nets and schedules they can change that still show the old logo
+// (UpdateOtherLogosDialog). See backend services/net_logos.py.
 
 // Crops to a JPEG unless the source has an alpha channel (PNG/WebP), in
 // which case it stays that same format -- JPEG has no alpha channel, so
@@ -70,6 +78,38 @@ const NetLogoSection: React.FC<NetLogoSectionProps> = ({ entityType, entityId, l
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [otherUses, setOtherUses] = useState<{ newLogoUrl: string; uses: LogoUses } | null>(null);
+
+  // A replaced logo: offer the other nets/schedules still showing the old one.
+  // Best effort -- the replacement itself has already been saved.
+  const offerToUpdateOthers = async (previous: string | null | undefined, next: string | null) => {
+    if (!previous || !next || previous === next) return;
+    try {
+      const exclude = entityType === 'net' ? { netId: entityId } : { scheduleId: entityId };
+      const { data } = await logoApi.uses(previous, exclude);
+      if (data.nets.length + data.schedules.length > 0) setOtherUses({ newLogoUrl: next, uses: data });
+    } catch {
+      /* nothing to offer */
+    }
+  };
+
+  const handleChooseExisting = async (chosen: string) => {
+    setLibraryOpen(false);
+    setError(null);
+    setUploading(true);
+    const previous = logoUrl;
+    try {
+      await logoApi.apply(chosen, entityType === 'net' ? [entityId] : [], entityType === 'template' ? [entityId] : []);
+      onLogoChange(chosen);
+      await offerToUpdateOthers(previous, chosen);
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Could not use that logo.'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -95,10 +135,12 @@ const NetLogoSection: React.FC<NetLogoSectionProps> = ({ entityType, entityId, l
     setError(null);
     setUploading(true);
     setCropDialogOpen(false);
+    const previous = logoUrl;
     try {
       const blob = await getCroppedImg(imageSrc, croppedAreaPixels, fileType);
       const response = await api.uploadLogo(entityId, blob);
       onLogoChange(response.data.logo_url ?? null);
+      await offerToUpdateOthers(previous, response.data.logo_url ?? null);
     } catch (err: any) {
       setError(getErrorMessage(err, 'Upload failed.'));
     } finally {
@@ -150,6 +192,14 @@ const NetLogoSection: React.FC<NetLogoSectionProps> = ({ entityType, entityId, l
             disabled={uploading}
           >
             {logoUrl ? 'Replace Logo' : 'Upload Logo'}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<CollectionsIcon />}
+            onClick={() => setLibraryOpen(true)}
+            disabled={uploading}
+          >
+            Choose Existing
           </Button>
           {logoUrl && (
             <Button
@@ -215,6 +265,22 @@ const NetLogoSection: React.FC<NetLogoSectionProps> = ({ entityType, entityId, l
           </Button>
         </DialogActions>
       </Dialog>
+
+      <LogoLibraryDialog
+        open={libraryOpen}
+        currentLogoUrl={logoUrl}
+        onClose={() => setLibraryOpen(false)}
+        onChoose={handleChooseExisting}
+      />
+
+      {otherUses && (
+        <UpdateOtherLogosDialog
+          open
+          newLogoUrl={otherUses.newLogoUrl}
+          uses={otherUses.uses}
+          onClose={() => setOtherUses(null)}
+        />
+      )}
     </>
   );
 };

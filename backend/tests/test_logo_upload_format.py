@@ -24,7 +24,7 @@ def _transparent_png() -> Image.Image:
 
 
 def test_transparent_png_stays_png_with_alpha(tmp_path: Path):
-    dest = save_resized_logo(_transparent_png(), tmp_path, "template-1", 256)
+    dest = save_resized_logo(_transparent_png(), tmp_path, 256)
 
     assert dest.suffix == ".png"
     saved = Image.open(dest)
@@ -37,7 +37,7 @@ def test_transparent_png_stays_png_with_alpha(tmp_path: Path):
 def test_jpeg_source_still_flattened_to_rgb(tmp_path: Path):
     img = Image.new("RGB", (300, 300), (10, 20, 30))
     img.format = "JPEG"
-    dest = save_resized_logo(img, tmp_path, "net-1", 256)
+    dest = save_resized_logo(img, tmp_path, 256)
 
     assert dest.suffix == ".jpg"
     saved = Image.open(dest)
@@ -47,18 +47,18 @@ def test_jpeg_source_still_flattened_to_rgb(tmp_path: Path):
 def test_webp_source_preserved(tmp_path: Path):
     img = _transparent_png()
     img.format = "WEBP"
-    dest = save_resized_logo(img, tmp_path, "net-2", 256)
+    dest = save_resized_logo(img, tmp_path, 256)
 
     assert dest.suffix == ".webp"
     saved = Image.open(dest)
     assert saved.getpixel((0, 0))[3] == 0
 
 
-def test_stale_file_in_different_format_is_removed(tmp_path: Path):
-    stale = tmp_path / "net-3.jpg"
-    stale.write_bytes(b"old jpeg bytes")
+def test_file_is_named_after_its_contents(tmp_path: Path):
+    first = save_resized_logo(_transparent_png(), tmp_path, 256)
+    again = save_resized_logo(_transparent_png(), tmp_path, 256)
+    other = save_resized_logo(Image.new("RGB", (300, 300), (1, 2, 3)), tmp_path, 256)
 
-    dest = save_resized_logo(_transparent_png(), tmp_path, "net-3", 256)
-
-    assert dest.suffix == ".png"
-    assert not stale.exists()
+    assert first.name.startswith("logo-")
+    assert first == again
+    assert other != first

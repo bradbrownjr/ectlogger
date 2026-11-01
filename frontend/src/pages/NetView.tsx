@@ -1537,9 +1537,11 @@ const NetView: React.FC = () => {
   // management button is gated on the flag for its own action.
   const actions = getNetActions(net, simulateRegularUser);
   const canStartNet = actions.start;
-  // Off-net log: net control staff, or a signed-in station checked in here.
-  // The server applies the same rule (routers/off_net_log.py).
-  const canUseOffNetLog = isAuthenticated && (
+  // Off-net log: net control staff, or a signed-in station checked in here,
+  // on a net that keeps an ICS-309 (the only place its entries go; an ARES
+  // tool, not for a social net -- Brad, 2026-11-01). The server applies the
+  // same rule (routers/off_net_log.py).
+  const canUseOffNetLog = isAuthenticated && !!net?.ics309_enabled && (
     actions.log_off_net || checkIns.some((ci: CheckIn) => ci.user_id === user?.id)
   );
   // Recording "who can this station hear?" for any row: NCS, Logger, Relay

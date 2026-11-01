@@ -4,7 +4,7 @@ summary: Confirmed, currently open problems and limitations, with a workaround f
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-31
+revised: 2026-11-01
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/about/known-issues/

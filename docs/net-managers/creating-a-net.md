@@ -4,7 +4,7 @@ summary: The net form field by field: frequencies, check-in fields, self check-i
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-24
+revised: 2026-11-01
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/creating-a-net/
@@ -42,6 +42,16 @@ Below that are three groups of toggles, all off by default unless a schedule alr
 - **ARES & EmComm features**: the ICS-309 Communications Log format for the closing email, station-to-station coverage logging ("can hear" reports, with a second switch, **Allow stations to self-report**, that decides whether stations can record their own or only net control can; see [Station coverage](/docs/net-control/station-coverage/)), and **Authenticated Net**, which lets Net Control or the Logger compare a checked-in station's live authenticator code against the one ECTLogger computes for their account. A station with no two-factor authentication set up simply shows as unverified rather than blocking the check-in. Assisted Traffic Handling, which sets the form types this net accepts, lives here too; see the traffic pages in [Net control](/docs/net-control/) for what staff do with it.
 
 Once the net exists, a **Net Logo** uploader appears here too. It's shown on net cards, beside the net name on the check-in page, and at the top of the net's report, and accepts PNG, JPEG, or WebP. Whichever format you upload is what gets stored, so a transparent PNG logo stays transparent.
+
+### Using a logo that's already here
+
+If your team's logo is already on another net or schedule, you don't need the original file. Click **Choose Existing** under the logo to see every logo in use on this site, each labelled with the schedules and nets that use it. Pick one and click **Use Logo**. A closed net can get a logo this way too, which is handy when you want the team's logo on a report after the net is over.
+
+A net made from a schedule starts with the schedule's logo, and keeps it. If the schedule's logo is replaced or removed later, nets that already ran keep the logo they had, so an old report never changes on its own.
+
+### Updating your other nets
+
+When you replace a logo, by uploading a new one or choosing an existing one, ECTLogger checks for your other nets and schedules that still show the old logo. If there are any, it lists them, all ticked, so you can update them in the same step. Untick any you want to leave alone, such as a past net whose report should stay as it was, then click **Update**. Click **Leave them** to change only this one. The list only includes nets and schedules you can edit.
 
 ### Net staff
 

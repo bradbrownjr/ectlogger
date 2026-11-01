@@ -17,8 +17,8 @@ ENTRY = {
 }
 
 
-async def _net(db, owner, status=NetStatus.ACTIVE) -> Net:
-    net = Net(name="SET", owner_id=owner.id, status=status)
+async def _net(db, owner, status=NetStatus.ACTIVE, ics309_enabled=True) -> Net:
+    net = Net(name="SET", owner_id=owner.id, status=status, ics309_enabled=ics309_enabled)
     db.add(net)
     await db.commit()
     await db.refresh(net)
@@ -40,6 +40,13 @@ async def test_staff_entry_is_accepted_and_names_any_station(client, db, owner):
     assert r.status_code == 201
     assert r.json()["status"] == "accepted"
     assert r.json()["from_station"] == "W1PINE"
+
+
+async def test_net_without_ics309_has_no_off_net_log(client, db, owner):
+    # An ARES tool: entries only go on the ICS-309 (Brad, 2026-11-01).
+    net = await _net(db, owner, ics309_enabled=False)
+    r = await client.post(_url(net), json=ENTRY, headers=auth_headers(owner))
+    assert r.status_code == 400
 
 
 async def test_station_must_be_checked_in(client, db, owner, other):

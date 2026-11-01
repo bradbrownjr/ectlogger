@@ -38,6 +38,7 @@ from app.schemas import (
     public_display_name,
 )
 from app.utils import NET_LOGO_DIR, save_resized_logo, user_callsigns
+from app.services.net_logos import logo_url_for, release_logo
 
 # Same limits/pattern as the net logo upload (routers/nets_core.py) and the
 # profile avatar upload (routers/users.py).
@@ -659,10 +660,15 @@ async def upload_template_logo(
     except Exception as exc:
         raise HTTPException(status_code=400, detail="Invalid or corrupt image.") from exc
 
-    dest = save_resized_logo(pil_image, NET_LOGO_DIR, f"template-{template.id}", TEMPLATE_LOGO_MAX_DIM)
+    dest = save_resized_logo(pil_image, NET_LOGO_DIR, TEMPLATE_LOGO_MAX_DIM)
 
-    template.logo_url = f"/api/net-logos/{dest.name}"
+    # Nets already made from this schedule keep the logo they had: they point
+    # at the old file, which release_logo leaves in place while they do.
+    previous = template.logo_url
+    template.logo_url = logo_url_for(dest)
     await db.commit()
+    if previous != template.logo_url:
+        await release_logo(db, previous)
     result = await db.execute(
         select(NetTemplate)
         .options(selectinload(NetTemplate.frequencies), selectinload(NetTemplate.fifth_week_user))
@@ -686,10 +692,12 @@ async def delete_template_logo(
     if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to update this template")
 
-    for existing in NET_LOGO_DIR.glob(f"template-{template.id}.*"):
-        existing.unlink()
+    # Nets already made from this schedule still point at this file, so it
+    # is only deleted once nothing does (services/net_logos.py).
+    previous = template.logo_url
     template.logo_url = None
     await db.commit()
+    await release_logo(db, previous)
     result = await db.execute(
         select(NetTemplate)
         .options(selectinload(NetTemplate.frequencies), selectinload(NetTemplate.fifth_week_user))

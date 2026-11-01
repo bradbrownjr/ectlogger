@@ -50,6 +50,7 @@ from app.schemas import (
 )
 from app.services.net_closure import close_net_and_notify, compute_auto_close_at, schedule_net_log
 from app.utils import NET_LOGO_DIR, display_callsign, save_resized_logo
+from app.services.net_logos import logo_url_for, release_logo
 from app.services.ncs_attribution import load_ncs_attribution, net_ncs_attribution
 
 # Same limits as the profile avatar upload (routers/users.py) -- square,
@@ -512,10 +513,13 @@ async def upload_net_logo(
     except Exception as exc:
         raise HTTPException(status_code=400, detail="Invalid or corrupt image.") from exc
 
-    dest = save_resized_logo(pil_image, NET_LOGO_DIR, f"net-{net.id}", NET_LOGO_MAX_DIM)
+    dest = save_resized_logo(pil_image, NET_LOGO_DIR, NET_LOGO_MAX_DIM)
 
-    net.logo_url = f"/api/net-logos/{dest.name}"
+    previous = net.logo_url
+    net.logo_url = logo_url_for(dest)
     await db.commit()
+    if previous != net.logo_url:
+        await release_logo(db, previous)
     await db.refresh(net, ['frequencies'])
     return NetResponse.from_orm(net)
 
@@ -534,10 +538,12 @@ async def delete_net_logo(
     if not may_edit_net(await net_access(db, net, current_user)):
         raise HTTPException(status_code=403, detail="Not authorized to update this net")
 
-    for existing in NET_LOGO_DIR.glob(f"net-{net.id}.*"):
-        existing.unlink()
+    # The file may be shared with other nets and schedules (services/net_logos.py),
+    # so it is only deleted once nothing else points at it.
+    previous = net.logo_url
     net.logo_url = None
     await db.commit()
+    await release_logo(db, previous)
     await db.refresh(net, ['frequencies'])
     return NetResponse.from_orm(net)
 
