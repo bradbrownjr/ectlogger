@@ -3,6 +3,7 @@
 import hashlib
 import json
 import re
+from io import BytesIO
 from datetime import datetime, timezone as dt_timezone
 from pathlib import Path
 from typing import Optional
@@ -36,7 +37,7 @@ _LOGO_FORMATS = {
 }
 
 
-def save_resized_logo(pil_image: Image.Image, dest_dir: Path, base_name: str, max_dim: int) -> Path:
+def save_resized_logo(pil_image: Image.Image, dest_dir: Path, max_dim: int) -> Path:
     """Resize an uploaded net/schedule logo and save it back in the format
     it was uploaded in, rather than normalizing every upload to JPEG.
 
@@ -48,9 +49,14 @@ def save_resized_logo(pil_image: Image.Image, dest_dir: Path, base_name: str, ma
     source is still flattened to RGB; PNG/WebP sources keep whatever
     transparency they arrived with.
 
-    Deletes any stale file left by a previous upload in a different format
-    (e.g. an old net-12.jpg after net-12.png replaces it) so switching
-    formats never leaves an orphaned file behind.
+    The file is named after its own contents (``logo-<sha256 prefix>.<ext>``),
+    never after the net or schedule it was uploaded to. Several nets and
+    schedules share one logo file (every net made from a schedule points at
+    the schedule's), so a file named ``template-11.jpg`` was overwritten or
+    deleted under every past net from that schedule whenever its manager
+    changed the logo. A content-named file never changes once written, and
+    services/net_logos.py::release_logo deletes it only when nothing points
+    at it any more. Uploading the same image twice yields the same file.
     """
     # Capture format before exif_transpose: when it actually rotates pixels
     # (portrait phone photos with an EXIF orientation tag), it returns a new
@@ -70,12 +76,14 @@ def save_resized_logo(pil_image: Image.Image, dest_dir: Path, base_name: str, ma
 
     pil_image.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
 
-    for stale in dest_dir.glob(f"{base_name}.*"):
-        stale.unlink()
-
-    dest = dest_dir / f"{base_name}.{ext}"
+    buffer = BytesIO()
     save_kwargs = {"quality": 90} if save_format == "JPEG" else {}
-    pil_image.save(str(dest), format=save_format, **save_kwargs)
+    pil_image.save(buffer, format=save_format, **save_kwargs)
+    data = buffer.getvalue()
+
+    dest = dest_dir / f"logo-{hashlib.sha256(data).hexdigest()[:20]}.{ext}"
+    if not dest.exists():
+        dest.write_bytes(data)
     return dest
 
 

@@ -3586,3 +3586,42 @@ class TrainingSessionResponse(BaseModel):
     # The signed-in viewer closed this session's banner. Always False for a
     # guest, whose browser remembers it instead.
     banner_dismissed: bool = False
+
+
+# ========== NET AND SCHEDULE LOGO LIBRARY (routers/net_logos.py) ==========
+
+class LogoLibraryEntry(BaseModel):
+    """One logo already on the site, with the schedules and nets using it."""
+    logo_url: str
+    used_by: List[str]
+
+
+class LogoUseNet(BaseModel):
+    id: int
+    name: str
+    status: NetStatus
+    date: Optional[datetime] = None  # started_at, else scheduled_start_time
+
+
+class LogoUseSchedule(BaseModel):
+    id: int
+    name: str
+
+
+class LogoUses(BaseModel):
+    """Nets and schedules the viewer may change that show one logo."""
+    nets: List[LogoUseNet]
+    schedules: List[LogoUseSchedule]
+
+
+class LogoApplyRequest(BaseModel):
+    """Point these nets and schedules at a logo already in use."""
+    logo_url: str = Field(..., max_length=500)
+    net_ids: List[int] = Field(default_factory=list, max_length=500)
+    schedule_ids: List[int] = Field(default_factory=list, max_length=500)
+
+
+class LogoApplyResponse(BaseModel):
+    logo_url: str
+    updated_nets: int
+    updated_schedules: int

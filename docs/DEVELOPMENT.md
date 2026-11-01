@@ -289,6 +289,37 @@ behind it:
 
 ---
 
+## Net and schedule logos
+
+Logo files live in `backend/data/net_logos/` and are served at `/api/net-logos/`.
+`utils.save_resized_logo` names each upload after its contents
+(`logo-<sha256 prefix>.<ext>`), never after the net or schedule it was uploaded
+to, and never writes over an existing file. A file is shared freely: every net
+made from a schedule starts with the schedule's `logo_url`, and **Choose
+Existing** points a net or schedule at any logo already in use.
+
+So a file is deleted only through `services/net_logos.py::release_logo`, after
+the change that dropped a reference is committed, and only when no `Net` or
+`NetTemplate` still points at it. Never `unlink` a logo by name or glob. Until
+2026-11-01 files were named `net-{id}.*` / `template-{id}.*` and removed by glob
+on replace or remove, which deleted or overwrote the logo under every past net
+from that schedule. Files from before then keep their old names and follow the
+same rule.
+
+`routers/net_logos.py`:
+
+- `GET /logos` - the library: one entry per distinct image (grouped by file
+  bytes, so an old `net-81.png` and `template-10.png` holding one image show
+  once), labelled with the schedules, then the nets, using it. Signed in only.
+  Every logo is listed whoever manages it; they are already public on cards.
+- `GET /logos/uses?logo_url=` - nets and schedules the caller may edit that show
+  that logo, for the "update your other nets" prompt after a replacement.
+- `POST /logos/apply` - set a logo **already in use** on a list of nets and
+  schedules. All or nothing (403 if any one isn't editable). Refusing a URL
+  nothing uses keeps it from pointing a net at an arbitrary file or address.
+
+Tests: `backend/tests/test_logo_library.py`, `test_logo_upload_format.py`.
+
 ## Who is credited as NCS
 
 `services/ncs_attribution.py::load_ncs_rows` is the only answer to "who ran
