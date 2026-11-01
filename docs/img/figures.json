@@ -589,7 +589,7 @@
   },
   "operators/status-select-dropdown": {
     "path": "/docs/img/operators/status-select-dropdown.png",
-    "alt": "A check-in row's status dropdown open, listing Checked in, Listening, Relay, Away, Has traffic, Announcements, Mobile, and Checked out.\n",
+    "alt": "A check-in row's status dropdown open, listing Checked in, Listening, Relay, Away, Has traffic, Announcements, Mobile, In person, and Checked out.\n",
     "caption": "Every status is one dropdown away, on your own row.",
     "page": "/docs/operators/status-and-checking-out/"
   },
