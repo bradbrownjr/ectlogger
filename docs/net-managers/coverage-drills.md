@@ -4,7 +4,7 @@ summary: Setting up a drill that tests where you can reach, not who, such as an 
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-10-31
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/coverage-drills/
@@ -47,7 +47,7 @@ Add each one as a site of type **Repeater or node**. Instead of a star it has an
 
 ### Checking stations in at their sites
 
-Net control picks each station's site in the check-in form's **Site** box, and a station that moves to another site is checked in again there, which checks it out of the first. [Stations at sites](/docs/net-control/stations-at-sites/) covers both. Each check-in keeps its own site and its own results, so what a team reached from the first shelter stays with the first shelter. Leave **Hide duplicate rows** off while the drill runs so both visits stay in view.
+Net control picks each station's site in the check-in form's **Site** box, and a station that moves to another site is checked in again there, which checks it out of the first. [Stations at sites](/docs/net-control/stations-at-sites/) covers both. The list keeps one row for the station at each site, and what a team reached from the first shelter stays with the first shelter's row.
 
 ### Recording what a site reached
 
@@ -72,7 +72,7 @@ Open **Coverage** in the toolbar. On a net with sites it opens on **By site**; *
 
 **Reaching the primary sites** checks every site against each starred office:
 
-- **Two-way** - both places heard each other on one frequency.
+- **Two-way** - both places heard each other on one frequency. A check-in counts: when net control at one site checks in a station at another on a frequency, the two sites have worked each other there, as of wherever net control was checked in at that moment.
 - **Through a relay** - no direct path, but both heard the same third station or site both ways. The station or site that bridges them is named underneath.
 - **One-way only** - only one of the two has heard the other.
 - **No path** - nothing reported either way. Before reading it as a gap, check the site was actually asked.
@@ -93,7 +93,9 @@ Below those are the **Repeaters and nodes** results by site, with their notes; a
   <figcaption>Repeater and node results keep their notes, which is what explains a failure afterward.</figcaption>
 </figure>
 
-**Export to CSV** downloads whichever view is showing.
+Each table keeps its heading row and first column in view as you scroll, so a square deep in a big grid still shows which two sites it's about. **Maximize** gives the grids the whole screen.
+
+**Export to PDF** saves whichever view is showing as pages to print or hand to the EMA, and **Export to CSV** downloads it as a spreadsheet.
 
 ## After the drill
 

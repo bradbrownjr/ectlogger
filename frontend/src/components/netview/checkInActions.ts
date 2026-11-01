@@ -1,4 +1,4 @@
-import { callsignRoleApi, checkInApi, netApi, netBlockApi, netRoleApi, userApi } from '../../services/api';
+import { callsignRoleApi, channelMarkApi, checkInApi, netApi, netBlockApi, netRoleApi, userApi } from '../../services/api';
 import type { DeleteCheckInChoice } from '../../hooks/useDeleteCheckInPrompt';
 import { roleMatchesCheckIn, StationRole } from '../../utils/stationRoles';
 import api from '../../services/api';
@@ -6,6 +6,7 @@ import { getErrorMessage } from '../../utils/apiErrors';
 import { DETAIL_FIELDS, isFieldShown, withOnlyShownFields } from '../../utils/checkInFields';
 import { placeChoice } from '../../utils/stationPlace';
 import { withCheckIn } from '../../utils/checkInList';
+import { heldLogTimeToIso, isLogHeld } from '../../utils/netLog';
 
 // ========== CHECK-IN ACTIONS ==========
 // The check-in row action handlers: create/edit/delete a check-in, change
@@ -61,14 +62,16 @@ export interface CheckInActionsDeps {
   fetchNetRoles: () => Promise<void>;
   // Confirms a delete, and for net control offers Remove and block
   // (hooks/useDeleteCheckInPrompt.tsx).
-  askDelete: (checkIn: { callsign: string }) => Promise<DeleteCheckInChoice>;
+  askDelete: (checkIn: { callsign: string }, count?: number) => Promise<DeleteCheckInChoice>;
 }
 
 export interface CheckInActions {
   handleCallsignLookup: (callsign: string) => Promise<void>;
   handleCheckIn: () => Promise<void>;
   handleStatusChange: (checkInId: number, newStatus: string) => Promise<void>;
-  handleDeleteCheckIn: (checkInId: number) => Promise<void>;
+  // groupIds: every row of one station at one place, deleted together.
+  handleDeleteCheckIn: (checkInId: number, groupIds?: number[]) => Promise<void>;
+  handleMarkChannel: (checkInId: number, frequencyId: number, offline: boolean) => Promise<void>;
   handleStartInlineEdit: (checkIn: any, focusField?: string) => void;
   handleSaveInlineEdit: () => Promise<void>;
   handleCancelInlineEdit: () => void;
@@ -141,10 +144,21 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       // Send only the fields this net shows. The form keeps its values after
       // a failed save, so a rejected value in a hidden field would otherwise
       // block this station and every one after it.
-      const checkInData = withOnlyShownFields({
-        ...checkInForm,
+      const { held_time: heldTime, ...formValues } = checkInForm;
+      const checkInData: Record<string, any> = withOnlyShownFields({
+        ...formValues,
         custom_fields: checkInForm.custom_fields,
       }, net?.field_config);
+      // A station from a paper log, after the net closed: the time written
+      // down, or none (logged as "Not recorded").
+      if (isLogHeld(net) && heldTime) {
+        const at = heldLogTimeToIso(heldTime, net, user?.prefer_utc || false);
+        if (!at) {
+          setToastMessage('Enter the time as hours and minutes, or leave it blank if nobody wrote it down');
+          return;
+        }
+        checkInData.checked_in_at = at;
+      }
       const response = await checkInApi.create(Number(netId), checkInData);
       lookupFilledRef.current = {};
 
@@ -165,6 +179,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         topic_response: '',
         poll_response: '',
         status: 'checked_in',
+        held_time: '',
         // Reset to Standard, never NCS or Logger. This form is reused for
         // every subsequent check-in (staff logging stations by voice), so
         // leaving a role request latched here would silently promote an
@@ -294,10 +309,11 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     }
   };
 
-  const handleDeleteCheckIn = async (checkInId: number) => {
+  const handleDeleteCheckIn = async (checkInId: number, groupIds?: number[]) => {
     const checkIn = checkIns.find((ci: any) => ci.id === checkInId);
     if (!checkIn) return;
-    const choice = await askDelete(checkIn);
+    const ids = groupIds && groupIds.length > 0 ? groupIds : [checkInId];
+    const choice = await askDelete(checkIn, ids.length);
     if (!choice) return;
     try {
       if (choice === 'block') {
@@ -308,13 +324,25 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         setToastMessage(`${checkIn.callsign} removed and blocked from this net`);
         return;
       }
-      await checkInApi.delete(checkInId);
-      // Drop the row locally rather than re-reading the list; the server's
+      for (const id of ids) await checkInApi.delete(id);
+      // Drop the rows locally rather than re-reading the list; the server's
       // check_in_deleted broadcast does the same for every other client.
-      setCheckIns((prev: any[]) => prev.filter(ci => ci.id !== checkInId));
+      setCheckIns((prev: any[]) => prev.filter(ci => !ids.includes(ci.id)));
     } catch (error) {
       console.error('Failed to delete check-in:', error);
       setToastMessage(getErrorMessage(error, 'Failed to delete check-in'));
+    }
+  };
+
+  // A channel a station lost (or got back) at its place. It stays on the
+  // station's row either way (utils/stationRows.ts); the server's
+  // status_change broadcast re-reads the list for everyone, this tab included.
+  const handleMarkChannel = async (checkInId: number, frequencyId: number, offline: boolean) => {
+    try {
+      if (offline) await channelMarkApi.offline(checkInId, frequencyId);
+      else await channelMarkApi.online(checkInId, frequencyId);
+    } catch (error) {
+      setToastMessage(getErrorMessage(error, offline ? 'Failed to mark the channel offline' : 'Failed to bring the channel back'));
     }
   };
 
@@ -575,6 +603,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     handleCheckIn,
     handleStatusChange,
     handleDeleteCheckIn,
+    handleMarkChannel,
     handleStartInlineEdit,
     handleSaveInlineEdit,
     handleCancelInlineEdit,

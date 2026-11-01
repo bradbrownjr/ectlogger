@@ -706,6 +706,7 @@ class NetActions(BaseModel):
     log_off_net: bool = False        # Off-net log: add for any station, no review
     review_off_net_log: bool = False # Off-net log: accept, reject, edit any entry
     block_station: bool = False      # Remove and block a station from the net
+    prepare_ics214: bool = False     # ICS-214: open, edit and download (closed nets)
 
 
 class NetResponse(NetBase):
@@ -1165,6 +1166,11 @@ class CheckInCreate(CheckInBase):
     # the default either: 'standard' leaves any role alone, so a recheck or
     # a client that omits the field can't strip someone's role.
     self_role_choice: Optional[Literal['standard', 'participant', 'ncs', 'logger']] = 'standard'
+    # Only for a net closed to finish its log (Net.log_held_since): when the
+    # station was on the net, from a paper log. Left out, nobody recorded the
+    # time (CheckIn.time_not_recorded). Ignored on a running net, where a
+    # check-in is always stamped as it happens.
+    checked_in_at: Optional[datetime] = None
 
     # On CheckInCreate/CheckInUpdate only, never CheckInBase: CheckInResponse
     # inherits it, and a stored pre-rule value would then fail every read.
@@ -1233,6 +1239,8 @@ class CheckInResponse(CheckInBase):
     parent_check_in_id: Optional[int] = None
     checked_in_by_id: Optional[int] = None
     checked_in_at: datetime
+    # Added to a held log with no time: show "Not recorded", not checked_in_at.
+    time_not_recorded: bool = False
     checked_out_at: Optional[datetime] = None
     # Set by the server only (live_location_for_check_in), never accepted from
     # a client, so it can't disagree with the town shown in location.
@@ -2333,6 +2341,90 @@ class TopicHistoryUpdate(BaseModel):
 
 # ========== Can Hear (Station-to-Station Coverage) Schemas ==========
 
+# ========== ICS-214 ACTIVITY LOG (routers/ics214.py) ==========
+
+class Ics214Header(BaseModel):
+    """Blocks 1-5 and 8 of the ICS-214. On save, a value equal to its
+    default is stored as the default, so the form follows later fixes."""
+    incident_name: str = Field("", max_length=200)
+    period_from: Optional[datetime] = None
+    period_to: Optional[datetime] = None
+    unit_name: str = Field("", max_length=200)
+    leader: str = Field("", max_length=200)
+    home_agency: str = Field("", max_length=200)
+    prepared_name: str = Field("", max_length=200)
+    prepared_position: str = Field("", max_length=200)
+
+
+class Ics214Line(BaseModel):
+    key: str
+    at: Optional[datetime] = None   # None: no time was recorded
+    text: str
+    default_text: str
+    kind: str                       # net, role, station, channel, traffic, entry
+    hidden: bool = False
+    entry_id: Optional[int] = None  # a line written by hand (ActivityEntry)
+
+
+class Ics214Resource(BaseModel):
+    key: str
+    callsign: str
+    name: str
+    default_name: str
+    position: str
+    default_position: str
+    agency: str = ""
+    hidden: bool = False
+
+
+class Ics214Response(BaseModel):
+    header: Ics214Header
+    defaults: Ics214Header
+    resources: List[Ics214Resource]
+    lines: List[Ics214Line]
+    # The net has a drill plan: every page is marked EXERCISE
+    exercise: bool = False
+
+
+class Ics214LineEdit(BaseModel):
+    hidden: bool = False
+    text: Optional[str] = Field(None, max_length=2000)
+
+
+class Ics214ResourceEdit(BaseModel):
+    hidden: bool = False
+    name: Optional[str] = Field(None, max_length=200)
+    position: Optional[str] = Field(None, max_length=200)
+    agency: Optional[str] = Field(None, max_length=200)
+
+
+class Ics214Save(BaseModel):
+    header: Ics214Header
+    line_edits: Dict[str, Ics214LineEdit] = {}
+    resource_edits: Dict[str, Ics214ResourceEdit] = {}
+
+
+class ActivityEntryWrite(BaseModel):
+    occurred_at: datetime
+    text: str = Field(..., min_length=1, max_length=2000)
+
+
+class StationChannelMarkResponse(BaseModel):
+    """A channel net control marked offline at a station's place
+    (models.StationChannelMark). Open while restored_at is null."""
+    id: int
+    net_id: int
+    station_key: str
+    frequency_id: int
+    offline_at: datetime
+    offline_by_id: Optional[int] = None
+    restored_at: Optional[datetime] = None
+    restored_by_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
 class CanHearReportResponse(BaseModel):
     id: int
     net_id: int
@@ -2348,6 +2440,12 @@ class CanHearReportResponse(BaseModel):
     band: Optional[str] = None
     reported_by_user_id: Optional[int] = None
     reported_at: datetime
+    # The other station heard this one back on the same frequency, from the
+    # same places (site_coverage.station_reach): it reported so, or one of
+    # them logged the other's check-in, which is a two-way contact.
+    two_way: bool = False
+    # Two-way only because of a logged check-in, not a second report.
+    two_way_by_check_in: bool = False
 
     class Config:
         from_attributes = True

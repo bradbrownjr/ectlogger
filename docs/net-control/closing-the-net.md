@@ -4,7 +4,7 @@ summary: What closing generates, who receives it, how to finish the log before i
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-28
+revised: 2026-10-31
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/closing-the-net/
@@ -41,14 +41,14 @@ If stations logged off-net activity that nobody has accepted yet, the dialog say
 
 - A system message posts to the net's chat noting it closed.
 - Unless you chose **Finish the log later**, a log email goes out to the net's manager (if they've opted in), anyone explicitly subscribed to this schedule, and every active NCS, Logger, and Relay who actually worked this specific occurrence and hasn't opted out. Running a net is enough to get a copy of its own log, even without a separate subscription.
-- If the net has **ICS-309** turned on, that email uses the formal ICS-309 log format and folds in any traffic logged on the net as metadata rows (never the message text itself), plus the net's accepted off-net log entries; otherwise it's a plain net-log email. A recipient with their own preference for ICS-309 gets that format regardless of the net's own setting.
+- If the net has **ICS-309** turned on, that email uses the formal ICS-309 log format and folds in any traffic logged on the net as metadata rows (never the message text itself), plus the net's accepted off-net log entries; otherwise it's a plain net-log email, which lists one row per station per place with how many times it checked in there, and attaches a spreadsheet of every check-in. A recipient with their own preference for ICS-309 gets that format regardless of the net's own setting.
 - Formal traffic filed on the net isn't touched by closing it. Forms keep whatever disposition their own chain of custody says, and you can keep logging handoffs against them after the net closes. See [Handling traffic](/docs/net-control/handling-traffic/).
 
 ## Finishing the log later
 
 A net closed with **Finish the log later** stays closed to stations while net control finishes its log:
 
-- NCS, Logger, and the net's manager can still add stations, one at a time or with **Bulk add**, and fix any check-in. A station added this way is stamped with the time you add it. To keep the times from a station's own log, **Import** it from a CSV instead.
+- NCS, Logger, and the net's manager can still add stations, one at a time or with **Bulk add**, and fix any check-in. The check-in form gains a **Time** box: type the time from the paper log, in your own time zone (or UTC, if your profile prefers it), and the station is logged then. The time has to fall while the net ran. Leave it blank when nobody wrote the time down, and the station is logged as **Not recorded**: it shows at the end of the check-in list, the ICS-309 and the closing email list it with no time, and the net's statistics leave it off the timeline. Stations added with **Bulk add** are always Not recorded. To keep every time from a station's own log, **Import** it from a CSV instead.
 - Off-net entries can still be logged and reviewed, and coverage can still be recorded.
 - Stations can't check themselves in, and chat stays closed, even if the net normally keeps chat open for a while after closing.
 - The net's page, report, and statistics are marked as a **draft copy**, noting that the log may change before net control approves and sends it. The mark appears on the report's PDF and images too.
@@ -59,13 +59,15 @@ When the log is complete, click **Send the log** on the banner at the top of the
 
 ## After closing
 
-Once a net is closed, its exports become available to **anyone who can see the net**, not just staff. Export (CSV), ICS-309, ICS-309 PDF, and the full Report are all open to any viewer, participant included, and to a visitor who isn't signed in. For a visitor, email addresses and phone numbers typed into notes and other free-text fields are hidden, the same as on the check-in list, and the ICS-309 leaves out the off-net log.
+Once a net is closed, the toolbar's **Reports** menu opens its report and logs to **anyone who can see the net**, not just staff. **Net report**, **ICS-309 PDF**, **ICS-309 CSV**, and **Check-ins CSV** are open to any viewer, participant included, and to a visitor who isn't signed in. For a visitor, email addresses and phone numbers typed into notes and other free-text fields are hidden, the same as on the check-in list, and the ICS-309 leaves out the off-net log.
 
 <figure>
   <img src="/docs/img/net-control/closed-net-exports.png"
-       alt="The toolbar on a closed net, as seen by a station with no staff role: Export, ICS-309, ICS-309 PDF, and Report.">
-  <figcaption>Once a net is closed, its exports are open to anyone who can see the net; only Archive and Delete stay staff-only.</figcaption>
+       alt="The Reports menu open on a closed net, as seen by a station with no staff role: Net report, ICS-309 PDF, ICS-309 CSV, and Check-ins CSV.">
+  <figcaption>Once a net is closed, its report and logs are open to anyone who can see the net; only Archive and Delete stay staff-only.</figcaption>
 </figure>
+
+Net control, meaning NCS, Logger, and the net's managers, also get **ICS-214** in the menu: the net's Activity Log, filled in from what was logged, for you to finish and download. See [The ICS-214 activity log](/docs/net-control/ics-214/).
 
 **Archive** and **Delete** stay restricted to staff. Right after closing, or after you send a held log, a reminder appears offering to archive the net. Archiving hides it from the active dashboard while keeping every check-in, chat message, statistic, and report intact and fully searchable in the Archived Nets list, and it can be undone at any time with Unarchive. Deleting is the one genuinely permanent option here: it removes the net and everything in it, including its statistics. The net drops out of the schedule's statistics and leaderboards and out of every operator's activity history, and its report and ICS-309 can't be produced again. Nobody can bring it back, not even an admin, and the confirmation says so before anything happens. The net's manager, an admin, an active NCS, and the schedule's manager or co-managers can delete a draft, closed, or archived net.
 

@@ -21,6 +21,7 @@ import 'leaflet/dist/leaflet.css';
 import { COVERAGE_ONE_WAY_COLOR, COVERAGE_TWO_WAY_COLOR, FitBounds } from '../CheckInMap';
 import { useMappedCheckIns } from '../../hooks/useMappedCheckIns';
 import { MAP_TILE_ATTRIBUTION, MAP_TILE_URL, getMapTileClassName } from '../../utils/mapTiles';
+import { frozenTableProps, frozenTableSx } from '../../utils/frozenTable';
 import {
   REACH_STATUS_LABELS,
   ReachStatus,
@@ -53,6 +54,10 @@ interface SiteCoverageViewProps {
   // Report PDF/PNG export: light map tiles, no interactive frequency filter.
   exporting?: boolean;
   showMap?: boolean;
+  // In the Coverage panel: each table keeps its heading row and first column
+  // in view while it scrolls (utils/frozenTable.ts). Not in the net report,
+  // which is a page, not a scrolling panel.
+  frozen?: boolean;
 }
 
 const ACCESS_REACHED_COLOR = '#2e7d32';
@@ -122,8 +127,9 @@ const NodeName: React.FC<{ node: SiteCoverageNode | undefined }> = ({ node }) =>
   );
 };
 
-const SiteCoverageView: React.FC<SiteCoverageViewProps> = ({ summary, frequencyLabels, exporting = false, showMap = true }) => {
+const SiteCoverageView: React.FC<SiteCoverageViewProps> = ({ summary, frequencyLabels, exporting = false, showMap = true, frozen = false }) => {
   const theme = useTheme();
+  const tableBox = frozen ? { sx: frozenTableSx(theme), ...frozenTableProps } : { sx: { overflowX: 'auto' } };
   const nodesByKey = useMemo(() => new Map(summary.nodes.map((n) => [n.key, n])), [summary.nodes]);
   const siteNodes = summary.nodes.filter((n) => n.kind === 'site');
   const primaries = siteNodes.filter((n) => n.is_primary);
@@ -198,7 +204,7 @@ const SiteCoverageView: React.FC<SiteCoverageViewProps> = ({ summary, frequencyL
       {primaries.length > 0 && (
         <>
           <SectionTitle>Reaching the primary sites</SectionTitle>
-          <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+          <TableContainer component={Paper} variant="outlined" {...tableBox}>
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
@@ -248,7 +254,7 @@ const SiteCoverageView: React.FC<SiteCoverageViewProps> = ({ summary, frequencyL
           <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
             Each square lists the frequencies the row heard the column on. ⇄ means they heard each other.
           </Typography>
-          <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+          <TableContainer component={Paper} variant="outlined" {...tableBox}>
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
@@ -298,7 +304,7 @@ const SiteCoverageView: React.FC<SiteCoverageViewProps> = ({ summary, frequencyL
       {summary.targets.length > 0 && (
         <>
           <SectionTitle>Repeaters and nodes</SectionTitle>
-          <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+          <TableContainer component={Paper} variant="outlined" {...tableBox}>
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
@@ -352,10 +358,13 @@ const SiteCoverageView: React.FC<SiteCoverageViewProps> = ({ summary, frequencyL
       {/* ========== MAP OF SITES ========== */}
       {showMap && !placing && (mapped.length > 0 || mappedTargets.length > 0) && (
         <>
+          {/* Heading and map never cut across two PDF pages (the Coverage
+              panel's export) */}
+          <Box data-pdf-avoid-break>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
             <SectionTitle>Map</SectionTitle>
             {!exporting && linkFrequencies.length > 1 && (
-              <FormControl size="small" sx={{ minWidth: 180 }}>
+              <FormControl size="small" sx={{ minWidth: 180 }} data-export-hide>
                 <Select
                   value={mapFrequency === 'all' ? 'all' : String(mapFrequency)}
                   onChange={(e) => setMapFrequency(e.target.value === 'all' ? 'all' : Number(e.target.value))}
@@ -401,6 +410,7 @@ const SiteCoverageView: React.FC<SiteCoverageViewProps> = ({ summary, frequencyL
               ))}
             </MapContainer>
           </Box>
+          </Box>
           <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
             Solid amber: heard each other. Dashed grey: heard one way.
             {summary.access.length > 0 ? ' Green: got into the repeater or node. Red dotted: couldn’t.' : ''}
@@ -417,7 +427,7 @@ const SiteCoverageView: React.FC<SiteCoverageViewProps> = ({ summary, frequencyL
       {summary.counties.length > 0 && (
         <>
           <SectionTitle>Counties reached</SectionTitle>
-          <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+          <TableContainer component={Paper} variant="outlined" {...tableBox}>
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
@@ -444,7 +454,7 @@ const SiteCoverageView: React.FC<SiteCoverageViewProps> = ({ summary, frequencyL
       {summary.contacts.length > 0 && (
         <>
           <SectionTitle>Contacts outside the net</SectionTitle>
-          <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+          <TableContainer component={Paper} variant="outlined" {...tableBox}>
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>

@@ -4,7 +4,7 @@ summary: Running a live net as Net Control, Logger, or Relay, from the first che
 kind: Explanation
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-10-31
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/
@@ -56,6 +56,8 @@ Two things are worth doing once, in advance, rather than discovering mid-net:
 **[Multiple monitors and wide screens](/docs/net-control/multiple-monitors/)** — Detaching and popping out the check-in list, chat, and activity log, and docking the script and map on a wide screen.
 
 **[Closing the net](/docs/net-control/closing-the-net/)** — Closing out, what gets generated, who receives it, and what to do if you closed one by mistake.
+
+**[The ICS-214 activity log](/docs/net-control/ics-214/)** — The form ECTLogger fills in from a closed net's log: what goes on it, adding what happened off the air, and downloading it.
 
 ## Not here
 

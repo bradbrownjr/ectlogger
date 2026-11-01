@@ -372,6 +372,95 @@ grid for a town costs the map no precision.
 
 ---
 
+## Stations, rechecks and logged contacts
+
+Every check-in, recheck included, is its own `CheckIn` row, because each is a
+timestamped event the ICS-309 and CSV export list. Everything that reads the
+log as stations goes through one key and one grouping:
+
+- **`services/station_place.py::station_place_key`** is `CALLSIGN|place`,
+  where place is the site (`site:<id>`), `traveling`, the operating position,
+  or else the lower-cased location. The frontend mirror is
+  `utils/stationPlace.ts::stationPlaceKey`; keep the two in step
+  (`tests/test_station_place.py`, `stationPlace.test.ts`).
+- **`services/station_rows.py::group_station_rows`** turns a net's rows into
+  one entry per key: `row` (newest), `rows` (oldest first, the timeline),
+  `worked` (channels checked in on), `listed` (`available_frequencies` not yet
+  worked) and `offline`. The check-in list, mobile list and report use the
+  mirror `utils/stationRows.ts` (`groupStationRows`, `visibleStationRows`);
+  the closing email uses the Python one. Statistics pages still count rows
+  their own way and must not be switched to this grouping.
+- **`StationChannelMark`** (migration 098) records a channel going offline for
+  a station at its place, one row per outage, with `restored_at` closing it.
+  A channel is never removed from a station, only marked
+  (`routers/channel_marks.py`, NCS/Logger while the log is open).
+- **Coverage saves are station-scoped.** Can-hear, outside contacts and
+  repeater access are reconciled across `station_row_ids(db, check_in)`, every
+  row at that station's place, so the dialog shows the same report from any
+  of them. Before this, each row kept its own set and a recheck row looked
+  empty (Known Issue #10).
+
+**A logged check-in is two-way contact.** `site_coverage.check_in_contacts`
+turns each check-in logged by someone else into a contact between the
+station's row and the logger's own row live at that moment (matched on
+`user_id == checked_in_by_id`), on the check-in's frequency. Self check-ins,
+rows with no frequency or no recorded time, and a logger with no live row are
+skipped. `station_reach` builds the directed edges from those plus can-hear
+reports, keyed by station place, and `CanHearReportResponse.two_way` /
+`two_way_by_check_in` come from it, so the coverage table, map and site
+rollup agree.
+
+**A time nobody wrote down.** While a log is held (closed with
+`log_held_since`), `CheckInCreate.checked_in_at` sets a check-in's time from a
+paper log, refused outside the net's own window. With no time the row gets
+`time_not_recorded=True` (migration 097) and the net's close as
+`checked_in_at` so it sorts last. Print its time with
+`utils.check_in_time_for_net` (backend) or `netLog.ts::checkInTimeText`; both
+print nothing for it, and time-based statistics leave it out.
+
+**In person is remembered.** `CheckIn.in_person` (migration 099) is set from
+status by the model's `@validates('status')` hook: In person sets it, Checked
+out keeps it, anything else clears it. Checking out overwrites `status`, and
+"no frequency" also matches radio check-ins logged without one (net 10 has
+dozens), so neither can stand in for it. `build_ics309_rows` skips these rows;
+they still count as taking part everywhere else. Tests:
+`backend/tests/test_held_log_time.py`, `test_checkin_frequency_edit.py`, `test_check_in_contacts.py`,
+`test_station_rows.py`.
+
+## ICS-214 activity log
+
+A closed net's ICS-214 (`/nets/:netId/ics214`, `pages/Ics214.tsx`) is
+rendered from what was logged, every time it is read, by
+`services/ics214.py`: `build_activity_lines` (block 7) and
+`build_resources` (block 6), pure functions over plain values
+(`tests/test_ics214.py`). **Never generate a line from a roster, the
+rotation or a plan** (ROADMAP "Do not manufacture entries"); a new line kind
+needs a logged event behind it. Station lines come from
+`group_station_rows`, so they follow the same station-and-place rule as the
+check-in list; the wording is "on the air from", never "arrived".
+
+What's stored is only what net control changed: `Ics214Form` (migration
+100), one per net, holds the header blocks (null = the default
+`routers/ics214.py::_defaults` works out, so a fixed start time or exercise
+name still reaches the form) and JSON edit maps keyed by each line's `key`
+(`station:<row id>`, `out:<row id>`, `mark:<id>:off`, `role:<id>`,
+`traffic:<id>`, ...). Keep those keys stable: changing one orphans every
+saved edit. Lines written by hand are `ActivityEntry` rows, which the
+Incident Log will reuse, so `net_id` is optional. Deleting one writes
+`net.activity_entry_deleted`. Access is `permissions.may_prepare_ics214`
+(= `may_close_net`), surfaced as `NetActions.prepare_ics214`, and only on a
+closed or archived net.
+
+The PDF is drawn by `components/ics214/ICS214PrintView.tsx`, which lays out
+its own pages: a measuring pass renders every block and row once,
+`utils/ics214.ts::splitPages` splits the rows, and each page is
+`PRINT_PAGE_HEIGHT` tall so continuation pages repeat blocks 1, 2 and 8 as
+FEMA's continuation sheet does. `utils/pdfExport.ts::exportPagesToPdf`
+captures one image per `[data-pdf-page]`; slicing one tall capture (the other
+exports) can't repeat a header. A net with a drill plan prints the shared
+`ExerciseMarking` at the top and bottom of every page. Recording which copy
+was handed to an agency is the Incident Log's job, not this page's.
+
 ## Coverage by site
 
 A coverage drill with sites (an ARES SET) answers "which places can reach
@@ -384,9 +473,10 @@ each other", on top of the station-to-station `CanHearReport` rows. Migration
   primary, never a place a check-in is at, and the only type with a
   `frequency_id`. `routers/coverage_sites.py::save_coverage_sites` enforces
   all three rather than trusting the client.
-- `CheckIn.coverage_site_id`: the site is per check-in **row**, not per
-  callsign, so a team that checks out and rechecks from another shelter keeps
-  each visit's results apart. `create_check_in` fills an empty location from
+- `CheckIn.coverage_site_id`: the site is stored per check-in **row**, not
+  per callsign, so a team that checks out and rechecks from another shelter
+  keeps each visit's results apart. Results are saved per station **place**
+  (see "Stations, rechecks and logged contacts" below), not per row. `create_check_in` fills an empty location from
   `site_line()` so the station still geocodes.
 - `CoverageAccess` (one row per reporter check-in and infrastructure site:
   reached, note) and `CoverageContact` (stations reached that never checked

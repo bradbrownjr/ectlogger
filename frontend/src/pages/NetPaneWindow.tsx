@@ -21,7 +21,8 @@ import Chat from '../components/Chat';
 import ActivityLog from '../components/ActivityLog';
 import CheckInMap from '../components/CheckInMap';
 import { getMarkerRoleIds } from '../utils/checkInMarkers';
-import CoverageReport from '../components/netview/CoverageReport';
+import CoveragePanel from '../components/netview/CoveragePanel';
+import { coverageFrequencyLabels, coverageFrequencyOptions } from '../utils/coverageFrequencies';
 import TrafficPanel from '../components/netview/TrafficPanel';
 import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import NetScript from '../components/NetScript';
@@ -31,13 +32,13 @@ import CheckInTable from '../components/netview/CheckInTable';
 import CanHearDialog from '../components/netview/CanHearDialog';
 import EditOwnCheckInDialog from '../components/netview/EditOwnCheckInDialog';
 import CompactDetailFields from '../components/netview/CompactDetailFields';
-import SiteCoverageView from '../components/netview/SiteCoverageView';
 import { useSiteCoverage } from '../hooks/useSiteCoverage';
 import SiteField, { netHasSites } from '../components/netview/SiteField';
 import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
 import { getCheckInActions, type LookupFilled } from '../components/netview/checkInActions';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
 import { buildStaffRoleRank, compareCheckInsByRole } from '../components/netview/checkInSort';
+import { visibleStationRows } from '../utils/stationRows';
 import { activeNcsRoles, mergeStationRoles, roleMatchesCheckIn } from '../utils/stationRoles';
 import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
 import { CheckInFormState } from '../components/netview/CheckInFormDialog';
@@ -84,7 +85,6 @@ const NetPaneWindow: React.FC = () => {
   const [, setHighlightCheckIn] = useState(false);
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
   const [bulkCheckInActive, setBulkCheckInActive] = useState(false);
-  const [hideDuplicates, setHideDuplicates] = useState(false);
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
   const [inlineEditingId, setInlineEditingId] = useState<number | null>(null);
   const [inlineEditValues, setInlineEditValues] = useState<Partial<any>>({});
@@ -105,6 +105,9 @@ const NetPaneWindow: React.FC = () => {
   // plain local toggle since there's no Coverage panel in this isolated
   // window to cross-link with (see CheckInMap.tsx's lifted-state comment).
   const [mapCoverageOverlayOn, setMapCoverageOverlayOn] = useState(false);
+  // The popped-out Coverage panel's own callsign highlight, for the same
+  // reason: there's no map beside it in this window to share it with.
+  const [coverageHighlight, setCoverageHighlight] = useState<string | null>(null);
   // Traffic composer for the popped-out Traffic pane (see NetView.tsx).
   const [fileTrafficOpen, setFileTrafficOpen] = useState(false);
   const [checkInForm, setCheckInForm] = useState<CheckInFormState>({
@@ -126,7 +129,7 @@ const NetPaneWindow: React.FC = () => {
   });
 
   const {
-    net, setNet, checkIns, setCheckIns, netRoles, callsignRoles, onlineUserIds, fieldDefinitions, owner,
+    net, setNet, checkIns, setCheckIns, channelMarks, netRoles, callsignRoles, onlineUserIds, fieldDefinitions, owner,
     pollResponses, topicResponses,
     fetchNet, fetchCheckIns, fetchNetRoles, fetchNetStats,
   } = useNetData(netId);
@@ -184,18 +187,6 @@ const NetPaneWindow: React.FC = () => {
     setBulkCheckInActive,
   });
 
-  // Must run every render (before any early return) so hook count never
-  // changes between renders — same constraint noted in NetView.tsx.
-  const latestCheckedInAtByCallsign = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const ci of checkIns) {
-      const prev = map.get(ci.callsign);
-      if (!prev || ci.checked_in_at > prev) {
-        map.set(ci.callsign, ci.checked_in_at);
-      }
-    }
-    return map;
-  }, [checkIns]);
 
   // Check-in ids that already have at least one outgoing "can hear" report -
   // must run before the early return below so hook count never changes.
@@ -266,9 +257,7 @@ const NetPaneWindow: React.FC = () => {
           {...getMarkerRoleIds(netRoles)}
           embedded
           canHearReports={canHearReports}
-          frequencyLabels={Object.fromEntries(
-            (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
-          )}
+          frequencyLabels={coverageFrequencyLabels(net?.frequencies)}
           coverageOverlayOn={mapCoverageOverlayOn}
           onToggleCoverageOverlay={() => setMapCoverageOverlayOn((v) => !v)}
         />
@@ -277,25 +266,26 @@ const NetPaneWindow: React.FC = () => {
   }
 
   if (paneType === 'coverage') {
-    const paneFrequencyLabels = Object.fromEntries(
-      (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
-    );
-    const summary = siteCoverage.summary;
-    const hasSiteView = summary.nodes.some((n) => n.kind === 'site') || summary.targets.length > 0 || summary.contacts.length > 0;
+    // The same panel as in Net View, so it has the same buttons. The browser
+    // window's own controls stand in for minimize, maximize and close.
     return (
-      <Box sx={{ height: '100vh', width: '100vw', p: 0.5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-        {/* Coverage by site first on a drill with sites, then every report */}
-        {hasSiteView && (
-          <Box sx={{ mb: 2 }}>
-            <SiteCoverageView summary={summary} frequencyLabels={paneFrequencyLabels} />
-          </Box>
-        )}
-        <CoverageReport
+      <Box sx={{ height: '100vh', width: '100vw', p: 0.5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <CoveragePanel
+          mode="window"
           netId={Number(netId)}
+          netName={net.name}
           reports={canHearReports}
+          frequencyLabels={coverageFrequencyLabels(net.frequencies)}
           showFrequencyColumn={(net.frequencies || []).length > 1}
-          frequencyLabels={paneFrequencyLabels}
+          highlightedCallsign={coverageHighlight}
+          onHighlightCallsign={setCoverageHighlight}
+          netFrequencyOptions={coverageFrequencyOptions(net.frequencies)}
+          canManage={getNetActions(net, simulateRegularUser).record_coverage}
+          currentUserId={user?.id}
+          onToast={setToastMessage}
+          siteCoverage={siteCoverage.summary}
         />
+        <Snackbar open={toastMessage !== ''} autoHideDuration={6000} onClose={() => setToastMessage('')} message={toastMessage} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} />
       </Box>
     );
   }
@@ -443,6 +433,7 @@ const NetPaneWindow: React.FC = () => {
     handleCheckIn,
     handleStatusChange,
     handleDeleteCheckIn,
+    handleMarkChannel,
     handleStartInlineEdit,
     handleInlineFieldChange,
     handleInlineKeyDown,
@@ -458,23 +449,12 @@ const NetPaneWindow: React.FC = () => {
     fetchCheckIns, fetchNetRoles, askDelete: deletePrompt.ask,
   });
 
-  const filteredCheckIns = checkIns.filter((checkIn: any) => {
-    if (filteredFrequencyIds.length > 0) {
-      const isNcsUser = ncsRoles.some((r) => roleMatchesCheckIn(r, checkIn));
-      if (!isNcsUser) {
-        const checkInFreqs = checkIn.available_frequencies || [];
-        const hasMatchingFreq = filteredFrequencyIds.some((fid) => checkInFreqs.includes(fid));
-        if (!hasMatchingFreq) return false;
-      }
-    }
-    if (hideDuplicates) {
-      const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
-      if (latest && checkIn.checked_in_at < latest) return false;
-    }
-    return true;
-  }).sort((a: any, b: any) =>
-    compareCheckInsByRole(a, b, staffRoleRank, net?.mobile_priority_sort !== false)
-  );
+  // One row per station per place, the same list as the net page (utils/stationRows.ts).
+  const stationRows = visibleStationRows(checkIns, channelMarks, {
+    frequencyIds: filteredFrequencyIds,
+    alwaysShow: (row) => ncsRoles.some((r) => roleMatchesCheckIn(r, row)),
+    compare: (a, b) => compareCheckInsByRole(a, b, staffRoleRank, net?.mobile_priority_sort !== false),
+  });
 
   const showCheckInForm = (net.status === 'active' || net.status === 'lobby') && canManageCheckIns;
 
@@ -483,15 +463,13 @@ const NetPaneWindow: React.FC = () => {
       <CheckInTable
         detached
         net={net}
-        filteredCheckIns={filteredCheckIns}
+        stationRows={stationRows}
         netRoles={stationRoles}
         ncsRoles={ncsRoles}
         user={user}
         onlineUserIds={onlineUserIds}
         activeSpeakerId={activeSpeakerId}
-        latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
         showRelayedBy={showRelayedBy}
-        hideDuplicates={hideDuplicates}
         canManage={canManage}
         canManageCheckIns={canManageCheckIns}
         inlineEditingId={inlineEditingId}
@@ -508,7 +486,6 @@ const NetPaneWindow: React.FC = () => {
         getStatusTooltip={getStatusTooltip}
         getStatusLabel={getStatusLabel}
         getNcsIcon={getNcsIcon}
-        setHideDuplicates={setHideDuplicates}
         handleDetachCheckInList={() => {}}
         handleStartInlineEdit={handleStartInlineEdit}
         handleInlineFieldChange={handleInlineFieldChange}
@@ -518,6 +495,7 @@ const NetPaneWindow: React.FC = () => {
         handleToggleHand={handleToggleHand}
         handleSetActiveSpeaker={handleSetActiveSpeaker}
         handleDeleteCheckIn={handleDeleteCheckIn}
+        handleMarkChannel={handleMarkChannel}
         setProfileUserId={() => {}}
         canReportCanHear={canReportCanHear}
         canHearReporterCheckInIds={canHearReporterCheckInIds}

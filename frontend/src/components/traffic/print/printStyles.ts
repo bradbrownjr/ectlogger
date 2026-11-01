@@ -8,6 +8,10 @@ import React from 'react';
 // to the real paper form regardless of the app's current theme.
 
 export const PRINT_PAGE_WIDTH = 780; // px; approximates an 8.5in letter page at capture resolution
+// px; the height of one US Letter page inside utils/pdfExport.ts's 10 mm
+// margins, at PRINT_PAGE_WIDTH: (279.4 - 20) / (215.9 - 20) of the width. A
+// view that lays out its own pages (ICS214PrintView) makes each this tall.
+export const PRINT_PAGE_HEIGHT = Math.floor(PRINT_PAGE_WIDTH * (279.4 - 20) / (215.9 - 20));
 
 export const printPageStyle: React.CSSProperties = {
   width: PRINT_PAGE_WIDTH,

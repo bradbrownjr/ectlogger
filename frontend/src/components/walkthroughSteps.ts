@@ -183,7 +183,7 @@ export const NET_CONTROL_STEPS: WalkthroughStep[] = [
     icon: 'reports',
     title: 'Reports and ICS-309',
     body:
-      'After a net, the toolbar offers Report, ICS-309 and Export. The Stats page shows trends across nets and schedules.',
+      "After a net, the toolbar's Reports menu has the net report, the ICS-309, net control's ICS-214 and the check-in spreadsheet. The Stats page shows trends across nets and schedules.",
     learnMore: '/docs/net-managers/reports-and-exports/',
   },
 ];

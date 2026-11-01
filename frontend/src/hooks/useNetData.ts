@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { netApi, checkInApi, userApi, netRoleApi, callsignRoleApi, BACKGROUND_REQUEST_CONFIG } from '../services/api';
+import { netApi, checkInApi, channelMarkApi, userApi, netRoleApi, callsignRoleApi, BACKGROUND_REQUEST_CONFIG } from '../services/api';
+import type { ChannelMark } from '../utils/stationRows';
 import api from '../services/api';
 import useVisibilityAwareInterval from './useVisibilityAwareInterval';
 import type { CallsignRole } from '../utils/stationRoles';
@@ -26,6 +27,9 @@ export interface UseNetDataResult {
   setNet: Dispatch<SetStateAction<any | null>>;
   checkIns: any[];
   setCheckIns: Dispatch<SetStateAction<any[]>>;
+  // Channels net control marked offline (utils/stationRows.ts), re-read
+  // with the check-ins, since a change to them broadcasts status_change.
+  channelMarks: ChannelMark[];
   netRoles: any[];
   setNetRoles: Dispatch<SetStateAction<any[]>>;
   // Roles held by stations with no account (credit only, grants nothing).
@@ -53,6 +57,7 @@ export interface UseNetDataResult {
 export function useNetData(netId: string | undefined): UseNetDataResult {
   const [net, setNet] = useState<any | null>(null);
   const [checkIns, setCheckIns] = useState<any[]>([]);
+  const [channelMarks, setChannelMarks] = useState<ChannelMark[]>([]);
   const [netRoles, setNetRoles] = useState<any[]>([]);
   const [callsignRoles, setCallsignRoles] = useState<CallsignRole[]>([]);
   const [netStats, setNetStats] = useState<any | null>(null);
@@ -98,8 +103,12 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
 
   const fetchCheckIns = async (background = false) => {
     try {
-      const response = await checkInApi.list(Number(netId), background);
+      const [response, marks] = await Promise.all([
+        checkInApi.list(Number(netId), background),
+        channelMarkApi.list(Number(netId), background),
+      ]);
       setCheckIns(response.data);
+      setChannelMarks(marks.data);
     } catch (error) {
       console.error('Failed to fetch check-ins:', error);
     }
@@ -185,6 +194,7 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
     setNet,
     checkIns,
     setCheckIns,
+    channelMarks,
     netRoles,
     setNetRoles,
     callsignRoles,

@@ -34,6 +34,20 @@ export function placeChoice(row: PlaceFields): string | null {
   return position ? `position:${position}` : null;
 }
 
+/**
+ * One station at one place, the same key as the backend's
+ * services/station_place.py::station_place_key: its callsign and place, or,
+ * when the place is unknown, the location typed for it. Rows with the same
+ * key are the same station in the same spot, whatever channel each was on.
+ */
+export function stationPlaceKey(row: PlaceFields & { callsign?: string | null; location?: string | null }): string {
+  const choice = placeChoice(row);
+  let place = '';
+  if (choice) place = choice.toLowerCase();
+  else if ((row.location || '').trim()) place = `location:${(row.location || '').trim().toLowerCase()}`;
+  return `${(row.callsign || '').trim().toUpperCase()}|${place}`;
+}
+
 export function placeChoiceLabel(choice: string, sites: CoverageSite[]): string {
   if (choice === TRAVELING) return 'Traveling';
   const [kind, ...rest] = choice.split(':');

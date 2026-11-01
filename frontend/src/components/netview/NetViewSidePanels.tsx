@@ -5,6 +5,7 @@ import Chat from '../Chat';
 import ActivityLog from '../ActivityLog';
 import CheckInMap from '../CheckInMap';
 import CoveragePanel from './CoveragePanel';
+import { coverageFrequencyLabels, coverageFrequencyOptions } from '../../utils/coverageFrequencies';
 import { SiteCoverageSummary } from '../../utils/coverageSites';
 import TrafficPanel from './TrafficPanel';
 import ResizeHandle from '../ResizeHandle';
@@ -213,17 +214,9 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   const showCoverageDocked = coverageOpen && coverageDocked;
   // Frequency label lookup shared by the docked CheckInMap and CoveragePanel
   // below - same shape/convention NetView.tsx's own instances build.
-  const frequencyLabels = Object.fromEntries(
-    (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
-  );
-  // Same frequencies, shaped for CoveragePanel's frequency-correction
-  // dropdown - includes the band suffix (e.g. "(2m)") since that's the
-  // detail that actually distinguishes the net's frequencies at a glance,
-  // matching CanHearDialog.tsx's own frequencyLabel() convention.
-  const netFrequencyOptions = (net?.frequencies || []).map((f: any) => {
-    const base = `${f.frequency || f.network || ''} ${f.mode || ''}`.trim() || f.description || `Frequency #${f.id}`;
-    return { id: f.id, label: f.band ? `${base} (${f.band})` : base };
-  });
+  const frequencyLabels = coverageFrequencyLabels(net?.frequencies);
+  // Same frequencies, for CoveragePanel's frequency-correction dropdown
+  const netFrequencyOptions = coverageFrequencyOptions(net?.frequencies);
 
   const layoutTier = useLayoutTier();
   const { containerRef, getWeight, hasExplicitWeight, startDrag } = useResizableSplit(`${STORAGE_KEYS.RIGHT_PANELS_SPLIT}_${layoutTier}`, 'column');
@@ -334,7 +327,9 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
       minimized: coverageMinimized,
       content: (
         <CoveragePanel
+          mode="docked"
           netId={Number(netId)}
+          netName={net?.name}
           reports={canHearReports}
           frequencyLabels={frequencyLabels}
           showFrequencyColumn={(net?.frequencies || []).length > 1}
@@ -503,36 +498,25 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           onCloseCoverage (real close, always available) are two distinct
           actions -- see FloatingWindow.tsx's onAttach/onClose. */}
       {coverageOpen && !coverageDocked && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
-        <FloatingWindow
-          title="Station Coverage"
-          isDetached={true}
-          onAttach={onAttachCoverage}
+        <CoveragePanel
+          mode="floating"
+          netId={Number(netId)}
+          netName={net?.name}
+          reports={canHearReports}
+          frequencyLabels={frequencyLabels}
+          showFrequencyColumn={(net?.frequencies || []).length > 1}
+          highlightedCallsign={highlightedCallsign}
+          onHighlightCallsign={setHighlightedCallsign}
+          onShowOnMap={onShowCoverageOnMap}
+          onDock={onAttachCoverage}
           onClose={onCloseCoverage}
           onPopOut={handleFloatToWindowCoverage}
-          // Wide enough by default to fit Reporter/Link Type/Heard
-          // Station/Frequency/Reported without wrapping - matches Traffic's
-          // default just below.
-          defaultWidth={900}
-          defaultHeight={450}
-          minWidth={350}
-          minHeight={250}
-          storageKey="coverage"
-        >
-          <CoveragePanel
-            netId={Number(netId)}
-            reports={canHearReports}
-            frequencyLabels={frequencyLabels}
-            showFrequencyColumn={(net?.frequencies || []).length > 1}
-            highlightedCallsign={highlightedCallsign}
-            onHighlightCallsign={setHighlightedCallsign}
-            onShowOnMap={onShowCoverageOnMap}
-            netFrequencyOptions={netFrequencyOptions}
-            canManage={canReportCanHear}
-            currentUserId={currentUserId}
-            onToast={onToast}
-            siteCoverage={siteCoverage}
-          />
-        </FloatingWindow>
+          netFrequencyOptions={netFrequencyOptions}
+          canManage={canReportCanHear}
+          currentUserId={currentUserId}
+          onToast={onToast}
+          siteCoverage={siteCoverage}
+        />
       )}
 
       {/* Floating Traffic panel - same on-demand shape as Coverage above.

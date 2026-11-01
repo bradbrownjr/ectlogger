@@ -9,7 +9,8 @@ other.
 
 Rows are {time, from_station, to_station, message} dicts, sorted by time.
 Sources, each with its own rule:
-  - check-ins
+  - check-ins, never one checked in In person (CheckIn.in_person): the
+    ICS-309 logs radio traffic, and an in-person station had no radio
   - chat messages, never system messages, and never a net-muted station's
     when the net hides them (Net.ics309_hide_muted_stations)
   - traffic hops logged on this net, metadata only (app/traffic/ics309.py)
@@ -28,7 +29,7 @@ from app.traffic.ics309 import (
     traffic_from_station,
     traffic_to_station,
 )
-from app.utils import format_time_for_net, redact_contact_info, to_display_tz
+from app.utils import check_in_time_for_net, format_time_for_net, redact_contact_info, to_display_tz
 
 
 async def get_accepted_off_net_entries(db: AsyncSession, net_id: int) -> List[OffNetLogEntry]:
@@ -79,12 +80,14 @@ def build_ics309_rows(
 
     rows = []
     for check_in in sorted(check_ins, key=lambda c: c.checked_in_at):
+        if getattr(check_in, 'in_person', False):
+            continue
         location = scrub(check_in.location)
         weather = scrub(check_in.weather_observation)
         location_info = f" from {location}" if location else ""
         weather_info = f" | WX: {weather}" if weather else ""
         rows.append({
-            'time': when(check_in.checked_in_at),
+            'time': check_in_time_for_net(check_in, tz, started_at, closed_at),
             'from_station': check_in.callsign,
             'to_station': 'NET',
             'message': f"Check-in{location_info}{weather_info}",
@@ -119,5 +122,6 @@ def build_ics309_rows(
             'message': scrub(off_net_ics309_message(entry)),
         })
 
-    rows.sort(key=lambda x: x.get('time', ''))
+    # A row with no time recorded (a station added to a held log) goes last.
+    rows.sort(key=lambda x: (not x.get('time'), x.get('time', '')))
     return rows

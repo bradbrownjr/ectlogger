@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-30
+revised: 2026-10-31
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,26 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# October 31, 2026
+
+## New Features
+
+* **ICS-214: Activity log from the net** — Net control can now open an ICS-214 for a closed net, already filled in with everyone who took part and when each station came on the air from a site, moved, went mobile, added or lost a channel, and passed traffic. Add what happened off the air, hide what doesn't belong, then download the form.
+
+## Improvements
+
+* **Net View: One row per station per site** — Each station now gets one row for each site it works from, with a chip for every channel you've reached it on, so you can see at a glance how each site can be reached. Rechecks are still logged with their times; open the row to see them, and mark a channel offline if a station loses it.
+* **Check-in: Stations from a paper log** — When finishing a held log, you can enter the time a station checked in, or mark it as not recorded, so late entries land in the right place on the ICS-309.
+* **Net View: One Reports button** — A closed net's report, ICS-309, ICS-214 and check-in spreadsheet are now in one Reports menu, so the toolbar has room for everything else.
+* **Station Coverage: Room to read it** — Station Coverage and the map now open in their own window instead of squeezed beside chat. Station Coverage can fill the screen and be saved as a PDF like the map. Its tables keep their headings and first column in view as you scroll, and every button stays put when a panel is floating or in its own browser window.
+
+## Bug Fixes
+
+* **Coverage: Check-ins count as two-way contact** — A station net control checks in on a channel now counts as two-way contact between the two sites, and reports stay with the site a station was at when they were made, so the coverage summary no longer shows one-way links you'd already worked both ways.
+* **ICS-309: In-person check-ins** — Stations checked in In person are no longer listed on the ICS-309, which is a log of radio traffic; they still show in the net's check-in list and count as taking part.
 
 ---
 

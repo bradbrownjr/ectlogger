@@ -353,6 +353,13 @@ def may_block_station(a: NetAccess) -> bool:
     return _manager(a) or bool(a.active_roles & {"NCS", "LOGGER"})
 
 
+def may_prepare_ics214(a: NetAccess) -> bool:
+    """Opening, editing and downloading a closed net's ICS-214
+    (routers/ics214.py). The people who close the net, as for the off-net
+    log they review: what goes on the form is theirs to sign."""
+    return may_close_net(a)
+
+
 def net_actions(a: NetAccess) -> Dict[str, bool]:
     """Every per-action rule for one NetAccess, keyed as NetResponse.actions
     (schemas.NetActions) sends them to the app."""
@@ -370,6 +377,7 @@ def net_actions(a: NetAccess) -> Dict[str, bool]:
         "log_off_net": may_log_off_net(a),
         "review_off_net_log": may_review_off_net_log(a),
         "block_station": may_block_station(a),
+        "prepare_ics214": may_prepare_ics214(a),
     }
 
 

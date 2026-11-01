@@ -1,5 +1,5 @@
 from sqlalchemy import BigInteger, Column, Float, Integer, String, Boolean, DateTime, ForeignKey, Text, Enum, Table, UniqueConstraint, Index
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql import func
 from app.database import Base
 from app.band_utils import band_from_frequency_string
@@ -545,8 +545,27 @@ class CheckIn(Base):
     identity_verified_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     checked_in_at = Column(DateTime(timezone=True), server_default=func.now())
+    # A station added to a held log whose time nobody wrote down (migration
+    # 097). checked_in_at is then the net's close, so the row sorts last;
+    # reports print no time and time-based statistics leave it out.
+    time_not_recorded = Column(Boolean, nullable=False, default=False)
+    # The station was checked in In person, with no radio. Kept after it
+    # checks out (which overwrites status), so the ICS-309, a log of radio
+    # traffic, can leave the row out. Set from status by _track_in_person.
+    in_person = Column(Boolean, nullable=False, default=False)
     checked_out_at = Column(DateTime(timezone=True))
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    @validates('status')
+    def _track_in_person(self, _key, status):
+        # Every way a status is set goes through here (check-in, edit,
+        # import). Checking out keeps the flag; any other status clears it,
+        # since the station is back on the air.
+        if status == StationStatus.IN_PERSON:
+            self.in_person = True
+        elif status is not None and status != StationStatus.CHECKED_OUT:
+            self.in_person = False
+        return status
 
     # Relationships
     net = relationship("Net", back_populates="check_ins")
@@ -802,6 +821,80 @@ class DrillEvent(Base):
     plan = relationship("DrillPlan", back_populates="events")
     site = relationship("CoverageSite")
     form = relationship("Form")
+
+
+class Ics214Form(Base):
+    """What net control changed on a net's ICS-214 Activity Log
+    (services/ics214.py renders the rest from what was logged). One per net.
+
+    Every header column is null while it is the default the service works
+    out (the net's name, its times, the credited NCS), so a default that
+    changes, such as a corrected start time, still reaches the form. The edit
+    maps hide or reword lines and resources by their key; manual lines are
+    ActivityEntry rows, never stored here. Nothing here records an issued
+    copy: that belongs to the Incident Log (docs/ROADMAP.md).
+    """
+    __tablename__ = "ics214_forms"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    incident_name = Column(String(200), nullable=True)      # block 1
+    period_from = Column(DateTime(timezone=True), nullable=True)  # block 2
+    period_to = Column(DateTime(timezone=True), nullable=True)
+    unit_name = Column(String(200), nullable=True)          # block 3
+    leader = Column(String(200), nullable=True)             # block 4
+    home_agency = Column(String(200), nullable=True)        # block 5
+    prepared_name = Column(String(200), nullable=True)      # block 8
+    prepared_position = Column(String(200), nullable=True)
+    # JSON: {line key: {"hidden": bool, "text": str or null}}
+    line_edits = Column(Text, nullable=False, default='{}')
+    # JSON: {CALLSIGN: {"hidden": bool, "name", "position", "agency": str or null}}
+    resource_edits = Column(Text, nullable=False, default='{}')
+    updated_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class ActivityEntry(Base):
+    """Something the unit did that nobody logged on the air, written by
+    hand: a briefing, a site setup, a supply run. A line on the ICS-214.
+
+    Not the admin activity log (AuditEvent). The Incident Log will write
+    these too and give them an incident, so net_id is optional from the
+    start: an incident can have no net (docs/ROADMAP.md, "Incident log").
+    """
+    __tablename__ = "activity_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=True, index=True)
+    occurred_at = Column(DateTime(timezone=True), nullable=False)
+    text = Column(Text, nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class StationChannelMark(Base):
+    """A channel a station had at one place, marked offline by net control:
+    its radio failed, the repeater went down, the operator left the HF desk.
+    The channel is never removed from the station's row (Brad, 2026-10-30:
+    "the site is still reachable there"), only greyed out with the time, and
+    can be brought back. One row per time it went offline; restored_at closes
+    it, and marking it offline again starts a new row, so the history stays.
+
+    Keyed by station_key (services/station_place.py::station_place_key), the
+    station at that place, not by check-in row: a station has a row per
+    channel it rechecked on there (migration 098)."""
+    __tablename__ = "station_channel_marks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False, index=True)
+    station_key = Column(String(200), nullable=False)
+    frequency_id = Column(Integer, ForeignKey("frequencies.id", ondelete="CASCADE"), nullable=False)
+    offline_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    offline_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    restored_at = Column(DateTime(timezone=True), nullable=True)
+    restored_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
 
 class CanHearReport(Base):

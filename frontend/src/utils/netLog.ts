@@ -34,6 +34,55 @@ export const chatGraceMinutes = (
 export const DRAFT_LOG_NOTICE =
   "This net's log may change before net control approves and sends it.";
 
+// ========== STATIONS FROM A PAPER LOG ==========
+// A check-in added to a held log is logged at the time written down, or as
+// "Not recorded" (backend CheckIn.time_not_recorded), never at the moment it
+// was typed in after the net.
+
+/** What a check-in with no recorded time shows in place of its time. */
+export const TIME_NOT_RECORDED = 'Not recorded';
+
+interface NetTimes {
+  started_at?: string | null;
+  closed_at?: string | null;
+}
+
+const asUtc = (value: string): Date => new Date(value.endsWith('Z') || /[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`);
+
+/**
+ * The moment a time of day ("HH:MM") typed for a held log refers to: that
+ * time on the net's last day that isn't after its close, so a net running
+ * past midnight reads 23:30 as the first evening and 00:30 as the morning
+ * after. In the viewer's own zone, or UTC when they prefer it. Null for a
+ * blank or malformed time, or a net with no close. The server refuses a time
+ * before the net started.
+ */
+export const heldLogTimeToIso = (hhmm: string, net: NetTimes, preferUtc: boolean): string | null => {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim());
+  if (!match || !net.closed_at) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return null;
+  const closed = asUtc(net.closed_at);
+  const started = net.started_at ? asUtc(net.started_at) : null;
+  // Each day back from the close, as far as the start (or one day).
+  for (let back = 0; back <= 7; back += 1) {
+    const day = new Date(closed.getTime() - back * 86400000);
+    const at = preferUtc
+      ? new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), hours, minutes))
+      : new Date(day.getFullYear(), day.getMonth(), day.getDate(), hours, minutes);
+    if (at.getTime() <= closed.getTime()) return at.toISOString();
+    if (started && day.getTime() < started.getTime()) break;
+  }
+  return null;
+};
+
+/** A check-in's time as the check-in list shows it. */
+export const checkInTimeText = (
+  checkIn: { checked_in_at: string; time_not_recorded?: boolean },
+  format: (value: string) => string,
+): string => (checkIn.time_not_recorded ? TIME_NOT_RECORDED : format(checkIn.checked_in_at));
+
 // ========== WHO RAN THE NET ==========
 // The server credits an NCS on an ended net only if they took part
 // (backend services/ncs_attribution.py), and closing or sending a held log

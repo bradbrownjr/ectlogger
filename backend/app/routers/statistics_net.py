@@ -79,7 +79,7 @@ async def get_net_statistics(
             duration_minutes = candidate
     if duration_minutes is None and net.check_ins:
         # started_at not recorded — derive duration from first to last check-in
-        times = [c.checked_in_at for c in net.check_ins if c.checked_in_at]
+        times = [c.checked_in_at for c in net.check_ins if c.checked_in_at and not c.time_not_recorded]
         if times:
             first = min(times)
             if first.tzinfo is None:
@@ -102,7 +102,8 @@ async def get_net_statistics(
         if started_at.tzinfo is None:
             started_at = started_at.replace(tzinfo=timezone.utc)
         
-        sorted_checkins = sorted(net.check_ins, key=lambda c: c.checked_in_at)
+        # A station added to a held log with no time has no place on a timeline.
+        sorted_checkins = sorted((c for c in net.check_ins if not c.time_not_recorded), key=lambda c: c.checked_in_at)
         for checkin in sorted_checkins:
             checked_in_at = checkin.checked_in_at
             if checked_in_at.tzinfo is None:

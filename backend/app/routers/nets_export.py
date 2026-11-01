@@ -45,7 +45,7 @@ from app.services.net_closure import close_net_and_notify
 from app.traffic.formatters import format_form
 from app.traffic.ics309 import get_ics309_muted_user_ids, get_net_traffic_log_entries
 from app.traffic.rri_strip import make_nts_safe
-from app.utils import GUEST_REDACTED_CHECK_IN_FIELDS, display_callsign, format_time_for_net, redact_contact_info, resolve_display_tz, to_display_tz
+from app.utils import GUEST_REDACTED_CHECK_IN_FIELDS, check_in_time_for_net, display_callsign, format_time_for_net, redact_contact_info, resolve_display_tz, to_display_tz
 
 router = APIRouter()
 
@@ -115,7 +115,7 @@ async def export_net_csv(
     # Write check-ins
     for check_in in sorted(net.check_ins, key=lambda x: x.checked_in_at):
         row = [
-            format_time_for_net(to_display_tz(check_in.checked_in_at, tz), display_started_at, display_closed_at),
+            check_in_time_for_net(check_in, tz, display_started_at, display_closed_at),
             check_in.callsign,
             check_in.name,
             shown(check_in, "location"),

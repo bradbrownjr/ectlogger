@@ -4,7 +4,7 @@ summary: Recording who can hear whom during a net, reading the coverage table an
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-30
+revised: 2026-10-31
 review_by: 2027-10-21
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/station-coverage/
@@ -24,8 +24,6 @@ It's off unless the net's manager turned on **Enable Station-to-Station Coverage
 
 ## Record a station's report
 
-If the station has rechecked, open its first check-in row; see [Known issues](/docs/about/known-issues/#who-can-hear-recheck).
-
 1. Ask the station, on the air, which stations it can hear.
 2. Click the ear icon at the end of that station's row. A solid blue ear means the station already has a report; a faded one means it doesn't yet, which makes the rows still to do easy to spot down the list.
 
@@ -35,7 +33,7 @@ If the station has rechecked, open its first check-in row; see [Known issues](/d
      <figcaption>A solid ear means that station's report has been taken. Faded means it's still to do.</figcaption>
    </figure>
 
-3. Tick each station they name. For "everybody but W2FERN and N2OAKS", tick **All stations** at the top, then untick those two. **All stations** includes checked-out stations, because a station heard before it left was still heard; untick any that weren't.
+3. Tick each station they name. Each station is listed at the place it's at now, so a report made after a station moved isn't credited to where it was. To tick one at an earlier place, for a report from earlier in the net, tick **Show earlier places**. For "everybody but W2FERN and N2OAKS", tick **All stations** at the top, then untick those two. **All stations** includes checked-out stations, because a station heard before it left was still heard; untick any that weren't.
 4. Set **Operating Position** if they aren't at home. It starts at **Home**, and only Home reports reach the station's personal coverage map. On a drill with sites it starts at the station's site instead, and offers the sites first; see [Coverage drills by site](/docs/net-managers/coverage-drills/).
 5. Click **Save**.
 
@@ -57,25 +55,27 @@ Click **Coverage** in the toolbar to open the **Station Coverage** panel. Anyone
 
 <figure>
   <img src="/docs/img/net-control/coverage-panel.png"
-       alt="The simplex drill's net page with the Station Coverage panel open on the right. Each row lists a reporting station, a Two-way or One-way chip, the station it heard, and when. Two-way rows have a green chip with a double arrow; one-way rows have a grey chip with a single arrow.">
-  <figcaption>Two-way means both stations reported hearing each other. One-way means only one of them has said so.</figcaption>
+       alt="The simplex drill's net page with the Station Coverage window open over the check-in list. Each row lists a reporting station, a Two-way or One-way chip, the station it heard, and when. Two-way rows have a green chip with a double arrow; one-way rows have a grey chip with a single arrow.">
+  <figcaption>Two-way means both stations heard each other. One-way means only one direction is known.</figcaption>
 </figure>
 
 On a drill with sites, the panel opens on **By site** instead, which rolls the reports up by place; **Reports** switches to the table described here. The by-site view is covered in [Coverage drills by site](/docs/net-managers/coverage-drills/#reading-the-results).
 
 Each row is one report: the **Reporter**, a **Two-way** or **One-way** chip, the **Heard Station**, and when it was reported. On a net with more than one frequency there's a **Frequency** column too.
 
-- **Two-way** (green, double arrow) means each station reported hearing the other on the same frequency. That's a confirmed path.
-- **One-way** (grey, single arrow) means only one direction has been reported. It might be a genuinely one-way path, a big station and a small one, or it might just mean the other station hasn't been asked yet. Ask before you plan around it.
+- **Two-way** (green, double arrow) means each station heard the other on the same frequency, from the same places. Either both reported it, or one of them checked the other in on that frequency: a check-in net control logged on the air is a two-way contact, so it counts. Hover over the chip to see when it was a check-in. A station that checked itself in through the app doesn't count, since that went over the internet.
+- **One-way** (grey, single arrow) means only one direction is known. It might be a genuinely one-way path, a big station and a small one, or it might just mean the other station hasn't been asked yet. Ask before you plan around it.
 
-The panel's own buttons, left to right:
+Coverage opens in its own window over the page, which you can drag and resize. **Maximize** fills the screen with it, and the dock button puts it in the column beside Chat instead. Its buttons are the same wherever it is:
 
 - **Search** filters the table to one callsign. It hides every other row, so clear it when you're done.
 - **Click a callsign** in the table instead to highlight that station's rows without hiding anything; it highlights the station's lines on the map overlay as well. Click it again, or the clear-highlight button, to undo it.
-- **Export to CSV** downloads exactly what the table is showing, filter included.
+- **Export to PDF** saves what the panel is showing as a page you can print or send, and **Export to CSV** downloads it as a spreadsheet, filter included.
 - **Show on map** opens the map with the coverage overlay already on.
 
-If a report was saved against the wrong frequency, staff (and the station that made it) can fix it from the **Frequency** column's dropdown without redoing the report. Like Chat and the map, the panel can be floated or popped out into its own window; see [Multiple monitors and wide screens](/docs/net-control/multiple-monitors/).
+The table's heading row and first column stay in view as you scroll down or to the right, so you can always tell which stations a row is about.
+
+If a report was saved against the wrong frequency, staff (and the station that made it) can fix it from the **Frequency** column's dropdown without redoing the report. Like Chat and the map, the panel can also be popped out into a browser window of its own, with all the same buttons; see [Multiple monitors and wide screens](/docs/net-control/multiple-monitors/).
 
 ## See it on the map
 

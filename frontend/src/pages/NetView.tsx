@@ -4,7 +4,6 @@ import { MULTILINE_FIELDS, fieldLabel, isRelayedByShown, shownDetailFields } fro
 import { useDeleteCheckInPrompt } from '../hooks/useDeleteCheckInPrompt';
 import { formatFrequencyDisplay } from '../utils/frequencyList';
 import useDialog from '../hooks/useDialog';
-import useLocalStorage from '../hooks/useLocalStorage';
 import { useNetWebSocket } from '../hooks/useNetWebSocket';
 import { useNetData } from '../hooks/useNetData';
 import { usePoppedOutWindow } from '../hooks/usePoppedOutWindow';
@@ -19,6 +18,7 @@ import AutoCloseWarningBanner from '../components/netview/AutoCloseWarningBanner
 import DraftLogBanner from '../components/netview/DraftLogBanner';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
 import { buildStaffRoleRank, compareCheckInsByRole } from '../components/netview/checkInSort';
+import { visibleStationRows } from '../utils/stationRows';
 import { activeNcsRoles, mergeStationRoles, roleMatchesCheckIn } from '../utils/stationRoles';
 import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
 import { STATUS_SELECT_MENU_PROPS } from '../components/netview/statusSelectMenuProps';
@@ -102,6 +102,8 @@ import { watchZoomAwarePopovers } from '../utils/zoomAwarePopovers';
 import { getNetActions } from '../utils/netActions';
 import { canOpenLobby, isBeforeScheduledStart } from '../utils/netStart';
 import { canArchiveNet, isLogHeld, isLogOpen, NCS_NEEDED_DETAIL } from '../utils/netLog';
+import HeldLogTimeField from '../components/netview/HeldLogTimeField';
+import { coverageFrequencyLabels } from '../utils/coverageFrequencies';
 
 interface Frequency {
   id: number;
@@ -131,6 +133,7 @@ interface CheckIn {
   is_recheck: boolean;
   parent_check_in_id?: number;
   checked_in_at: string;
+  time_not_recorded?: boolean;
   frequency_id?: number;
   available_frequencies?: number[];
   user_id?: number;
@@ -188,6 +191,7 @@ const NetView: React.FC = () => {
   const {
     net, setNet,
     checkIns, setCheckIns,
+    channelMarks,
     netRoles,
     callsignRoles,
     netStats,
@@ -230,7 +234,6 @@ const NetView: React.FC = () => {
   // would be destroyed mid-radiogram. See FileTrafficDialog.tsx.
   const [fileTrafficOpen, setFileTrafficOpen] = useState(false);
   const bulkCheckIn = useDialog();
-  const [hideDuplicates, setHideDuplicates] = useLocalStorage<boolean>(STORAGE_KEYS.CHECKIN_HIDE_DUPLICATES, false);
   const search = useDialog();
   const [searchQuery, setSearchQuery] = useState('');
   const closeNetDialog = useDialog();
@@ -335,8 +338,11 @@ const NetView: React.FC = () => {
   const [scriptDockedPref, setScriptDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCRIPT_DOCKED, true);
   const [announcementsDockedPref, setAnnouncementsDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_DOCKED, true);
   const [scheduleAnnouncementsDockedPref, setScheduleAnnouncementsDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_DOCKED, true);
-  const [mapDockedPref, setMapDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.MAP_DOCKED, true);
-  const [coverageDockedPref, setCoverageDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.COVERAGE_DOCKED, true);
+  // Map and Coverage open floating until someone docks them (Brad,
+  // 2026-10-31): in the right column beside Chat they were too squeezed to
+  // read, the coverage grids most of all. A saved choice still wins.
+  const [mapDockedPref, setMapDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.MAP_DOCKED, false);
+  const [coverageDockedPref, setCoverageDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.COVERAGE_DOCKED, false);
   const [trafficDockedPref, setTrafficDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.TRAFFIC_DOCKED, true);
   const scriptDocked = scriptDockedPref && isXlUp;
   const announcementsDocked = announcementsDockedPref && isXlUp;
@@ -1475,18 +1481,6 @@ const NetView: React.FC = () => {
     return user.callsign || '';
   };
 
-  // Compute the latest checked_in_at per callsign (for graying prior rows)
-  // Must be above all early returns so hook count never changes between renders.
-  const latestCheckedInAtByCallsign = React.useMemo(() => {
-    const map = new Map<string, string>();
-    for (const ci of checkIns) {
-      const prev = map.get(ci.callsign);
-      if (!prev || ci.checked_in_at > prev) {
-        map.set(ci.callsign, ci.checked_in_at);
-      }
-    }
-    return map;
-  }, [checkIns]);
 
   // Check-in ids that already have at least one outgoing "can hear" report,
   // for the ear icon's row indicator color. Must be above the early return
@@ -1617,6 +1611,7 @@ const NetView: React.FC = () => {
     handleCheckIn,
     handleStatusChange,
     handleDeleteCheckIn,
+    handleMarkChannel,
     handleStartInlineEdit,
     handleInlineFieldChange,
     handleInlineKeyDown,
@@ -1658,16 +1653,22 @@ const NetView: React.FC = () => {
       if (!hasMatchingFreq) return false;
     }
 
-    // Hide-duplicates: if enabled, hide prior rows (only show the latest row per callsign)
-    if (hideDuplicates) {
-      const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
-      if (latest && checkIn.checked_in_at < latest) return false;
-    }
-    
     return true;
   }).sort((a: CheckIn, b: CheckIn) =>
     compareCheckInsByRole(a, b, staffRoleRank, net?.mobile_priority_sort !== false)
   );
+
+  // The check-in list itself: one row per station per place, with its
+  // channels and its check-ins as a timeline (utils/stationRows.ts). It
+  // replaced the "Hide duplicate rows" toggle, which kept only the newest
+  // row per callsign and with it only the newest row's channel. Maps and
+  // chat still take every row (filteredCheckIns above).
+  const stationRows = visibleStationRows(checkIns, channelMarks, {
+    searchQuery,
+    frequencyIds: filteredFrequencyIds,
+    alwaysShow: (row) => ncsRoles.some((r) => roleMatchesCheckIn(r, row)),
+    compare: (a, b) => compareCheckInsByRole(a, b, staffRoleRank, net?.mobile_priority_sort !== false),
+  });
 
   // Shared by the floating and docked CheckInMap instances below. The split
   // itself lives in utils/checkInMarkers.ts so this page, the net report
@@ -1973,15 +1974,13 @@ const NetView: React.FC = () => {
               {/* ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ========== */}
               <CheckInTable
                 net={net}
-                filteredCheckIns={filteredCheckIns}
+                stationRows={stationRows}
                 netRoles={stationRoles}
                 ncsRoles={ncsRoles}
                 user={user}
                 onlineUserIds={onlineUserIds}
                 activeSpeakerId={activeSpeakerId}
-                latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
                 showRelayedBy={showRelayedBy}
-                hideDuplicates={hideDuplicates}
                 canManage={canManage}
                 canManageCheckIns={canManageCheckIns}
                 inlineEditingId={inlineEditingId}
@@ -1998,7 +1997,6 @@ const NetView: React.FC = () => {
                 getStatusTooltip={getStatusTooltip}
                 getStatusLabel={getStatusLabel}
                 getNcsIcon={getNcsIcon}
-                setHideDuplicates={setHideDuplicates}
                 handleDetachCheckInList={handleDetachCheckInList}
                 handlePopOutCheckInList={handlePopOutCheckIns}
                 handleStartInlineEdit={handleStartInlineEdit}
@@ -2009,6 +2007,7 @@ const NetView: React.FC = () => {
                 handleToggleHand={handleToggleHand}
                 handleSetActiveSpeaker={handleSetActiveSpeaker}
                 handleDeleteCheckIn={handleDeleteCheckIn}
+                handleMarkChannel={handleMarkChannel}
                 setProfileUserId={setProfileUserId}
                 onShowGuestProfile={setProfileCallsign}
                 canReportCanHear={canReportCanHear}
@@ -2024,13 +2023,12 @@ const NetView: React.FC = () => {
             {/* ========== CHECK-IN LIST TABLE 2: Mobile View (xs only) ========== */}
             <CheckInMobileList
               net={net}
-              filteredCheckIns={filteredCheckIns}
+              stationRows={stationRows}
               netRoles={stationRoles}
               ncsRoles={ncsRoles}
               user={user}
               onlineUserIds={onlineUserIds}
               activeSpeakerId={activeSpeakerId}
-              latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
               showRelayedBy={showRelayedBy}
               canManage={canManage}
               canManageCheckIns={canManageCheckIns}
@@ -2045,6 +2043,8 @@ const NetView: React.FC = () => {
               onRefreshRoles={fetchNetRoles}
               onRefreshCheckIns={fetchCheckIns}
               onDeleteCheckIn={handleDeleteCheckIn}
+              onMarkChannel={handleMarkChannel}
+              formatFrequencyDisplay={formatFrequencyDisplay}
               onShowProfile={setProfileUserId}
               onShowGuestProfile={setProfileCallsign}
               canReportCanHear={canReportCanHear}
@@ -2130,6 +2130,18 @@ const NetView: React.FC = () => {
                       the row on gaps, leaving the inputs too narrow to read */}
                   <TableRow sx={{ '& .MuiTableCell-root': { border: 0, py: 0.25, px: 0.5 } }}>
                     <TableCell>{checkIns.length + 1}</TableCell>
+                    {/* Time from a paper log, while the log is being finished after the net */}
+                    {isLogHeld(net) && (
+                      <TableCell sx={{ minWidth: 110 }}>
+                        <HeldLogTimeField
+                          value={checkInForm.held_time || ''}
+                          onChange={(held_time) => setCheckInForm({ ...checkInForm, held_time })}
+                          preferUtc={user?.prefer_utc || false}
+                          onEnter={handleCheckIn}
+                          textFieldProps={{ fullWidth: true, inputProps: { style: { fontSize: '0.875rem' } } }}
+                        />
+                      </TableCell>
+                    )}
                     {/* Callsign keeps room for a full portable call even when the row is crowded */}
                     <TableCell sx={{ minWidth: 110 }}>
                       <TextField
@@ -2430,6 +2442,16 @@ const NetView: React.FC = () => {
                 </Box>
                 <Collapse in={mobileCheckInExpanded} unmountOnExit>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {/* Time from a paper log, while the log is being finished after the net */}
+                  {isLogHeld(net) && (
+                    <HeldLogTimeField
+                      value={checkInForm.held_time || ''}
+                      onChange={(held_time) => setCheckInForm({ ...checkInForm, held_time })}
+                      preferUtc={user?.prefer_utc || false}
+                      textFieldProps={{ fullWidth: true, helperText: 'Leave blank if nobody wrote it down' }}
+                    />
+                  )}
+
                   {/* Callsign - always required */}
                   <TextField
                     size="small"
@@ -2682,15 +2704,13 @@ const NetView: React.FC = () => {
               <CheckInTable
                 detached
                 net={net}
-                filteredCheckIns={filteredCheckIns}
+                stationRows={stationRows}
                 netRoles={stationRoles}
                 ncsRoles={ncsRoles}
                 user={user}
                 onlineUserIds={onlineUserIds}
                 activeSpeakerId={activeSpeakerId}
-                latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
                 showRelayedBy={showRelayedBy}
-                hideDuplicates={hideDuplicates}
                 canManage={canManage}
                 canManageCheckIns={canManageCheckIns}
                 inlineEditingId={inlineEditingId}
@@ -2707,7 +2727,6 @@ const NetView: React.FC = () => {
                 getStatusTooltip={getStatusTooltip}
                 getStatusLabel={getStatusLabel}
                 getNcsIcon={getNcsIcon}
-                setHideDuplicates={setHideDuplicates}
                 handleDetachCheckInList={handleDetachCheckInList}
                 handlePopOutCheckInList={handlePopOutCheckIns}
                 handleStartInlineEdit={handleStartInlineEdit}
@@ -2718,6 +2737,7 @@ const NetView: React.FC = () => {
                 handleToggleHand={handleToggleHand}
                 handleSetActiveSpeaker={handleSetActiveSpeaker}
                 handleDeleteCheckIn={handleDeleteCheckIn}
+                handleMarkChannel={handleMarkChannel}
                 setProfileUserId={setProfileUserId}
                 onShowGuestProfile={setProfileCallsign}
                 canReportCanHear={canReportCanHear}
@@ -2944,9 +2964,7 @@ const NetView: React.FC = () => {
         onPopOut={handlePopOutMap}
         onDock={handleDockMap}
         canHearReports={canHearReports}
-        frequencyLabels={Object.fromEntries(
-          (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
-        )}
+        frequencyLabels={coverageFrequencyLabels(net?.frequencies)}
         coverageOverlayOn={coverageOverlayOn}
         onToggleCoverageOverlay={handleToggleCoverageOverlay}
         highlightedCallsign={highlightedCallsign}

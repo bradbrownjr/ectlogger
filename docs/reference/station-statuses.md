@@ -4,7 +4,7 @@ summary: All nine station statuses, what each looks like on the check-in list, a
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-29
+revised: 2026-10-31
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/station-statuses/
@@ -44,9 +44,9 @@ If a station is missing from the map, the reason is almost always that its Locat
 
 ## Recheck is not a status
 
-A recheck is what happens when a callsign that is already checked into the net checks in again. There is no `recheck` value in the list above because it isn't a station's status, it's a description of what just happened. It is a genuinely new row, though, not an update to the existing one. By default, the check-in list shows **both** rows: the original check-in and the recheck, each with its own timestamp. The recheck row carries the Recheck marker in place of its normal Standard checkmark; the original row is untouched and keeps showing whatever status it already had.
+A recheck is what happens when a callsign that is already checked into the net checks in again. There is no `recheck` value in the list above because it isn't a station's status, it's a description of what just happened. It is a genuinely new check-in, though, not an update to the existing one: the log, the CSV export, and the ICS-309 each list the original check-in and the recheck with its own timestamp.
 
-If you'd rather see one row per callsign, the check-in list has a **"Hide duplicate rows"** toggle (off by default, remembered per browser) that shows only the most recent row for each callsign and hides the earlier ones. Turning it off again (its tooltip reads "Show all rows (including re-checks)") brings every row back, recheck history included.
+The check-in list shows one row per station per place, the station's newest check-in there, carrying the Recheck marker in place of its normal Standard checkmark. The row's timeline, opened from the arrow beside its number, lists every check-in behind it. A station that checks in from a different place gets a row of its own there. See [Rechecks](/docs/net-control/logging-check-ins/#rechecks).
 
 Checking out is one exception to rows being independent: setting any row for a callsign to Out sets every other row for that same callsign in the net to Out as well, original check-in and every recheck together, not just the row you clicked.
 

@@ -13,6 +13,7 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
+  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -21,6 +22,7 @@ import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatTimeWithDate } from '../../utils/dateUtils';
 import useSortableTable from '../../hooks/useSortableTable';
+import { frozenTableProps, frozenTableSx, frozenCellTint } from '../../utils/frozenTable';
 
 // ========== STATION COVERAGE REPORT ==========
 // Phase 3 of the "can hear" inter-station propagation logging feature (see
@@ -51,6 +53,11 @@ export interface CanHearReportEntry {
   band: string | null;
   reported_by_user_id: number | null;
   reported_at: string;
+  // Decided by the server (backend site_coverage.station_reach): the other
+  // station heard this one back on the same frequency, from the same places,
+  // by its own report or because one logged the other's check-in.
+  two_way: boolean;
+  two_way_by_check_in: boolean;
 }
 
 type CoverageSortField = 'reporter' | 'link_type' | 'heard' | 'frequency' | 'reported_at';
@@ -95,15 +102,10 @@ interface CoverageReportProps {
   // presentational component knows about.
   canEditFrequency?: (report: CanHearReportEntry) => boolean;
   onFrequencyChange?: (reportId: number, frequencyId: number | null) => Promise<void>;
-}
-
-// A directional edge is part of a confirmed two-way pair when the reverse
-// edge (heard reports hearing reporter) also exists for the same frequency.
-// Realistic edge counts are dozens per net (see ROADMAP.md's own volume
-// argument), so a plain Set membership check is simple and fast enough -
-// no need for a graph library or memoized adjacency structure.
-function edgeKey(reporterId: number, heardId: number, frequencyId: number | null): string {
-  return `${reporterId}-${heardId}-${frequencyId ?? 'none'}`;
+  // In the Coverage panel: the heading row and Reporter column stay in view
+  // while the table scrolls (utils/frozenTable.ts), filling the panel's
+  // remaining height. Not in the net report.
+  frozen?: boolean;
 }
 
 // Frequency cell text: the looked-up label plus, when known, the band in
@@ -122,24 +124,19 @@ export function formatFrequencyCell(report: CanHearReportEntry, frequencyLabels:
   return report.band ? `${label} (${report.band})` : label;
 }
 
-// Two-way/one-way detection + optional callsign filter, factored out of the
-// table's own useMemo so CoveragePanel's CSV export can build the exact same
-// rows (including which pairs are reciprocal) without duplicating the logic.
-// Exact frequency_id match only - a report logged with no specific frequency
-// is never assumed to be the same edge as one logged against an explicit
-// frequency on a multi-frequency net, since that would be guessing which
-// frequency it was actually heard on.
+// Two-way/one-way plus the optional callsign filter, shared with
+// CoveragePanel's CSV export so it builds the exact same rows. Whether a
+// report is two-way comes from the server, which also counts a logged
+// check-in as a two-way contact and matches stations by place rather than by
+// check-in row; it used to be worked out here from the reports alone, so a
+// station net control had checked in showed only one-way (SET net 137,
+// 2026-10-24). A report with no specific frequency is never matched to one
+// on an explicit frequency.
 export function buildCoverageRows(
   reports: CanHearReportEntry[],
   filterCallsign?: string
 ): (CanHearReportEntry & { isTwoWay: boolean })[] {
-  const allKeys = new Set(
-    reports.map((r) => edgeKey(r.reporter_check_in_id, r.heard_check_in_id, r.frequency_id))
-  );
-  const withTwoWay = reports.map((r) => {
-    const reverseKey = edgeKey(r.heard_check_in_id, r.reporter_check_in_id, r.frequency_id);
-    return { ...r, isTwoWay: allKeys.has(reverseKey) };
-  });
+  const withTwoWay = reports.map((r) => ({ ...r, isTwoWay: r.two_way }));
 
   if (!filterCallsign) return withTwoWay;
   const needle = filterCallsign.toLowerCase();
@@ -160,6 +157,7 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
   netFrequencyOptions,
   canEditFrequency,
   onFrequencyChange,
+  frozen = false,
 }) => {
   const theme = useTheme();
   const { user } = useAuth();
@@ -242,7 +240,11 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
   };
 
   return (
-    <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+    <TableContainer
+      component={Paper}
+      variant="outlined"
+      {...(frozen ? { sx: frozenTableSx(theme, { fill: true }), ...frozenTableProps } : { sx: { overflowX: 'auto' } })}
+    >
       <Table size="small">
         <TableHead>
           <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
@@ -306,11 +308,16 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
               </TableCell>
             </TableRow>
           ) : (
-            rows.map((r) => {
+            rows.map((r, index) => {
               const isHighlighted = !!highlightCallsign && (
                 r.reporter_callsign.toLowerCase() === highlightCallsign.toLowerCase() ||
                 r.heard_callsign.toLowerCase() === highlightCallsign.toLowerCase()
               );
+              // The frozen Reporter cell is opaque, so it carries the row's
+              // stripe or highlight itself rather than hiding it
+              const rowTint = isHighlighted
+                ? alpha(theme.palette.info.main, 0.16)
+                : index % 2 === 0 ? theme.palette.action.hover : null;
               return (
               <TableRow
                 key={r.id}
@@ -319,18 +326,21 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
                   ...(isHighlighted && { backgroundColor: alpha(theme.palette.info.main, 0.16) }),
                 }}
               >
-                <TableCell>
+                <TableCell sx={frozen ? frozenCellTint(rowTint) : undefined}>
                   {renderCallsign(r.reporter_callsign)}
                 </TableCell>
                 <TableCell align="center">
+                  {/* A check-in logged between the two is what made it two-way */}
                   {r.isTwoWay ? (
-                    <Chip
-                      icon={<SyncAltIcon fontSize="small" />}
-                      label="Two-way"
-                      size="small"
-                      color="success"
-                      variant="outlined"
-                    />
+                    <Tooltip title={r.two_way_by_check_in ? 'One of these stations logged the other checking in, so they heard each other' : ''}>
+                      <Chip
+                        icon={<SyncAltIcon fontSize="small" />}
+                        label="Two-way"
+                        size="small"
+                        color="success"
+                        variant="outlined"
+                      />
+                    </Tooltip>
                   ) : (
                     <Chip
                       icon={<ArrowRightAltIcon fontSize="small" />}

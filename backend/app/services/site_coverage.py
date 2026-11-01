@@ -1,9 +1,10 @@
 """Coverage by site: which places in a drill can reach which.
 
-A read-time rollup over a net's CanHearReport rows, grouped by the site each
-check-in row is at (CheckIn.coverage_site_id), the same "the per-net report
-is the single source of truth" rule CanHearReport itself follows. Nothing
-here is stored.
+A read-time rollup over a net's CanHearReport rows, plus every check-in net
+control logged on the air (a two-way contact, check_in_contacts), grouped by
+the site each check-in row is at (CheckIn.coverage_site_id), the same "the
+per-net report is the single source of truth" rule CanHearReport itself
+follows. Nothing here is stored.
 
 Grouping is per check-in ROW, never per callsign. An operator who checks out
 at one shelter and rechecks from another has two rows at two sites, and the
@@ -19,7 +20,8 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from datetime import datetime, timezone
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from sqlalchemy import select
@@ -42,6 +44,19 @@ class CheckInIn:
     id: int
     callsign: str
     coverage_site_id: Optional[int]
+    # Who the row is and who logged it, on what, and when: what makes a
+    # check-in a contact (check_in_contacts). Optional so the rollup's own
+    # tests can leave them out.
+    user_id: Optional[int] = None
+    checked_in_by_id: Optional[int] = None
+    frequency_id: Optional[int] = None
+    checked_in_at: Optional[datetime] = None
+    checked_out_at: Optional[datetime] = None
+    time_not_recorded: bool = False
+    # Where the row's station was, for station_place_key.
+    operating_position: Optional[str] = None
+    status: Optional[str] = None
+    location: Optional[str] = None
 
 
 @dataclass
@@ -121,6 +136,78 @@ def _node_key_for(check_in: CheckInIn) -> str:
     return f"station:{check_in.callsign.upper()}"
 
 
+def _aware(value: Optional[datetime]) -> Optional[datetime]:
+    return value if value is None or value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+
+def check_in_contacts(check_ins: Iterable[CheckInIn]) -> List[ReportIn]:
+    """Every check-in logged on the air is a two-way contact: net control
+    heard the station and the station heard net control answer (Brad,
+    2026-10-30: "Checked in does still mean two-way communication has been
+    made"). Returned as one report from the logger's own row to the
+    station's row, on the check-in's frequency; callers count it in both
+    directions.
+
+    The logger's row is the one they were checked in on at that moment,
+    so a contact is placed where net control actually was. Left out: a
+    station checking itself in through the app (that went over the
+    internet), a check-in with no frequency (In person) or no recorded
+    time, and one whose logger wasn't checked in anywhere at the time."""
+    rows = list(check_ins)
+    by_user: Dict[int, List[CheckInIn]] = {}
+    for row in rows:
+        if row.user_id is not None and row.checked_in_at is not None and not row.time_not_recorded:
+            by_user.setdefault(row.user_id, []).append(row)
+    for own in by_user.values():
+        own.sort(key=lambda r: _aware(r.checked_in_at))
+
+    contacts = []
+    for row in rows:
+        logger_id = row.checked_in_by_id
+        if (row.frequency_id is None or logger_id is None or row.time_not_recorded
+                or row.checked_in_at is None or logger_id == row.user_id):
+            continue
+        at = _aware(row.checked_in_at)
+        logger_row = None
+        for candidate in by_user.get(logger_id, []):
+            if _aware(candidate.checked_in_at) > at:
+                break
+            if candidate.checked_out_at is None or _aware(candidate.checked_out_at) >= at:
+                logger_row = candidate
+        if logger_row is None or logger_row.callsign.upper() == row.callsign.upper():
+            continue
+        contacts.append(ReportIn(logger_row.id, row.id, row.frequency_id))
+    return contacts
+
+
+def station_reach(check_ins: Iterable[CheckInIn], reports: Iterable[ReportIn]) -> Tuple[Set[tuple], Set[tuple]]:
+    """Who heard whom, station by station: directional (from, to, frequency)
+    edges between station_place_key values, from coverage reports and from
+    logged check-ins (both directions). Keyed by place, not by row, so a
+    station rechecked on another channel at the same spot is still the same
+    station. Returns (every edge, the edges a check-in proved)."""
+    from app.services.station_place import station_place_key
+    rows = {r.id: r for r in check_ins}
+
+    def key(row_id: int) -> Optional[str]:
+        row = rows.get(row_id)
+        if row is None:
+            return None
+        return station_place_key(row.callsign, row.coverage_site_id, row.operating_position, row.status, row.location)
+
+    edges: Set[tuple] = set()
+    for r in reports:
+        a, b = key(r.reporter_check_in_id), key(r.heard_check_in_id)
+        if a and b:
+            edges.add((a, b, r.frequency_id))
+    proved: Set[tuple] = set()
+    for r in check_in_contacts(rows.values()):
+        a, b = key(r.reporter_check_in_id), key(r.heard_check_in_id)
+        if a and b:
+            proved |= {(a, b, r.frequency_id), (b, a, r.frequency_id)}
+    return edges | proved, proved
+
+
 def build_site_coverage(
     sites: List[SiteIn],
     check_ins: List[CheckInIn],
@@ -151,7 +238,7 @@ def build_site_coverage(
         # A row pointing at a site that has since been removed counts as
         # having no site, rather than inventing a node for it.
         if ci.coverage_site_id is not None and ci.coverage_site_id not in site_ids:
-            ci = CheckInIn(ci.id, ci.callsign, None)
+            ci = replace(ci, coverage_site_id=None)
         check_in_by_id[ci.id] = ci
 
     def node_for(check_in_id: int) -> Optional[Node]:
@@ -172,6 +259,9 @@ def build_site_coverage(
             node_for(ci.id)
 
     # ---- Directional links between nodes, per frequency ----
+    # A logged check-in counts in both directions (check_in_contacts).
+    logged = check_in_contacts(check_in_by_id.values())
+    reports = list(reports) + logged + [ReportIn(r.heard_check_in_id, r.reporter_check_in_id, r.frequency_id) for r in logged]
     heard: Set[Tuple[str, str, Optional[int]]] = set()
     for r in reports:
         if r.frequency_id in excluded_frequency_ids:
@@ -331,7 +421,9 @@ async def load_site_coverage(db: AsyncSession, net) -> dict:
         select(CoverageSite).where(CoverageSite.net_id == net.id).order_by(CoverageSite.sort_order, CoverageSite.id)
     )).scalars().all()
     check_ins = (await db.execute(
-        select(CheckIn.id, CheckIn.callsign, CheckIn.coverage_site_id).where(CheckIn.net_id == net.id)
+        select(CheckIn.id, CheckIn.callsign, CheckIn.coverage_site_id, CheckIn.user_id, CheckIn.checked_in_by_id,
+               CheckIn.frequency_id, CheckIn.checked_in_at, CheckIn.checked_out_at, CheckIn.time_not_recorded)
+        .where(CheckIn.net_id == net.id)
     )).all()
     reports = (await db.execute(
         select(CanHearReport.reporter_check_in_id, CanHearReport.heard_check_in_id, CanHearReport.frequency_id)
@@ -348,7 +440,8 @@ async def load_site_coverage(db: AsyncSession, net) -> dict:
     sites = [s for s in sites if coverage_site_in_use(s, checked_in_site_ids)]
     return build_site_coverage(
         [SiteIn(s.id, s.name, s.location, s.site_type, bool(s.is_primary), s.latitude, s.longitude) for s in sites],
-        [CheckInIn(r.id, r.callsign, r.coverage_site_id) for r in check_ins],
+        [CheckInIn(r.id, r.callsign, r.coverage_site_id, r.user_id, r.checked_in_by_id, r.frequency_id,
+                   r.checked_in_at, r.checked_out_at, bool(r.time_not_recorded)) for r in check_ins],
         [ReportIn(r.reporter_check_in_id, r.heard_check_in_id, r.frequency_id) for r in reports],
         [ContactIn(c.id, c.reporter_check_in_id, c.frequency_id, c.callsign, c.station, c.county, c.state, bool(c.two_way))
          for c in contacts],

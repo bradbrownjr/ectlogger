@@ -44,6 +44,7 @@ import FastForwardIcon from '@mui/icons-material/FastForward';
 import SearchIcon from '@mui/icons-material/Search';
 import PanToolIcon from '@mui/icons-material/PanTool';
 import DescriptionIcon from '@mui/icons-material/Description';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ArticleIcon from '@mui/icons-material/Article';
 import CampaignIcon from '@mui/icons-material/Campaign';
@@ -171,7 +172,9 @@ interface ToolbarItemDef {
   color: string;
   label: string;
   tooltip: string;
-  onClick: () => void;
+  // The element a menu opens from: the item's own button, or More when the
+  // item has moved into the More menu (Reports opens one)
+  onClick: (anchor?: HTMLElement | null) => void;
   disabled?: boolean;
   active?: boolean;
   activeTone?: 'primary' | 'warning' | 'success';
@@ -392,6 +395,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   const [descriptionAnchorEl, setDescriptionAnchorEl] = useState<HTMLElement | null>(null);
   const descriptionExpanded = !!descriptionAnchorEl;
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
+  const [reportsAnchor, setReportsAnchor] = useState<null | HTMLElement>(null);
   const [stepAwayConfirmOpen, setStepAwayConfirmOpen] = useState(false);
   const [logoLightboxOpen, setLogoLightboxOpen] = useState(false);
 
@@ -725,28 +729,14 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       tooltip: 'Close net', onClick: () => closeNetDialog.onOpen(),
     },
     {
-      key: 'export', group: 'management', priority: 2,
+      // A closed net's report, logs and spreadsheets in one menu (Brad,
+      // 2026-10-30): Export, ICS-309, ICS-309 PDF and Report were four
+      // buttons. The ICS-214 is net control's to finish, so only they see it.
+      key: 'reports', group: 'management', priority: 2,
       visible: isClosedOrArchived,
-      Icon: DownloadIcon, color: '#4caf50', label: 'Export',
-      tooltip: 'Export check-ins to CSV', onClick: onExportCSV,
-    },
-    {
-      key: 'ics309', group: 'management', priority: 2,
-      visible: isClosedOrArchived,
-      Icon: DescriptionIcon, color: '#009688', label: 'ICS-309',
-      tooltip: 'Download ICS-309 Communications Log', onClick: onExportICS309,
-    },
-    {
-      key: 'ics309-pdf', group: 'management', priority: 2,
-      visible: isClosedOrArchived,
-      Icon: PictureAsPdfIcon, color: '#009688', label: 'ICS-309 PDF',
-      tooltip: 'Download a form-accurate ICS-309 Communications Log PDF', onClick: onExportICS309Pdf,
-    },
-    {
-      key: 'report', group: 'management', priority: 2,
-      visible: isClosedOrArchived,
-      Icon: PictureAsPdfIcon, color: '#4caf50', label: 'Report',
-      tooltip: 'Generate comprehensive net report (PDF)', onClick: () => navigate(`/nets/${netId}/report`),
+      Icon: DescriptionIcon, color: '#009688', label: 'Reports',
+      tooltip: 'Net report, logs and spreadsheets',
+      onClick: (anchor) => setReportsAnchor(anchor ?? null),
     },
     {
       key: 'archive', group: 'management', priority: 2,
@@ -838,7 +828,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
           <Button
             variant="text"
             disableElevation
-            onClick={item.onClick}
+            onClick={(e) => item.onClick(e.currentTarget)}
             disabled={item.disabled}
             sx={{
               ...flushBtnSx(comfortable, !showLabel, isDarkMode, theme.palette.primary.main, { emphasis: item.emphasis, active: item.active, activeTone: item.activeTone }),
@@ -1204,7 +1194,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
             <MenuItem
               key={item.key}
               disabled={item.disabled}
-              onClick={() => { setMoreMenuAnchor(null); item.onClick(); }}
+              onClick={() => { const anchor = moreMenuAnchor; setMoreMenuAnchor(null); item.onClick(anchor); }}
             >
               <ListItemIcon>
                 <item.Icon sx={{ fontSize: 18, color: item.color }} />
@@ -1220,6 +1210,25 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
 
         {managementVisible.map(item => renderGroupItem(item))}
       </Box>
+
+      {/* ========== REPORTS MENU (closed and archived nets) ========== */}
+      <Menu anchorEl={reportsAnchor} open={!!reportsAnchor} onClose={() => setReportsAnchor(null)}>
+        {[
+          { key: 'report', label: 'Net report', Icon: AssessmentIcon, onClick: () => navigate(`/nets/${netId}/report`) },
+          { key: 'ics309-pdf', label: 'ICS-309 PDF', Icon: PictureAsPdfIcon, onClick: onExportICS309Pdf },
+          { key: 'ics309', label: 'ICS-309 CSV', Icon: DescriptionIcon, onClick: onExportICS309 },
+          // Net control only, who finish the form before downloading it
+          ...(actions.prepare_ics214
+            ? [{ key: 'ics214', label: 'ICS-214', Icon: EditNoteIcon, onClick: () => navigate(`/nets/${netId}/ics214`) }]
+            : []),
+          { key: 'csv', label: 'Check-ins CSV', Icon: DownloadIcon, onClick: onExportCSV },
+        ].map(({ key, label, Icon, onClick }) => (
+          <MenuItem key={key} onClick={() => { setReportsAnchor(null); onClick(); }}>
+            <ListItemIcon><Icon sx={{ fontSize: 18 }} /></ListItemIcon>
+            <ListItemText>{label}</ListItemText>
+          </MenuItem>
+        ))}
+      </Menu>
 
       <Dialog open={stepAwayConfirmOpen} onClose={() => setStepAwayConfirmOpen(false)}>
         <DialogTitle>Step away as the only active NCS?</DialogTitle>

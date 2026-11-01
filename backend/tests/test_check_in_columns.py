@@ -105,7 +105,9 @@ async def test_closing_email_shows_feedback_custom_fields_and_frequency(monkeypa
     await net_closure.send_net_log(db, loaded)
 
     html = captured["html"]
-    for heading in ("<th>Feedback</th>", "<th>FLDIGI</th>", "<th>Frequency</th>"):
+    # The email lists one row per station, so its channel column names every
+    # channel the station checked in on (services/station_rows.py).
+    for heading in ("<th>Feedback</th>", "<th>FLDIGI</th>", "<th>Checked in on</th>"):
         assert heading in html
     assert "<th>Digital</th>" not in html
     assert "<strong>Frequencies:</strong> 146.520 FM, 145.090 Packet" in html

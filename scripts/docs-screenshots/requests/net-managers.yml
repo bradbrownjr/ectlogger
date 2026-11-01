@@ -248,18 +248,21 @@ shots:
     route: /nets/{{net:closed}}
     as: K1COVE
     wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'button:has-text("Reports")'
+      - wait_for: '[role="menu"] li:has-text("Check-ins CSV")'
     element:
-      - 'button:has-text("Export")'
-      - 'button:has-text("ICS-309 PDF")'
-      - 'button:has-text("Report")'
+      - 'button:has-text("Reports")'
+      - '[role="menu"]'
     pad: 8
     annotate:
-      - selector: 'button:has-text("Report")'
+      - selector: 'button:has-text("Reports")'
         style: box
     alt: >
-      Four toolbar buttons on a closed net: Export, ICS-309, ICS-309 PDF, and
-      Report, with Report outlined in red.
-    caption: Export and both ICS-309 buttons download a single file; Report opens the full multi-section report page.
+      The Reports button on a closed net's toolbar, outlined in red, with its
+      menu open: Net report, ICS-309 PDF, ICS-309 CSV, ICS-214, and Check-ins
+      CSV.
+    caption: Net report and ICS-214 open a page of their own; the rest download a single file.
 
   - id: net-report-header
     section: net-managers

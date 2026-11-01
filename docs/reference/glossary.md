@@ -4,7 +4,7 @@ summary: Words this site uses in a particular way, including a few that mean som
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-24
+revised: 2026-10-31
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/glossary/
@@ -50,8 +50,11 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 **ICS-213**
 : FEMA's General Message form, one of the formal traffic types ECTLogger can log and export alongside the ARRL Radiogram and RRI strips.
 
+**ICS-214**
+: FEMA's Activity Log form: what a unit did, who was assigned, and when the notable things happened. Net control opens a closed net's ICS-214 from **Reports**, already filled in from the net's log. See [The ICS-214 activity log](/docs/net-control/ics-214/).
+
 **ICS-309**
-: FEMA's Communications Log form, and the format a net's closure log can be exported in, listing every check-in and message in a standard incident-management layout instead of ECTLogger's plain log. It also lists traffic handled on the net and accepted off-net log entries.
+: FEMA's Communications Log form, and the format a net's closure log can be exported in, listing every check-in (except In person ones) and message in a standard incident-management layout instead of ECTLogger's plain log. It also lists traffic handled on the net and accepted off-net log entries.
 
 **Off-net log**
 : A net's record of what its stations did away from the net, such as a check-in to another net or a Winlink message sent to another county. Each accepted entry is a line on the net's ICS-309. See [Logging off-net activity](/docs/net-control/off-net-log/).
@@ -84,7 +87,7 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 : The ARRL's standard formal message format for amateur traffic handling: the classic numbered-preamble message form.
 
 **Recheck**
-: Not a status. What happens when a callsign already checked into the net checks in again, and by default a second row in the check-in list rather than an update to the first: the original check-in and the recheck both stay visible, with the recheck row carrying its own marker, unless "Hide duplicate rows" is turned on to show only the latest row per callsign. See [Station statuses](/docs/reference/station-statuses/).
+: Not a status. What happens when a callsign already checked into the net checks in again. The recheck is logged as a check-in of its own, with its own time, rather than an update to the first. The check-in list keeps one row for the station at each place, with its check-ins in the row's timeline. See [Station statuses](/docs/reference/station-statuses/).
 
 **Relay**
 : Both a per-net role (a station that checks in others NCS can't hear directly) and a station status (reporting yourself as relaying); see [Station statuses](/docs/reference/station-statuses/) for how the two interact.

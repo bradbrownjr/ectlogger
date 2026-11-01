@@ -4,7 +4,7 @@ summary: Telling the net which other stations you can hear directly, why that ma
 kind: How-to
 audience: Anyone checking into a net
 owner: KC1JMH
-revised: 2026-10-30
+revised: 2026-10-31
 review_by: 2027-10-21
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/operators/reporting-what-you-hear/
@@ -49,7 +49,7 @@ While only some stations are ticked, the **All stations** box shows a dash inste
 
 ## The parts that surprise people
 
-**Open it from the first row after a recheck.** From a station's second check-in row the dialog shows only the reports saved on that row; see [Known issues](/docs/about/known-issues/#who-can-hear-recheck).
+**Your report belongs to where you are.** It covers every check-in you've made from your current place, rechecks included. If you move somewhere else, you start a fresh report there, and the one from your old place stays with it.
 
 **Saving replaces your last report, it doesn't add to it.** The dialog opens with your previous answers already ticked. Change what's different and save again; whatever is unticked when you save is removed.
 
@@ -59,7 +59,7 @@ While only some stations are ticked, the **All stations** box shows a dash inste
 
 **Everyone viewing the net can see the reports.** Coverage is part of the net's log, the same as the check-in list. Your personal map, below, is only yours.
 
-**One-way isn't an accusation.** When you report hearing a station and they haven't reported hearing you yet, net control sees that pair marked **One-way**. It often just means the other station hasn't been asked.
+**One-way isn't an accusation.** When you report hearing a station and they haven't reported hearing you yet, net control sees that pair marked **One-way**. It often just means the other station hasn't been asked. If one of you checked the other in on that frequency, it's already **Two-way**, since you worked each other.
 
 ## On a drill at a shelter or an office
 

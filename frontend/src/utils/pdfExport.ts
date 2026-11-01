@@ -65,7 +65,11 @@ const PAPER_PX_PER_MM = PRINT_PAGE_WIDTH / (LETTER_MM.width - 20);
 //                             within this element, a color the screen uses in
 //                             place of a print color goes back to the print
 //                             color (a report accent lightened for dark mode)
+//   data-export-unbound       a box that scrolls on screen (a frozen table,
+//                             utils/frozenTable.ts) prints whole: no height
+//                             limit, no scrolling, no sticky cells
 const EXPORT_HIDE_ATTR = 'data-export-hide';
+export const EXPORT_UNBOUND_ATTR = 'data-export-unbound';
 const EXPORT_SHOW_ATTR = 'data-export-show';
 const EXPORT_COLORS_ATTR = 'data-export-colors';
 
@@ -573,6 +577,10 @@ const captureElementAsCanvas = async (
     clone.querySelectorAll(`[${EXPORT_HIDE_ATTR}]`).forEach((el) => {
       (el as HTMLElement).style.display = 'none';
     });
+    clone.querySelectorAll(`[${EXPORT_UNBOUND_ATTR}]`).forEach((el) => {
+      Object.assign((el as HTMLElement).style, { maxHeight: 'none', overflow: 'visible' });
+      el.querySelectorAll('th, td').forEach((cell) => { (cell as HTMLElement).style.position = 'static'; });
+    });
     clone.querySelectorAll(`[${EXPORT_SHOW_ATTR}]`).forEach((el) => {
       (el as HTMLElement).style.display = el.getAttribute(EXPORT_SHOW_ATTR) || 'block';
     });
@@ -839,6 +847,40 @@ export const exportElementToPng = async (
     throw new Error(`Element with ID "${elementId}" not found`);
   }
   return exportToPng(element, options);
+};
+
+/**
+ * Export a view that lays out its own pages: every element inside the one
+ * with this id that carries data-pdf-page becomes one PDF page, captured on
+ * its own. Use it for a form whose continuation pages repeat its header
+ * (ICS214PrintView), which slicing one tall capture can't do. A page taller
+ * than the paper is scaled down to fit rather than cut.
+ */
+export const exportPagesToPdf = async (
+  elementId: string,
+  options: Pick<PdfExportOptions, 'filename' | 'addTimestamp' | 'scale' | 'margin'>
+): Promise<void> => {
+  const root = document.getElementById(elementId);
+  if (!root) throw new Error(`Element with ID "${elementId}" not found`);
+  const pages = Array.from(root.querySelectorAll<HTMLElement>('[data-pdf-page]'));
+  if (pages.length === 0) throw new Error(`No pages inside "${elementId}"`);
+  const { filename, addTimestamp = true, scale = 2, margin = 10 } = options;
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+  const contentWidth = LETTER_MM.width - margin * 2;
+  const contentHeight = LETTER_MM.height - margin * 2;
+  for (let i = 0; i < pages.length; i++) {
+    if (i > 0) pdf.addPage();
+    const { canvas } = await captureElementAsCanvas(pages[i], scale, 'clone', contentWidth * PAPER_PX_PER_MM);
+    let width = contentWidth;
+    let height = (canvas.height * contentWidth) / canvas.width;
+    if (height > contentHeight) {
+      width *= contentHeight / height;
+      height = contentHeight;
+    }
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.85), 'JPEG', margin + (contentWidth - width) / 2, margin, width, height);
+  }
+  const stamp = addTimestamp ? `_${new Date().toISOString().split('T')[0]}` : '';
+  pdf.save(`${filename}${stamp}.pdf`);
 };
 
 /**

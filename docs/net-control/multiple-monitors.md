@@ -4,7 +4,7 @@ summary: Detaching and popping out the check-in list, chat, and other panels, an
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-15
+revised: 2026-10-31
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/multiple-monitors/
@@ -26,6 +26,7 @@ Every docked panel carries the same small row of controls in its header:
 
 - **Detach** turns a docked panel into a draggable, resizable floating overlay that stays on top of the rest of the page, which suits pulling something out of the column layout without leaving the browser tab.
 - **Open in new window** (the pop-out icon) goes further: it opens that panel in a genuinely separate browser window, running its own connection to the net, independent of the tab that opened it. Drag that window onto a second monitor and it keeps working there on its own. It doesn't share state with the tab it came from; it just stays in sync with the net the same way any other connected viewer does.
+- **Maximize**, on the Map and Coverage, fills the screen with the panel, for the times you need the whole map or a big coverage grid. **Restore** puts it back where it was.
 - **Minimize** collapses a panel down to its header bar without closing it, and **Close** removes it from the layout entirely (for panels that have a genuine "not open right now" state, like Coverage and Traffic; Chat and the Activity Log are always present, so their only "put it away" move is detaching or minimizing).
 
 <figure>
@@ -39,6 +40,8 @@ Every docked panel carries the same small row of controls in its header:
        alt="The check-in list open in its own bare browser window, with no navigation bar, ready to be dragged onto a second monitor.">
   <figcaption>A popped-out pane is a real second window with its own connection to the net; move it to another monitor and it keeps working on its own.</figcaption>
 </figure>
+
+The Map and Coverage open floating, since a map or a coverage grid needs more room than the column beside Chat has. Click **Dock to layout** on either to put it in the column instead.
 
 Every layout choice you make (what's docked, what's detached, what's popped out, and each panel's minimized state) is remembered per browser, so your desk looks the same the next time you open a net on the same machine.
 

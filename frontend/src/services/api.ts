@@ -254,6 +254,16 @@ export const checkInApi = {
     api.post(`/check-ins/check-ins/${id}/verify-identity`, { verified }),
 };
 
+// Channels marked offline at a station's place (routers/channel_marks.py)
+export const channelMarkApi = {
+  list: (netId: number, background = false) =>
+    api.get(`/check-ins/nets/${netId}/channel-marks`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
+  offline: (checkInId: number, frequencyId: number) =>
+    api.post(`/check-ins/check-ins/${checkInId}/channels/${frequencyId}/offline`),
+  online: (checkInId: number, frequencyId: number) =>
+    api.post(`/check-ins/check-ins/${checkInId}/channels/${frequencyId}/online`),
+};
+
 // "Can hear" propagation logging API
 export const canHearApi = {
   list: (netId: number, background = false) =>
@@ -392,6 +402,17 @@ export const drillPlanApi = {
   remove: (netId: number) => api.delete(`/nets/${netId}/drill-plan`),
   send: (netId: number, eventId: number, data: { handled_by?: string | null }) =>
     api.post(`/nets/${netId}/drill-plan/events/${eventId}/send`, data),
+};
+
+// ICS-214 Activity Log of a closed net (routers/ics214.py), net control only
+export const ics214Api = {
+  get: (netId: number) => api.get(`/nets/${netId}/ics214`),
+  save: (netId: number, data: { header: any; line_edits: Record<string, any>; resource_edits: Record<string, any> }) =>
+    api.put(`/nets/${netId}/ics214`, data),
+  addEntry: (netId: number, data: { occurred_at: string; text: string }) => api.post(`/nets/${netId}/ics214/entries`, data),
+  updateEntry: (netId: number, entryId: number, data: { occurred_at: string; text: string }) =>
+    api.put(`/nets/${netId}/ics214/entries/${entryId}`, data),
+  deleteEntry: (netId: number, entryId: number) => api.delete(`/nets/${netId}/ics214/entries/${entryId}`),
 };
 
 // Template API
