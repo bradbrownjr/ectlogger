@@ -188,6 +188,11 @@ async def add_off_net_entry(
 ):
     net, viewer = await _load(db, net_id, current_user)
     _require_writable(net)
+    # Entries only ever appear on the ICS-309, so a net without one has no
+    # off-net log (an ARES tool; Brad, 2026-11-01, after it showed on ME
+    # Dirigo Net). Existing entries stay readable and editable.
+    if not net.ics309_enabled:
+        raise HTTPException(status_code=400, detail="This net doesn't keep an ICS-309, so it has no off-net log")
     if not viewer.can_add:
         raise HTTPException(status_code=403, detail="Check in to this net first")
     entry = OffNetLogEntry(

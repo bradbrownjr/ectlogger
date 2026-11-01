@@ -1,6 +1,39 @@
 {
-  "version": "2026.10.31",
+  "version": "2026.11.01",
   "entries": [
+    {
+      "version": "2026.11.01",
+      "date": "2026-11-01",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Net and Schedule: Reuse a logo — When you edit a net or schedule, Choose Existing lets you pick a logo already on the site, so you don't have to find the original image and upload it again. When you replace a logo, you can update your other nets and schedules that still show the old one in the same step.",
+              "userImpact": true,
+              "docs": "/docs/net-managers/creating-a-net/#using-a-logo-thats-already-here"
+            },
+            {
+              "text": "Net View: Off-net on ICS-309 nets only — The Off-net button now shows only on nets that keep an ICS-309, the one place its entries go, so club and social nets no longer carry an ARES tool they don't use.",
+              "userImpact": true,
+              "docs": "/docs/net-control/off-net-log/"
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net and Schedule: Past nets keep their logo — Removing or replacing a schedule's logo no longer removes or changes the logo on nets the schedule has already run.",
+              "userImpact": true,
+              "docs": "/docs/net-managers/creating-a-net/#using-a-logo-thats-already-here"
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.10.31",
       "date": "2026-10-31",

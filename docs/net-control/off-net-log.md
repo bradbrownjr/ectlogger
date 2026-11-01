@@ -4,7 +4,7 @@ summary: Put a station's contacts away from this net on its ICS-309, such as a c
 kind: How-to
 audience: NCS, Logger, and Relay operators, and stations checked into the net
 owner: KC1JMH
-revised: 2026-10-24
+revised: 2026-11-01
 review_by: 2027-10-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/off-net-log/
@@ -26,7 +26,7 @@ Something you heard about somebody else, such as another county's shelter fillin
 
 ## Opening the off-net log
 
-The **Off-net** button on the net toolbar opens the log. It appears for net control staff (NCS, Logger, Relay, and the net's manager) and for any signed-in station checked into the net, while the net is in its lobby, running, or closed.
+The **Off-net** button on the net toolbar opens the log. It's there only on a net that keeps an ICS-309 (**Enable ICS-309 Communications Log format**, under ARES & EmComm features in the net's settings), since that's where the entries go; a social or club net doesn't get one. On those nets it appears for net control staff (NCS, Logger, Relay, and the net's manager) and for any signed-in station checked into the net, while the net is in its lobby, running, or closed.
 
 <figure>
   <img src="/docs/img/net-control/off-net-toolbar.png"
