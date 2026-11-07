@@ -333,7 +333,9 @@ shots:
     page: /docs/net-managers/net-staff-and-rotation/
     route: /scheduler/{{template:weekly}}
     as: W1PINE
-    wait_for: 'input[value$="/live"]'
+    # The net list loads after the links; wait for it, or the shot shows
+    # the spinner instead of the running net
+    wait_for: 'button:has-text("Create another net")'
     steps:
       # Show the hosted site's address, as in subscribe-link below
       - evaluate: >
@@ -348,8 +350,8 @@ shots:
       - selector: 'div:has(> .MuiTextField-root input[value$="/live"]) > button'
         style: box
     alt: >
-      The On the air section of a schedule's page, seen by its manager: the
-      net running now with its NCS, check-in count and an On the air chip, a
+      The On the air section of a schedule's page, seen by its manager: a
+      Select a net to open it hint, the net running now with its NCS, check-in count and an On the air chip, a
       Create another net button, and two links to copy, This page and Live
       net, with the Live net link's Copy link button outlined in red.
     caption: Live net is the link to put on your club's website.

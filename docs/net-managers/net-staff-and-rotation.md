@@ -77,7 +77,7 @@ If you can create nets from the schedule, you also get:
 
 <figure>
   <img src="/docs/img/net-managers/schedule-page-links.png"
-       alt="The On the air section of a schedule's page, seen by its manager: the net running now with its NCS, check-in count and an On the air chip, a Create another net button, and two links to copy, This page and Live net, with the Live net link's Copy link button outlined in red.">
+       alt="The On the air section of a schedule's page, seen by its manager: a Select a net to open it hint, the net running now with its NCS, check-in count and an On the air chip, a Create another net button, and two links to copy, This page and Live net, with the Live net link's Copy link button outlined in red.">
   <figcaption>Live net is the link to put on your club's website.</figcaption>
 </figure>
 

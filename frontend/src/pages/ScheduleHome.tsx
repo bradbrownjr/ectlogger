@@ -98,6 +98,9 @@ const ScheduleHome: React.FC = () => {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'not_found' | 'error'>('loading');
   const [currentNets, setCurrentNets] = useState<ScheduleNet[]>([]);
+  // Until the list arrives, "no net is running" would be a guess, and showing
+  // Create beside it invites a duplicate net.
+  const [netsStatus, setNetsStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [pastNets, setPastNets] = useState<ScheduleNet[]>([]);
   const [upcoming, setUpcoming] = useState<UpcomingEntry[]>([]);
   const [hasRotation, setHasRotation] = useState(false);
@@ -140,6 +143,9 @@ const ScheduleHome: React.FC = () => {
         ...nets.filter((n) => ON_AIR_STATUSES.includes(n.status)),
         ...nets.filter((n) => NOT_STARTED_STATUSES.includes(n.status)),
       ]);
+      setNetsStatus('ready');
+    } else {
+      setNetsStatus('error');
     }
     if (past.status === 'fulfilled') setPastNets(past.value.data);
     if (rotation.status === 'fulfilled') {
@@ -293,8 +299,25 @@ const ScheduleHome: React.FC = () => {
           On the air
         </Typography>
 
+        {/* Shows above the list: the rows are links, which isn't obvious */}
+        {currentNets.length > 0 && (
+          <Typography variant="body2" color="text.secondary">
+            Select a net to open it.
+          </Typography>
+        )}
+
+        {/* Shows while the list is loading */}
+        {netsStatus === 'loading' && <CircularProgress size={24} sx={{ display: 'block', my: 1 }} />}
+
+        {/* Shows when the list could not be read */}
+        {netsStatus === 'error' && (
+          <Typography variant="body2" color="error">
+            The nets for this schedule couldn't be loaded. Reload the page to try again.
+          </Typography>
+        )}
+
         {/* Shows when nothing is running or waiting to start */}
-        {currentNets.length === 0 && (
+        {netsStatus === 'ready' && currentNets.length === 0 && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: canCreateNet ? 2 : 0 }}>
             No net is running.
           </Typography>
@@ -329,8 +352,9 @@ const ScheduleHome: React.FC = () => {
         )}
 
         {/* Shows to staff who may create a net from this schedule. Outlined
-            when a net already exists, so it doesn't outrank opening that net. */}
-        {canCreateNet && (
+            when a net already exists, so it doesn't outrank opening that net.
+            Waits for the list, so nobody creates a net that already exists. */}
+        {canCreateNet && netsStatus === 'ready' && (
           <>
             <Button
               variant={currentNets.length === 0 ? 'contained' : 'outlined'}
@@ -431,6 +455,9 @@ const ScheduleHome: React.FC = () => {
           </Typography>
         ) : (
           <>
+            <Typography variant="body2" color="text.secondary">
+              Select a net to open its report.
+            </Typography>
             <List disablePadding>
               {pastNets.map((net) => (
                 <ListItemButton
