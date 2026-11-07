@@ -57,7 +57,7 @@ shots:
     alt: >
       The Archived and Cancelled Nets dialog, with a search box, From and To
       date fields, and Attended and Ran as NCS checkboxes.
-    caption: Everything closed, archived, or cancelled lives here, not just this week's nets.
+    caption: Every closed, archived, or cancelled net is listed here.
 
   # The Schedule page's month calendar. The view toggle is persisted per
   # browser, and each capture starts in a fresh one, so switch to it first.
@@ -84,7 +84,7 @@ shots:
       The Schedule page in calendar view: a month grid with each net on its
       day, showing its start time, name, and NCS callsign. The Calendar view
       button at the top right is outlined in red.
-    caption: Past days show what actually happened; today forward shows what's coming up, including who is on NCS.
+    caption: Past days show what happened; today forward shows what's coming up, including who is on NCS.
 
   # The details popover for one occurrence: this date's NCS and outcome on
   # top, then the schedule's usual card.
@@ -222,7 +222,7 @@ shots:
       A check-in row's status dropdown open, listing Checked in, Listening,
       Relay, Away, Has traffic, Announcements, Mobile, In person, and
       Checked out.
-    caption: Every status is one dropdown away, on your own row.
+    caption: Every status is in the dropdown on your own row.
 
   - id: self-status-toolbar
     section: operators
@@ -250,8 +250,7 @@ shots:
       highlighted Lower hand button, then Step away and Just listening both
       outlined in red, then Check out in red.
     caption: >
-      The two statuses you actually reach for mid-net have their own buttons,
-      so you never have to find your own row.
+      The two statuses you use most mid-net have their own buttons.
 
   # ========== Chat, polls, and topics ==========
   - id: chat-mention-composer
@@ -344,7 +343,7 @@ shots:
       The traffic composer's form-type picker, showing five cards: ARRL
       Radiogram, GYX-CAR SKYWARN Report, ICS-213 General Message Form, RRI
       Strip (General), and RRI WXOBS Weather Observation.
-    caption: Only the types a net's manager enabled are offered here -- asking for an unusual type is still possible through the standalone Traffic section below.
+    caption: Only the types a net's manager enabled are offered here; for another type, use the standalone Traffic section below.
 
   # ========== Your statistics ==========
   - id: activity-stat-cards
@@ -421,7 +420,7 @@ shots:
     alt: >
       The ECTLogger sign-in page, with the Sign in with a password instead
       link outlined in red below the Send Magic Link button.
-    caption: Easy to miss, because most people never need it. It is at the bottom of the sign-in page.
+    caption: Most people never need it. It is at the bottom of the sign-in page.
 
   - id: security-email-card
     section: operators
@@ -544,8 +543,7 @@ shots:
       net's name, description, when it runs, its frequencies, and its Stats
       button, with the Sign in to subscribe button outlined in red.
     caption: >
-      The page names the net before asking for anything, so you know what
-      you're subscribing to.
+      The page names the net before asking for anything.
 
   # ========== Reporting what you hear ==========
   # All from the seeded Example County ARES Simplex Drill ({{net:coverage}}),

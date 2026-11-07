@@ -18,15 +18,15 @@ The dashboard is the front door. It lists every net on the instance, and you don
 
 Each net shows as a card with a status chip:
 
-- **Active** — happening right now. Check in.
-- **Lobby** — the pre-net waiting room. Chat and check-ins are open, but the net hasn't officially started counting yet — this is common in the minutes before a scheduled start, so early arrivals have somewhere to be instead of nothing to click.
+- **Active** — happening now. Check in.
+- **Lobby** — the pre-net waiting room. Chat and check-ins are open, but the net hasn't officially started counting yet. This is common in the minutes before a scheduled start, so early arrivals have somewhere to be.
 - **Scheduled** — has a start time in the future.
 - **Draft** — exists but has no start time set yet (a net someone is still setting up).
 - **Closed** — finished, its log is final, but it's still easy to find on the dashboard.
 - **Archived** — closed and tucked away; see below.
-- **Cancelled** — a scheduled or draft occurrence that was called off ahead of time rather than deleted, so it doesn't quietly get recreated by the schedule.
+- **Cancelled** — a scheduled or draft occurrence that was called off ahead of time rather than deleted, so the schedule doesn't recreate it.
 
-By default, nets are sorted with Active and Lobby first (most recently started at the top), then Scheduled and Draft (soonest first), then everything else alphabetically. A search box filters by net name, description, or frequency, and by the net manager's callsign or name. You can switch the sort to plain alphabetical order in your [profile settings](/docs/operators/account-and-profile/) if you'd rather.
+By default, nets are sorted with Active and Lobby first (most recently started at the top), then Scheduled and Draft (soonest first), then everything else alphabetically. A search box filters by net name, description, or frequency, and by the net manager's callsign or name. You can switch the sort to plain alphabetical order in your [profile settings](/docs/operators/account-and-profile/) if you prefer.
 
 <figure>
   <img src="/docs/img/operators/dashboard-net-list.png"
@@ -36,15 +36,15 @@ By default, nets are sorted with Active and Lobby first (most recently started a
 
 ## Landing on a net you haven't joined
 
-Open any Active or Lobby net and, if you're signed in and haven't checked in yet, a banner offers to check you in on the spot; see [Checking in](/docs/operators/checking-in/). You can dismiss it and just watch instead; nothing about viewing a net requires joining it.
+Open any Active or Lobby net and, if you're signed in and haven't checked in yet, a banner offers to check you in on the spot; see [Checking in](/docs/operators/checking-in/). You can dismiss it and watch instead; viewing a net doesn't require joining it.
 
 ## Learning about a net
 
-Click **Net info** on the net's toolbar for a card about the net: its logo and description, when it runs, its frequencies, its manager, NCS and staff, and links to its website, its schedule's page, its subscribe link, and, once it has closed, its report and statistics. Click a callsign on the card to see that operator's profile. Net info is there before, during and after the net, whether or not you're signed in.
+Click **Net info** on the net's toolbar for a card about the net: its logo and description, when it runs, its frequencies, its manager, NCS and staff, and links to its website, its schedule's page, its subscribe link, and, once it has closed, its report and statistics. Click a callsign on the card to see that operator's profile. Net info is there before, during and after the net, signed in or not.
 
 ## Sharing a net with someone who has no account
 
-Anyone can open a net without signing in, so you can send a net's link to someone who hasn't joined yet: a prospective member, a served agency, or a family member who wants to follow along. Copy the address from your browser's address bar while the net is open. It looks like `https://app.ectlogger.us/nets/` followed by the net's number.
+Anyone can open a net without signing in, so you can send a net's link to someone who hasn't joined yet, such as a prospective member, a served agency, or a family member. Copy the address from your browser's address bar while the net is open. It looks like `https://app.ectlogger.us/nets/` followed by the net's number.
 
 A visitor who isn't signed in sees the net as it happens: the check-in list, chat, the map, and the results of a poll or topic. They can't check in or send a chat message until they sign in. Some things are left out for them:
 
@@ -56,7 +56,7 @@ A closed net's report page works the same way; see [Reports, ICS-309, and export
 
 ## Finding a net that already happened
 
-Closed and archived nets don't disappear. Sign in, then click the archive icon (bottom right of the dashboard) to open a searchable list of every closed, archived, or cancelled net. You can:
+Closed and archived nets stay available. Sign in, then click the archive icon (bottom right of the dashboard) to open a searchable list of every closed, archived, or cancelled net. You can:
 
 - Search by net name or net manager callsign.
 - Filter by a date range (**From** / **To**).
@@ -65,14 +65,14 @@ Closed and archived nets don't disappear. Sign in, then click the archive icon (
 <figure>
   <img src="/docs/img/operators/archived-nets-dialog.png"
        alt="The Archived and Cancelled Nets dialog, with a search box, From and To date fields, and Attended and Ran as NCS checkboxes.">
-  <figcaption>Everything closed, archived, or cancelled lives here, not just this week's nets.</figcaption>
+  <figcaption>Every closed, archived, or cancelled net is listed here.</figcaption>
 </figure>
 
 Opening a closed net still shows its full check-in list and report; you don't need to have been there to read the log.
 
 ## Starring a net you check into often
 
-Click the star icon on a net card to favorite it. Favorited nets always sort to the top of the dashboard, ahead of even an Active net, so the one you show up to every Tuesday doesn't get lost in a long list. When you're signed in, your stars are saved to your account, so they follow you to any phone or computer you sign in on. Stars you set in a browser before they were saved this way are added to your account the first time you sign in there. Without signing in, stars are kept in that browser only. The star belongs to the net's schedule, so starring tonight's net keeps next week's net from the same schedule at the top too.
+Click the star icon on a net card to favorite it. Favorited nets always sort to the top of the dashboard, ahead of even an Active net. When you're signed in, your stars are saved to your account, so they follow you to any phone or computer you sign in on. Stars you set in a browser before they were saved this way are added to your account the first time you sign in there. Without signing in, stars are kept in that browser only. The star belongs to the net's schedule, so starring tonight's net keeps next week's net from the same schedule at the top too.
 
 ## Catching up on a schedule's news
 
@@ -80,19 +80,19 @@ When a net's schedule has standing announcements (club news, upcoming exam sessi
 
 ## Getting emails about a net
 
-Once you're signed in, a net card from a schedule has a **Subscribe** button. It subscribes you to the schedule, not just tonight's net, so you hear about every net it runs. The button turns into **Unsubscribe** once you're subscribed, and it's the same subscription as the one on the Schedule page, so you can change it from either place. Which emails you actually get (the net starting, the net closing with its log, a reminder beforehand) is up to your [profile's notification settings](/docs/operators/account-and-profile/).
+Once you're signed in, a net card from a schedule has a **Subscribe** button. It subscribes you to the schedule, so you hear about every net it runs. The button turns into **Unsubscribe** once you're subscribed, and it's the same subscription as the one on the Schedule page, so you can change it from either place. Which emails you get (the net starting, the net closing with its log, a reminder beforehand) is up to your [profile's notification settings](/docs/operators/account-and-profile/).
 
-A net manager may also send you a **subscribe link**. It opens the [schedule's own page](#a-schedules-own-page) with its **Subscribe** button outlined, so there's no need to hunt for the net on the Schedule page. Click **Subscribe**, or **Sign in to subscribe** if you aren't signed in yet; signing in brings you back to the same page to finish. It's the same subscription as the button on the card, and the page offers **Unsubscribe** if you open the link again later.
+A net manager may also send you a **subscribe link**. It opens the [schedule's own page](#a-schedules-own-page) with its **Subscribe** button outlined, so you don't need to find the net on the Schedule page. Click **Subscribe**, or **Sign in to subscribe** if you aren't signed in yet; signing in brings you back to the same page to finish. It's the same subscription as the button on the card, and the page offers **Unsubscribe** if you open the link again later.
 
 <figure>
   <img src="/docs/img/operators/subscribe-page.png"
        alt="The top of a schedule's page, for a visitor who is not signed in: the net's name, description, when it runs, its frequencies, and its Stats button, with the Sign in to subscribe button outlined in red.">
-  <figcaption>The page names the net before asking for anything, so you know what you're subscribing to.</figcaption>
+  <figcaption>The page names the net before asking for anything.</figcaption>
 </figure>
 
 ## Finding a net that runs on a schedule
 
-Many nets aren't one-off events. They run weekly, monthly, or on some other recurrence. Recurring nets are set up as a **schedule** (the [net managers](/docs/net-managers/) path covers creating one). You don't need any special access to look at `/scheduler` and see what schedules exist and roughly when they next run; once ECTLogger auto-creates the next occurrence, it shows up on the dashboard the same as any other Scheduled net.
+Many nets run weekly, monthly, or on some other recurrence. Recurring nets are set up as a **schedule** (the [net managers](/docs/net-managers/) path covers creating one). You don't need any special access to look at `/scheduler` and see what schedules exist and roughly when they next run; once ECTLogger auto-creates the next occurrence, it shows up on the dashboard the same as any other Scheduled net.
 
 In the card and list views, schedules you've starred come first under **Favorites**. The rest are split the way the calendar splits them: schedules with a regular time under **Scheduled nets**, then ones started on demand under **Ad-hoc nets**.
 
@@ -110,19 +110,19 @@ Your club's website may instead have a **live net** link. It opens the net that'
 
 ## Seeing the month on a calendar
 
-The card and list views on the Schedule page tell you which schedules exist. To see what is actually on this month, click **Calendar view** (the grid button at the right of the view buttons). Every net appears on its day with its start time, its name, and who is on NCS, so you can check whether the evening you're free has a net and who will be running it. The arrows beside the month step back and forward, and **Today** brings you back to the current month.
+The card and list views on the Schedule page tell you which schedules exist. To see what is on this month, click **Calendar view** (the grid button at the right of the view buttons). Every net appears on its day with its start time, its name, and who is on NCS, so you can check whether the evening you're free has a net and who is running it. The arrows beside the month step back and forward, and **Today** brings you back to the current month.
 
 <figure>
   <img src="/docs/img/operators/schedule-calendar.png"
        alt="The Schedule page in calendar view: a month grid with each net on its day, showing its start time, name, and NCS callsign. The Calendar view button at the top right is outlined in red.">
-  <figcaption>Past days show what actually happened; today forward shows what's coming up, including who is on NCS.</figcaption>
+  <figcaption>Past days show what happened; today forward shows what's coming up, including who is on NCS.</figcaption>
 </figure>
 
 The calendar reads differently on either side of today:
 
-- **Past days** show the nets that were actually held, with their check-in count. A net that was opened but never run reads **Not held**.
+- **Past days** show the nets that were held, with their check-in count. A net that was opened but never run reads **Not held**.
 - **Today and forward** show every upcoming date of every schedule, with the NCS from the schedule's rotation. A swap arrow marks a date where the NCS isn't the next person in the rotation, because of a swap or a fifth-week fill-in. You can page up to a year ahead.
-- **Cancelled nets stay on the calendar, struck through**, so a missing entry never leaves you wondering whether the net is on.
+- **Cancelled nets stay on the calendar, struck through**, so a missing entry doesn't leave you wondering whether the net is on.
 
 Times are shown in your own time zone, the one named at the top of the page. A net held late in the evening where it's run can land on a different day for you, and the calendar puts it on your day, because the question it answers is whether you're free.
 
@@ -134,7 +134,7 @@ Click any net for that date's details: when it starts, who is on NCS, and a butt
   <figcaption>Click any net on the calendar for that date's details and the schedule's usual card.</figcaption>
 </figure>
 
-Nets that aren't part of a recurring schedule have no dates to plan around, so they're listed under the calendar as **Ad-hoc nets** for that month instead of being left off. The filter and your starred favorites work here too: filtering narrows the calendar to matching schedules, and favorites sort first within each day.
+Nets that aren't part of a recurring schedule have no dates to plan around, so they're listed under the calendar as **Ad-hoc nets** for that month. The filter and your starred favorites work here too: filtering narrows the calendar to matching schedules, and favorites sort first within each day.
 
 On a phone, a seven-day grid is too narrow to read, so the calendar lists the month day by day, showing only the days that have a net.
 
@@ -146,4 +146,4 @@ On a phone, a seven-day grid is too narrow to read, so the calendar lists the mo
 
 ## Where the numbers are
 
-If you're trying to find a net because you're chasing a personal statistic, such as your check-in count or whether you've run a particular net as NCS, that's covered on its own page: [Your statistics](/docs/operators/your-statistics/).
+For a personal statistic, such as your check-in count or whether you've run a particular net as NCS, see [Your statistics](/docs/operators/your-statistics/).

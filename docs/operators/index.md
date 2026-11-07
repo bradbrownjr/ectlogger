@@ -4,7 +4,7 @@ summary: Taking part in a net. Checking in, keeping your status honest, and gett
 kind: Explanation
 audience: Operators who check into nets
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-11-07
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/operators/
@@ -12,19 +12,19 @@ permalink: /docs/operators/
 
 # Operators
 
-This path is for the largest group of people who use ECTLogger and the one that matters most: the stations who check in.
+This path is for the largest group of people who use ECTLogger: the stations who check in.
 
-Everything here is about taking part. Nothing in this path requires any role, any permission, or anybody's approval. **If you never read another page on this site, you can still participate fully in every net you are invited to.** That is deliberate. A net where only the people who read the manual can take part is a broken net.
+Everything here is about taking part. Nothing in this path requires any role, any permission, or anybody's approval. **If you never read another page on this site, you can still take part in every net you are invited to.**
 
 ## What you will be able to do
 
-By the end of this path you will be able to find a net that is running, check in from wherever you are, keep your status accurate so Net Control knows whether you are still there, put your location on the map in whatever format you actually think in, take part in the chat without stepping on the net, report which stations you can hear, file formal traffic, and see your own participation history.
+By the end of this path you will be able to find a net that is running, check in from wherever you are, keep your status accurate so Net Control knows whether you are still there, put your location on the map in whatever format you think in, take part in the chat without stepping on the net, report which stations you can hear, file formal traffic, and see your own participation history.
 
-## The one thing worth knowing up front
+## Before you start
 
-**You do not have to be online to be in a net.** Most nets have stations who are on the radio and nowhere near a browser, and Net Control logs them by voice. Those stations get a row in the list, a place on the map, and a line in the report exactly like everyone else.
+**You do not have to be online to be in a net.** Most nets have stations who are on the radio and nowhere near a browser, and Net Control logs them by voice. Those stations get a row in the list, a place on the map, and a line in the report like everyone else.
 
-So the app is not the net. It is a log of the net, and it is also a second channel alongside the net for the people who happen to have it open. If you are in a spot with no signal, check in on the radio and let Net Control type it. Nothing is lost.
+The app is not the net. It is a log of the net, and a second channel for the people who have it open. If you are in a spot with no signal, check in on the radio and let Net Control type it. Nothing is lost.
 
 ## The pages
 
@@ -36,7 +36,7 @@ So the app is not the net. It is a log of the net, and it is also a second chann
 
 **[Checking in](/docs/operators/checking-in/)** — The check-in form, which fields are required and which are not, what the net has asked you for, and what happens when you submit.
 
-**[Status, rechecks, and checking out](/docs/operators/status-and-checking-out/)** — The nine station statuses, when to change yours, what a recheck actually does to the check-in list, and why checking out matters to the person running the net.
+**[Status, rechecks, and checking out](/docs/operators/status-and-checking-out/)** — The nine station statuses, when to change yours, what a recheck does to the check-in list, and why checking out matters to the person running the net.
 
 **[Chat, polls, and topics](/docs/operators/chat-and-polls/)** — Talking alongside the net without talking over it. Editing a message, replying to one, tagging a station, and muting one that is bothering you.
 
