@@ -68,7 +68,7 @@ Each of these takes a few minutes and ends with something real on the screen.
   </a>
 </div>
 
-The order is deliberate. It is the order people actually move through: you take part in somebody else's net before you run one, you run one before you own the schedule, and owning a schedule is not the same job as administering the instance it runs on.
+The order is deliberate. It is the order people move through: you take part in somebody else's net before you run one, you run one before you own the schedule, and owning a schedule is not the same job as administering the instance it runs on.
 
 Nothing stops you jumping straight to the path you need. The paths do not build on each other, and each page names what it assumes.
 

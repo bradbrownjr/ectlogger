@@ -208,7 +208,7 @@ Top financial supporters and community contributors are acknowledged directly in
 - [ ] **Download a whole schedule as an iCalendar file** (Brad, 2026-10-29: "Exporting an ICS for a schedule would be handy"). One recurring event built from the schedule's own rule, offered on the schedule card and the calendar view, so a weekly net is one import instead of one per week. Still no backend: `schedule_config` is already in the schedule response. Unlike the Phase 3 feed it is a snapshot, so the event carries no NCS name (the rotation changes weekly) and the download says plainly that later schedule changes won't follow it. Cancelled dates already known go in as exceptions
 
 **Phase 3 — Subscribable calendar feed** *(not started)*
-- [ ] Per-user feed of their subscribed schedules, offered as both `https` and `webcal://`. This is the version that actually pays off for a recurring net: it keeps updating as schedules change and the rotation advances
+- [ ] Per-user feed of their subscribed schedules, offered as both `https` and `webcal://`. This is the version that pays off for a recurring net: it keeps updating as schedules change and the rotation advances
 - [ ] **Auth design first.** Google fetches feed URLs unauthenticated, so the URL carries a per-user secret token. It must be revocable and regenerable from Profile, must expose nothing the user cannot already see, and must not accept a session cookie as an alternative. Same class of decision as the tokenized accept/decline question in the events spec
 - [ ] Emit concrete events per occurrence over a bounded forward window rather than a recurrence rule — each occurrence carries a different NCS in its summary, and cancellations and overrides are sparse exceptions a recurrence rule cannot express cleanly
 - [ ] Decide whether to add a Python iCalendar dependency or emit the text directly; `backend/requirements.txt` has neither today
@@ -217,7 +217,7 @@ Top financial supporters and community contributors are acknowledged directly in
 **Documentation deliverables** *(not started)*
 - [ ] Operators path (`docs/operators/finding-a-net.md`, next to the calendar view section) — adding a net to a personal calendar, and subscribing to a feed including how to revoke the link
 
-**Trigger:** Phase 2 is small and independent. Phase 3 should not start until someone actually asks for a live-updating subscription, since it adds a permanently reachable unauthenticated URL to the attack surface for a convenience the month view and Phase 2 mostly cover.
+**Trigger:** Phase 2 is small and independent. Phase 3 should not start until someone asks for a live-updating subscription, since it adds a permanently reachable unauthenticated URL to the attack surface for a convenience the month view and Phase 2 mostly cover.
 
 ### Net View Usability
 
@@ -230,7 +230,7 @@ stepping out, call me later." NCS marking a station `away` after calling it with
 recording something else entirely: the station may be off the air, out of range, or gone. Both
 render as the same yellow row, so a net log cannot distinguish an operator who told the net they
 were leaving from one who vanished mid-net — a distinction ARES/SKYWARN after-action review
-actually cares about.
+cares about.
 
 - [ ] New `StationStatus` member for the NCS-set case (`NO_ANSWER`, label "No answer") alongside
       the existing self-set `AWAY`. Existing rows keep meaning `away`; nothing is migrated
@@ -285,7 +285,7 @@ row for who may do it.
 
 Two real situations ask for this. A net gets closed by a misclick, thirty seconds into a
 two-hour activation. Or the inactivity auto-close (shipped 2026-09-15, off by default)
-fires on a net that was genuinely quiet but still running, because a long SKYWARN or ARES
+fires on a net that was quiet but still running, because a long SKYWARN or ARES
 activation can go an hour between check-ins. In both cases the net is still happening on
 the air and there is currently no way to say so in the app: check-ins, chat, and traffic
 all refuse a closed net, so the operator either loses the rest of the net or starts a
@@ -451,7 +451,7 @@ The fourth is the discovery, **and it is its own record rather than a kind of tr
 
 **One capture, many renderings.** The entry is written once, at the radio, by the person who heard it. Everything after that is a rendering of the same record: an ICS-214 row, a CSV row shaped for the county's spreadsheet, and an outbound post. No path may require retyping, and no rendering may be the system of record.
 
-**Outbound notifications, Slack included — a courtesy, never the record.** Hard rules, because this is where an integration quietly becomes load-bearing:
+**Outbound notifications, Slack included — a courtesy, never the record.** Hard rules, because this is where an integration becomes a dependency without anyone deciding it should:
 
 - The log write succeeds or fails on its own. Dispatch is fire-and-forget, queued, retried, and **never blocks or fails a log entry**.
 - Undelivered is visible. A post that never landed shows as undelivered next to the entry rather than being assumed sent.
@@ -515,7 +515,7 @@ We author and hand over the ICS-213, 214, and 309 outright. The 205 and 205A we 
 
 Teams phase M6 already plans versioning, approval, and issued snapshots for the plan package. That is the same mechanism and must reuse it rather than building a second one.
 
-**Exercise marking is not cosmetic, and a SimCell makes it load-bearing.** The drill was driven by a simulation cell injecting scenario traffic, and every form leaving the team during an exercise has to be unmistakably an exercise document. The traffic module already carries `TrafficTestCategory.DRILL`, which deliberately exempts nothing — same chain of custody, same appearance in the ICS-309 — and only labels. Every form family added here inherits that behavior, and the label has to survive into the rendered output and the outbound post, not just the database. An exercise sitrep forwarded into a Slack channel and screenshotted is exactly how a drill message becomes a real one.
+**Exercise marking is not cosmetic, and a SimCell makes it essential.** The drill was driven by a simulation cell injecting scenario traffic, and every form leaving the team during an exercise has to be unmistakably an exercise document. The traffic module already carries `TrafficTestCategory.DRILL`, which deliberately exempts nothing — same chain of custody, same appearance in the ICS-309 — and only labels. Every form family added here inherits that behavior, and the label has to survive into the rendered output and the outbound post, not just the database. An exercise sitrep forwarded into a Slack channel and screenshotted is exactly how a drill message becomes a real one.
 
 **One open design question this drill exposed.** ICS-309 is a log for a station and an operational period, and the app currently generates one per net. When one team operates two stations on one net — the old office and the new office, as happened here — that produces a single merged log where the field practice was two, one kept at each site. The other site kept its own 309 by hand. Whether the app should render per-station logs from one net's traffic is a real question with a doctrinal answer, and it should be settled when the incident work lands rather than discovered during the next activation.
 
@@ -535,14 +535,14 @@ Teams phase M6 already plans versioning, approval, and issued snapshots for the 
 
 **Reuse, do not rebuild.** The Traffic module already owns form definitions, chain of custody, per-net export integration, and form-accurate PDFs. This feature is a fifth form family and a dispatcher beside it, not a second traffic system. ICS-309 stays where it is.
 
-**Open questions — and the answers are settings, not constants.** Cumberland County EMA is the source of the questions below, and it does not speak for the next county, for MEMA, or for any other served agency. An answer obtained from one agency becomes **that team's configured value with that answer as its default**, never a hardcoded rule, column set, or validation. The test is simple: if standing this up for the next county over requires a code change, the answer was written in the wrong place. See the policy register in [`TEAM-MANAGEMENT-NOTES.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-MANAGEMENT-NOTES.md) section 5.20 — settings that are genuinely the agency's policy rather than the team's attach to the served-agency record, so a team serving both a county EMA and the state does not have to average two answers into one.
+**Open questions — and the answers are settings, not constants.** Cumberland County EMA is the source of the questions below, and it does not speak for the next county, for MEMA, or for any other served agency. An answer obtained from one agency becomes **that team's configured value with that answer as its default**, never a hardcoded rule, column set, or validation. The test is simple: if standing this up for the next county over requires a code change, the answer was written in the wrong place. See the policy register in [`TEAM-MANAGEMENT-NOTES.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/TEAM-MANAGEMENT-NOTES.md) section 5.20 — settings that are the agency's policy rather than the team's attach to the served-agency record, so a team serving both a county EMA and the state does not have to average two answers into one.
 
-- What does the EMA's policy actually permit for scanner-derived content — logged internally only, shared within the county, or repeatable outward? This gates the outbound dispatcher for a whole source type. **Setting**, defaulting to log-internally-and-never-dispatch, because that is the only default that is safe when nobody has answered.
+- What does the EMA's policy permit for scanner-derived content — logged internally only, shared within the county, or repeatable outward? This gates the outbound dispatcher for a whole source type. **Setting**, defaulting to log-internally-and-never-dispatch, because that is the only default that is safe when nobody has answered.
 - Where does an incident reference get created in practice, given the app is rarely the first system to know an incident exists? Most likely it arrives with the section 5.14 activation record and everything else adopts it, but confirm against a real storm rather than a drill. **Setting** for who may open an incident and whether an agency reference is required before one can be opened.
 - Does the county want the SA feed as its own export, or folded into the ICS-214? The drill did both, which may mean both are needed or may mean one was redundant. **Setting**; build both renderings and let the team choose, since the cost of the second one is a formatter.
 - Which outbound targets beyond Slack — Teams, Mattermost, a generic webhook, email? A generic signed webhook plus a Slack-shaped formatter probably covers it without committing to vendors. **Setting**, per team, and already planned that way.
 - Should a net with two operating sites model the relay explicitly, or is the existing multi-NCS net plus the Relay role enough? The drill worked; confirm before adding anything.
-- **What schema does the county's ArcGIS layer actually use** — its field names, its category values, and which file formats it will ingest? This is the same question as the master attendance spreadsheet's columns, it has the same answer shape, and it is the difference between an export that drops into her map and one she has to translate. **Setting**, with her layer's mapping as this team's value.
+- **What schema does the county's ArcGIS layer use** — its field names, its category values, and which file formats it will ingest? This is the same question as the master attendance spreadsheet's columns, it has the same answer shape, and it is the difference between an export that drops into her map and one she has to translate. **Setting**, with her layer's mapping as this team's value.
 
 ### Agency Liaison Access
 
@@ -949,7 +949,7 @@ Reconnect resilience also shipped separately: the net socket now reconnects inde
 ### Native Desktop Client
 
 **✨ Standalone NCS client application (Windows / macOS / Linux)** *(KC1JMH — back-burner)*  
-**Model:** Opus (framework selection and packaging architecture). *Decision recorded:* the PWA question flagged here is resolved in favor of the PWA — see Offline-Capable Web Client above. Offline operation is the strongest driver for a dedicated client, a PWA satisfies it, and maintaining three native packages alongside it is hard to justify. Treat this section as likely superseded; revisit only if a concrete requirement emerges that a PWA genuinely cannot meet.  
+**Model:** Opus (framework selection and packaging architecture). *Decision recorded:* the PWA question flagged here is resolved in favor of the PWA — see Offline-Capable Web Client above. Offline operation is the strongest driver for a dedicated client, a PWA satisfies it, and maintaining three native packages alongside it is hard to justify. Treat this section as likely superseded; revisit only if a concrete requirement emerges that a PWA cannot meet.  
 A packaged desktop GUI application for NCS operators connecting to a hosted or self-hosted ECTLogger instance. Intended for single-operator NCS use; not a server. Targets scenarios where a browser is impractical but a full GUI is available. Proposed repo layout: `clients/windows/`, `clients/macos/`, `clients/linux/` with installable packages per release. Technology decision pending — evaluate Electron, Tauri, or native framework.
 
 ### TUI / Packet Client
@@ -1179,7 +1179,7 @@ npm run build
 
 **The email guards are the one step that must not be skipped or improvised.** A fresh `.env` on a new instance is a brand-new way to mail real operators from a test, and Teams introduces reminders, review requests, invitations, and callout notices — every one of them a new sender. `EMAIL_ENABLED=false` and `SMTP_HOST=127.0.0.1` go in before the service ever starts, not after the first send.
 
-**Start this instance on a fresh database with de-identified fixtures, not a copy of production.** The Teams concept documents already require de-identified fixtures for this module's testing, and a third copy of production's real member data is a privacy cost with no matching benefit. Teams migrations must never run against beta's database, which holds that copy. Where a real-data smoke test is genuinely needed, run it against beta's existing copy rather than making another one.
+**Start this instance on a fresh database with de-identified fixtures, not a copy of production.** The Teams concept documents already require de-identified fixtures for this module's testing, and a third copy of production's real member data is a privacy cost with no matching benefit. Teams migrations must never run against beta's database, which holds that copy. Where a real-data smoke test is needed, run it against beta's existing copy rather than making another one.
 
 **Steps that need root, so they are Brad's** (`! sudo ...` from the prompt runs them in-session). First `/etc/systemd/system/ectlogger-teams.service`, which is the existing unit with the paths changed:
 

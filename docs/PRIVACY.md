@@ -19,7 +19,7 @@ beyond what's needed to run the service (email delivery, and optionally Gravatar
 — see below).
 
 This policy describes the software's behavior. The operator of the specific ECTLogger
-instance you use (your ECT, ARES group, or SKYWARN coordinator) is the one who actually
+instance you use (your ECT, ARES group, or SKYWARN coordinator) is the one who
 runs the server and holds the data — contact them with questions about your own account.
 
 ## Account information

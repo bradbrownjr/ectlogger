@@ -94,7 +94,7 @@ Two independent gates, both in `app/dependencies.py::get_admin_user`:
    or not) that supplies no/wrong code gets `mfa_required` and no token.
 2. **On every admin-only route** (`get_admin_user`): raises 403 with
    `MFA_SETUP_REQUIRED_DETAIL` if `not current_user.mfa_enabled`, regardless of how the
-   admin authenticated. This is what makes MFA actually mandatory, not just requested at
+   admin authenticated. This is what makes MFA mandatory, not just requested at
    login — an admin can't route around it by using an old un-refreshed session. The
    frontend matches this exact string (`api.ts::MFA_SETUP_REQUIRED_DETAIL`) to redirect to
    the enrollment screen instead of showing a generic access-denied error. **Keep the two

@@ -158,7 +158,7 @@ background services log under their own categories (`NCS_REMINDER`, `TRAFFIC_REM
 - **[MAGIC LINK]** - Magic link generation and verification
 - **[SECURITY]** - Rate limiting and banned-access attempts
 
-Note that `[ERROR]` in a log line is the **log level**, not a category — it always
+`[ERROR]` in a log line is the **log level**, not a category — it always
 appears alongside one of the categories above (e.g. `[ERROR] [SMTP]`), never on its own.
 
 ## Best Practices
