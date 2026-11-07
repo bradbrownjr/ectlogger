@@ -4,7 +4,7 @@ summary: The admin panel of a running instance: who gets in, what the check-in f
 kind: Explanation
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-10-30
+revised: 2026-11-07
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/
@@ -12,9 +12,9 @@ permalink: /docs/admins/
 
 # Administrators
 
-This path is for whoever holds the **Admin** role on an ECTLogger instance. Everything here happens in the admin panel, in a browser, and none of it requires a shell.
+This path is for whoever holds the **Admin** role on an ECTLogger instance. Everything here happens in the admin panel, in a browser.
 
-That last part is the reason this is its own path. "Administrator" gets used for two completely different people: the club member who was made an admin so they could add new members and set up a spotter-number field, and the person who owns the server the whole thing runs on. They share almost nothing. If you are the second one, you want [self-hosting](/docs/self-hosting/), which covers installation, deployment, email, logging, and hardening.
+"Administrator" can mean two different people: the club member who was made an admin to add members and set up a spotter-number field, and the person who owns the server. If you are the second one, you want [self-hosting](/docs/self-hosting/), which covers installation, deployment, email, logging, and hardening.
 
 ## What an admin can do that nobody else can
 
@@ -32,9 +32,9 @@ That last part is the reason this is its own path. "Administrator" gets used for
 
 ## Two things to know before you start
 
-**Admins must have two-factor authentication.** It is optional for everyone else and mandatory here, and it is enforced on every admin-only action, not just at login. An admin account without MFA enrolled can sign in but cannot reach the admin panel until it finishes enrolling. This is not something to work around. An account that can read every net and edit every user is the account worth stealing. [Security, MFA, and lockouts](/docs/admins/security-and-mfa/) covers enrollment and what to do when somebody is locked out of their authenticator.
+**Admins must have two-factor authentication.** It is optional for everyone else. It is checked on every admin-only action, not just at login. An admin account without MFA enrolled can sign in but cannot reach the admin panel until it finishes enrolling. [Security, MFA, and lockouts](/docs/admins/security-and-mfa/) covers enrollment and what to do when somebody is locked out of their authenticator.
 
-**Being an admin does not make you Net Control.** The global Admin role and the per-net roles are separate systems, on purpose. An admin can see and, where necessary, take over a net, but the person actually running tonight's net holds the NCS role for that net alone. The whole grid is in [roles and permissions](/docs/reference/roles-and-permissions/).
+**Being an admin does not make you Net Control.** The global Admin role and the per-net roles are separate. An admin can see and, where necessary, take over a net, but the person actually running tonight's net holds the NCS role for that net alone. The full grid is in [roles and permissions](/docs/reference/roles-and-permissions/).
 
 ## The pages
 

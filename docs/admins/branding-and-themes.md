@@ -4,7 +4,7 @@ summary: Setting the instance's default color theme, default light/dark appearan
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/branding-and-themes/
@@ -12,7 +12,7 @@ permalink: /docs/admins/branding-and-themes/
 
 # Branding and themes
 
-The **Branding** tab controls how the instance looks for everyone who hasn't already made their own choice, plus the logo, which applies to every visitor regardless.
+The **Branding** tab controls how the instance looks for everyone who hasn't already made their own choice, plus the logo, which applies to every visitor.
 
 ## Default theme
 
@@ -22,15 +22,15 @@ The **Branding** tab controls how the instance looks for everyone who hasn't alr
   <figcaption>Applies only to visitors who have never picked a theme of their own in Profile → Settings.</figcaption>
 </figure>
 
-Pick a swatch and click **Set as System Default**. The button stays greyed out while the swatch already in force is the one selected, which is why it looks disabled the first time you open the tab. This is genuinely just a default: anyone who has picked a personal color theme from their own Profile → Settings keeps that choice, and this only affects people who never have.
+Pick a swatch and click **Set as System Default**. The button stays greyed out while the selected swatch is already the default, so it looks disabled the first time you open the tab. Anyone who has picked a personal color theme in Profile → Settings keeps that choice; this only affects people who never have.
 
 ## Default appearance
 
-A separate light/dark toggle controls which mode a visitor gets on their very first visit, before they've toggled light or dark for themselves. Once someone toggles it once, their own browser remembers that choice from then on — this setting only ever reaches brand-new visitors.
+A separate light/dark toggle sets which mode a visitor gets on their first visit. Once someone picks light or dark, their browser remembers it; this setting only reaches brand-new visitors.
 
 ## Custom theme
 
-If none of the curated swatches fit, define your own: a name, and a light and a dark color pair (primary, secondary, background, and paper) for each. Once saved, it shows up as an extra swatch — labeled with the name you gave it — in this picker and in every user's own Profile → Settings, alongside the curated set. **Clear** removes it and reverts everyone using it to whatever the curated default is.
+If none of the curated swatches fit, define your own: a name, and a light and a dark color pair (primary, secondary, background, and paper) for each. Once saved, it appears as an extra swatch, labeled with the name you gave it, in this picker and in every user's Profile → Settings. **Clear** removes it and reverts everyone using it to whatever the curated default is.
 
 ## Logo
 
@@ -44,4 +44,4 @@ Upload a PNG, JPEG, WebP, or SVG up to 2 MB to replace the built-in ECTLogger ma
 
 ## Not here
 
-There's currently no separate setting for an instance display name shown alongside the logo — what you see in the navbar today is the ECTLogger mark itself, not a configurable site title. If you need one, say so; it isn't wired up yet.
+There is no setting for an instance display name beside the logo. The navigation bar shows the logo only, not a configurable site title.
