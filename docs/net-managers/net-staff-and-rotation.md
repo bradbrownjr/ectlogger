@@ -1,10 +1,10 @@
 ---
 title: Net staff and the NCS rotation
-summary: Who is allowed to run your net, adding operators who haven't signed up yet, co-managers, the NCS rotation, why an auto-created net deliberately starts with nobody assigned, and the link that invites people to subscribe.
+summary: Who is allowed to run your net, adding operators who haven't signed up yet, co-managers, the NCS rotation, why an auto-created net deliberately starts with nobody assigned, your schedule's page and live net link, and the link that invites people to subscribe.
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-11-07
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/net-staff-and-rotation/
@@ -66,6 +66,23 @@ Net Control, Logger, and Relay can also be assigned directly from a net's **Role
 
 A net can legitimately have more than one active NCS at once: a multi-desk exercise with several people each running their own frequency, for example. The check-in list marks every NCS after the first as **2nd NCS** in its legend; it's not a separate assignable role, just how the list marks an additional active one. See [Station statuses](/docs/reference/station-statuses/) for the full legend.
 
+## Your schedule's page and live net link
+
+Every schedule has its own page. It shows the schedule's details, the net on the air, upcoming dates with their NCS, the staff, and past nets, and anyone can open it without signing in. A net's address is new for every net, but the schedule's address stays the same. Click the schedule's name on the Schedule page to open it. [Finding a net](/docs/operators/finding-a-net/#a-schedules-own-page) describes what visitors see.
+
+If you can create nets from the schedule, you also get:
+
+- **Create net** under **On the air**. It creates a net from the schedule and opens it, the same as **Create** on the schedule's card. When a net from the schedule already exists, the button reads **Create another net**. Open the existing net instead, unless you need two running at once.
+- Two links to copy. **This page** is the page itself. **Live net** opens the net that's on the air (an open lobby counts). If none is running, or two are, it opens the schedule's page.
+
+<figure>
+  <img src="/docs/img/net-managers/schedule-page-links.png"
+       alt="The On the air section of a schedule's page, seen by its manager: the net running now with its NCS, check-in count and an On the air chip, a Create another net button, and two links to copy, This page and Live net, with the Live net link's Copy link button outlined in red.">
+  <figcaption>Live net is the link to put on your club's website.</figcaption>
+</figure>
+
+Put the **Live net** link on your club's website or dashboard for activations. While a net is running, the link opens it. When none is, it opens the schedule's page, where your staff can create one. Neither link is secret: both show only what the public Schedule page already shows.
+
 ## Inviting people to subscribe
 
 A schedule's subscribers are emailed when one of its nets starts. Anyone can subscribe from the Schedule page, but that depends on them finding your net there first. To send people straight to it, copy the schedule's **Subscribe link** and post it wherever your group already looks: a club website, an email, a dashboard.
@@ -78,7 +95,7 @@ A schedule's subscribers are emailed when one of its nets starts. Anyone can sub
 
 The link is above the subscriber list in two places: the **Subscribers** tab of the **Staff** dialog, and the bottom of the **Net Staff** tab when you edit the schedule. Click **Copy link**. It's offered to the same people who can see the subscriber list: the schedule manager, co-managers, and admins.
 
-Whoever opens the link sees the net's name, description, when it runs, and its frequencies, with one **Subscribe** button. Someone who isn't signed in gets **Sign in to subscribe** instead and is brought back to the same page afterward, which also works for a person creating their account on the spot. Opening the link never subscribes anybody by itself; they always click the button.
+The link opens your schedule's page with its **Subscribe** button outlined. Someone who isn't signed in gets **Sign in to subscribe** instead and is brought back to the same page afterward, which also works for a person creating their account on the spot. Opening the link never subscribes anybody by itself; they always click the button.
 
 The link doesn't expire and it isn't a secret. It shows nothing the public Schedule page doesn't already show, so it's safe to post in the open. A link to a schedule that has since been deactivated tells the visitor the net is no longer scheduled.
 

@@ -195,6 +195,15 @@ export const netApi = {
     params.append('limit', '1000');
     return api.get('/nets/', { params });
   },
+  // One schedule's nets in the given statuses, newest first (schedule home page).
+  // URLSearchParams for the same repeated ?status= reason as listArchived above.
+  listForSchedule: (templateId: number, statuses: string[], limit = 100) => {
+    const params = new URLSearchParams();
+    params.append('template_id', String(templateId));
+    statuses.forEach((s) => params.append('status', s));
+    params.append('limit', String(limit));
+    return api.get('/nets/', { params });
+  },
   get: (id: number, background = false) =>
     api.get(`/nets/${id}`, background ? BACKGROUND_REQUEST_CONFIG : undefined),
   update: (id: number, data: any) => api.put(`/nets/${id}`, data),

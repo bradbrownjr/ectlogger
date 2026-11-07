@@ -20,7 +20,7 @@ import { getErrorMessage } from '../../utils/apiErrors';
 import { formatSchedule } from '../scheduler/ScheduleCard';
 import { formatDateTime } from '../../utils/dateUtils';
 import { formatFrequencyDisplay } from '../../utils/frequencyList';
-import { subscribePath } from '../../utils/subscribeLink';
+import { scheduleHomePath, subscribePath } from '../../utils/scheduleLinks';
 import ParticipantsOnlyChip from './ParticipantsOnlyChip';
 
 // ========== NET INFO CARD ==========
@@ -214,6 +214,11 @@ const NetInfoDialog: React.FC<NetInfoDialogProps> = ({ open, onClose, net, canEd
           {net.info_url && (
             <Button size="small" variant="outlined" startIcon={<LanguageIcon />} href={net.info_url} target="_blank" rel="noopener noreferrer">
               Website
+            </Button>
+          )}
+          {templateId && (
+            <Button size="small" variant="outlined" component={RouterLink} to={scheduleHomePath(templateId)}>
+              Schedule
             </Button>
           )}
           {templateId && (

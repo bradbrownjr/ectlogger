@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
+  Link,
   Card,
   CardContent,
   CardActions,
@@ -25,6 +26,7 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import Avatar from '@mui/material/Avatar';
 import ExpandableDescription from '../ExpandableDescription';
 import CardActionButton from '../CardActionButton';
+import { scheduleHomePath } from '../../utils/scheduleLinks';
 import ImageLightbox from '../ImageLightbox';
 import ScheduleAnnouncementsLink from './ScheduleAnnouncementsLink';
 import ScheduleSubscribeButton from './ScheduleSubscribeButton';
@@ -224,7 +226,10 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
               mr: 0.5,
             }}
           >
-            {schedule.name}
+            {/* The name opens the schedule's home page */}
+            <Link component={RouterLink} to={scheduleHomePath(schedule.id)} color="inherit" underline="hover">
+              {schedule.name}
+            </Link>
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
             {schedule.logo_url && (

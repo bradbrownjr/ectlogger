@@ -1153,11 +1153,28 @@ The Schedule page's **Calendar view** (`components/scheduler/ScheduleCalendar.ts
 
 ---
 
-## Subscribe links and returning after sign-in
+## Schedule home page, subscribe links, and returning after sign-in
 
-A schedule's subscribe link is `/subscribe/<schedule id>` (`pages/SubscribeToSchedule.tsx`;
-the path is built only by `utils/subscribeLink.ts`). The page is public and reads the
-schedule through `GET /templates/<id>`, which takes optional auth and returns exactly
+Every schedule has a public home page at `/scheduler/<schedule id>`
+(`pages/ScheduleHome.tsx`): its details and Subscribe panel, the nets from it that are
+running or created and not started, upcoming dates (with the NCS when it has a rotation),
+staff, and the last ten closed or archived nets. Every path is built only by
+`utils/scheduleLinks.ts`. The page reads only what a guest could already read:
+`GET /templates/<id>`, `GET /nets/?template_id=<id>&status=...` (an additive filter on
+`nets_core.py::list_nets`), the rotation schedule and the staff list, each of which
+already strips email addresses for a guest. **Create** uses `schedule.can_create_net`,
+the same server rule as the schedule card's button. Each section loads independently
+(`Promise.allSettled`), so one refused read never blanks the page.
+
+`/scheduler/<id>/live` (`pages/ScheduleLiveRedirect.tsx`) is the link a club puts on its
+own website: it opens the net when exactly one LOBBY or ACTIVE net from the schedule
+exists, and the home page otherwise (none, or two activations at once).
+
+The subscribe link is still `/subscribe/<schedule id>`, because links already sent out
+must keep working. It redirects to `/scheduler/<id>?subscribe=1`, which outlines the
+Subscribe panel (`components/scheduler/ScheduleSubscribePanel.tsx`) and scrolls to it.
+The separate subscribe page was retired for the home page on 2026-11-07; subscribing is
+still one click on arrival. `GET /templates/<id>` takes optional auth and returns exactly
 what the public list returns: both go through `_template_response_for_viewer` in
 `routers/templates_core.py`, so a guest can never see more from one than from the other.
 
@@ -1168,7 +1185,7 @@ Two rules to keep:
   subscribed on load would let a crafted URL, or a chat app's link preview, subscribe
   somebody without their say.
 - **The return path stays inside the site.** A signed-out visitor goes to
-  `/login?redirect=/subscribe/<id>`. Password sign-in navigates there directly; the
+  `/login?redirect=/scheduler/<id>?subscribe=1` (URL-encoded). Password sign-in navigates there directly; the
   magic-link request carries it as `redirect`, and `email/auth.py` puts it on the emailed
   link, where `VerifyMagicLink.tsx` already honoured it for net-start emails. Because it
   ends up in an email, `utils.py::safe_redirect_path` accepts only a path starting with a
@@ -1180,7 +1197,8 @@ No web-server rule is needed: Caddy's catch-all serves `index.html` for any path
 not one of its proxied prefixes. A social-media preview of the link is therefore the
 generic site preview, not the net's own name and logo.
 
-Tests: `backend/tests/test_subscribe_link.py`, `frontend/src/utils/redirectPath.test.ts`.
+Tests: `backend/tests/test_subscribe_link.py`, `backend/tests/test_nets.py::test_list_nets_template_id_filter`,
+`frontend/src/utils/redirectPath.test.ts`.
 
 ## Operators without an account (callsign-only entries)
 
