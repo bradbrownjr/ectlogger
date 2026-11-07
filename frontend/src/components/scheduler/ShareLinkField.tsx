@@ -6,7 +6,7 @@ import { useSnackbar } from 'notistack';
 interface ShareLinkFieldProps {
   link: string;
   label: string;
-  hint: string;
+  hint?: string;
   copiedMessage: string;
 }
 
@@ -29,9 +29,12 @@ const ShareLinkField: React.FC<ShareLinkFieldProps> = ({ link, label, hint, copi
 
   return (
     <Box sx={{ mb: 2 }}>
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-        {hint}
-      </Typography>
+      {/* Shows only when the field needs more than its label */}
+      {hint && (
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+          {hint}
+        </Typography>
+      )}
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
         <TextField
           value={link}

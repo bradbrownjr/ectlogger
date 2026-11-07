@@ -98,7 +98,7 @@ In the card and list views, schedules you've starred come first under **Favorite
 
 ## A schedule's own page
 
-Every schedule has a page of its own. Click a schedule's name on the Schedule page to open it, or **Schedule** on a net's **Net info** card. Your club may also link to it from its own website, since its address never changes. You don't need to sign in to read it. From top to bottom it shows:
+Every schedule has a page of its own. Click a schedule's name on the Schedule page to open it, or **Schedule** on a net's **Net info** card. Your club may also link to it from its own website. You don't need to sign in to read it. It shows:
 
 - **The net's details** - its description, when it runs, its frequencies, a link to its website, its **Stats**, and **Subscribe**.
 - **On the air** - the net from this schedule that's running now, or one that has been created and hasn't started yet. Click it to open the net. If nothing is running, the page says so.
@@ -106,7 +106,7 @@ Every schedule has a page of its own. Click a schedule's name on the Schedule pa
 - **Net staff** - the net manager and the operators who run the net. **Staff** opens the full list and the rotation.
 - **Past nets** - the latest ten, each opening its report. **All past nets and statistics** opens the schedule's statistics.
 
-Your club's website may instead have a **live net** link. It opens the net that's on the air right now, and the schedule's page when none is, or when more than one is running at once.
+Your club's website may instead have a **live net** link. It opens the net that's on the air, or the schedule's page when none is running or two are.
 
 ## Seeing the month on a calendar
 

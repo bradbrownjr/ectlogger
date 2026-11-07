@@ -68,20 +68,20 @@ A net can legitimately have more than one active NCS at once: a multi-desk exerc
 
 ## Your schedule's page and live net link
 
-Every schedule has its own page, at a link that never changes. It shows the schedule's details, the net on the air, upcoming dates with their NCS, the staff, and past nets, and anyone can open it without signing in. Open it by clicking the schedule's name on the Schedule page. [Finding a net](/docs/operators/finding-a-net/#a-schedules-own-page) describes what visitors see.
+Every schedule has its own page. It shows the schedule's details, the net on the air, upcoming dates with their NCS, the staff, and past nets, and anyone can open it without signing in. A net's address is new for every net, but the schedule's address stays the same. Click the schedule's name on the Schedule page to open it. [Finding a net](/docs/operators/finding-a-net/#a-schedules-own-page) describes what visitors see.
 
 If you can create nets from the schedule, you also get:
 
-- **Create net** under **On the air**. It creates a net from the schedule and opens it, the same as **Create** on the schedule's card. When a net from the schedule already exists, the button reads **Create another net** and is outlined instead of filled, so the obvious click opens the existing net rather than starting a second one.
-- Two links to copy. **This page** is the page itself. **Live net** opens the net that's on the air when exactly one is (an open lobby counts), and the schedule's page otherwise.
+- **Create net** under **On the air**. It creates a net from the schedule and opens it, the same as **Create** on the schedule's card. When a net from the schedule already exists, the button reads **Create another net**. Open the existing net instead, unless you need two running at once.
+- Two links to copy. **This page** is the page itself. **Live net** opens the net that's on the air (an open lobby counts). If none is running, or two are, it opens the schedule's page.
 
 <figure>
   <img src="/docs/img/net-managers/schedule-page-links.png"
        alt="The On the air section of a schedule's page, seen by its manager: the net running now with its NCS, check-in count and an On the air chip, a Create another net button, and two links to copy, This page and Live net, with the Live net link's Copy link button outlined in red.">
-  <figcaption>The Live net link opens whichever net is on the air, so one link on your website always works.</figcaption>
+  <figcaption>Live net is the link to put on your club's website.</figcaption>
 </figure>
 
-Put the **Live net** link on your club's website or dashboard when your team needs to reach the net fast, such as for an activation. Members land in the running net with one click. When nothing is running, they reach the schedule's page, where any of your staff can create the net. Neither link is a secret: both show only what the public Schedule page already shows.
+Put the **Live net** link on your club's website or dashboard for activations. While a net is running, the link opens it. When none is, it opens the schedule's page, where your staff can create one. Neither link is secret: both show only what the public Schedule page already shows.
 
 ## Inviting people to subscribe
 

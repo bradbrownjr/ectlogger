@@ -352,9 +352,7 @@ shots:
       net running now with its NCS, check-in count and an On the air chip, a
       Create another net button, and two links to copy, This page and Live
       net, with the Live net link's Copy link button outlined in red.
-    caption: >
-      The Live net link opens whichever net is on the air, so one link on
-      your website always works.
+    caption: Live net is the link to put on your club's website.
 
   - id: subscribe-link
     section: net-managers

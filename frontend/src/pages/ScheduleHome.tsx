@@ -296,7 +296,7 @@ const ScheduleHome: React.FC = () => {
         {/* Shows when nothing is running or waiting to start */}
         {currentNets.length === 0 && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: canCreateNet ? 2 : 0 }}>
-            No net is running right now.
+            No net is running.
           </Typography>
         )}
 
@@ -328,8 +328,8 @@ const ScheduleHome: React.FC = () => {
           </List>
         )}
 
-        {/* Shows to staff who may create a net from this schedule. Secondary
-            when a net already exists, so the obvious click opens that one. */}
+        {/* Shows to staff who may create a net from this schedule. Outlined
+            when a net already exists, so it doesn't outrank opening that net. */}
         {canCreateNet && (
           <>
             <Button
@@ -352,13 +352,12 @@ const ScheduleHome: React.FC = () => {
             <ShareLinkField
               link={absoluteLink(scheduleHomePath(schedule.id))}
               label="This page"
-              hint="A link to this page that never changes."
               copiedMessage="Link copied"
             />
             <ShareLinkField
               link={absoluteLink(scheduleLivePath(schedule.id))}
               label="Live net"
-              hint="For a club website: opens the net on the air when there is exactly one, and this page otherwise."
+              hint="Opens the net on the air. If none is running, opens this page."
               copiedMessage="Link copied"
             />
           </>
