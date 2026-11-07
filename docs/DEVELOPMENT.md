@@ -1681,6 +1681,76 @@ account password.
 
 ---
 
+## Background the user pages no longer carry
+
+On 2026-11-07 the plain-wording pass (`docs/DOC-STYLE.md` "Plain wording")
+took bug history and code internals off the user pages, which now state only
+the current rule. What they said is kept here, because some of it explains why
+a rule exists.
+
+**Statuses** (`docs/reference/station-statuses.md`, `docs/operators/status-and-checking-out.md`)
+- The status list is read from `StationStatus` in `backend/app/models.py`,
+  which has exactly nine values. The guide the reference page replaced invented
+  an "Available" status, left out four real ones, and missed the "2nd NCS"
+  marker; the old README listed two statuses that don't exist, omitted four
+  that do, and named a net role that was never real.
+- "2nd NCS" is not a role: every NCS holds the same `NetRole` value, `NCS`.
+
+**Roles and permissions** (`docs/reference/roles-and-permissions.md`, `docs/net-control/roles-and-stepping-away.md`, `docs/admins/users-and-roles.md`)
+- The page is checked against `backend/app/permissions.py`.
+- Admin is enforced on every admin route (`get_admin_user`), not only at
+  login. No permission check treats the global NCS account role differently
+  from User. Ban sets `User.is_active` false.
+- Stepping down flips `NetRole.is_active`; `check_net_permission` only honours
+  active roles, so stepping down removes access, not just the label.
+- 2026-08-30 (net 79): an off-week rotation member was auto-granted NCS with no
+  choice, by checking in as a participant. That is why a self check-in is
+  Standard unless NCS or Logger is chosen.
+- 2026-09-05: NCS and Logger on a net started receiving the closing log; Relay
+  was meant to from the same date, but a case-sensitive role comparison left it
+  out until 2026-09-19.
+- 2026-09-18 (net 95): plain staff with no co-manager flag and no rotation slot
+  were shown NCS/Logger self-grant, Start, and the staff dialog but refused by
+  the backend, so a schedule with staff and no rotation produced nets its own
+  staff couldn't run. Eligibility widened to any active `TemplateStaff`.
+- 2026-09-19: the Roles button stopped showing to staff who would be refused
+  inside it. Until then Start checked the staff list alone, so a rotation
+  member not also on the staff list couldn't start their own week's net.
+- 2026-09-25: each toolbar and card button began following its own `may_*`
+  rule. Before, one "can manage this net" check showed Close, Import, Edit,
+  Go live, Archive, Cancel and Delete to staff who were then refused, and a
+  Logger with no staff standing could close a net with no button to do it. An
+  NCS who had stepped down kept four of these until then.
+- 2026-10-18: the schedule's manager became a manager of every net from it;
+  before, on a net a staff member made by hand, the schedule's manager had no
+  controls.
+
+**Check-in fields** (`docs/reference/check-in-fields.md`)
+- Relayed By had no setting before 2026-10-23; the box was on every net.
+- Before 2026-10-29, Feedback and custom fields (e.g. an FLDIGI checkbox) were
+  missing from most exports, and Feedback had no box on any check-in form.
+- `CustomField` and `CustomFieldValue` in the models are dead code. The real
+  mechanism is the admin-defined field list served at `GET /api/settings/fields`.
+
+**Emails** (`docs/reference/emails.md`)
+- The page is read from the sending code. The traffic reminder has a
+  per-message preference in the data model, on by default, treated as an
+  operational obligation rather than a passive preference.
+
+**Schedules and nets** (`docs/net-managers/`)
+- Cancelling exists because deleting a scheduled net made the recurring
+  schedule think its slot was never filled and recreate it, reminder email and
+  all (see the Feature Registry's "Net cancellation" row).
+- A schedule is a `NetTemplate`, and "owner" is the API's word for its
+  manager, which is why "template" shows up in URLs and responses.
+
+**Other**
+- Geocoding goes through the backend so a browser can't hit Nominatim's rate
+  limit directly, and results are cached (`routers/geocode.py`).
+- Reacting to your own chat message is refused by the backend as well as hidden.
+- Browser zoom on a short window was the cause of earlier reports that looked
+  like missing menus; Diagnostics reports the zoom level for that reason.
+
 ## Documentation site (ectlogger.us)
 
 **The scheme, the voice, the figure rules, and the information architecture
