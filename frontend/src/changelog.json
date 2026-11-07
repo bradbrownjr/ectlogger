@@ -1,6 +1,23 @@
 {
-  "version": "2026.11.01",
+  "version": "2026.11.07",
   "entries": [
+    {
+      "version": "2026.11.07",
+      "date": "2026-11-07",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Schedule: A page for every schedule — Each schedule now has its own page with its frequencies, staff, upcoming dates, the net on the air and its past nets. Clubs can link to it from their website, and its live net link opens the running net.",
+              "userImpact": true,
+              "docs": "/docs/operators/finding-a-net/#a-schedules-own-page"
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.11.01",
       "date": "2026-11-01",

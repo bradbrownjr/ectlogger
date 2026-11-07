@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-11-01
+revised: 2026-11-07
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,14 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# November 7, 2026
+
+## New Features
+
+* **Schedule: A page for every schedule** — Each schedule now has its own page with its frequencies, staff, upcoming dates, the net on the air and its past nets. Clubs can link to it from their website, and its live net link opens the running net.
 
 ---
 
