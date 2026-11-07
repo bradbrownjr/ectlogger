@@ -4,7 +4,7 @@ summary: Recording who can hear whom during a net, reading the coverage table an
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-31
+revised: 2026-11-07
 review_by: 2027-10-21
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/station-coverage/
@@ -12,7 +12,7 @@ permalink: /docs/net-control/station-coverage/
 
 # Station coverage
 
-Station-to-station coverage logging records which checked-in stations can hear each other directly. It's built for the question every emergency communications plan eventually has to answer: if the repeater goes down tonight, who can still reach whom on simplex, and where do you need a relay? A monthly simplex drill that logs coverage answers that from real reports instead of guesses, and the answers pile up net after net.
+Station-to-station coverage logging records which checked-in stations can hear each other directly. It answers a question every emergency communications plan has to answer: if the repeater goes down tonight, who can still reach whom on simplex, and where do you need a relay? A monthly simplex drill that logs coverage answers that from real reports instead of guesses, and the answers build up net after net.
 
 It's off unless the net's manager turned on **Enable Station-to-Station Coverage Logging** in the net's or schedule's settings (see [Creating a net](/docs/net-managers/creating-a-net/)). On a net that has it, you'll see an ear icon at the end of each check-in row and a **Coverage** button in the toolbar.
 
@@ -25,7 +25,7 @@ It's off unless the net's manager turned on **Enable Station-to-Station Coverage
 ## Record a station's report
 
 1. Ask the station, on the air, which stations it can hear.
-2. Click the ear icon at the end of that station's row. A solid blue ear means the station already has a report; a faded one means it doesn't yet, which makes the rows still to do easy to spot down the list.
+2. Click the ear icon at the end of that station's row. A solid blue ear means the station already has a report; a faded one means it doesn't yet.
 
    <figure>
      <img src="/docs/img/net-control/can-hear-row-button.png"
@@ -33,11 +33,11 @@ It's off unless the net's manager turned on **Enable Station-to-Station Coverage
      <figcaption>A solid ear means that station's report has been taken. Faded means it's still to do.</figcaption>
    </figure>
 
-3. Tick each station they name. Each station is listed at the place it's at now, so a report made after a station moved isn't credited to where it was. To tick one at an earlier place, for a report from earlier in the net, tick **Show earlier places**. For "everybody but W2FERN and N2OAKS", tick **All stations** at the top, then untick those two. **All stations** includes checked-out stations, because a station heard before it left was still heard; untick any that weren't.
+3. Tick each station they name. Each station is listed at its current place, so a report made after a station moved isn't credited to where it was. To tick one at an earlier place, for a report from earlier in the net, tick **Show earlier places**. For "everybody but W2FERN and N2OAKS", tick **All stations** at the top, then untick those two. **All stations** includes checked-out stations, because a station heard before it left was still heard; untick any that weren't.
 4. Set **Operating Position** if they aren't at home. It starts at **Home**, and only Home reports reach the station's personal coverage map. On a drill with sites it starts at the station's site instead, and offers the sites first; see [Coverage drills by site](/docs/net-managers/coverage-drills/).
 5. Click **Save**.
 
-Saving replaces that station's previous report for that frequency. To correct one, open it again: the dialog shows what's already recorded. A checked-out station's row has no ear icon, since there's nobody left on the air to ask.
+Saving replaces that station's previous report for that frequency. To correct one, open it again; the dialog shows what's recorded. A checked-out station's row has no ear icon, since there's nobody left on the air to ask.
 
 ### On a net with more than one frequency
 
@@ -51,7 +51,7 @@ The dialog turns into a grid with one column per frequency, so a 2m and 80m comp
 
 ## Read the coverage table
 
-Click **Coverage** in the toolbar to open the **Station Coverage** panel. Anyone viewing the net can open it, not only staff, and it updates live as reports are saved.
+Click **Coverage** in the toolbar to open the **Station Coverage** panel. Anyone viewing the net can open it, and it updates live as reports are saved.
 
 <figure>
   <img src="/docs/img/net-control/coverage-panel.png"
@@ -64,7 +64,7 @@ On a drill with sites, the panel opens on **By site** instead, which rolls the r
 Each row is one report: the **Reporter**, a **Two-way** or **One-way** chip, the **Heard Station**, and when it was reported. On a net with more than one frequency there's a **Frequency** column too.
 
 - **Two-way** (green, double arrow) means each station heard the other on the same frequency, from the same places. Either both reported it, or one of them checked the other in on that frequency: a check-in net control logged on the air is a two-way contact, so it counts. Hover over the chip to see when it was a check-in. A station that checked itself in through the app doesn't count, since that went over the internet.
-- **One-way** (grey, single arrow) means only one direction is known. It might be a genuinely one-way path, a big station and a small one, or it might just mean the other station hasn't been asked yet. Ask before you plan around it.
+- **One-way** (grey, single arrow) means only one direction is known. It might be a one-way path, such as a big station and a small one, or the other station might not have been asked yet. Ask before you plan around it.
 
 Coverage opens in its own window over the page, which you can drag and resize. **Maximize** fills the screen with it, and the dock button puts it in the column beside Chat instead. Its buttons are the same wherever it is:
 
@@ -73,7 +73,7 @@ Coverage opens in its own window over the page, which you can drag and resize. *
 - **Export to PDF** saves what the panel is showing as a page you can print or send, and **Export to CSV** downloads it as a spreadsheet, filter included.
 - **Show on map** opens the map with the coverage overlay already on.
 
-The table's heading row and first column stay in view as you scroll down or to the right, so you can always tell which stations a row is about.
+The table's heading row and first column stay in view as you scroll down or to the right, so you can tell which stations a row is about.
 
 If a report was saved against the wrong frequency, staff (and the station that made it) can fix it from the **Frequency** column's dropdown without redoing the report. Like Chat and the map, the panel can also be popped out into a browser window of its own, with all the same buttons; see [Multiple monitors and wide screens](/docs/net-control/multiple-monitors/).
 
@@ -84,7 +84,7 @@ Open **Map**, then click the ear button at the top right of the map to turn on t
 <figure>
   <img src="/docs/img/net-control/coverage-map-overlay.png"
        alt="The live check-in map of the simplex drill with the coverage overlay on, its ear button outlined in red at the top right. Solid amber lines join stations that heard each other; dashed grey lines show a station heard in one direction only.">
-  <figcaption>The overlay draws every report as a line, so a gap in coverage shows up as a town with no lines to it.</figcaption>
+  <figcaption>The overlay draws every report as a line; a gap in coverage is a town with no lines to it.</figcaption>
 </figure>
 
 On a net with more than one frequency, a dropdown beside the ear button limits the lines to one frequency. A station with no location the map can place has no pin, so its lines aren't drawn; the table above still has every report.

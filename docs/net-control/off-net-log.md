@@ -4,7 +4,7 @@ summary: Put a station's contacts away from this net on its ICS-309, such as a c
 kind: How-to
 audience: NCS, Logger, and Relay operators, and stations checked into the net
 owner: KC1JMH
-revised: 2026-11-01
+revised: 2026-11-07
 review_by: 2027-10-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/off-net-log/
@@ -12,9 +12,9 @@ permalink: /docs/net-control/off-net-log/
 
 # Logging off-net activity
 
-During a drill or an activation, a lot of your team's communication happens away from your own net. Someone checks in to the state ARES net on HF, someone calls the state desk on a statewide DMR talkgroup, someone sends a Winlink message to the next county over. Each of those belongs in your communications log, but none of them is a check-in to your net.
+During a drill or an activation, much of your team's communication happens away from your own net. Someone checks in to the state ARES net on HF, someone calls the state desk on a statewide DMR talkgroup, someone sends a Winlink message to the next county over. Each of those belongs in your communications log, but none of them is a check-in to your net.
 
-The **off-net log** is where they go. Each accepted entry is one line on the net's ICS-309, beside the check-ins, chat, and traffic, so the log you hand over at the end covers everything your stations did.
+The **off-net log** is where they go. Each accepted entry is one line on the net's ICS-309, beside the check-ins, chat, and traffic, so the log you hand over covers everything your stations did.
 
 ## What to log, and what not to
 
@@ -31,7 +31,7 @@ The **Off-net** button on the net toolbar opens the log. It's there only on a ne
 <figure>
   <img src="/docs/img/net-control/off-net-toolbar.png"
        alt="The net toolbar with the Off-net button outlined in red, between Traffic and Announcements.">
-  <figcaption>The Off-net button sits with the other views of the net on the toolbar.</figcaption>
+  <figcaption>The Off-net button is with the other views of the net on the toolbar.</figcaption>
 </figure>
 
 The dialog lists every entry, oldest first, with its status:
@@ -55,7 +55,7 @@ Click **Add entry** and fill in:
 - **Time** - when it happened. It starts at the current time; change it if you're logging something after the fact.
 - **From station** - the station that made the contact. Net control can enter any callsign, which is how you log a contact a station reports to you over the air. A station logging its own activity always logs as itself.
 - **To** - who the contact was with, such as "State ARES HF Net" or "Harbor County EMA."
-- **Channel** - where it happened, such as "3.940 LSB," "DMR TG 3100," or "Winlink." Type any frequency, such as another county's repeater. As you type, it suggests this net's own frequencies too.
+- **Channel** - where it happened, such as "3.940 LSB," "DMR TG 3100," or "Winlink." Type any frequency, such as another county's repeater; it also suggests this net's own frequencies.
 - **What happened** - one line.
 - **Message ID** - optional, for a Winlink message or anything else with an ID of its own.
 
@@ -71,7 +71,7 @@ An entry from net control is on the log as soon as it's saved. An entry from a s
 
 When stations have logged entries of their own, a notice at the top of the off-net log says how many are waiting. NCS, Logger, and the net's manager can:
 
-- **Accept** an entry with the check mark, or accept them all at once with **Accept all**.
+- **Accept** an entry with the check mark, or accept them all with **Accept all**.
 - **Reject** one with the X.
 - **Edit** any entry, to fix a typo or a time, before or after accepting it.
 - **Delete** an entry that shouldn't be there at all.
@@ -93,9 +93,9 @@ You can still accept entries after the net closes. Downloading the ICS-309 again
 
 ## Who sees off-net entries
 
-Only signed-in users ever see the off-net log. Net control staff see every entry. Any other station sees the accepted entries and its own.
+Only signed-in users see the off-net log. Net control staff see every entry. Any other station sees the accepted entries and its own.
 
-A visitor who isn't signed in never sees off-net entries, including on a public net's ICS-309. An entry can name a shelter or an office that the net shows only to its staff.
+A visitor who isn't signed in doesn't see off-net entries, including on a public net's ICS-309. An entry can name a shelter or an office that the net shows only to its staff.
 
 ## Next
 

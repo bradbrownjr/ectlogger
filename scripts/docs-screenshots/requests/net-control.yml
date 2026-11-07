@@ -149,7 +149,7 @@ shots:
     alt: >
       The Bulk Check-In window: a single multi-line text box for entering
       several check-ins at once, with a live "Format:" line showing the
-      exact field order this net expects.
+      field order this net expects.
     caption: The box accepts one check-in per line-segment, separated by semicolons -- see Speed entry syntax for the exact grammar.
 
   # ========== Frequencies and multiple net controls ==========
@@ -211,7 +211,7 @@ shots:
     alt: >
       The "Role: NCS" toolbar button, outlined in red, with the tooltip
       "Acting as NCS -- click to step down to Standard".
-    caption: This toggles your own active/standard status on the NCS role you already hold -- it never grants NCS for the first time.
+    caption: This toggles your own active/standard status on the NCS role you already hold. It never grants NCS.
 
   # ========== Chat moderation ==========
   - id: chat-mute-hover
@@ -286,7 +286,7 @@ shots:
       The Traffic panel docked below Chat beside the check-in list, showing a
       "pending: 1" summary chip above a table of one urgent ICS-213 addressed
       to EOC Logistics.
-    caption: The Traffic panel opens beside the check-in list -- filing and viewing traffic never leaves the net view.
+    caption: The Traffic panel opens beside the check-in list; you file and view traffic without leaving the net view.
 
   - id: file-traffic-dialog
     section: net-control
@@ -328,7 +328,7 @@ shots:
     alt: >
       The net toolbar with the Off-net button outlined in red, between
       Traffic and Announcements.
-    caption: The Off-net button sits with the other views of the net on the toolbar.
+    caption: The Off-net button is with the other views of the net on the toolbar.
 
   - id: off-net-log-dialog
     section: net-control
@@ -422,7 +422,7 @@ shots:
     alt: >
       The check-in list open in its own bare browser window, with no
       navigation bar, ready to be dragged onto a second monitor.
-    caption: A popped-out pane is a real second window with its own connection to the net -- move it to another monitor and it keeps working on its own.
+    caption: A popped-out pane is a second window with its own connection to the net; move it to another monitor and it keeps working.
 
   - id: ultrawide-desk
     section: net-control
@@ -687,8 +687,8 @@ shots:
       join stations that heard each other; dashed grey lines show a station
       heard in one direction only.
     caption: >
-      The overlay draws every report as a line, so a gap in coverage shows up
-      as a town with no lines to it.
+      The overlay draws every report as a line; a gap in coverage is a town
+      with no lines to it.
 
   # ---------- Coverage drills (docs/net-managers/coverage-drills.md) ----------
   - id: check-in-at-a-site
@@ -740,7 +740,7 @@ shots:
       The Sites board, listing the stations checked in on the SET net under
       where each one is: the net's sites in order, each with its town and a
       count of stations, then the stations at home.
-    caption: Who is where right now. A site nobody has reached says so.
+    caption: Who is where. A site nobody has reached says so.
 
   - id: can-hear-dialog-site
     section: net-control

@@ -4,7 +4,7 @@ summary: Detaching and popping out the check-in list, chat, and other panels, an
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-31
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/multiple-monitors/
@@ -12,7 +12,7 @@ permalink: /docs/net-control/multiple-monitors/
 
 # Multiple monitors and wide screens
 
-Running a busy net from a single laptop screen is a real constraint, and ECTLogger's net view is built to spread across more room when you have it. Chat, the Activity Log, the check-in list, Map, Coverage, Traffic, and the net's Script, Notes, and Announcements can each be moved independently, and every one of them offers the same three moves.
+A busy net is cramped on a single laptop screen, so the net view can spread across more room. Chat, the Activity Log, the check-in list, Map, Coverage, Traffic, and the net's Script, Notes, and Announcements can each be moved independently, with the same three moves.
 
 ## The three moves
 
@@ -24,10 +24,10 @@ Every docked panel carries the same small row of controls in its header:
   <figcaption>Every docked panel (Chat, Activity Log, Map, Coverage, Traffic) carries this same row.</figcaption>
 </figure>
 
-- **Detach** turns a docked panel into a draggable, resizable floating overlay that stays on top of the rest of the page, which suits pulling something out of the column layout without leaving the browser tab.
-- **Open in new window** (the pop-out icon) goes further: it opens that panel in a genuinely separate browser window, running its own connection to the net, independent of the tab that opened it. Drag that window onto a second monitor and it keeps working there on its own. It doesn't share state with the tab it came from; it just stays in sync with the net the same way any other connected viewer does.
-- **Maximize**, on the Map and Coverage, fills the screen with the panel, for the times you need the whole map or a big coverage grid. **Restore** puts it back where it was.
-- **Minimize** collapses a panel down to its header bar without closing it, and **Close** removes it from the layout entirely (for panels that have a genuine "not open right now" state, like Coverage and Traffic; Chat and the Activity Log are always present, so their only "put it away" move is detaching or minimizing).
+- **Detach** turns a docked panel into a draggable, resizable floating overlay that stays on top of the rest of the page.
+- **Open in new window** (the pop-out icon) goes further: it opens that panel in a separate browser window with its own connection to the net. Drag that window onto a second monitor and it keeps working there. It doesn't share state with the tab it came from; it stays in sync with the net like any other connected viewer.
+- **Maximize**, on the Map and Coverage, fills the screen with the panel. **Restore** puts it back where it was.
+- **Minimize** collapses a panel down to its header bar without closing it, and **Close** removes it from the layout entirely (for panels that can be shut, like Coverage and Traffic; Chat and the Activity Log are always present, so their only "put it away" move is detaching or minimizing).
 
 <figure>
   <img src="/docs/img/net-control/detached-panel.png"
@@ -38,7 +38,7 @@ Every docked panel carries the same small row of controls in its header:
 <figure>
   <img src="/docs/img/net-control/popped-out-checkins.png"
        alt="The check-in list open in its own bare browser window, with no navigation bar, ready to be dragged onto a second monitor.">
-  <figcaption>A popped-out pane is a real second window with its own connection to the net; move it to another monitor and it keeps working on its own.</figcaption>
+  <figcaption>A popped-out pane is a second window with its own connection to the net; move it to another monitor and it keeps working.</figcaption>
 </figure>
 
 The Map and Coverage open floating, since a map or a coverage grid needs more room than the column beside Chat has. Click **Dock to layout** on either to put it in the column instead.
@@ -47,7 +47,7 @@ Every layout choice you make (what's docked, what's detached, what's popped out,
 
 ## On an ultrawide monitor
 
-Past a certain screen width, a second column becomes available on the left side of the page for the net's Script, Notes, and the schedule's Announcements, alongside the existing check-in-list-and-Chat layout on the right. Below that width, those three stay exactly as they've always worked: on-demand floating panels you open when you need them, rather than a fixed part of the layout. Nothing about their content changes, only whether they get a permanent spot on a genuinely wide screen.
+On a wide enough screen, a second column on the left side of the page holds the net's Script, Notes, and the schedule's Announcements, beside the check-in list and Chat on the right. Below that width, those three are floating panels you open when you need them. Their content is the same either way.
 
 <figure>
   <img src="/docs/img/net-control/ultrawide-desk.png"
@@ -57,4 +57,4 @@ Past a certain screen width, a second column becomes available on the left side 
 
 ## Next
 
-[Closing the net](/docs/net-control/closing-the-net/) is the natural next stop once your desk is set up the way you want it for a live net.
+[Closing the net](/docs/net-control/closing-the-net/) is next once your desk is set up.

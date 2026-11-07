@@ -1,10 +1,10 @@
 ---
 title: The net control desk
-summary: Every control on the net view, what it does, and which ones you'll actually reach for.
+summary: Every control on the net view, what it does, and which ones you'll use.
 kind: Explanation
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-31
+revised: 2026-11-07
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/the-net-control-desk/
@@ -12,16 +12,16 @@ permalink: /docs/net-control/the-net-control-desk/
 
 # The net control desk
 
-Every net, whether it has three check-ins or thirty, opens to the same page: a title bar, a row of buttons, a check-in list, and (space permitting) chat and an activity log alongside it. This page walks the whole thing once, control by control, so the first time you see it isn't in the middle of a busy net.
+Every net opens to the same page: a title bar, a row of buttons, a check-in list, and (space permitting) chat and an activity log alongside it. This page walks through it control by control.
 
-What you actually see depends on who you are. A Standard participant gets a handful of read-only buttons. NCS and Logger get the full command bar. Relay gets participant-level access plus the ability to log check-ins on behalf of stations Net Control can't hear directly. The screenshots on this page are from NCS's seat; where Logger or Relay see something different, it's called out.
+What you see depends on who you are. A Standard participant gets a handful of read-only buttons. NCS and Logger get the full command bar. Relay gets participant-level access plus the ability to log check-ins on behalf of stations Net Control can't hear directly. The screenshots on this page are from NCS's seat; where Logger or Relay see something different, it's called out.
 
 ## The command bar
 
 
-The bar is two groups run together with a thin divider between them: information buttons on the left (things that show you something), and management buttons on the right (things that change the net or your own participation in it). On a narrow window the bar drops labels first, then moves whichever buttons matter least into a **More** menu, lowest-priority first. Nothing is ever hidden just because a phone-sized breakpoint says so, only because there's genuinely no room.
+The bar is two groups with a thin divider between them: information buttons on the left (things that show you something), and management buttons on the right (things that change the net or your own participation in it). On a narrow window the bar drops labels first, then moves whichever buttons matter least into a **More** menu, lowest-priority first. Buttons are only hidden when there's no room.
 
-Every button is gated by who you are and what state the net is in, so a Standard participant, a Logger, and a Relay operator each see a different part of the same row. Here's what each one does, grouped the way the toolbar groups them.
+Every button is gated by who you are and what state the net is in, so a Standard participant, a Logger, and a Relay operator each see a different part of the same row. Here's what each one does.
 
 ### Information (left side)
 
@@ -32,10 +32,10 @@ Every button is gated by who you are and what state the net is in, so a Standard
 </figure>
 
 - **Bulk add** — opens a box for entering one or many check-ins at once, fast. Also known as speed entry. Covered in full on [Speed entry](/docs/net-control/speed-entry/). Only NCS and Logger see it, and only once the net has at least one check-in.
-- **Search** — filters the check-in list by callsign, name, or location as you type. Doesn't touch the underlying data, just what's shown.
+- **Search** — filters the check-in list by callsign, name, or location as you type. It changes only what's shown.
 - **Map** — plots every checked-in station with a location ECTLogger could parse, including ones already checked out. See [Location formats](/docs/reference/location-formats/) for what it can and can't read.
 - **Coverage** — station-to-station "who can hear whom" reports, if the net has coverage logging turned on. Not every net does. See [Station coverage](/docs/net-control/station-coverage/).
-- **Traffic** — opens the traffic panel for this net, if the net has formal traffic handling enabled and you're the net's manager, an admin, or hold an active NCS or Logger role. A Standard participant never sees this button, even on a traffic-enabled net. See [Handling traffic](/docs/net-control/handling-traffic/).
+- **Traffic** — opens the traffic panel for this net, if the net has formal traffic handling enabled and you're the net's manager, an admin, or hold an active NCS or Logger role. A Standard participant doesn't see this button, even on a traffic-enabled net. See [Handling traffic](/docs/net-control/handling-traffic/).
 - **Off-net** — the [off-net log](/docs/net-control/off-net-log/), for contacts your stations make away from this net, such as a check-in on a state net or a Winlink message.
 - **Drill plan** — opens the net's [drill plan](/docs/net-managers/drill-plans/) in a new tab, when it has one.
 - **Script** / **Announcements** / **Notes** / **Topics** / **Stats** — read-only views of the net script, the schedule's announcements, this net's own notes, the schedule's [prior topics](/docs/operators/chat-and-polls/#prior-topics), and this net's statistics page.
@@ -50,28 +50,28 @@ Every button is gated by who you are and what state the net is in, so a Standard
   <figcaption>The management group. A Logger or Relay operator sees fewer of these.</figcaption>
 </figure>
 
-- **Import** — backfills check-ins from a CSV, for a net that ran off-app or needs bulk correction. Shown to the net's manager, an admin, anyone currently acting as NCS, Logger, or Relay, and the schedule's net staff, whether or not they've taken a role on this occurrence yet. This is a net-manager-flavored tool; day-to-day logging almost never needs it.
-- **Edit net** — the net's settings form. Staff only, and it stays available even after the net closes, since a typo in the log sometimes isn't found until later.
+- **Import** — backfills check-ins from a CSV, for a net that ran off-app or needs bulk correction. Shown to the net's manager, an admin, anyone currently acting as NCS, Logger, or Relay, and the schedule's net staff, whether or not they've taken a role on this occurrence yet. Day-to-day logging rarely needs it.
+- **Edit net** — the net's settings form. Staff only, and it stays available after the net closes, since a typo in the log can turn up later.
 - **Roles** — opens **Manage Net Control Staff**, where you assign or remove NCS, Logger, and Relay for anyone. On a draft or scheduled net the button's tooltip reads "Assign NCS and logger roles (any assigned NCS can start the net)". Covered in [Roles and stepping away](/docs/net-control/roles-and-stepping-away/).
-- **Role: NCS** / **Role: Standard** — appears only for an operator who already holds an active NCS role on this net, and toggles between acting as NCS and stepping down to a Standard participant without leaving the role behind entirely.
+- **Role: NCS** / **Role: Standard** — appears only for an operator who already holds an active NCS role on this net, and toggles between acting as NCS and stepping down to a Standard participant. You keep the role.
 - **Claim NCS** — a recovery button, shown to the net's manager or an admin only when a net has no assigned NCS at all.
 - **Raise hand** — a participant-side signal to get NCS's attention; NCS doesn't see this on their own row, since they run the queue rather than joining it.
 - **Step away** / **Just listening** / **Check out** — self-service status changes for your own check-in. Stepping away as the net's only active NCS asks you to confirm first, since it pauses the net until someone returns. See [Roles and stepping away](/docs/net-control/roles-and-stepping-away/).
 - **Edit check-in** — takes the place of **Check in** once you're on the list, and reopens the check-in form for your own row. The pencil on your row does the same. See [Fixing your check-in](/docs/operators/checking-in/#fixing-your-check-in).
 - **I hear** — records which stations you can hear, if the net has coverage logging on and allows self-reporting. See [Reporting what you hear](/docs/operators/reporting-what-you-hear/).
-- **Close net** — ends the session. See [Closing the net](/docs/net-control/closing-the-net/) for exactly what that does and doesn't undo.
+- **Close net** — ends the session. See [Closing the net](/docs/net-control/closing-the-net/) for what it does and doesn't undo.
 
 Once a net is closed or archived, the management group swaps to **Reports** and (staff only) **Archive** or **Delete**. **Reports** opens a menu with the net report, the ICS-309 Communications Log as a PDF or CSV, net control's [ICS-214](/docs/net-control/ics-214/), and the check-in spreadsheet. These are covered in [Closing the net](/docs/net-control/closing-the-net/).
 
 ## The title row
 
-Above the command bar, the net's name and description sit next to a row of status chips: the net's current status (LOBBY or ACTIVE), how long it's been running, a station count, and, when the net has more than one working frequency, a chip per frequency. Clicking a frequency chip does different things depending on who you are and whether you're NCS; that behavior, and what the colors mean, is its own page: [Frequencies and multiple net controls](/docs/net-control/frequencies-and-multi-ncs/).
+Above the command bar, the net's name and description sit next to a row of status chips: the net's current status (LOBBY or ACTIVE), how long it's been running, a station count, and, when the net has more than one working frequency, a chip per frequency. What clicking a frequency chip does, and what the colors mean, is on its own page: [Frequencies and multiple net controls](/docs/net-control/frequencies-and-multi-ncs/).
 
-If nobody who currently holds an active NCS role is actually present on the net, a blue border frames the whole browser window and a banner reads "Net Control has stepped away — this net has been paused until they return." That's covered in [Roles and stepping away](/docs/net-control/roles-and-stepping-away/), along with what "paused" does and doesn't mean for the net's timer.
+If nobody who holds an active NCS role is present on the net, a blue border frames the whole browser window and a banner reads "Net Control has stepped away — this net has been paused until they return." That's covered in [Roles and stepping away](/docs/net-control/roles-and-stepping-away/), along with what "paused" means for the net's timer.
 
 ## The check-in list and its legend
 
-The check-in list is the center of the page for a reason: everything else here exists to keep it accurate. A legend strip sits above it:
+The check-in list is the center of the page. A legend strip sits above it:
 
 <figure>
   <img src="/docs/img/reference/check-in-legend.png"
@@ -79,17 +79,17 @@ The check-in list is the center of the page for a reason: everything else here e
   <figcaption>The legend above the check-in list. It mixes net roles, station statuses, and the Recheck marker in one row; Station statuses explains what each entry means.</figcaption>
 </figure>
 
-It's worth knowing up front that this legend is doing three different jobs at once: it shows **per-net roles** (NCS, 2nd NCS, Logger), **station statuses** (Standard, Listening, Relay, Away, Traffic, Announce, Out), and the **Recheck marker**, which is neither. [Station statuses](/docs/reference/station-statuses/) untangles all three in full; the short version is that "2nd NCS" is real (it's how the list marks any additional simultaneously-active NCS beyond the first) but it isn't a role you assign, because every NCS holds the identical role underneath.
+The legend shows three kinds of thing: **per-net roles** (NCS, 2nd NCS, Logger), **station statuses** (Standard, Listening, Relay, Away, Traffic, Announce, Out), and the **Recheck marker**, which is neither. [Station statuses](/docs/reference/station-statuses/) untangles all three in full. "2nd NCS" marks any additional active NCS beyond the first; it isn't a role you assign, because every NCS holds the same role.
 
 For adding, editing, and correcting rows in that list, see [Logging check-ins](/docs/net-control/logging-check-ins/).
 
 ## What's docked beside the list
 
-On a wide enough screen, Chat and the Activity Log sit docked in a column beside the check-in list by default; on an ultrawide monitor, Script, Notes, and the schedule's Announcements can join a second column on the left. Every one of these panels, along with Map, Coverage, and Traffic when they're open, can be detached into a floating overlay (the Map and Coverage open that way) or popped out into a genuinely separate browser window, so you can spread the desk across more than one monitor. That's its own page: [Multiple monitors and wide screens](/docs/net-control/multiple-monitors/).
+On a wide enough screen, Chat and the Activity Log sit docked in a column beside the check-in list by default; on an ultrawide monitor, Script, Notes, and the schedule's Announcements can join a second column on the left. Every one of these panels, along with Map, Coverage, and Traffic when they're open, can be detached into a floating overlay (the Map and Coverage open that way) or popped out into a separate browser window, so you can spread the desk across more than one monitor. See [Multiple monitors and wide screens](/docs/net-control/multiple-monitors/).
 
-## Which ones actually matter
+## Which ones matter
 
-If you're new to this seat, the controls worth knowing cold before your first net are: **Bulk add** (fast logging), clicking a row to edit it inline, **Step away** and **Check out** for your own status, **Roles** if you need to hand off or add a Logger, and **Close net** when you're done. Everything else on this page is worth knowing exists, but you'll reach for those five constantly and the rest occasionally.
+If you're new to this seat, the controls to know before your first net are: **Bulk add** (fast logging), clicking a row to edit it inline, **Step away** and **Check out** for your own status, **Roles** if you need to hand off or add a Logger, and **Close net** when you're done. You'll use those five constantly and the rest occasionally.
 
 ## Next
 
