@@ -12,7 +12,7 @@ const PlaceholderChips: React.FC<{ invited?: boolean; accountAvailable?: boolean
     </Tooltip>
     {/* Someone signed up with this callsign; a manager confirms it's them with Link */}
     {accountAvailable && (
-      <Tooltip title="Someone signed up with this callsign. Click Link if it's really them; until then they get nothing.">
+      <Tooltip title="Someone signed up with this callsign. Click Link if it's them; until then they get nothing.">
         <Chip label="Signed up, confirm it's them" size="small" color="info" variant="outlined" />
       </Tooltip>
     )}

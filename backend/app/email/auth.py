@@ -58,7 +58,7 @@ async def send_magic_link(email: str, token: str, expire_days: int = 30, redirec
             <p>Or copy and paste this link into your browser:</p>
             <p style="word-break: break-all; color: #1976d2;">{{ magic_link }}</p>
             <div class="footer">
-                <p>If you didn't request this email, you can safely ignore it.</p>
+                <p>If you didn't request this email, ignore it.</p>
             </div>
         </div>
     </body>
@@ -98,7 +98,7 @@ async def send_password_changed(email: str):
     <body>
         <div class="container">
             <h2>Your {{ app_name }} password was changed</h2>
-            <p>This is a confirmation that the password on your account was just changed.</p>
+            <p>The password on your account was just changed.</p>
             <div class="footer">
                 <p>If you didn't make this change, contact an administrator right away.</p>
             </div>

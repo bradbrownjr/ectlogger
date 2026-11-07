@@ -146,7 +146,7 @@ const BasicInfoTab: React.FC = () => {
         Community Net Features
       </Typography>
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-        Optional features to encourage participation in informal community nets.
+        Optional features for informal community nets.
       </Typography>
 
       <FormGroup>
@@ -161,7 +161,7 @@ const BasicInfoTab: React.FC = () => {
             label="Topic of the Week"
           />
           <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: 1 }}>
-            Adds a topic response field to check-ins. Great for icebreaker questions.
+            Adds a topic response field to check-ins, for icebreaker questions.
           </Typography>
           {topicOfWeekEnabled && (
             <TextField
@@ -283,7 +283,7 @@ const BasicInfoTab: React.FC = () => {
             <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
               Lets NCS or Logger verify a checked-in station's identity by comparing the code on their
               authenticator app to the one ECTLogger computes for their account. Stations without
-              two-factor authentication set up simply show as unverified.
+              two-factor authentication set up show as unverified.
             </Typography>
           </Box>
 

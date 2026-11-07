@@ -1059,7 +1059,7 @@ const Scheduler: React.FC = () => {
           <Typography variant="body2" color="text.secondary">
             Nets that were previously opened from this schedule are{' '}
             <strong>not affected</strong> — their check-ins, chat, and logs
-            are preserved. They will simply no longer be linked to a schedule.
+            are preserved. They will no longer be linked to a schedule.
           </Typography>
           <Typography color="error" sx={{ mt: 2, fontWeight: 'bold' }}>
             This cannot be undone.

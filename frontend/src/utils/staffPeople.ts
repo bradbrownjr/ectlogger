@@ -70,7 +70,7 @@ export function linkConfirmText(row: {
 }): string {
   const who = [row.available_account_name, row.available_account_email].filter(Boolean).join(', ');
   return `Link ${row.user_callsign} to the account that now has that callsign${who ? ` (${who})` : ''}? `
-    + 'They become real staff, with the same access as anyone else on this list.';
+    + 'They become staff with the same access as everyone else on this list.';
 }
 
 export function personLabel(person: SchedulePerson): string {

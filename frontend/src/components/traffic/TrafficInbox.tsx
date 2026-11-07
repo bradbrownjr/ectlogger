@@ -61,7 +61,7 @@ const TrafficInbox: React.FC<TrafficInboxProps> = ({ limit, onEmptyText }) => {
   if (displayed.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary">
-        {onEmptyText || 'Nothing in your traffic inbox right now.'}
+        {onEmptyText || 'Nothing in your traffic inbox.'}
       </Typography>
     );
   }

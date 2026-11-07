@@ -112,7 +112,7 @@ const ActivityTab: React.FC = () => {
     }
     if (activeStatCard === 'traffic_pending') {
       return {
-        label: 'Traffic you\'re currently holding (not yet relayed or delivered)',
+        label: 'Traffic you\'re holding (not yet relayed or delivered)',
         rows: [...pendingItems].sort(
           (a, b) => new Date(a.held_since ?? a.filed_at).getTime() - new Date(b.held_since ?? b.filed_at).getTime()
         ),

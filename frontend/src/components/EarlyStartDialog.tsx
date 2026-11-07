@@ -38,7 +38,7 @@ const EarlyStartDialog: React.FC<EarlyStartDialogProps> = ({
       <Typography sx={{ mb: 2 }}>
         This net is scheduled to start at{' '}
         <strong>{scheduledStartTime ? formatDateTime(scheduledStartTime, preferUtc) : 'a later time'}</strong>.
-        Starting it now begins the net immediately.
+        Starting it now begins the net.
       </Typography>
       <Typography color="text.secondary">
         Open the lobby instead to let stations check in and chat until the scheduled start.

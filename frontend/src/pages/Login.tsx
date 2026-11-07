@@ -155,7 +155,7 @@ const Login: React.FC = () => {
               </Typography>
 
               <Typography variant="caption" display="block" sx={{ mt: 1 }} color="text.secondary" align="center">
-                Getting logged out sooner than expected? Bookmark the link from your email instead of retyping your address here &mdash; it stays valid for the full 30 days and signs you back in instantly, even if your browser clears cookies or you switch devices.
+                Getting logged out sooner than expected? Bookmark the link from your email instead of retyping your address here &mdash; it stays valid for the full 30 days and signs you back in, even if your browser clears cookies or you switch devices.
               </Typography>
 
               <Typography variant="body2" align="center" sx={{ mt: 3 }}>

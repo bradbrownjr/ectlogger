@@ -242,7 +242,7 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
               <Typography variant="body1">Use Gravatar</Typography>
               <Typography variant="caption" color="text.secondary" component="div">
                 When enabled, users without an uploaded photo get their Gravatar image if they have one, and their initials otherwise. Their browser fetches it directly from gravatar.com.
-                When disabled, no Gravatar address is ever sent to a browser, so nothing on this site contacts gravatar.com — useful on isolated or restricted networks. Uploaded profile photos are served by this server and keep working either way.
+                When disabled, no Gravatar address is ever sent to a browser, so nothing on this site contacts gravatar.com. That suits isolated or restricted networks. Uploaded profile photos are served by this server and keep working either way.
               </Typography>
             </Box>
             <Switch
@@ -348,13 +348,13 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
                 </Typography>
                 {securityInfo.fail2ban.banned_ips.length === 0 ? (
                   <Typography variant="body2" color="text.secondary">
-                    No IPs are currently banned. IPs are automatically unbanned after {Math.round(securityInfo.fail2ban.ban_time / 60)} minutes.
+                    No IPs are banned. IPs are automatically unbanned after {Math.round(securityInfo.fail2ban.ban_time / 60)} minutes.
                   </Typography>
                 ) : (
                   <>
                     <Alert severity="warning" sx={{ mb: 2 }}>
-                      These IPs are blocked from accessing ECTLogger. They will be automatically unbanned after the ban period expires,
-                      or you can manually unban them using the button below.
+                      These IPs are blocked from accessing ECTLogger. They are unbanned when the ban period expires,
+                      or you can unban them with the button below.
                     </Alert>
                     <TableContainer>
                       <Table size="small">
@@ -563,7 +563,7 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
                   <Box>
                     <Typography variant="body1">Rolling renewal</Typography>
                     <Typography variant="caption" color="text.secondary">
-                      When enabled, sessions with fewer than 7 days remaining are silently refreshed on each request, so active users are never logged out.
+                      When enabled, sessions with fewer than 7 days remaining are refreshed on each request, so active users are never logged out.
                     </Typography>
                   </Box>
                   <Switch

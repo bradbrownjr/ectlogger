@@ -81,7 +81,7 @@ async def send_traffic_reminder(
 
             <p>Hello {{ recipient_name }} ({{ recipient_callsign }}),</p>
 
-            <p>This is a gentle reminder to relay or deliver the following message, or log what
+            <p>Please relay or deliver the following message, or log what
             you've already done with it so this reminder stops.</p>
 
             <div class="details">

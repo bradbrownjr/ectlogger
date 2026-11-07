@@ -281,7 +281,7 @@ const BasicInfoTab: React.FC = () => {
         Community Net Features
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Optional features for informal community nets to increase engagement and collect fun responses from participants.
+        Optional features for informal community nets.
       </Typography>
 
       {/* Topic of the Week */}
@@ -320,7 +320,7 @@ const BasicInfoTab: React.FC = () => {
           label="Participant Poll"
         />
         <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-          Run a quick poll during the net. Answers are auto-completed to ensure consistent tracking and results are shown as a chart.
+          Run a quick poll during the net. Answers autocomplete so they stay consistent, and results are shown as a chart.
         </Typography>
         {pollEnabled && (
           <TextField
@@ -328,7 +328,7 @@ const BasicInfoTab: React.FC = () => {
             onChange={(e) => setPollQuestion(e.target.value)}
             margin="normal"
             placeholder="e.g., What mode do you use most: SSB, FM, or Digital?"
-            helperText="The poll question - NCS will enter responses with autocomplete to ensure consistency"
+            helperText="The poll question. NCS enters responses with autocomplete so answers stay consistent."
             sx={{ ml: 4.5, width: 'calc(100% - 36px)' }}
           />
         )}
@@ -405,7 +405,7 @@ const BasicInfoTab: React.FC = () => {
         <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
           Lets NCS or Logger verify a checked-in station's identity by comparing the code on their
           authenticator app to the one ECTLogger computes for their account. Stations without
-          two-factor authentication set up simply show as unverified.
+          two-factor authentication set up show as unverified.
         </Typography>
       </Box>
 

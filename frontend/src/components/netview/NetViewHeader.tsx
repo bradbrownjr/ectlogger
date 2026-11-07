@@ -1023,7 +1023,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
               <Chip label={`${netStats.unique_stations ?? netStats.total_check_ins} Checked In`} size="small" color="primary" variant="outlined" />
               {/* Shows on a net with sites: how many have a station on now */}
               {activeSites && (
-                <Tooltip title={activeSites.length > 0 ? activeSites.join(', ') : 'No site has a station on right now'}>
+                <Tooltip title={activeSites.length > 0 ? activeSites.join(', ') : 'No site has a station checked in'}>
                   <Chip label={`${activeSites.length} ${activeSites.length === 1 ? 'Site' : 'Sites'} Active`} size="small" color="primary" variant="outlined" />
                 </Tooltip>
               )}
@@ -1234,7 +1234,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
         <DialogTitle>Step away as the only active NCS?</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            No one else is currently acting as NCS on this net. Stepping away leaves it without anyone
+            No one else is acting as NCS on this net. Stepping away leaves it without anyone
             actively running it until you return or hand the NCS role to someone else. Continue?
           </DialogContentText>
         </DialogContent>

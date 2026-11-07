@@ -116,8 +116,7 @@ const ScheduleSubscribePanel: React.FC<ScheduleSubscribePanelProps> = ({ schedul
           </Alert>
           {startEmailsOff && (
             <Alert severity="warning">
-              Net start emails are turned off for your account, so you will not be
-              emailed when this net starts.{' '}
+              Net start emails are turned off for your account, so you won't get one when this net starts.{' '}
               <Link component={RouterLink} to="/profile?tab=notifications">
                 Change your notification settings
               </Link>

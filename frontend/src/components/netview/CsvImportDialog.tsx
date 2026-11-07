@@ -366,7 +366,7 @@ const CsvImportDialog: React.FC<CsvImportDialogProps> = ({
                 This writes historical check-in records. Enter the net&apos;s actual start and end times below,
                 in the time zone selected here - they decide which timestamps in your file are accepted, they
                 resolve rows that give only a time of day, and they become the net&apos;s official start and end.
-                Rows outside that window are rejected. There is no one-click undo: imported check-ins are removed
+                Rows outside that window are rejected. There is no undo: imported check-ins are removed
                 one at a time, and the times can be corrected afterwards from Edit net.
               </Typography>
             </Alert>
@@ -428,7 +428,7 @@ const CsvImportDialog: React.FC<CsvImportDialogProps> = ({
             <Typography variant="subtitle2" gutterBottom>Actual Net Times</Typography>
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
               {isBackfill
-                ? `Required. When the net actually ran, in ${effectiveZone}.`
+                ? `Required. When the net ran, in ${effectiveZone}.`
                 : `Times in ${effectiveZone}. Adjust only if the recorded times are wrong.`}
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>

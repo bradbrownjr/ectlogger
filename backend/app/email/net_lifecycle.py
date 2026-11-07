@@ -50,7 +50,7 @@ async def send_net_notification(emails: List[str], net_name: str, net_id: int, u
             {% if ncs_name %}<p><strong>NCS on duty:</strong> {{ ncs_name|e }}{% if ncs_callsign %} ({{ ncs_callsign|e }}){% endif %}</p>{% endif %}
             <a href="{{ view_url }}" class="button" style="color: #ffffff;">View Net</a>
             {% if self_checkin_enabled %}<a href="{{ check_in_url }}" class="button" style="color: #ffffff;">Check-in to Net</a>{% endif %}
-            <p>{% if self_checkin_enabled %}Click a button above to view the net or jump straight to checking in.{% else %}Click above to view the net. Net Control checks stations in for this net.{% endif %} You'll be automatically signed in.</p>
+            <p>{% if self_checkin_enabled %}Use a button above to view the net or check in.{% else %}Click above to view the net. Net Control checks stations in for this net.{% endif %}</p>
             <p class="info">This link is unique to you and will sign you in automatically. Do not share it.</p>
             
             {{ unsubscribe_footer }}
@@ -149,11 +149,10 @@ async def send_net_cancellation(
     
     if is_ncs:
         subject_prefix = "🚫 NCS Duty Cancelled"
-        intro_text = """This is to inform you that your NCS duty has been cancelled 
-        for the following net session. You are no longer required to run this net."""
+        intro_text = """Your NCS duty has been cancelled for the following net session. You no longer need to run this net."""
     else:
         subject_prefix = "🚫 Net Cancelled"
-        intro_text = """This is to inform you that a net you are subscribed to has been cancelled."""
+        intro_text = """A net you are subscribed to has been cancelled."""
     
     html_template = Template("""
     <!DOCTYPE html>

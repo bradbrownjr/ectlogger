@@ -410,7 +410,7 @@ const StaffRotationTab: React.FC = () => {
                   <TextField
                     {...params}
                     size="small"
-                    helperText="The Manager is implicitly authorized as NCS and serves as the default NCS when no rotation is configured."
+                    helperText="The Manager is authorized as NCS and is the default NCS when no rotation is configured."
                   />
                 )}
               />
