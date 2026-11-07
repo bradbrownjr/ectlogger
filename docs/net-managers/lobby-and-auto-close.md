@@ -4,7 +4,7 @@ summary: Opening the lobby early so stations can arrive before Net Control, and 
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-28
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/lobby-and-auto-close/
@@ -12,7 +12,7 @@ permalink: /docs/net-managers/lobby-and-auto-close/
 
 # Lobby and auto-close settings
 
-Both of these exist to take a chore off a human's plate at exactly the moment they're least likely to be watching a clock: right before a net starts, and long after everyone stopped paying attention to it. Both are **off by default**, on every schedule and every net, and both can be set on the schedule (as the default for every net it creates) or overridden on one specific net.
+Both take a chore off a person at the moment they're least likely to be watching a clock: right before a net starts, and long after everyone stopped paying attention to it. Both are **off by default**, on every schedule and every net, and both can be set on the schedule (as the default for every net it creates) or overridden on one specific net.
 
 <figure>
   <img src="/docs/img/net-managers/lobby-and-close-toggles.png"
@@ -39,25 +39,25 @@ Whoever clicks either one becomes Net Control and is checked in, and subscribers
 
 A net in **Lobby** goes live on its own at its scheduled start, but only while someone who could click **Go Live** has the net open: its manager, an admin, or an NCS on the net. An NCS who stepped down to participant doesn't count. If Net Control opens the net after the start time, it goes live as soon as the page loads.
 
-If nobody running the net has it open, the net stays in **Lobby**. That's deliberate: with nobody there to take check-ins on the air, it shouldn't look like the net is running. Stations can still check in and chat in the lobby. If the lobby opened on its own, subscribers haven't been told the net is starting either, since that email waits for it to go live. If the lobby opened on its own and nobody checked in, the net is archived 24 hours after its start time, with no closing email.
+If nobody running the net has it open, the net stays in **Lobby**. With nobody there to take check-ins on the air, it shouldn't look like the net is running. Stations can still check in and chat in the lobby. If the lobby opened on its own, subscribers haven't been told the net is starting either, since that email waits for it to go live. If the lobby opened on its own and nobody checked in, the net is archived 24 hours after its start time, with no closing email.
 
 ## Auto-open lobby
 
-Turn this on and ECTLogger moves the net into **Lobby** on its own, a set number of minutes ahead of the scheduled start, so stations can check in and chat before Net Control formally begins. Net Control can still open the lobby by hand at any time regardless of this setting, and can click **Go Live** whenever they're ready. The automatic open just means nobody has to remember to do it.
+Turn this on and ECTLogger moves the net into **Lobby** on its own, a set number of minutes ahead of the scheduled start, so stations can check in and chat before Net Control formally begins. Net Control can still open the lobby by hand at any time regardless of this setting, and can click **Go Live** whenever they're ready. Nobody has to remember to open it.
 
 It needs a real scheduled start time to count backward from, so it only applies to a recurring schedule's nets, or a one-time net you've given a start time. A net from an Ad-Hoc schedule, or a one-time net left with no start time, has nothing to offset against. For those, turning on **Enable lobby** adds the **Open lobby** button beside **Start net**, with no countdown involved. The switch is on the schedule form, and on a net's own **Edit** page under **Basic Info**.
 
-One case where the automatic open is deliberately skipped: if the schedule's rotation exists and shows nobody on duty for that specific occurrence (an overridden date with no replacement, for instance), the lobby doesn't open on its own. An unstaffed lobby that looks like the net is running would be worse than leaving it scheduled. This is separate from a schedule having no rotation at all, which is treated as staffed by the schedule's manager and opens on schedule as normal; see [why an auto-created net can start with nobody assigned](/docs/net-managers/net-staff-and-rotation/) for the reasoning behind that.
+If the schedule has a rotation and it shows nobody on duty for that occurrence (an overridden date with no replacement, for instance), the lobby doesn't open on its own. An unstaffed lobby that looks like the net is running would be worse than leaving it scheduled. This is separate from a schedule having no rotation at all, which is treated as staffed by the schedule's manager and opens on schedule as normal; see [why an auto-created net can start with nobody assigned](/docs/net-managers/net-staff-and-rotation/) for the reasoning behind that.
 
 ## Auto-close on inactivity
 
-Turn this on and an **active** net that's gone quiet for a set number of hours (1, 2, 3, or 4) closes itself, exactly as if Net Control had clicked Close. The closing log still goes out the same way it would for a manual close; the only difference is a system chat message noting it closed automatically. This never applies to a net still sitting in **Lobby**, only to an active one.
+Turn this on and an **active** net that's gone quiet for a set number of hours (1, 2, 3, or 4) closes itself, as if Net Control had clicked Close. The closing log goes out as it would for a manual close; the only difference is a system chat message noting it closed automatically. This never applies to a net still sitting in **Lobby**, only to an active one.
 
-"Quiet" means no check-in, no recheck, and no chat message. Any one of those resets the clock, so a long SKYWARN or ARES activation that goes hours between check-ins while people are still actively watching and chatting is never closed out from under them. This is exactly why it's off by default rather than on: a net manager has to decide their net is the kind that's genuinely done once it's quiet, not the kind that goes quiet in the middle of real work.
+"Quiet" means no check-in, no recheck, and no chat message. Any one of those resets the clock, so a long SKYWARN or ARES activation that goes hours between check-ins while people are watching and chatting is not closed out from under them. It's off by default because a net manager has to decide their net is the kind that is finished once it's quiet, not the kind that goes quiet in the middle of real work.
 
 If nobody is recorded as NCS when it closes itself (see [Who ran this net?](/docs/net-control/closing-the-net/#who-ran-this-net)), the log is held instead of sent. The net's manager, the schedule's manager and co-managers get one email asking who ran it. Any of them, or the net's NCS or Logger, can open the net, click **Send the log**, and choose from the stations checked in. If nobody does within 24 hours, the log goes out anyway with **NCS: Not recorded**.
 
-When a net is within 15 minutes of its computed auto-close time, anyone viewing it sees a dismissible warning banner first, which is enough notice to keep it open by simply checking in or sending a chat message if it shouldn't close yet.
+When a net is within 15 minutes of its computed auto-close time, anyone viewing it sees a dismissible warning banner first. Check in or send a chat message to keep it open.
 
 ## Related
 

@@ -4,7 +4,7 @@ summary: Turning a net into a schedule, the recurrence options, what each net it
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-22
+revised: 2026-11-07
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/recurring-schedules/
@@ -12,7 +12,7 @@ permalink: /docs/net-managers/recurring-schedules/
 
 # Recurring schedules
 
-A **schedule** is the plan; a **net** is one session it produces. Everything on this page lives on the schedule, not on any single night's net. Change it here and the change applies starting with the next net the schedule creates. The interface mostly just calls it "schedule," but the underlying record is a `NetTemplate`, so you'll see the word "template" in a URL or an API response now and then; it means the same thing.
+A **schedule** is the plan; a **net** is one session it produces. Everything on this page lives on the schedule, not on any single night's net. Change it here and the change applies starting with the next net the schedule creates. The word "template" sometimes appears in a URL; it means the same thing.
 
 Every net has a schedule, including a one-time net made with the dashboard's **+** button. Its schedule is set to run once, and it's listed in the Scheduler under the same name, after the recurring schedules. To turn a one-time net into something you run again, edit that schedule and change its **Schedule Type**: **Ad-Hoc** to start it by hand whenever you need it, or **Weekly**, **Monthly**, or **Daily** to run on its own. The frequencies, script, announcements, and staff all carry over, and the nets it already produced stay on it, so their statistics count toward the schedule too. You can change the type again later, for example from Weekly to Ad-Hoc for a season when the group meets for planning sessions or work details instead.
 
@@ -34,9 +34,9 @@ The **Schedule** tab sets how often the schedule creates a net:
   <figcaption>Ad-Hoc, One-Time, Daily, Weekly, or Monthly. This is also where a weekly schedule's optional fifth-week operator and the auto-lobby / auto-close defaults for every net it creates live.</figcaption>
 </figure>
 
-- **Ad-Hoc** creates no nets on its own. It's a saved template you start manually, whenever you need it, from that schedule's **Create** button.
-- **One-Time** creates a single net. Giving it a start date and time is optional. Leave it blank and the net is created immediately with no countdown; fill it in and the net gets a real scheduled start, which also unlocks the auto-lobby offset below.
-- **Daily**, **Weekly**, and **Monthly** create nets on their own, on the day and time you set. Monthly lets you pick which week or weeks of the month (including "last"). A weekly schedule can also name an optional **fifth-week operator**, someone who takes the one extra Tuesday (or whichever day) a five-week month produces, while the regular rotation just skips that week and picks back up the following one.
+- **Ad-Hoc** creates no nets on its own. It's a saved schedule you start by hand, whenever you need it, from that schedule's **Create** button.
+- **One-Time** creates a single net. Giving it a start date and time is optional. Leave it blank and the net is created immediately with no countdown; fill it in and the net gets a real scheduled start, which is what the auto-lobby offset below counts from.
+- **Daily**, **Weekly**, and **Monthly** create nets on their own, on the day and time you set. Monthly lets you pick which week or weeks of the month (including "last"). A weekly schedule can also name an optional **fifth-week operator**, someone who takes the one extra Tuesday (or whichever day) a five-week month produces, while the regular rotation skips that week and picks back up the following one.
 
 Whichever type creates nets automatically, each occurrence starts unstaffed unless the schedule has a rotation; see [Net staff and the NCS rotation](/docs/net-managers/net-staff-and-rotation/) for why that's intentional, not a bug.
 
@@ -44,7 +44,7 @@ Whichever type creates nets automatically, each occurrence starts unstaffed unle
 
 A net created from a schedule starts with a copy of everything the schedule has set: name, description, info and stream URLs, script, announcements, frequencies, check-in field configuration, ICS-309/topic/poll settings, traffic settings, and the [auto-lobby and auto-close](/docs/net-managers/lobby-and-auto-close/) defaults. From that point on the two are independent: editing the net changes that occurrence only, and [Save to Schedule](/docs/net-managers/creating-a-net/) is the only thing that pushes an edit back the other way. It saves the net you're editing too.
 
-Net staff, the rotation, and subscribers are never copied onto the net as a one-time snapshot. They stay on the schedule and are read fresh each time a net needs an NCS assignment or a notification goes out.
+Net staff, the rotation, and subscribers are never copied onto the net as a one-time snapshot. They stay on the schedule and are read each time a net needs an NCS assignment or a notification goes out.
 
 ## Subscriptions
 
@@ -54,7 +54,7 @@ A schedule can also be followed as a calendar or RSS feed without subscribing at
 
 ## Merging schedules
 
-If one net ended up with two or more schedules (one made before and one after a change of night, say), merge them into one so its history, subscribers, and staff are all in one place.
+If one net ended up with two or more schedules (one made before and one after a change of night, say), merge them into one so its history, subscribers, and staff are together.
 
 1. On the **Schedule** page, click the merge button at the bottom right. It appears when you manage at least two schedules.
 2. Tick each schedule to merge, then click **Merge Selected**.

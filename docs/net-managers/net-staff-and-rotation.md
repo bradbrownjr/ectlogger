@@ -12,7 +12,7 @@ permalink: /docs/net-managers/net-staff-and-rotation/
 
 # Net staff and the NCS rotation
 
-There are two separate lists here, and they answer two different questions. **Authorized Net Staff** answers "who is allowed to run a net from this schedule at all." The **NCS rotation** answers "whose turn is it this week", and it's entirely optional.
+There are two separate lists here, and they answer two different questions. **Authorized Net Staff** answers "who is allowed to run a net from this schedule at all." The **NCS rotation** answers "whose turn is it this week", and it's optional.
 
 ## Authorized Net Staff
 
@@ -24,11 +24,11 @@ There are two separate lists here, and they answer two different questions. **Au
 
 From a schedule's **Net Staff** tab (or the **Staff** button on its card), add any operator to the **Authorized Net Staff** list and they can start and run nets from that schedule from that point on, with no rotation slot required. The **Schedule Manager**, whoever created the schedule or was later handed it, always has this access implicitly, and manages every net from the schedule, including one a staff member created by hand with **Create Net**. Nobody needs to click Create Net for a recurring schedule: each occurrence is created automatically the day before.
 
-Each staff row has its own switch to disable someone temporarily without removing them, and a star to promote them to **co-manager**. Co-manager is a strictly higher tier than plain staff: it's for schedule-ownership actions (transferring ownership, merging schedules, archiving or deleting a net from this schedule), not for who can run a net night to night. Plain active staff can already do that.
+Each staff row has its own switch to disable someone temporarily without removing them, and a star to promote them to **co-manager**. Co-manager is a higher tier than plain staff: it's for schedule-ownership actions (transferring ownership, merging schedules, archiving or deleting a net from this schedule), not for who can run a net night to night. Plain active staff can already do that.
 
 The staff list, the rotation, and who has NCS on upcoming dates are public, so anyone can see who runs your net. Visitors who aren't signed in see call signs and first names only, and not which operators have an account yet. Nobody sees a staff member's email address.
 
-**Since 2026-09-18, any active staff member can also claim NCS or Logger on a net just by checking themselves in as one**, the same as a rotation member could before; co-manager status isn't required for that. Pick **Check In as NCS** or **Check In as Logger** on the check-in banner or form when it's offered; see [Checking in](/docs/operators/checking-in/) for what that looks like. Only a genuine self-check-in grants a role this way. If Net Control or the Logger enters someone else's check-in by voice, it never grants NCS or Logger on their behalf, even if that person is staff.
+**Any active staff member can also claim NCS or Logger on a net by checking themselves in as one**, the same as a rotation member; co-manager status isn't required. Pick **Check In as NCS** or **Check In as Logger** on the check-in banner or form when it's offered; see [Checking in](/docs/operators/checking-in/) for what that looks like. Only a self-check-in grants a role this way. If Net Control or the Logger enters someone else's check-in by voice, it never grants NCS or Logger on their behalf, even if that person is staff.
 
 ## Operators who haven't signed up yet
 
@@ -36,9 +36,9 @@ You don't have to wait for every net control operator to make an account before 
 
 An operator on the list by callsign can go in the rotation, take the fifth week, and be swapped in for a single night, just like anyone else. When their week comes up, the net names them as its NCS, so the net card, the report, the ICS-309, and the closing log all credit the right person. What they can't do is use ECTLogger's net controls, because there's no account to sign in with yet. Someone else, usually the Logger, runs the net in the app and checks them in. They also can't be made a co-manager until they have an account.
 
-**If you invited them, they take over their spot as soon as they sign in with that address.** Their callsign is filled in for them, and their staff row, their rotation position, any swaps naming them, and any nets from this schedule where they were credited as NCS all move to their new account. You get an email saying they joined. Nothing is lost, and nobody has to re-add them.
+**If you invited them, they take over their spot as soon as they sign in with that address.** Their callsign is filled in for them, and their staff row, their rotation position, any swaps naming them, and any nets from this schedule where they were credited as NCS all move to their new account. You get an email saying they joined.
 
-**Anyone else waits for you.** Anybody can type a callsign into a profile, so a sign-up with that callsign and no invite to that address gets nothing by itself. You get an email, and their row shows **Signed up, confirm it's them** and a link button. Clicking it shows the account's name and part of its email address; link it once you're sure the new account is really them. Only an account's main callsign counts here, not the extra or GMRS callsigns on a profile. Only the schedule manager and co-managers can link someone, send invitations, or make someone a co-manager.
+**Anyone else waits for you.** Anybody can type a callsign into a profile, so a sign-up with that callsign and no invite to that address gets nothing by itself. You get an email, and their row shows **Signed up, confirm it's them** and a link button. Clicking it shows the account's name and part of its email address; link it once you're sure the new account is them. Only an account's main callsign counts here, not the extra or GMRS callsigns on a profile. Only the schedule manager and co-managers can link someone, send invitations, or make someone a co-manager.
 
 **To fix a typo** in a callsign, or to send an invitation you skipped, click the pencil on that row. A corrected callsign also changes in the rotation and on any swaps. If the corrected callsign already belongs to an account, the row joins that account straight away.
 
@@ -56,15 +56,15 @@ A net's **Staff** button and the **Net Staff** tab of **Edit Net** show who runs
 
 ## Why an auto-created net can start with nobody assigned
 
-If a schedule has no rotation configured, its automatically created nets, and their auto-opened lobbies if that's turned on, start with **no one assigned as NCS**. This is intentional, not a bug: clubs routinely don't know who's available until the night of, and the fix isn't to guess a default assignment, it's for whoever shows up to claim it. Any active staff member does that just by checking themselves in as NCS, exactly as described above.
+If a schedule has no rotation configured, its automatically created nets, and their auto-opened lobbies if that's turned on, start with **no one assigned as NCS**. This is intentional: clubs routinely don't know who's available until the night of, and the fix isn't to guess a default assignment, it's for whoever shows up to claim it. Any active staff member does that just by checking themselves in as NCS, as described above.
 
-If a net somehow ends up active with nobody holding NCS at all (the assigned rotation member never showed, for instance), a **Claim NCS** button appears in the net's toolbar for anyone who can otherwise manage the net, so it's never permanently stuck.
+If a net somehow ends up active with nobody holding NCS at all (the assigned rotation member never showed, for instance), a **Claim NCS** button appears in the net's toolbar for anyone who can otherwise manage the net.
 
 ## Assigning roles by hand
 
 Net Control, Logger, and Relay can also be assigned directly from a net's **Roles** button ("Manage Net Control Staff"), which lists current assignments and lets you add or remove them. This works regardless of net status, so a role assigned to the wrong person on a closed net can still be corrected after the fact. It's a separate action from the self-grant above: this is for staff assigning someone else (or logging a Relay station), not for claiming a role yourself.
 
-A net can legitimately have more than one active NCS at once: a multi-desk exercise with several people each running their own frequency, for example. The check-in list marks every NCS after the first as **2nd NCS** in its legend; it's not a separate assignable role, just how the list marks an additional active one. See [Station statuses](/docs/reference/station-statuses/) for the full legend.
+A net can have more than one active NCS at once: a multi-desk exercise with several people each running their own frequency, for example. The check-in list marks every NCS after the first as **2nd NCS** in its legend; it isn't a separate assignable role. See [Station statuses](/docs/reference/station-statuses/) for the full legend.
 
 ## Your schedule's page and live net link
 
@@ -81,7 +81,7 @@ If you can create nets from the schedule, you also get:
   <figcaption>Live net is the link to put on your club's website.</figcaption>
 </figure>
 
-Put the **Live net** link on your club's website or dashboard for activations. While a net is running, the link opens it. When none is, it opens the schedule's page, where your staff can create one. Neither link is secret: both show only what the public Schedule page already shows.
+Put the **Live net** link on your club's website or dashboard for activations. While a net is running, the link opens it. When none is, it opens the schedule's page, where your staff can create one. Both show only what the public Schedule page shows, so they are safe to post publicly.
 
 ## Inviting people to subscribe
 
@@ -90,14 +90,14 @@ A schedule's subscribers are emailed when one of its nets starts. Anyone can sub
 <figure>
   <img src="/docs/img/net-managers/subscribe-link.png"
        alt="The Subscribers tab of the Staff dialog: a Subscribe link field holding the schedule's link, with the Copy link button beside it outlined in red, above a subscriber list that is still empty.">
-  <figcaption>The link sits above the subscriber list, so the people it brings in show up right below it.</figcaption>
+  <figcaption>The link sits above the subscriber list.</figcaption>
 </figure>
 
 The link is above the subscriber list in two places: the **Subscribers** tab of the **Staff** dialog, and the bottom of the **Net Staff** tab when you edit the schedule. Click **Copy link**. It's offered to the same people who can see the subscriber list: the schedule manager, co-managers, and admins.
 
 The link opens your schedule's page with its **Subscribe** button outlined. Someone who isn't signed in gets **Sign in to subscribe** instead and is brought back to the same page afterward, which also works for a person creating their account on the spot. Opening the link never subscribes anybody by itself; they always click the button.
 
-The link doesn't expire and it isn't a secret. It shows nothing the public Schedule page doesn't already show, so it's safe to post in the open. A link to a schedule that has since been deactivated tells the visitor the net is no longer scheduled.
+The link doesn't expire. It shows only what the public Schedule page shows, so it is safe to post publicly. A link to a schedule that has since been deactivated tells the visitor the net is no longer scheduled.
 
 ## Emailing your staff or subscribers
 

@@ -4,7 +4,7 @@ summary: Giving a net the places its stations deploy to, such as shelters, offic
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-11-07
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/sites/
@@ -68,7 +68,7 @@ An agency's list of possible shelters is not public: a shelter on a published li
 - **Net staff** see every site, with its address, notes, and the other columns. That's the net's manager, its schedule's manager and staff, an admin, and anyone acting as NCS, Logger, or Relay.
 - **Everyone else** sees only the sites in use: ticked **Supported**, starred as primary, a repeater or node, or with a station checked in there. They see the site's name and place, never its address, notes, or other columns.
 
-The Site box, the Sites board, the report, and the closing email only ever show sites in use. If a team turns up at a site you didn't tick, net control can check them in there, which puts it in use.
+The Site box, the Sites board, the report, and the closing email show only sites in use. If a team turns up at a site you didn't tick, net control can check them in there, which puts it in use.
 
 ## Afterward
 

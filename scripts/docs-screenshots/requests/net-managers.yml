@@ -239,7 +239,7 @@ shots:
       net will be marked Cancelled rather than deleted and won't be
       recreated by the schedule, with an optional reason field and a Cancel
       Net button outlined in red.
-    caption: Cancelling keeps the occurrence on record in Archived Nets and stops the schedule from quietly recreating it.
+    caption: Cancelling keeps the occurrence on record in Archived Nets and stops the schedule from recreating it.
 
   # ========== Reports, ICS-309, and exports ==========
   - id: net-export-toolbar

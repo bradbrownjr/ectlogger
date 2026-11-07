@@ -4,7 +4,7 @@ summary: The net form field by field: frequencies, check-in fields, self check-i
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-11-01
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/creating-a-net/
@@ -16,7 +16,7 @@ A net is one session: one night, one log, one set of check-ins. If you want the 
 
 ## Starting a net
 
-Starting a net and editing one go through two different forms. The dashboard's **+** button (tooltip **Create new net**) walks you through the same tabs as [setting up a schedule](/docs/net-managers/recurring-schedules/), pre-set to a one-time occurrence; save it and ECTLogger creates the net and takes you straight there. The **Create** button on an existing schedule's card skips a form entirely, creating the next occurrence on the spot and opening its net view. Either way, this page covers what you land on afterward: **Edit Net**, reachable from any net's own toolbar once it exists.
+Starting a net and editing one go through two different forms. The dashboard's **+** button (tooltip **Create new net**) walks you through the same tabs as [setting up a schedule](/docs/net-managers/recurring-schedules/), pre-set to a one-time occurrence; save it and ECTLogger creates the net and takes you straight there. The **Create** button on an existing schedule's card skips the form, creating the next occurrence on the spot and opening its net view. Either way, this page covers what you land on afterward: **Edit Net**, reachable from any net's own toolbar once it exists.
 
 A brand-new account may not be able to do either one right away. See [a brand-new account may have to wait](/docs/net-managers/recurring-schedules/#a-brand-new-account-may-have-to-wait) for the age, participation, and daily-limit rules your instance may enforce.
 
@@ -28,7 +28,7 @@ A brand-new account may not be able to do either one right away. See [a brand-ne
   <figcaption>Every net, one-time or from a recurring schedule, is edited through these six tabs.</figcaption>
 </figure>
 
-Only **Net Name** and **at least one frequency** are required. Everything else can be filled in later from **Edit Net**, reachable from the net's own toolbar once it exists.
+Only **Net Name** and **at least one frequency** are required. Everything else can be filled in later from **Edit Net**.
 
 ### Basic info
 
@@ -38,20 +38,20 @@ Below that are three groups of toggles, all off by default unless a schedule alr
 
 - **General**: prioritize mobile stations in the check-in list, [keep chat open](/docs/operators/chat-and-polls/#chat-after-the-net-closes) for 15 to 60 minutes after closing, allow or block **self check-in** (turn this off if you want every check-in to come in over the air and be logged by staff instead), **Participants only** (below), and the [auto-lobby and auto-close](/docs/net-managers/lobby-and-auto-close/) settings.
 - **Participants only** marks a net that is for the stations taking part in an event or incident, such as a drill's deployed teams, and not for everyone listening. It doesn't turn off self check-in, so you can leave that open when you won't know until the day who volunteers. The net gets a red **Participants only** label, beside its status in the net and under its name on its card in the lists of nets, and the check-in form tells stations that the net is for those taking part and asks anyone else to listen without checking in. If someone checks in anyway, net control can [remove and block](/docs/net-control/logging-check-ins/#removing-and-blocking-a-station) them.
-- **Community net features**: **Topic of the Week** asks participants a free-text question at check-in; **Participant Poll** asks a short question with autocompleted answers so the results stay countable. Turning either on adds a locked, always-enabled row for it on the Check-In Fields tab, so you can't accidentally leave a poll's answers uncollected.
-- **ARES & EmComm features**: the ICS-309 Communications Log format for the closing email, station-to-station coverage logging ("can hear" reports, with a second switch, **Allow stations to self-report**, that decides whether stations can record their own or only net control can; see [Station coverage](/docs/net-control/station-coverage/)), and **Authenticated Net**, which lets Net Control or the Logger compare a checked-in station's live authenticator code against the one ECTLogger computes for their account. A station with no two-factor authentication set up simply shows as unverified rather than blocking the check-in. Assisted Traffic Handling, which sets the form types this net accepts, lives here too; see the traffic pages in [Net control](/docs/net-control/) for what staff do with it.
+- **Community net features**: **Topic of the Week** asks participants a free-text question at check-in; **Participant Poll** asks a short question with autocompleted answers so the results stay countable. Turning either on adds a locked, always-enabled row for it on the Check-In Fields tab.
+- **ARES & EmComm features**: the ICS-309 Communications Log format for the closing email, station-to-station coverage logging ("can hear" reports, with a second switch, **Allow stations to self-report**, that decides whether stations can record their own or only net control can; see [Station coverage](/docs/net-control/station-coverage/)), and **Authenticated Net**, which lets Net Control or the Logger compare a checked-in station's live authenticator code against the one ECTLogger computes for their account. A station with no two-factor authentication set up shows as unverified; the check-in goes through. Assisted Traffic Handling, which sets the form types this net accepts, lives here too; see the traffic pages in [Net control](/docs/net-control/) for what staff do with it.
 
 Once the net exists, a **Net Logo** uploader appears here too. It's shown on net cards, beside the net name on the check-in page, and at the top of the net's report, and accepts PNG, JPEG, or WebP. Whichever format you upload is what gets stored, so a transparent PNG logo stays transparent.
 
 ### Using a logo that's already here
 
-If your team's logo is already on another net or schedule, you don't need the original file. Click **Choose Existing** under the logo to see every logo in use on this site, each labelled with the schedules and nets that use it. Pick one and click **Use Logo**. A closed net can get a logo this way too, which is handy when you want the team's logo on a report after the net is over.
+If your team's logo is already on another net or schedule, you don't need the original file. Click **Choose Existing** under the logo to see every logo in use on this site, each labelled with the schedules and nets that use it. Pick one and click **Use Logo**. A closed net can get a logo this way too.
 
-A net made from a schedule starts with the schedule's logo, and keeps it. If the schedule's logo is replaced or removed later, nets that already ran keep the logo they had, so an old report never changes on its own.
+A net made from a schedule starts with the schedule's logo, and keeps it. If the schedule's logo is replaced or removed later, nets that already ran keep the logo they had, so an old report doesn't change.
 
 ### Updating your other nets
 
-When you replace a logo, by uploading a new one or choosing an existing one, ECTLogger checks for your other nets and schedules that still show the old logo. If there are any, it lists them, all ticked, so you can update them in the same step. Untick any you want to leave alone, such as a past net whose report should stay as it was, then click **Update**. Click **Leave them** to change only this one. The list only includes nets and schedules you can edit.
+When you replace a logo, by uploading a new one or choosing an existing one, ECTLogger checks for your other nets and schedules that still show the old logo. If there are any, it lists them, all ticked. Untick any you want to leave alone, such as a past net whose report should stay as it was, then click **Update**. Click **Leave them** to change only this one. The list only includes nets and schedules you can edit.
 
 ### Net staff
 
@@ -78,13 +78,13 @@ Both are covered in full in [Scripts, notes, and announcements](/docs/net-manage
 
 ### Check-in fields
 
-Callsign is the only field every net always requires. Everything else (Name, Location, Spotter #, Weather Observation, Power Src, Power, Feedback, Notes, Relayed By, and any custom fields your instance's administrator has defined) is switched on or off and marked required or optional independently, per net. See [Check-in fields](/docs/reference/check-in-fields/) for the complete list. Turn on **Relayed By** for a net that regularly uses relay stations; on any other net it still appears by itself once a station is set to Relay. If **Topic of the Week** or **Participant Poll** is on, its response field appears here too, locked on so it can't be switched off by mistake.
+Callsign is the only field every net always requires. Everything else (Name, Location, Spotter #, Weather Observation, Power Src, Power, Feedback, Notes, Relayed By, and any custom fields your instance's administrator has defined) is switched on or off and marked required or optional independently, per net. See [Check-in fields](/docs/reference/check-in-fields/) for the complete list. Turn on **Relayed By** for a net that regularly uses relay stations; on any other net it still appears by itself once a station is set to Relay. If **Topic of the Week** or **Participant Poll** is on, its response field appears here too, locked on.
 
 ## Saving
 
 **Create Net** (or **Save for this Net** when editing) saves changes to this occurrence only. If the net was created from a schedule, editing it also offers **Save to Schedule**, which saves this net and pushes everything on this tab set (name, description, script, the schedule's announcements, frequencies, check-in fields, the check-in, chat, traffic, lobby and auto-close settings, and the ICS-309/topic/poll toggles) back to the schedule so every future net inherits it. This net's own notes stay on this net. Net staff and the rotation are managed separately and are never touched by Save to Schedule.
 
-Editing a closed or archived net still works, so a typo or a wrong setting can still be fixed, but nothing about it re-sends the closing email or re-triggers a notification. It updates the record only.
+You can edit a closed or archived net to fix a typo or a wrong setting. Editing updates the record only; it doesn't re-send the closing email or trigger a notification.
 
 ## Related
 
