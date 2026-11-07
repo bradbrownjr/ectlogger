@@ -38,6 +38,5 @@ shots:
       station on the net's active frequency and that clicking a row opens
       inline editing.
     caption: >
-      The legend above the check-in list. It mixes three different kinds of
-      thing -- net roles, station statuses, and the Recheck marker -- in one
-      row; see Station statuses for what each entry actually means.
+      The legend above the check-in list. It combines net roles, station
+      statuses, and the Recheck marker in one row.

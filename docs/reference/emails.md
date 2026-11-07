@@ -4,7 +4,7 @@ summary: Every message ECTLogger sends, what triggers it, who gets it, and how t
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-30
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/emails/
@@ -12,7 +12,7 @@ permalink: /docs/reference/emails/
 
 # Emails we send
 
-Every one of these is read directly from the sending code, not from memory. Most respect two layers of preference: the "Enable email notifications" master switch in Profile settings that silences everything below it, and a per-message toggle for the ones that are genuinely optional. A handful are treated as operational rather than a preference and go out regardless of the per-message toggle — each row below says which.
+Most of these respect two layers of preference: the "Enable email notifications" master switch in Profile settings that silences everything below it, and a per-message toggle for the optional ones. A few are operational and go out regardless of the per-message toggle; each row says which.
 
 ## Account and access
 
@@ -41,15 +41,15 @@ Every one of these is read directly from the sending code, not from memory. Most
 
 | Email | Trigger | Recipients | To stop it |
 |---|---|---|---|
-| Net starting | The first moment a net becomes visible to check into — a human opening its lobby, or it going live directly. An automatically opened lobby stays silent until a person confirms the net is really happening. Names the NCS on duty, as the reminders do | The net's manager, plus every subscriber to that schedule | Profile setting "Net start notifications" (on by default), and the master switch. |
-| Net closure log | The net closes | The net's manager, every explicit subscriber to that schedule, and every active NCS, Logger, and Relay on that specific net (NCS and Logger since 2026-09-05; Relay was meant to be included from the same date but a case-sensitive comparison silently excluded it until 2026-09-19) — so running a net you never separately subscribed to still gets you the log | Profile setting "Net close notifications (with log)" (on by default), and the master switch, checked per recipient |
+| Net starting | The first moment a net becomes visible to check into — a human opening its lobby, or it going live directly. An automatically opened lobby stays silent until a person confirms the net is happening. Names the NCS on duty, as the reminders do | The net's manager, plus every subscriber to that schedule | Profile setting "Net start notifications" (on by default), and the master switch. |
+| Net closure log | The net closes | The net's manager, every subscriber to that schedule, and every active NCS, Logger, and Relay on that specific net, so running a net you never subscribed to still gets you the log | Profile setting "Net close notifications (with log)" (on by default), and the master switch, checked per recipient |
 | Net log waiting to be sent | Once a day while a net closed with **Finish the log later** still hasn't sent its log | The net's manager, the schedule's manager and co-managers, and whoever closed it | Send the log. The master switch also stops it |
 | Who ran this net? | Auto-close closed a net with nobody recorded as NCS, and held its log | The same people as the reminder above, once | Send the log and choose who ran it. If nobody does within 24 hours, the log goes out with NCS: Not recorded |
-| Duty reminder (NCS) | 24 hours and 1 hour before your scheduled rotation slot | The rotation member on duty for that occurrence | The master switch only — this is a duty reminder, not an optional preference, so there's no separate toggle for it |
+| Duty reminder (NCS) | 24 hours and 1 hour before your scheduled rotation slot | The rotation member on duty for that occurrence | The master switch only; there is no separate toggle |
 | Duty reminder (staff) | 1 hour before a net from a schedule you're active staff on, whether or not you've separately subscribed. Names the NCS on duty (see below) | Every active staff member for that schedule, skipped if you already got the NCS or subscriber reminder for the same net | The master switch only, same reasoning as the NCS reminder |
-| Subscriber reminder | 1 hour before a net you've subscribed to, if you opted into reminders specifically. Names the NCS on duty (see below) | Subscribers with the reminder preference on | Profile setting "Net reminder (1 hour before)" (off by default — subscribing to a schedule alone does not turn this on), and the master switch |
-| Duty roster changed | The pre-assigned NCS for an upcoming, not-yet-started net changes because the rotation roster was edited | Both the previously-assigned and the newly-assigned operator | Sent regardless of your email preferences, as of this writing — there is no way to opt out of this one |
-| Net cancelled | A specific date on the schedule is marked cancelled with no replacement NCS | The operator who would have been on duty, plus every subscriber to that schedule | Sent regardless of your email preferences, as of this writing |
+| Subscriber reminder | 1 hour before a net you've subscribed to, if you opted into reminders specifically. Names the NCS on duty (see below) | Subscribers with the reminder preference on | Profile setting "Net reminder (1 hour before)" (off by default; subscribing to a schedule does not turn it on), and the master switch |
+| Duty roster changed | The pre-assigned NCS for an upcoming, not-yet-started net changes because the rotation roster was edited | Both the previously-assigned and the newly-assigned operator | Sent regardless of your email preferences |
+| Net cancelled | A specific date on the schedule is marked cancelled with no replacement NCS | The operator who would have been on duty, plus every subscriber to that schedule | Sent regardless of your email preferences |
 
 </div>
 
@@ -65,7 +65,7 @@ Only relevant on a net with [traffic](/docs/reference/glossary/) enabled.
 
 | Email | Trigger | Recipients | To stop it |
 |---|---|---|---|
-| Traffic reminder | Escalating: while you're still holding a piece of formal traffic, at intervals set by its precedence — Emergency at 1h/4h/12h held, Priority at 4h/12h/24h, Routine/Welfare at 24h/72h/168h. A message carrying an HXB(n) handling instruction ignores the precedence ladder entirely and gets one reminder instead, at half of the HXB deadline. | Whoever currently holds the message | The master switch only. There's a per-message preference behind this in the data model (on by default, described as an operational obligation rather than a passive preference), but as of this writing no Profile screen exposes a way to turn it off separately from the master switch (see [Known issues](/docs/about/known-issues/#traffic-reminder-switch)). |
+| Traffic reminder | Escalating: while you're still holding a piece of formal traffic, at intervals set by its precedence — Emergency at 1h/4h/12h held, Priority at 4h/12h/24h, Routine/Welfare at 24h/72h/168h. A message carrying an HXB(n) handling instruction ignores the precedence ladder entirely and gets one reminder instead, at half of the HXB deadline. | Whoever currently holds the message | The master switch only. No Profile screen turns it off separately from the master switch (see [Known issues](/docs/about/known-issues/#traffic-reminder-switch)). |
 | HXB final notice | A message carrying an HXB(n) handling instruction (an expiration time) reaches that deadline | Whoever currently holds the message | Same as above |
 | Weekly stale traffic digest | Once a week, only for a schedule that opted into the digest, if it has traffic that's gone stale | The schedule's manager and active co-managers | Same as above |
 
@@ -82,4 +82,4 @@ Only relevant on a net with [traffic](/docs/reference/glossary/) enabled.
 
 </div>
 
-See [Getting help](/docs/about/getting-help/) for what Submit Feedback actually sends, and [Roles and permissions](/docs/reference/roles-and-permissions/) for who counts as staff, manager, or co-manager above.
+See [Getting help](/docs/about/getting-help/) for what Submit Feedback sends, and [Roles and permissions](/docs/reference/roles-and-permissions/) for who counts as staff, manager, or co-manager above.

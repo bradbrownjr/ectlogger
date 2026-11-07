@@ -4,7 +4,7 @@ summary: Every role ECTLogger has, at every level, and a grid of who can do what
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/roles-and-permissions/
@@ -12,26 +12,26 @@ permalink: /docs/reference/roles-and-permissions/
 
 # Roles and permissions
 
-ECTLogger has roles at three different levels: a global account role, a per-net role that lasts only for one net, and a set of schedule-level tiers that only exist for nets created from a recurring schedule. Most confusion about "why can't this person do that" comes from mixing up which of the three levels is actually the one that matters for a given action. This page is checked directly against the code, not written from memory.
+ECTLogger has roles at three different levels: a global account role, a per-net role that lasts only for one net, and a set of schedule-level tiers that only exist for nets created from a recurring schedule. Most confusion about "why can't this person do that" comes from mixing up which of the three levels applies to a given action.
 
-**One rule covers most of the grid at the bottom**: a net's manager and any global admin can do everything on this page related to that net. On a net from a schedule, the schedule's manager counts as that net's manager too, even when someone on the staff created that one net by hand with **Create Net** and so owns it. The two exceptions are both footnoted there, and both are narrow: a net's owner who is not on the schedule's staff cannot self-grant NCS by checking in the way they can Logger (see footnote 2), and an admin gets no help at all from the self-grant-by-checking-in path on a schedule they are not staff on, since it is drawn from the schedule's own staff and rotation and being an admin is membership of neither. Everything else on this page is about who *else*, besides the manager and an admin, can do a given thing.
+**One rule covers most of the grid at the bottom**: a net's manager and any global admin can do everything on this page related to that net. On a net from a schedule, the schedule's manager counts as that net's manager too, even when someone on the staff created that one net by hand with **Create Net** and so owns it. There are two exceptions, both footnoted there: a net's manager who is not on the schedule's staff cannot self-grant NCS by checking in the way they can Logger (see footnote 2), and an admin cannot self-grant on a schedule they are not staff on, since that path draws on the schedule's own staff and rotation. Everything else on this page is about who *else*, besides the manager and an admin, can do a given thing.
 
 ## Global account roles
 
-Every account has exactly one of these, stored on the user itself rather than on any particular net:
+Every account has one of these, set on the account rather than on any particular net:
 
 <div class="table-scroll" markdown="1">
 
-| Role | What it actually changes |
+| Role | What it changes |
 |---|---|
-| Admin | Full access to every net and schedule, the admin panel, and every admin-only API route. **Must have two-factor authentication (TOTP) enabled.** That is enforced on every admin route, not just at login, so an admin who hasn't enrolled is locked out of admin actions until they do. |
+| Admin | Full access to every net and schedule and the admin panel. **Must have two-factor authentication (TOTP) enabled.** An admin who hasn't enrolled is locked out of admin actions until they do. |
 | User | The default for every real account. No special access on its own; what a User can do on any given net or schedule comes entirely from the per-net and schedule-level roles below. |
-| NCS | Assignable from the admin panel's user editor. As of this writing, no permission check anywhere in the backend treats an account with this global role any differently from an ordinary User. It does not grant NCS on any specific net by itself. Per-net NCS access always comes from a per-net role or an eligible self-grant (both explained below), never from this account-level label. |
-| Guest | Defined but not currently assigned anywhere in the application. A check-in with no linked account (someone who checked in by callsign only, with no ECTLogger login) is a guest *check-in*, which is a different thing entirely from this account role. |
+| NCS | Assignable from the admin panel's user editor. It is treated the same as User and does not grant NCS on any net. Per-net NCS access comes from a per-net role or an eligible self-grant (both explained below). |
+| Guest | Not assigned to anyone. A check-in with no linked account (someone who checked in by callsign only) is a guest *check-in*, which is a different thing from this account role. |
 
 </div>
 
-Don't confuse the global "NCS" account role with holding the NCS role on a specific net (next section). They are unrelated, and only the second one does anything.
+The global "NCS" account role is not the NCS role on a specific net (next section). Only the second one does anything.
 
 ## Per-net roles
 
@@ -41,13 +41,13 @@ While a net exists, an operator can hold one or more of these roles on that spec
 - **Logger** — assists NCS with logging.
 - **Relay** — checks in stations NCS cannot hear directly.
 
-A net can have more than one active NCS at once (a multi-desk exercise is a normal pattern, not an error; see [Station statuses](/docs/reference/station-statuses/) for how the check-in list marks a second simultaneous NCS with the "2nd NCS" badge). A role can be temporarily stepped down without removing it: **only an *active* per-net role counts for anything.** An operator who steps down to Standard (the "Acting as NCS" toggle) genuinely loses NCS access to that net, not just the crown icon next to their name. The backend checks the same active flag the screen does. An NCS who is the *only* active NCS on an active net cannot step down until someone else is assigned, so a net is never accidentally left with nobody in charge.
+A net can have more than one active NCS at once (a multi-desk exercise is normal; see [Station statuses](/docs/reference/station-statuses/) for how the check-in list marks a second simultaneous NCS with the "2nd NCS" badge). A role can be stepped down without removing it: **only an *active* per-net role counts.** An operator who steps down to Standard (the "Acting as NCS" toggle) loses NCS access to that net, along with the crown icon next to their name. An NCS who is the only active NCS on an active net cannot step down until someone else is assigned.
 
 A guest check-in (a station with no account) can also be marked NCS, Logger, or Relay. That is a **credit only**: the net card, report, ICS-309, and closing log name the station, but it grants nothing, because there is no account to grant it to. Whoever may use the net's Roles dialog may give or remove one.
 
 ## Schedule-level tiers
 
-These are set on a net's schedule (a `NetTemplate`). Every net has one, including a one-time net, whose schedule simply runs once; they apply only to nets from that schedule.
+These are set on a net's schedule. Every net has one, including a one-time net, whose schedule runs once; they apply only to nets from that schedule.
 
 <div class="table-scroll" markdown="1">
 
@@ -56,36 +56,36 @@ These are set on a net's schedule (a `NetTemplate`). Every net has one, includin
 | Schedule manager | The account that created the schedule (or was later handed it), shown as **Schedule Manager** on its staff tab | Everything a co-manager can do, and everything a net manager can do on every net from this schedule, whoever created it |
 | Co-manager | A member of the schedule's "Authorized Net Staff" list with the co-manager flag set | Transfer schedule ownership, merge this schedule into another, archive or delete a net from this schedule, plus everything plain net staff can do |
 | Net staff | A member of the schedule's "Authorized Net Staff" list, without the co-manager flag | Edit the schedule and its settings, manage the rotation and staff list, start and run nets from this schedule, and self-grant NCS or Logger by checking in (below) |
-| Rotation member | Listed in the schedule's NCS rotation, whether or not they're also on the staff list | Everything plain net staff can do; rotation membership and staff membership grant the identical trust level for self-grant and day-to-day running of nets |
+| Rotation member | Listed in the schedule's NCS rotation, whether or not they're also on the staff list | Everything plain net staff can do; rotation membership and staff membership give the same access for self-grant and running nets |
 
 </div>
 
 A staff or rotation entry can also name a **callsign with no account yet**. It grants nothing at all until that operator signs in with the address the schedule invited, or the schedule manager or a co-manager links their account; until then it only decides who the net credits as NCS on that operator's week. It can't be made co-manager. Linking accounts, sending invitations, and making someone a co-manager are for the schedule manager, co-managers, and admins only; plain staff can't. See [Net staff and the NCS rotation](/docs/net-managers/net-staff-and-rotation/).
 
-"Net staff" and "rotation member" grant the same practical access; a person can be one, the other, or both. This was tightened on 2026-09-18 for three specific actions: self-granting NCS or Logger by checking in (below), starting a net, and opening the Manage Net Control Staff dialog once you hold a role there. Before that date, plain staff with no co-manager flag and no rotation slot could be shown those controls in the interface but were quietly refused by the backend the moment they tried to use one, because the underlying check only ever recognized co-managers and rotation members. A schedule with active staff but no rotation and no co-manager (a real, unremarkable setup) produced nets that nobody among its own staff could actually run, and an admin had to intervene by hand every single time.
+"Net staff" and "rotation member" give the same access; a person can be one, the other, or both. That access covers three actions: self-granting NCS or Logger by checking in (below), starting a net, and opening the Manage Net Control Staff dialog once you hold a role there.
 
-The fix was scoped to those three actions, not to being net staff generally. **Close net, Edit net, Go live, and Archive/Delete still need the net's manager, an admin, or an active role on this specific net** (see the grid below): plain staff with no role yet on this occurrence take net control by checking themselves in as NCS or Logger, not from staff membership alone. Import is the exception, since staff who can start a net can also backfill its log.
+**Close net, Edit net, Go live, and Archive/Delete need the net's manager, an admin, or an active role on this specific net** (see the grid below): plain staff with no role yet on this occurrence take net control by checking themselves in as NCS or Logger. Import is the exception, since staff who can start a net can also backfill its log.
 
-Since 2026-09-25 each toolbar and net-card button appears only when that action would succeed for you. Before then a single broader "can manage this net" check decided who saw Close net, Import, Edit net, Go live, and the Archive, Cancel, and Delete buttons, so staff with no role saw buttons that were refused on click, and a Logger with no staff standing could close a net but had no button to do it.
+Each toolbar and net-card button appears only when that action would succeed for you.
 
 ## Who can create a schedule
 
-Any account can create a schedule, but a standard user has to clear three anti-spam thresholds first, each configurable from Admin > Security and each off if set to 0: the account must be a minimum number of days old (7 by default), must have already checked into a minimum number of nets (1 by default; counted under any of the account's callsigns, as on its profile), and stays under a daily cap on new schedules per account (5 by default). An admin bypasses all three, and an admin can exempt one account from the age and net-count thresholds (not the daily cap) with the early-access button on the Users tab. A refused user can request that from the refusal message itself. This covers a single net as well as a recurring schedule: the dashboard's **+** button creates a one-time schedule behind the scenes, so it is held to the same thresholds.
+Any account can create a schedule, but a standard user has to clear three anti-spam limits first, each configurable from Admin > Security and each off if set to 0: the account must be a minimum number of days old (7 by default), must have already checked into a minimum number of nets (1 by default; counted under any of the account's callsigns, as on its profile), and stays under a daily cap on new schedules per account (5 by default). An admin bypasses all three, and an admin can exempt one account from the age and net-count thresholds (not the daily cap) with the early-access button on the Users tab. A refused user can request that from the refusal message itself. This covers a single net as well as a recurring schedule: the dashboard's **+** button creates a one-time schedule behind the scenes, so it is held to the same thresholds.
 
 ## Becoming NCS or Logger by checking yourself in
 
-An eligible operator does not need anyone to hand them a role. Checking themselves into a net can grant one on the spot, if they explicitly ask for it:
+An eligible operator does not need anyone to hand them a role. Checking themselves into a net can grant one, if they ask for it:
 
-- **NCS**: any active net staff member or rotation member for that net's schedule, or the schedule's manager, checking in with the "Check in as NCS" choice, on a net that doesn't already have a `NetRole` for them.
+- **NCS**: any active net staff member or rotation member for that net's schedule, or the schedule's manager, checking in with the "Check in as NCS" choice, on a net where they don't already hold a role.
 - **Logger**: the same population, plus the net's manager (covers the common case of a schedule's manager opening the lobby and stepping in as Logger while waiting for the scheduled NCS), checking in with "Check in as Logger."
 
-Two things this deliberately does *not* do: it never fires for a check-in someone else enters on your behalf (only a genuine self-check-in can grant a role), and it defaults to a Standard check-in unless NCS or Logger is explicitly requested, so there is no way to be silently made NCS by checking in normally. Both defaults exist because of a real incident (2026-08-30): an off-week rotation member was silently auto-granted NCS with no choice presented, simply by checking in as a participant.
+This does not apply to a check-in someone else enters for you (only a self-check-in can grant a role), and a check-in is Standard unless NCS or Logger is chosen, so checking in normally never makes you NCS.
 
-This does **not** depend on whether the net already has an active NCS. A large exercise with several eligible staff each claiming NCS for their own desk within minutes of each other is the intended pattern, not something to block.
+This does **not** depend on whether the net already has an active NCS. Several eligible staff can each claim NCS for their own desk in a large exercise.
 
 ## The grid
 
-Read this as: given the row's action, which of the columns can do it. "Net manager" and "Admin" can do everything in this grid; they're included so you can see the handful of rows where somebody *else* also can.
+Read this as: given the row's action, which of the columns can do it. "Net manager" and "Admin" can do everything in this grid; they're included to show the rows where somebody *else* also can.
 
 <div class="table-scroll" markdown="1">
 
@@ -120,13 +120,13 @@ Read this as: given the row's action, which of the columns can do it. "Net manag
 </div>
 
 1. Only when the net allows self check-in. When a net has self check-in turned off, adding any check-in (your own or another callsign's) requires an active NCS or Logger role, the net's manager, an admin, or an explicit, eligible self-grant request (the row above).
-2. The schedule's manager can, since they count as its net staff. Someone who owns one net only because they created it by hand, and who is not on that schedule's staff, cannot; they can still become NCS the ordinary way (an existing NCS/Logger assigns them the role, or Claim NCS if none exists). Until 2026-10-18 this applied to the schedule's manager as well, and on a net a staff member had created by hand the schedule's manager had no controls at all.
-3. Active net staff on that net's schedule specifically, even with no per-net role assigned yet, and equally anyone in that schedule's NCS rotation. Until 2026-09-19 Start was the one place where those two memberships were not interchangeable: it checked the staff list alone, so somebody in the rotation who had never also been added to the staff list could not start the net on the week the rotation said was theirs. Note that Start gets you as far as the lobby; taking the net from lobby to active needs NCS, so whoever starts it usually checks themselves in as NCS in the same breath.
-4. Archiving, deleting, cancelling, and restoring a net need an active NCS role on this specific net, or being the schedule's manager or an active co-manager for a net created from a schedule. There's no Logger path for any of these four actions. Until 2026-09-25 an NCS who had stepped down kept these four, the one place stepping down didn't take effect.
-5. Being net staff, a rotation member, or a co-manager is not enough by itself for this one: you also need to currently hold an active NCS or Logger role on this specific net. An NCS or Logger handed the role directly, with no staff or rotation membership on that schedule, cannot reassign roles either, even though they're actively running the net. Both halves have to be true at once.
+2. The schedule's manager can, since they count as its net staff. Someone who is a net's manager only because they created it by hand, and who is not on that schedule's staff, cannot; they can still become NCS the ordinary way (an existing NCS/Logger assigns them the role, or Claim NCS if none exists).
+3. Active net staff on that net's schedule specifically, even with no per-net role assigned yet, and equally anyone in that schedule's NCS rotation. Start gets you as far as the lobby; taking the net from lobby to active needs NCS, so whoever starts it usually checks themselves in as NCS next.
+4. Archiving, deleting, cancelling, and restoring a net need an active NCS role on this specific net, or being the schedule's manager or an active co-manager for a net created from a schedule. A Logger cannot do any of these four.
+5. Being net staff, a rotation member, or a co-manager is not enough by itself for this one: you also need an active NCS or Logger role on this specific net. An NCS or Logger handed the role directly, with no staff or rotation membership on that schedule, cannot reassign roles either. You need both.
 6. Blocked if you are the only active NCS on a net that is currently active; assign someone else first.
-7. These are the two rows where being an admin genuinely does not help. Eligibility to self-grant on check-in is drawn from the schedule's own staff and rotation, and being an admin is not membership of either. It costs an admin nothing: they can assign themselves the role outright in the Manage Net Control Staff dialog, which is the same result in one more click.
+7. Being an admin does not help on these two rows. Self-grant on check-in is drawn from the schedule's own staff and rotation, and an admin is in neither. An admin can assign themselves the role in the Manage Net Control Staff dialog.
 8. Anyone checked in can record what their own station hears, unless the net's manager turned off **Allow stations to self-report**. Recording it for somebody else needs an active NCS, Logger, or Relay role on this net; schedule staff and co-managers take one by checking in as NCS or Logger first. See [Station coverage](/docs/net-control/station-coverage/).
 9. Anyone signed in and checked into the net can log their own off-net activity. It waits for an active NCS or Logger, or the net's manager, to accept it before it goes on the ICS-309. See [Logging off-net activity](/docs/net-control/off-net-log/).
 
-For the underlying permission checks this grid is drawn from, see `backend/app/permissions.py`. For who gets emailed about a role or a net's lifecycle, see [Emails we send](/docs/reference/emails/).
+For who gets emailed about a role or a net's lifecycle, see [Emails we send](/docs/reference/emails/).

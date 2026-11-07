@@ -4,7 +4,7 @@ summary: The complete lists. Nothing here explains anything; it is for looking s
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-18
+revised: 2026-11-07
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/
@@ -12,13 +12,13 @@ permalink: /docs/reference/
 
 # Reference
 
-Complete, scannable, and deliberately free of narrative. These pages are written to be read with one eye while you are doing something else.
+Lookup pages, with no narrative. Read them while you are doing something else.
 
 If you want to know *why* something works the way it does, the path pages explain it. These say only what it is.
 
 ## The pages
 
-**[Station statuses](/docs/reference/station-statuses/)** — All eight, what each one means on the air, what it looks like on the list, and what it does to the map and the report.
+**[Station statuses](/docs/reference/station-statuses/)** — All nine, what each one means on the air, what it looks like on the list, and what it does to the map and the report.
 
 **[Roles and permissions](/docs/reference/roles-and-permissions/)** — The global roles, the per-net roles, and a grid of who can do what. This is the page to check before assuming somebody cannot do something.
 
@@ -36,6 +36,6 @@ If you want to know *why* something works the way it does, the path pages explai
 
 ## On trusting these pages
 
-Two of them, [station statuses](/docs/reference/station-statuses/) and [roles and permissions](/docs/reference/roles-and-permissions/), are checked directly against the running code rather than written from memory. That is not a general promise about the rest of the site; it is a specific decision about the two lists that were most wrong in the documentation this site replaced. The old README listed two station statuses that do not exist, omitted four that do, and named a net role that was never real.
+Two of them, [station statuses](/docs/reference/station-statuses/) and [roles and permissions](/docs/reference/roles-and-permissions/), are checked against the code.
 
 Every page carries the date it was last reviewed at the bottom. If one disagrees with your screen, believe your screen, and then tell us.

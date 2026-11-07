@@ -4,7 +4,7 @@ summary: Exactly what the Bulk add box accepts, in the order it accepts it.
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-24
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/speed-entry-syntax/
@@ -42,7 +42,7 @@ Within one check-in, separate fields with commas, in this exact order:
 10. **Relayed By**, if the net has it enabled.
 11. Any admin-defined custom fields the net has enabled, in the order the admin panel lists them.
 
-Only fields the net actually has turned on take a slot in the line — a net with just Name and Location enabled (the default) only has three positions: callsign, name, location. Check the net's own Check-In Fields settings, or watch the "Format:" line the box shows live above where you type, to see the exact order for that net. See [Check-in fields](/docs/reference/check-in-fields/) for what each field is and how a net turns one on.
+Only fields the net has turned on take a slot in the line. A net with just Name and Location enabled (the default) only has three positions: callsign, name, location. Check the net's own Check-In Fields settings, or watch the "Format:" line the box shows live above where you type, to see the exact order for that net. See [Check-in fields](/docs/reference/check-in-fields/) for what each field is and how a net turns one on.
 
 ## Status shortcuts
 
@@ -76,5 +76,5 @@ This adds three stations: Priya as a standard check-in, Marcus marked Relay, and
 
 - Each check-in in the line is submitted one at a time; a bad entry doesn't stop the good ones. The result toast reports how many succeeded, how many failed, and the first few error messages.
 - Callsigns are uppercased automatically and checked against the same format every check-in requires (letters, digits, and `/` only). An invalid callsign fails that one entry without touching the rest of the line.
-- Ctrl+Enter submits without reaching for the mouse.
-- While the box is open, every other viewer of the net sees a brief "check-ins may arrive in bursts" notice below the check-in table, so a wall of new rows appearing at once doesn't look like something broke.
+- Ctrl+Enter submits.
+- While the box is open, every other viewer of the net sees a brief "check-ins may arrive in bursts" notice below the check-in table, so a wall of new rows doesn't look like something broke.
