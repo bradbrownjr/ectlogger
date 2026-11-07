@@ -896,14 +896,12 @@ on multi-part work. The guardrail is a deliberate checkpoint.
   explicitly requested.
 - No em-dashes in source code or generated text — use commas, periods,
   or parentheses.
-- **No filler phrasing in anything a user reads** (UI text, docs, changelog,
-  figure captions). Brad, 2026-11-07: phrases like "a link that never
-  changes", "when there is exactly one", "so the obvious click", "always
-  works", "right now", "with one click", or "reach the net fast" read as
-  AI-generated, which makes the app look cheap and untrusted. State the plain
-  fact once ("Opens the net on the air. If none is running, opens this
-  page."), leave edge cases to the docs, and drop a hint a label already
-  covers. Reread every new string for this before showing it to Brad.
+- **No filler phrasing in anything a user reads** (UI text, docs, emails,
+  changelog, figure captions). Brad, 2026-11-07: it reads as AI-generated and
+  makes the app look cheap and untrusted. The patterns, word lists, before/after
+  pairs and sources are in `docs/DOC-STYLE.md` "Plain wording", and
+  `scripts/check-docs.py` enforces the never-list. Reread every new string
+  against it before showing it to Brad.
 
 ### Feature Registry
 
