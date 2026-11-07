@@ -312,7 +312,7 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
         {result.form_type === 'unknown' || !matchedDefinition ? (
           <Alert severity="warning" sx={{ mb: 2 }}>
             Could not recognize this as a radiogram, ICS-213, or RRI strip message, or that form
-            type isn't available. Nothing was lost — your original text is preserved below. You
+            type isn't available. Your original text is below. You
             can enter it manually on the New tab instead.
           </Alert>
         ) : (

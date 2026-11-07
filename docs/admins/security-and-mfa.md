@@ -4,7 +4,7 @@ summary: Two-factor enrollment and reset, failed-login lockouts, session length,
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-10-23
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/security-and-mfa/
@@ -12,17 +12,17 @@ permalink: /docs/admins/security-and-mfa/
 
 # Security, MFA, and lockouts
 
-Two-factor authentication (MFA: a code from an authenticator app, on top of your password or magic link) is optional for a regular account and mandatory for an admin. This page covers what "mandatory" actually means, how to recover someone who's locked out, and the other settings that live on the **Security** tab alongside it.
+Two-factor authentication (MFA: a code from an authenticator app, on top of your password or magic link) is optional for a regular account and mandatory for an admin. This page covers what "mandatory" means, how to recover someone who's locked out, and the other settings that live on the **Security** tab alongside it.
 
 ## Why admin MFA can't be skipped
 
-An admin can read every net and edit every user, which makes that account worth stealing more than any other on the instance. So the requirement isn't just enforced at sign-in. It's checked on every single admin-only action, every time. An admin who hasn't enrolled yet can still sign in normally; they're just sent straight to enrollment (Profile → Security) and the admin panel stays out of reach until they finish. There's no way to reach it with an old session or a half-finished setup.
+An admin can read every net and edit every user, so that account is the one most worth stealing. The requirement is checked on every admin-only action, not just at sign-in. An admin who hasn't enrolled can still sign in, but is sent to enrollment (Profile → Security) and can't reach the admin panel until they finish. An old session or a half-finished setup doesn't get in.
 
 Enrollment itself (scanning a QR code into an authenticator app, confirming the first code, and saving the one-time backup codes) happens on each person's own Profile → Security tab, not here; [signing in](/docs/operators/signing-in/) is the page to send someone who asks how. This page is about what happens when that goes wrong for someone else.
 
 ## Resetting someone's two-factor authentication
 
-If a person loses their phone or their authenticator app, they can't get back in with their old codes and their backup codes are only good for one use each. Reset it for them from the Users tab: find their row and click the two-factor reset icon (only shown for accounts that currently have MFA enabled). They'll need to enroll again from scratch the next time they sign in.
+If a person loses their phone or their authenticator app, they can't get back in with their old codes, and each backup code works once. Reset it for them from the Users tab: find their row and click the two-factor reset icon (only shown for accounts that currently have MFA enabled). They'll need to enroll again from scratch the next time they sign in.
 
 <figure>
   <img src="/docs/img/admins/user-row-actions.png"
@@ -30,32 +30,32 @@ If a person loses their phone or their authenticator app, they can't get back in
   <figcaption>Reset password is the icon shown here after the pencil and the block icon; the two-factor reset sits next to it on any row where MFA is enabled. Edit User and Ban are covered in Users and roles.</figcaption>
 </figure>
 
-One thing that reset can't do: an admin can't use it on their own account. That's deliberate: letting an admin reset their own MFA on demand would make the mandatory requirement meaningless.
+An admin can't use the reset on their own account; that would make the requirement meaningless.
 
 <figure>
   <img src="/docs/img/admins/self-mfa-reset-disabled.png"
        alt="The admin's own row in the Users table, with the two-factor reset icon outlined in red and greyed out because it is disabled.">
-  <figcaption>An admin can reset anyone else's two-factor authentication from this table, but never their own, which would defeat the point of making it mandatory. Ask another admin, or see the recovery path below if none is available.</figcaption>
+  <figcaption>An admin can reset anyone else's two-factor authentication from this table, but never their own. Ask another admin, or see the recovery path below if none is available.</figcaption>
 </figure>
 
 ## If the locked-out admin is the only admin
 
-Ask another admin to reset it from the Users tab as above. If there genuinely isn't another admin account on the instance, the recovery path moves off the web entirely: someone with server access runs `backend/scripts/reset_admin_mfa.py` with that admin's callsign or email. Requiring host access here is intentional: "the only admin lost their phone" shouldn't be recoverable from a browser alone. See [self-hosting](/docs/self-hosting/) if that's not you.
+Ask another admin to reset it from the Users tab as above. If there is no other admin account, someone with server access runs `backend/scripts/reset_admin_mfa.py` with that admin's callsign or email. This can't be done from a browser. See [self-hosting](/docs/self-hosting/) if that's not you.
 
 ## Resetting a password
 
-The same Users tab row has a **Reset password** icon, for someone who's locked out and can't retrieve a magic link either (email down, wrong address on file, and so on). It generates a one-time temporary password shown to you once (pass it along over a channel other than email if email is the actual problem), and the person is told their password changed, but never told what it is. They should set their own from Profile → Security the first chance they get.
+The same Users tab row has a **Reset password** icon, for someone who's locked out and can't retrieve a magic link either (email down, wrong address on file, and so on). It generates a one-time temporary password shown to you once (pass it along over a channel other than email if email is the problem). The person is told their password changed, but not what it is. They should set their own from Profile → Security.
 
 ## Failed-login lockouts
 
-Five wrong password attempts in a row locks that account out for 15 minutes. This threshold is fixed in the software rather than something you can tune from this tab; it exists alongside, not instead of, the IP-level protection below.
+Five wrong password attempts in a row locks that account out for 15 minutes. The threshold is fixed in the software and can't be changed from this tab. It works alongside the IP-level protection below.
 
 ## Security alerts
 
-The **Security Alerts** card sends email when the [activity log](/docs/admins/activity-log/) shows trouble. Each kind has its own switch and its own numbers, and each goes out at most once per account per period, so somebody hammering at an account can't flood anyone's inbox.
+The **Security Alerts** card sends email when the [activity log](/docs/admins/activity-log/) shows trouble. Each kind has its own switch and its own numbers, and each goes out at most once per account per period, so repeated attempts on an account don't flood anyone's inbox.
 
-- **Failed sign-in alerts** — when an account collects this many wrong passwords or two-factor codes within this many minutes, its owner and every admin get an email listing each attempt with its time, internet address, approximate location, and browser. The default is 5 within 15 minutes, matching the lockout above. A wrong two-factor code alerts on the very first one, because it means whoever typed it had the right password. The owner's copy tells them what to do if it wasn't them.
-- **Muted-by-others alerts** — when this many different people have muted one station in chat within this many days, every admin gets an email. The default is 3 within 30 days. Both kinds of mute count: a participant muting a station for themselves, and Net Control muting one for everyone. The muted station is never told. Personal mutes are a participant's own business, so the email and the activity log give the count and the nets, never who.
+- **Failed sign-in alerts** — when an account collects this many wrong passwords or two-factor codes within this many minutes, its owner and every admin get an email listing each attempt with its time, internet address, approximate location, and browser. The default is 5 within 15 minutes, matching the lockout above. A wrong two-factor code alerts on the first one, because whoever typed it had the right password. The owner's copy tells them what to do if it wasn't them.
+- **Muted-by-others alerts** — when this many different people have muted one station in chat within this many days, every admin gets an email. The default is 3 within 30 days. Both kinds of mute count: a participant muting a station for themselves, and Net Control muting one for everyone. The muted station is never told. The email and the activity log give the count and the nets for personal mutes, never who.
 
 Click **Save Settings** on the card to apply changes.
 
@@ -71,14 +71,14 @@ If the server this instance runs on has Fail2Ban configured, its status shows he
   <figcaption>Changes apply to sessions issued from this point on; anyone already signed in keeps the expiry they were issued.</figcaption>
 </figure>
 
-Set how many days a signed-in session lasts before someone has to sign in again, and whether **rolling renewal** is on. When it is, a session with less than a week left quietly refreshes itself on the next request, so someone actively using the app is never logged out mid-net. Changing either setting only affects sessions issued from that point forward; nobody already signed in is affected until they sign in again.
+Set how many days a signed-in session lasts before someone has to sign in again, and whether **rolling renewal** is on. When it is, a session with less than a week left refreshes on the next request, so someone using the app is not signed out mid-net. Changing either setting affects only sessions issued from then on; nobody already signed in is affected until they sign in again.
 
 ## Also on this tab
 
-Two more controls live on Security because of what they protect, not because they're about login attempts specifically:
+Two more controls are on the Security tab:
 
-- **Profile photos (Gravatar)** — turns off third-party avatar lookups. When it's off, no browser on this instance ever contacts gravatar.com; everyone without an uploaded photo just gets their initials instead. Uploaded profile photos keep working either way. Worth turning off on an isolated or restricted network (an emergency operations center or agency network, for instance) where outbound contact to a public third party isn't wanted.
-- **Schedule creation limits** — minimum account age, minimum number of nets checked into, and a daily cap, all for who may create a schedule. This covers every schedule type, including the one-time occurrence the dashboard's **+** button creates behind the scenes when someone starts a net — there's no separate, looser rule for starting a single net. Admins bypass all three; the per-account early-access override in [Users and roles](/docs/admins/users-and-roles/#early-access-to-schedule-creation) bypasses only the age and participation requirements, never the daily cap.
+- **Profile photos (Gravatar)** — turns off third-party avatar lookups. When it's off, no browser on this instance ever contacts gravatar.com; everyone without an uploaded photo just gets their initials instead. Uploaded profile photos keep working either way. Turn it off on an isolated or restricted network, such as an emergency operations center or agency network, where outbound contact to a public third party isn't wanted.
+- **Schedule creation limits** — minimum account age, minimum number of nets checked into, and a daily cap, all for who may create a schedule. This covers every schedule type, including the one-time occurrence the dashboard's **+** button creates when someone starts a net. Admins bypass all three; the per-account early-access override in [Users and roles](/docs/admins/users-and-roles/#early-access-to-schedule-creation) bypasses only the age and participation requirements, never the daily cap.
 
 ## Not here
 

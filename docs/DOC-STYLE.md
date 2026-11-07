@@ -120,9 +120,10 @@ person did.
     changelog format and it reads correctly.
   - Reach for a colon, a semicolon, parentheses, or a full stop first. Use the
     em-dash when the aside genuinely needs a harder break than a comma.
-- **Always give the why.** A sentence that says what a control does without
-  saying what problem it solves gets rewritten. This is the single rule that
-  most separates this site from the guide it replaced.
+- **Give the why where it isn't obvious.** A control whose purpose a reader
+  can't guess gets one plain reason, once. A reason tacked onto every sentence
+  ("so you can...", "so you don't have to...") is filler; see "Plain wording"
+  below.
 - **Expand an acronym on first use per page**, then use it freely. Assume the
   reader knows amateur radio. Do not assume they know ARES, RRI, or ICS.
 - **Be honest about limits**, where the reader will hit them, not in a footnote.
@@ -130,8 +131,71 @@ person did.
   `docs/about/known-issues.md`.
 - **No developer vocabulary.** The changelog's forbidden-terms list applies:
   no "component", "endpoint", "modal", "boolean", "refactor", "schema".
-- **No emoji in body copy.** They stay in exactly two places, where they are
-  load-bearing: the roadmap's type tags and the changelog.
+- **No emoji in body copy.** They stay in two places, where they carry
+  meaning: the roadmap's type tags and the changelog.
+
+### Plain wording
+
+Applies to everything a user reads: these pages, the README, the changelog,
+labels, hints, dialogs, snackbars, walkthrough cards, and email text. Added
+2026-11-07, when Brad flagged "a link that never changes" and "when there is
+exactly one" on the schedule page: phrasing like that reads as machine
+written, and a reader who spots it stops trusting the rest of the page. The
+app is built with AI under strict guidance; the text must not show it.
+
+Say the fact once, in the plainest words that are true, and stop. Edge cases
+belong in the docs, not in a hint. A hint that repeats its label is deleted.
+
+**Patterns to cut**, with the fix:
+
+| Pattern | Before | After |
+|---|---|---|
+| Emphasis adverbs (genuinely, actually, really, truly, simply, quietly, honestly) | "the one genuinely permanent option" | "the one permanent option" |
+| Reassurance and over-precision | "A link to this page that never changes." | (no hint; the label "This page" is enough) |
+| Edge cases in a hint | "opens the net on the air when there is exactly one" | "Opens the net on the air. If none is running, opens this page." |
+| A purpose clause on every sentence | "a toolbar with one-click versions, so you don't have to find your row" | "The toolbar has the same actions." |
+| Negative parallelism (not just X, X not Y, rather than) | "sets every row to Out, not just the row you clicked" | "sets every row for that callsign to Out" |
+| Inflated verbs for "is" or "has" (serves as, stands as, features, boasts, offers) | "The page serves as the net's record" | "The page is the net's record" |
+| Trailing "-ing" commentary | "..., making it easy to see who is on" | (cut, or its own sentence with a fact in it) |
+| Padding to three | "fast, simple, and reliable" | the one that is true and checkable |
+| Signposts (note that, keep in mind, it's worth noting, importantly) | "Note that a cancelled net can be restored." | "A cancelled net can be restored." |
+| Time filler (right now, currently, at this time) | "No net is running right now." | "No net is running." |
+| Bug history and internals on a user page | "an off-week rotation member was silently auto-granted NCS on 2026-08-30" | (moved to `DEVELOPMENT.md`; the user page states the rule) |
+
+**Words that never appear** (`scripts/check-docs.py` fails on them): genuinely,
+honestly, truly, delve, tapestry, testament, seamless, seamlessly, effortless,
+effortlessly, "it's worth noting", "it's important to note", "rest assured",
+load-bearing.
+
+**Words to check every time** (the checker lists them, it does not fail):
+actually, really, simply, just, quietly, instantly, right now, exactly one,
+not just, so you can, so you don't have to, whether you're, one click, serves
+as, stands as, key, crucial, vital, robust, leverage, enhance, unlock,
+showcase, underscore, highlight (as a verb), landscape (as an abstract noun),
+foster, multifaceted, pivotal, vibrant. Keep one only when removing it
+changes the meaning: "Just checked in" as a status label stays; "simply
+click Save" loses "simply".
+
+One word proves nothing; the research below is clear that people use all of
+these too. What gives text away is several of them together, so read the
+paragraph, not the match.
+
+**Sources** for the lists above:
+
+- [Wikipedia: Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing),
+  WikiProject AI Cleanup's field guide: the vocabulary list by period,
+  negative parallelisms, rule of three, "-ing" commentary, inflated copulas.
+  [TechCrunch's summary](https://techcrunch.com/2025/11/20/the-best-guide-to-spotting-ai-writing-comes-from-wikipedia/).
+- Kobak et al., [Delving into LLM-assisted writing in biomedical publications through excess vocabulary](https://arxiv.org/html/2406.07016v5):
+  word-frequency shifts in 2024 abstracts (delves, underscores, showcasing,
+  crucial, potential).
+- Juzek and Ward, [Why Does ChatGPT "Delve" So Much?](https://arxiv.org/abs/2412.11385):
+  where the overused words likely come from.
+- Liberman, [Are LLMs writing PubMed articles?](https://languagelog.ldc.upenn.edu/nll/?p=64877):
+  the caution that a single word is weak evidence.
+
+The same rule, without the ECTLogger examples, is Brad's cross-project
+`plain-wording` skill in `bradbrownjr/dotclaude`.
 
 ### Use the label that is on the screen
 
@@ -341,3 +405,4 @@ This is the part that decides whether the site is still accurate in a year.
   `_config.yml`, but the search index and the layouts still process it.
 - Never describe something by color alone.
 - Never let a page contradict the label on the screen.
+- Never ship filler phrasing (see "Plain wording" under Voice).

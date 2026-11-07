@@ -4,7 +4,7 @@ summary: What closing generates, who receives it, how to finish the log before i
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-31
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/closing-the-net/
@@ -12,7 +12,7 @@ permalink: /docs/net-control/closing-the-net/
 
 # Closing the net
 
-Closing a net is a real state change, not a formality: it ends the live session, generates the log, and notifies whoever's subscribed to hear about it. This page covers what actually happens and what your options are afterward.
+Closing a net ends the live session, generates the log, and notifies subscribers. This page covers what happens and what your options are afterward.
 
 ## Closing it
 
@@ -24,7 +24,7 @@ Closing a net is a real state change, not a formality: it ends the live session,
   <figcaption>There is no scheduled undo for this; see below for what to do if you close one by mistake.</figcaption>
 </figure>
 
-- **Close and send the log** (green) closes the net and emails its log right away. The dialog closes as soon as the net does, and the email follows a moment later.
+- **Close and send the log** (green) closes the net and emails its log. The dialog closes as soon as the net does, and the email follows a moment later.
 - **Finish the log later** (orange) closes the net but holds the email. Use it when you still have work to do on the log, such as importing a station's paper log after a drill. See [Finishing the log later](#finishing-the-log-later).
 
 Either way, the net's status moves to Closed immediately for every viewer, stations can no longer check in, and chat closes.
@@ -40,7 +40,7 @@ If stations logged off-net activity that nobody has accepted yet, the dialog say
 ## What happens the moment it closes
 
 - A system message posts to the net's chat noting it closed.
-- Unless you chose **Finish the log later**, a log email goes out to the net's manager (if they've opted in), anyone explicitly subscribed to this schedule, and every active NCS, Logger, and Relay who actually worked this specific occurrence and hasn't opted out. Running a net is enough to get a copy of its own log, even without a separate subscription.
+- Unless you chose **Finish the log later**, a log email goes out to the net's manager (if they've opted in), anyone explicitly subscribed to this schedule, and every active NCS, Logger, and Relay who worked this occurrence and hasn't opted out. Running a net is enough to get a copy of its log, without a separate subscription.
 - If the net has **ICS-309** turned on, that email uses the formal ICS-309 log format and folds in any traffic logged on the net as metadata rows (never the message text itself), plus the net's accepted off-net log entries; otherwise it's a plain net-log email, which lists one row per station per place with how many times it checked in there, and attaches a spreadsheet of every check-in. A recipient with their own preference for ICS-309 gets that format regardless of the net's own setting.
 - Formal traffic filed on the net isn't touched by closing it. Forms keep whatever disposition their own chain of custody says, and you can keep logging handoffs against them after the net closes. See [Handling traffic](/docs/net-control/handling-traffic/).
 
@@ -55,11 +55,11 @@ A net closed with **Finish the log later** stays closed to stations while net co
 - The net can't be archived, and isn't archived automatically when its schedule's next net is created.
 - Each day, the net's manager, the schedule's manager and co-managers, and whoever closed the net get an email reminding them the log hasn't been sent.
 
-When the log is complete, click **Send the log** on the banner at the top of the net and confirm. If nobody is recorded as NCS, it asks [who ran the net](#who-ran-this-net) first. The closing email goes out exactly as it would have at close, built from the log as it stands now. The draft mark comes off, and the net can be archived as usual.
+When the log is complete, click **Send the log** on the banner at the top of the net and confirm. If nobody is recorded as NCS, it asks [who ran the net](#who-ran-this-net) first. The closing email goes out as it would have at close, built from the log as it stands. The draft mark comes off, and the net can be archived as usual.
 
 ## After closing
 
-Once a net is closed, the toolbar's **Reports** menu opens its report and logs to **anyone who can see the net**, not just staff. **Net report**, **ICS-309 PDF**, **ICS-309 CSV**, and **Check-ins CSV** are open to any viewer, participant included, and to a visitor who isn't signed in. For a visitor, email addresses and phone numbers typed into notes and other free-text fields are hidden, the same as on the check-in list, and the ICS-309 leaves out the off-net log.
+Once a net is closed, the toolbar's **Reports** menu opens its report and logs to **anyone who can see the net**. **Net report**, **ICS-309 PDF**, **ICS-309 CSV**, and **Check-ins CSV** are open to any viewer, participant included, and to a visitor who isn't signed in. For a visitor, email addresses and phone numbers typed into notes and other free-text fields are hidden, the same as on the check-in list, and the ICS-309 leaves out the off-net log.
 
 <figure>
   <img src="/docs/img/net-control/closed-net-exports.png"
@@ -69,19 +69,19 @@ Once a net is closed, the toolbar's **Reports** menu opens its report and logs t
 
 Net control, meaning NCS, Logger, and the net's managers, also get **ICS-214** in the menu: the net's Activity Log, filled in from what was logged, for you to finish and download. See [The ICS-214 activity log](/docs/net-control/ics-214/).
 
-**Archive** and **Delete** stay restricted to staff. Right after closing, or after you send a held log, a reminder appears offering to archive the net. Archiving hides it from the active dashboard while keeping every check-in, chat message, statistic, and report intact and fully searchable in the Archived Nets list, and it can be undone at any time with Unarchive. Deleting is the one genuinely permanent option here: it removes the net and everything in it, including its statistics. The net drops out of the schedule's statistics and leaderboards and out of every operator's activity history, and its report and ICS-309 can't be produced again. Nobody can bring it back, not even an admin, and the confirmation says so before anything happens. The net's manager, an admin, an active NCS, and the schedule's manager or co-managers can delete a draft, closed, or archived net.
+**Archive** and **Delete** stay restricted to staff. Right after closing, or after you send a held log, a reminder appears offering to archive the net. Archiving hides it from the active dashboard and keeps every check-in, chat message, statistic, and report, searchable in the Archived Nets list; Unarchive undoes it. Deleting is permanent: it removes the net and everything in it, including its statistics. The net drops out of the schedule's statistics and leaderboards and out of every operator's activity history, and its report and ICS-309 can't be produced again. Nobody can bring it back, not even an admin, and the confirmation says so before anything happens. The net's manager, an admin, an active NCS, and the schedule's manager or co-managers can delete a draft, closed, or archived net.
 
-The check-in list and role assignments both stay editable after closing, so a wrong callsign or a misattributed NCS role can still be fixed after the fact, the same way as while the net was live. See [Logging check-ins](/docs/net-control/logging-check-ins/) and [Roles and stepping away](/docs/net-control/roles-and-stepping-away/).
+The check-in list and role assignments both stay editable after closing, so a wrong callsign or a misattributed NCS role can still be fixed, the same way as while the net was live. See [Logging check-ins](/docs/net-control/logging-check-ins/) and [Roles and stepping away](/docs/net-control/roles-and-stepping-away/).
 
 ## If you closed one by mistake
 
-Honestly: there's no button that reopens a closed net to Active. Closing is meant to be the end of the session, and nothing brings it back live.
+There's no button that reopens a closed net to Active. Nothing brings a closed net back live.
 
-What you *can* do:
+What you can do:
 
-- **Fix the record.** Everything in the check-in list and the role assignments stays editable after closing, so a mistake in the *log*, a wrong entry or a missing role, is still fixable even though the net itself is done.
-- **Don't compound it by deleting.** Archiving is reversible; deleting is not. If a net was closed too early and needs to keep existing so the record isn't lost, leave it closed (or archive it) rather than deleting it, even if the plan is to start a fresh net for the rest of the session.
-- **Start a new occurrence if the net genuinely needs to keep running.** Every net has a schedule behind it, even a one-time net, so that's the **Create** button on the net's schedule in the Scheduler. It won't be the same net record, but it keeps the rest of tonight's traffic and check-ins from being crammed into a log that already says the session ended.
+- **Fix the record.** Everything in the check-in list and the role assignments stays editable after closing, so a wrong entry or a missing role is still fixable even though the net is done.
+- **Don't delete it.** Archiving is reversible; deleting is not. If a net was closed too early, leave it closed (or archive it) rather than deleting it, even if you plan to start a fresh net for the rest of the session.
+- **Start a new occurrence if the net needs to keep running.** Every net has a schedule behind it, even a one-time net, so use the **Create** button on the net's schedule in the Scheduler. It won't be the same net record, but the rest of tonight's traffic and check-ins don't go into a log that already says the session ended.
 
 ## Next
 

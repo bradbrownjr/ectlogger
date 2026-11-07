@@ -4,7 +4,7 @@ summary: Maintaining the instance-wide list of repeaters, simplex frequencies, a
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-10-22
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/frequencies/
@@ -12,7 +12,7 @@ permalink: /docs/admins/frequencies/
 
 # Shared frequencies
 
-Every frequency, repeater, or digital talkgroup a net can use comes from one shared list, maintained on the **Frequencies** tab. Net creators pick from this list rather than typing a frequency by hand each time, which is the point. Without a shared list, one net calls it "146.940 ARES Repeater" and another calls the same machine "146.94 Portland Repeater," and now your reports and your map don't agree with each other. Keeping this list clean is the actual job here.
+Every frequency, repeater, or digital talkgroup a net can use comes from one shared list, maintained on the **Frequencies** tab. Net creators pick from this list instead of typing a frequency each time. Without a shared list, one net calls a repeater "146.940 ARES Repeater" and another calls it "146.94 Portland Repeater," and reports and the map disagree. Keep the list clean.
 
 ## Adding an entry
 
@@ -22,17 +22,17 @@ Click the **+** button (bottom right) and fill in:
 - **Mode** — FM, AM, SSB, CW, GMRS, or one of the digital modes (DMR, D-STAR, YSF/Fusion, P25, NXDN, M17), plus VARA, Winlink, JS8Call, and Packet, **Data** for any other digital mode you'd run in a program such as FLDIGI (PSK31, Olivia, MT63), or Other. The net and schedule forms offer the same list.
 - **Network** — for a digital mode, the reflector or network name (Brandmeister, Wires-X, REF030C).
 - **Talkgroup/Room** — the talkgroup ID or room number, where the network has one.
-- **Description** — free text; this is what actually shows up next to the frequency everywhere else in the app, so make it recognizable ("Example County ARES Repeater (PL 100.0)" rather than just "Repeater").
+- **Description** — free text; this shows next to the frequency everywhere else in the app, so make it recognizable ("Example County ARES Repeater (PL 100.0)" rather than just "Repeater").
 
-Either a frequency or a network is required, though not necessarily both, so a digital-only entry and a classic analog repeater are equally valid rows.
+An entry needs a frequency or a network, not necessarily both.
 
 ## Editing and deleting
 
-Editing an entry updates it everywhere it's used, immediately, which is useful for fixing a typo in a description without having to touch every net that already picked it. Deleting is only possible once nothing references the entry at all: no net or schedule lists it, and no station's check-in was logged on it. The **Nets Using** column shows the net count, and the delete icon stays greyed out while any of the three is in use, with a tooltip saying so. Admins can edit any entry.
+Editing an entry updates it everywhere it's used, so you can fix a typo without touching every net that picked it. Deleting is only possible once nothing references the entry at all: no net or schedule lists it, and no station's check-in was logged on it. The **Nets Using** column shows the net count, and the delete icon stays greyed out while any of the three is in use, with a tooltip saying so. Admins can edit any entry.
 
-Everyone else who creates nets can add to the list and pick from it. They can also edit or delete an entry **they added themselves**, from the net or schedule form, until another net or schedule uses it or a station checks in on it. That lets someone fix a wrong mode or a typo right after adding it without asking you. Entries added before 2026-10-22 have no record of who added them, so only an admin can change those.
+Everyone else who creates nets can add to the list and pick from it. They can also edit or delete an entry **they added themselves**, from the net or schedule form, until another net or schedule uses it or a station checks in on it. Only an admin can change entries added before 2026-10-22, which have no record of who added them.
 
-When someone can't make a change, the form offers to send it to you instead. Every admin gets an email naming the entry, what they want it changed to (or that they want it deleted), which nets and schedules use it, and their note. Make the change here; there's nothing to approve in the app.
+When someone can't make a change, the form offers to send it to you instead. Every admin gets an email naming the entry, what they want it changed to (or that they want it deleted), which nets and schedules use it, and their note. Make the change here; there is nothing to approve in the app.
 
 <figure>
   <img src="/docs/img/admins/frequency-in-use-row.png"
@@ -40,7 +40,7 @@ When someone can't make a change, the form offers to send it to you instead. Eve
   <figcaption>A frequency still in use can be edited but not deleted. The count shows how many nets use it.</figcaption>
 </figure>
 
-There's no merge tool for two entries that turn out to be the same repeater under slightly different descriptions. If you spot a near-duplicate, it's worth cleaning up by hand before more nets pick the wrong one.
+There's no merge tool for two entries that turn out to be the same repeater under slightly different descriptions. Clean up a near-duplicate by hand before more nets pick the wrong one.
 
 ## Not here
 

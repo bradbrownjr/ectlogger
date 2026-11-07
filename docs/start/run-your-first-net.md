@@ -4,7 +4,7 @@ summary: Create a net, start it, log a few stations, and close it out with the l
 kind: Tutorial
 audience: Anyone taking a turn at Net Control
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/start/run-your-first-net/
@@ -14,17 +14,17 @@ permalink: /docs/start/run-your-first-net/
 
 By the end of this you will have run a net from start to finish: created it, started it as Net Control, logged stations, and closed it out. The log will be sitting in your email.
 
-You do not need anyone else to take part. Make a net, work it for five minutes, close it. Nothing you do here is visible to your club unless you tell them about it, and a practice net that ran for five minutes with two stations in it is a perfectly ordinary thing to find in the archive.
+You do not need anyone else to take part. Make a net, work it for five minutes, close it. Nothing you do here is visible to your club unless you tell them about it, and a five-minute practice net with two stations in it is an ordinary thing to find in the archive.
 
-You should have [checked into a net](/docs/start/first-check-in/) at least once first, so the check-in list is familiar. That also matters for a second reason: to keep spammers from filling the dashboard, a brand-new account can't create nets straight away. By default an account has to be a week old and have checked into at least one net, though your instance's admins may have changed that. If **Create Net** at the end of step 1 tells you your account is too new, that is this rule; an admin can give you early access, or you can come back when it says. See [a brand-new account may have to wait](/docs/net-managers/recurring-schedules/#a-brand-new-account-may-have-to-wait).
+You should have [checked into a net](/docs/start/first-check-in/) at least once first, so the check-in list is familiar. There is a second reason: to keep spammers off the dashboard, a brand-new account can't create nets straight away. By default an account has to be a week old and have checked into at least one net, though your instance's admins may have changed that. If **Create Net** at the end of step 1 tells you your account is too new, that is this rule; an admin can give you early access, or you can come back when it says. See [a brand-new account may have to wait](/docs/net-managers/recurring-schedules/#a-brand-new-account-may-have-to-wait).
 
 ## 1. Create the net
 
 From the dashboard, click the **+** button in the bottom right corner. You land on **Create Net**.
 
-The form has seven tabs across the top, because it is the same form used to set up a recurring schedule, opened here for a single net. You need two of the tabs and two fields.
+The form has seven tabs across the top, because it is the same form used to set up a recurring schedule. You need two of the tabs and two fields.
 
-On **Basic Info**, put something in **Schedule Name**. It is the net's name, whatever the label says. Call it what it is: "Thursday practice", "KC1HILL test net", whatever will make sense to you in a week's time.
+On **Basic Info**, put something in **Schedule Name**. It is the net's name, whatever the label says. Call it something that will make sense in a week, such as "Thursday practice" or "KC1HILL test net".
 
 <figure>
   <img src="/docs/img/start/create-net-name.png"
@@ -32,9 +32,9 @@ On **Basic Info**, put something in **Schedule Name**. It is the net's name, wha
   <figcaption>The name, and a frequency on the Communication Plan tab, are the only two things the form insists on.</figcaption>
 </figure>
 
-Then click the **Communication Plan** tab and tick the box next to the frequency you will actually be on. If it isn't in the list, add it in the row at the bottom. **Create Net** stays greyed out until at least one is ticked: the net's log is a record of a radio session, and a record of a radio session with no frequency on it is not worth much to whoever reads it later.
+Then click the **Communication Plan** tab and tick the box next to the frequency you will be on. If it isn't in the list, add it in the row at the bottom. **Create Net** stays greyed out until at least one is ticked, because a log with no frequency on it is not much use to whoever reads it later.
 
-Leave everything else alone, including the **Schedule** tab, which is already set to a one-time net with no start time. Every other setting has a sensible default, and [creating a net](/docs/net-managers/creating-a-net/) goes through them when you want to change one.
+Leave everything else alone, including the **Schedule** tab, which is already set to a one-time net with no start time. Every other setting has a default, and [creating a net](/docs/net-managers/creating-a-net/) goes through them when you want to change one.
 
 Click **Create Net**. You land on the net you just made, and because you made it, you are its Net Control already.
 
@@ -54,9 +54,9 @@ Click **Start net** on the toolbar.
 
 ## 3. You are Net Control, and already checked in
 
-Whoever clicks **Start net** is Net Control, and ECTLogger checks them in at the same moment, so you don't have to. Look at the check-in list: your callsign is the first row, with a crown against it. A message in the chat says the net was started by you.
+Whoever clicks **Start net** is Net Control, and ECTLogger checks them in at the same moment. Look at the check-in list: your callsign is the first row, with a crown against it. A message in the chat says the net was started by you.
 
-That matters more than it looks. The net's log is built from the check-in list, so Net Control who never appeared in it would be missing from the record of a net they ran.
+The net's log is built from the check-in list, so Net Control would otherwise be missing from the record of a net they ran.
 
 The toolbar has grown too. You can now add and edit anyone's check-in, set the active frequency, moderate chat, and close the net, and **Role: NCS** on the toolbar shows which role you hold.
 
@@ -72,7 +72,7 @@ A small **Bulk Check-In** window opens with one big text box. Type a callsign, t
 KC1HILL, Priya, Portland ME; N1ROVE, Chris, Gray ME
 ```
 
-The window tells you the order it expects the fields in, on the **Format** line underneath the box, and that order is this net's own: a net that asks for a spotter number or a weather observation lists those too. You only have to fill in as many as you have. Underneath that is a row of shortcuts for setting a station's status inline, `:jl` for listening only, `:m` for mobile, and so on.
+The window tells you the order it expects the fields in, on the **Format** line underneath the box, and that order is this net's own: a net that asks for a spotter number or a weather observation lists those too. Fill in as many as you have. Underneath that is a row of shortcuts for setting a station's status inline, `:jl` for listening only, `:m` for mobile, and so on.
 
 As you type, the window counts what it is about to create, and so does the button: **Add 2**. Press it, or press Ctrl+Enter.
 
@@ -84,9 +84,9 @@ As you type, the window counts what it is about to create, and so does the butto
 
 Both stations appear in the check-in list immediately, in the order you typed them.
 
-This is the part worth practising before you do it for real. During a busy net you will be taking callsigns faster than you can click, and typing a string of them into one box beats opening a dialog per station. The full syntax, including how to record a status or a spotter number inline, is in [speed entry syntax](/docs/reference/speed-entry-syntax/).
+Practise this before you do it for real. During a busy net, callsigns arrive faster than you can click, and typing a string of them into one box beats opening a dialog per station. The full syntax, including how to record a status or a spotter number inline, is in [speed entry syntax](/docs/reference/speed-entry-syntax/).
 
-To fix something you got wrong, click the row. The cell becomes editable in place, so correcting a misheard callsign does not mean losing your position in the list.
+To fix something you got wrong, click the row. The cell becomes editable in place, so correcting a misheard callsign keeps your position in the list.
 
 ## 5. Close it out
 
@@ -96,11 +96,11 @@ Three things happen. The net moves to **closed** and stops accepting check-ins. 
 
 You get a copy because you were Net Control on it. So does the net's manager, and anyone subscribed to the schedule it came from, unless they have turned those emails off in their own profile.
 
-Go and look at your inbox. The log lists every station, when they checked in, on what frequency, and with what status, which is exactly the record an emergency coordinator or a club secretary asks for after an activation.
+Check your inbox. The log lists every station, when they checked in, on what frequency, and with what status. That is the record an emergency coordinator or club secretary asks for after an activation.
 
 ## What you just avoided
 
-Nothing you did here needed a spreadsheet afterwards. That is the entire point of the tool: the log is a by-product of running the net, not a job you do when the net is finished and you would rather be in bed.
+Nothing you did here needed a spreadsheet afterwards. The log is a by-product of running the net, not a job you do after it.
 
 ## Where to go next
 

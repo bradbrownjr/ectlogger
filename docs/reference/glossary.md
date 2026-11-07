@@ -4,7 +4,7 @@ summary: Words this site uses in a particular way, including a few that mean som
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-31
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/glossary/
@@ -21,7 +21,7 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 : The one frequency, among a net's several, that NCS has marked as the one everyone should currently be listening to. Stations checked in on it get a highlighted badge in the check-in list.
 
 **Authenticated net**
-: A net with the authenticated-nets toggle on, letting NCS or Logger compare a checked-in station's live TOTP code (the same six-digit code their authenticator app shows) against the code ECTLogger computes, to confirm over the air that the operator is who they claim to be. Requires the station's own account to have two-factor authentication enrolled; a station with no account, or no TOTP set up, simply can't be verified this way.
+: A net with the authenticated-nets toggle on, letting NCS or Logger compare a checked-in station's live TOTP code (the same six-digit code their authenticator app shows) against the code ECTLogger computes, to confirm over the air that the operator is who they claim to be. Requires the station's own account to have two-factor authentication enrolled; a station with no account, or no TOTP set up, can't be verified this way.
 
 **Bulk add**
 : The button (sometimes called "speed entry") that accepts several check-ins typed as one line of semicolon-separated, comma-delimited fields. See [Speed entry syntax](/docs/reference/speed-entry-syntax/).
@@ -72,7 +72,7 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 : One radio session, with its own check-in list, chat, and log, moving through the lifecycle Draft, Scheduled, Lobby, Active, and Closed (or Cancelled, for one that never happens).
 
 **Net manager**
-: The account a net or a schedule belongs to, shown as **Net Manager** on its card and as **Schedule Manager** on a schedule's staff tab. Internally it is the record's owner, which is the word the API uses. On a net from a schedule, the schedule's manager manages the net too, even when someone on the staff created that net by hand and so owns it. It is a standing responsibility for the net series, not a job on the air: the manager holds the settings, receives the log, and is very often not the person running tonight's net as NCS. See [Roles and permissions](/docs/reference/roles-and-permissions/).
+: The account a net or a schedule belongs to, shown as **Net Manager** on its card and as **Schedule Manager** on a schedule's staff tab. On a net from a schedule, the schedule's manager manages the net too, even when someone on the staff created that net by hand and so owns it. It is a standing responsibility for the net series, not a job on the air: the manager holds the settings, receives the log, and is very often not the person running tonight's net as NCS. See [Roles and permissions](/docs/reference/roles-and-permissions/).
 
 **Net staff**
 : An operator listed on a schedule's "Authorized Net Staff" roster, distinct from being in the NCS rotation, though a person is often both. See [Roles and permissions](/docs/reference/roles-and-permissions/).
@@ -81,7 +81,7 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 : A net for the stations taking part in an event or incident, such as a drill's deployed teams, marked with a red label beside its status. Self check-in can stay open; net control removes and blocks anyone else. Not to be confused with a **closed** net, which is one that has ended.
 
 **Paused net**
-: An active net with an NCS assigned, where every assigned-active NCS is currently absent (stepped away, checked out, or otherwise not present) with nobody covering. A net with no NCS assigned at all is not "paused"; that's simply an unstaffed net, a different and intentional situation.
+: An active net with an NCS assigned, where every assigned-active NCS is currently absent (stepped away, checked out, or otherwise not present) with nobody covering. A net with no NCS assigned at all is not "paused"; that's an unstaffed net, a different situation.
 
 **Radiogram**
 : The ARRL's standard formal message format for amateur traffic handling: the classic numbered-preamble message form.
@@ -99,7 +99,7 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 : A short, fixed-field, slash-delimited message format published by Radio Relay International, used for things like structured weather observations (`WXOBS`), distinct from a full Radiogram, and imported/exported in its own compact form.
 
 **Schedule**
-: A recurring template (called a `NetTemplate` internally) that a net can be created from. The rotation, staff list, default settings, and recurrence rule all live on the schedule, not on any one net it produces.
+: A recurring template that a net can be created from. The rotation, staff list, default settings, and recurrence rule all live on the schedule, not on any one net it produces.
 
 **Site**
 : A place a net's stations deploy to, such as a shelter, an EOC or an aid station, set up by the net's manager. Net control picks one in the check-in form's Site box (along with Home, Field Deployed, and Traveling), and checking a station in at a different one checks it out of the first. See [Sites](/docs/net-managers/sites/) and [Stations at sites](/docs/net-control/stations-at-sites/).

@@ -4,7 +4,7 @@ summary: Finding out who deleted, cancelled, or changed a net, schedule, or acco
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-10-30
+revised: 2026-11-07
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/activity-log/
@@ -12,9 +12,9 @@ permalink: /docs/admins/activity-log/
 
 # The activity log
 
-The **Activity** tab in the admin panel answers "who did that?" A net manager writes in asking who deleted their net, a station's check-in vanished from last night's log, or somebody keeps coming back under a new account after a ban. Every one of those has an entry here, with who did it, when, what it was done to, and the internet address it came from.
+The **Activity** tab in the admin panel answers "who did that?" A net manager writes in asking who deleted their net, a station's check-in vanished from last night's log, or somebody keeps coming back under a new account after a ban. Each has an entry here: who did it, when, what it was done to, and the internet address it came from.
 
-Only admins can see it. Net managers and Net Control can't, so when one of them asks, the answer comes from you.
+Only admins can see it. Net managers and Net Control can't, so the answer to their questions comes from you.
 
 ## What gets recorded
 
@@ -23,7 +23,7 @@ Only admins can see it. Net managers and Net Control can't, so when one of them 
 - **Admin actions on accounts:** edits, role changes, bans and unbans, password and two-factor resets, early schedule access, reverted callsign takeovers, merged accounts (with what moved), deletions, and emails sent to all users. A merge carries the merged account's history over, so its sign-ins and changes show under the account it was merged into.
 - **Nets:** closing, cancelling, restoring, archiving, unarchiving, and deleting, including the ones ECTLogger does by itself (an idle net closed automatically, an old net archived when its schedule's next one is created). Those show **Automatic** in the **Who** column.
 - **Net and schedule staff:** net roles given and removed, Claim NCS, schedule staff and NCS rotation changes, co-manager changes, a schedule handed to a new manager, and merged or deleted schedules.
-- **Moderation:** a check-in deleted, somebody else's chat message deleted (with what it said), a station muted or unmuted for everyone, a station muted by another participant for themselves, and an off-net log entry deleted. A participant's own mute shows **Another station** in the **Who** column and no address: whom somebody chooses not to read is their business, so it is counted but never named.
+- **Moderation:** a check-in deleted, somebody else's chat message deleted (with what it said), a station muted or unmuted for everyone, a station muted by another participant for themselves, and an off-net log entry deleted. A participant's own mute shows **Another station** in the **Who** column and no address: it is counted but never named.
 - **Security alerts:** every [alert email](/docs/admins/security-and-mfa/#security-alerts) that went out, for failed sign-ins, a station muted by several people, or a new account asking for a callsign another account holds.
 - **The admin panel itself:** site settings, the logo, check-in fields, frequencies and contacts deleted, every [training session](/docs/admins/training-sessions/) posted, changed, or removed, and every backup setting, key, destination, and download.
 
@@ -49,9 +49,9 @@ Click an address in the **From** column. Above the list, a box names every accou
   <figcaption>Clicking an address narrows the list to it and names every account that has used it. Two accounts on one address is a reason to look closer, not proof.</figcaption>
 </figure>
 
-Read it with care. A household, a club station, or a whole mobile carrier's customers can share one address, so two accounts on the same address is a reason to look closer, not proof.
+A household, a club station, or a whole mobile carrier's customers can share one address, so two accounts on the same address are a reason to look closer, not proof.
 
-## What surprises people
+## Things to know
 
 - **A deleted net or account still shows up.** The entry keeps the name it had, so "who deleted the Tuesday net" still has an answer after the net is gone. A deleted account shows its last callsign without a link.
 - **Locations are approximate.** They come from DB-IP's free database, kept on the server, so no address is ever sent anywhere to look it up. A city can be off by a long way, a mobile phone often shows its carrier's city rather than yours, and a private or unknown address shows none. The credit to DB-IP under the list is required by its license.

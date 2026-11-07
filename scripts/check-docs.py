@@ -2,10 +2,12 @@
 """Checks the documentation site for the mistakes that are easy to make and
 hard to see: a link to a page that does not exist, a figure with no file
 behind it, a figure with no alt text, a page missing part of its front
-matter, the Liquid braces that break a Jekyll build, and reference pages
-that have fallen behind the code's own list of statuses and roles.
+matter, the Liquid braces that break a Jekyll build, reference pages
+that have fallen behind the code's own list of statuses and roles, and the
+filler words docs/DOC-STYLE.md "Plain wording" never allows.
 
     python3 scripts/check-docs.py
+    python3 scripts/check-docs.py --wording   # also list words to check by hand
 
 Exits non-zero if anything is wrong, so it can gate a commit.
 """
@@ -180,6 +182,58 @@ def known_issues_freshness():
     return []
 
 
+# ========== PLAIN WORDING GUARD ==========
+# docs/DOC-STYLE.md "Plain wording" (Brad, 2026-11-07): filler phrasing reads
+# as machine written. NEVER_WORDS fail the check; CHECK_WORDS are only counted
+# (listed with --wording), because each is sometimes right and only a person
+# reading the sentence can tell. Keep both lists in step with DOC-STYLE.md.
+NEVER_WORDS = re.compile(
+    r"\b(genuinely|honestly|truly|delve[sd]?|delving|tapestry|testament|seamless(ly)?|"
+    r"effortless(ly)?|it'?s worth noting|it'?s important to note|rest assured|load-bearing)\b",
+    re.IGNORECASE,
+)
+CHECK_WORDS = re.compile(
+    r"\b(actually|really|simply|just|quietly|instantly|right now|exactly one|not just|"
+    r"so you can|so you don'?t have to|whether you'?re|one click|serves as|stands as|crucial|"
+    r"vital|robust|leverage|enhance[sd]?|unlocks?|showcases?|underscores?|landscape|"
+    r"foster(s|ing)?|multifaceted|pivotal|vibrant)\b",
+    re.IGNORECASE,
+)
+WALKTHROUGH = REPO / "frontend" / "src" / "components" / "walkthroughSteps.ts"
+CHANGELOG_JSON = REPO / "frontend" / "src" / "changelog.json"
+
+
+def wording_sources():
+    """(label, text) for everything a user reads that this script can see."""
+    for path in [*pages(), REPO / "README.md"]:
+        text = path.read_text(encoding="utf-8")
+        # Fenced code is quoted syntax, not prose
+        text = re.sub(r"```.*?```", lambda m: "\n" * m.group(0).count("\n"), text, flags=re.DOTALL)
+        yield path.relative_to(REPO), text
+    entries = json.loads(CHANGELOG_JSON.read_text(encoding="utf-8"))["entries"]
+    items = [i["text"] for e in entries for sec in e["sections"] for i in sec["items"]]
+    yield CHANGELOG_JSON.relative_to(REPO), "\n".join(items)
+    # Card text only: the quoted strings, not the code around them
+    cards = re.findall(r"'((?:[^'\\]|\\.)*)'", WALKTHROUGH.read_text(encoding="utf-8"))
+    yield WALKTHROUGH.relative_to(REPO), "\n".join(cards)
+
+
+def plain_wording(list_check_words):
+    problems, to_check = [], []
+    for label, text in wording_sources():
+        for number, line in enumerate(text.splitlines(), 1):
+            for match in NEVER_WORDS.finditer(line):
+                problems.append(f"{label}:{number}: '{match.group(0)}' (DOC-STYLE.md \"Plain wording\")")
+            for match in CHECK_WORDS.finditer(line):
+                to_check.append(f"{label}:{number}: {match.group(0)}")
+    if list_check_words:
+        for item in to_check:
+            print(f"  check: {item}")
+    elif to_check:
+        print(f"{len(to_check)} wording matches to read in context (run with --wording to list them).")
+    return problems
+
+
 def main():
     problems = []
     permalinks = {}
@@ -306,6 +360,7 @@ def main():
 
     problems.extend(known_issues_freshness())
     problems.extend(reference_drift())
+    problems.extend(plain_wording("--wording" in sys.argv))
 
     if problems:
         print(f"{len(problems)} problems:\n")

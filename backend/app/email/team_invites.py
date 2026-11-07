@@ -51,7 +51,7 @@ async def send_team_invite(
         <strong>{{ schedule_name }}</strong> on {{ app_name }}, the net logger the net uses.</p>
         <p>You don't need an account to be on the team. If you'd like to see the schedule, get
         reminders before your turn, and run the net from the app, sign in with this email address.
-        Your callsign is filled in for you, and your place on the team is waiting.</p>
+        Your callsign and place on the team are already set up.</p>
         <p><a class="button" href="{{ login_url }}">Sign in to {{ app_name }}</a></p>
         <div class="footer"><p>If {{ callsign }} isn't your callsign, you can ignore this email.
         Nothing is set up until you sign in.</p></div>

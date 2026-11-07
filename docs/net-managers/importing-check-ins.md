@@ -4,7 +4,7 @@ summary: Bringing a net that ran on paper or in another program into ECTLogger, 
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/importing-check-ins/
@@ -22,7 +22,7 @@ If a net ran off-app, on paper or in a spreadsheet or in another logging program
   <figcaption>Download the template first; it has the exact column headers the importer expects, with two sample rows to delete before you import.</figcaption>
 </figure>
 
-Importing into a **draft** or **scheduled** net is treated as a backfill: that net never actually ran inside ECTLogger, so it has no recorded start or end time of its own. The dialog requires you to enter the net's real **Actual Start Time** and **Actual End Time** before it will accept a file. Those times both bound which rows in your CSV get accepted and become the net's official recorded times. Check **Close the net at the end time above** and the net is closed immediately after the import, using those times, with the usual closing log emailed out, so a paper net's history counts toward attendance statistics exactly as if it had run live. If every row in the file fails to import, the net is left scheduled rather than closed with nobody in it, so you can fix the file and try again.
+Importing into a **draft** or **scheduled** net is treated as a backfill: that net never ran inside ECTLogger, so it has no recorded start or end time of its own. The dialog requires you to enter the net's real **Actual Start Time** and **Actual End Time** before it will accept a file. Those times both bound which rows in your CSV get accepted and become the net's official recorded times. Check **Close the net at the end time above** and the net is closed immediately after the import, using those times, with the usual closing log emailed out, so a paper net's history counts toward attendance statistics as if it had run live. If every row in the file fails to import, the net is left scheduled rather than closed with nobody in it.
 
 Importing into a net that's already **lobby**, **active**, **closed**, or **archived** works the same way, except the times are optional. Leave them blank to import without changing anything the net already recorded, or fill them in only if you need to correct them.
 
@@ -36,4 +36,4 @@ The import doesn't assign NCS or Logger to anyone. Do that afterward from the ne
 
 ## After importing
 
-The dialog reports how many rows were imported, how many were skipped, and lists any row errors so you can fix and re-import just the ones that failed. There's no one-click undo for a completed import (a wrong row is removed the same way any other check-in is deleted, one at a time), but the net's recorded start and end times can still be corrected afterward from **Edit Net**.
+The dialog reports how many rows were imported, how many were skipped, and lists any row errors; fix and re-import just the ones that failed. There's no undo for a completed import (a wrong row is removed the same way any other check-in is deleted, one at a time), but the net's recorded start and end times can still be corrected afterward from **Edit Net**.

@@ -1181,7 +1181,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
             </IconButton>
           </Box>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-            {uploadingImage ? 'Uploading pasted image...' : 'Tip: paste PNG/JPEG/WEBP images directly into chat.'}
+            {uploadingImage ? 'Uploading pasted image...' : 'Tip: paste PNG/JPEG/WEBP images into chat.'}
           </Typography>
 
           {/* ========== @MENTION AUTOCOMPLETE ==========
@@ -1220,7 +1220,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
         <DialogContent>
           <Typography variant="subtitle2" sx={{ mt: 0.5 }}>Your personal mutes</Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-            Hides a station's chat messages from your own view of this net only — nobody else is affected.
+            Hides a station's chat messages from your own view of this net only.
           </Typography>
           {mutedUsers.size === 0 ? (
             <Typography variant="body2" color="text.secondary">No stations muted in this net.</Typography>

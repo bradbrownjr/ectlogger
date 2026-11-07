@@ -4,7 +4,7 @@ summary: Checking a station in at a shelter, an aid station or at home, what hap
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-24
+revised: 2026-11-07
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/stations-at-sites/
@@ -26,7 +26,7 @@ A net without sites has no Site box, no Site column, and no Sites button.
    - **Traveling**, for a station on the road. This is the same as the **Mobile** status, and picking one sets the other.
 3. Fill in the rest and add the check-in.
 
-Leave **Site** empty for a station that is simply on the air, as on any other net.
+Leave **Site** empty for a station that is on the air, as on any other net.
 
 <figure>
   <img src="/docs/img/net-control/check-in-at-a-site.png"
@@ -40,7 +40,7 @@ A station checking itself in gets the same **Site** box, offering only the sites
 
 ## When a station moves
 
-Check the station in again, at its new site. Nobody can be in two places at once, so ECTLogger checks out the station's earlier check-in for you, even if the station forgot to check out, and the chat records it, such as "KC1HILL has rechecked from Freeport Shelter (checked out of Naples Shelter)". Both check-ins stay in the log with their own times.
+Check the station in again, at its new site. Nobody can be in two places at once, so ECTLogger checks out the station's earlier check-in for you, even if the station forgot to check out. The chat records it, such as "KC1HILL has rechecked from Freeport Shelter (checked out of Naples Shelter)". Both check-ins stay in the log with their own times.
 
 The same goes for a station leaving a site: set its status to **Mobile**, or check it in again with **Traveling**, and it moves to Traveling on the board. When it arrives, check it in at its new site.
 
@@ -60,17 +60,17 @@ A correction is not a move: nothing is checked out and no second row is added. U
 
 ## The Sites board
 
-Click **Sites** in the toolbar. A small window opens that you can drag beside the check-in list, listing every station checked in right now under where it is: each site in the net's order, then Traveling, Home, Field Deployed, and **Not at a site**. Hover a callsign to see the station's name and location.
+Click **Sites** in the toolbar. A small window opens that you can drag beside the check-in list, listing every station that is checked in under where it is: each site in the net's order, then Traveling, Home, Field Deployed, and **Not at a site**. Hover a callsign to see the station's name and location.
 
-Every site the net is working is listed even when nobody has reached it yet, marked **Nobody here**, so an unstaffed shelter stands out. The board follows the check-in list as it changes: a check-in, a move, or a check-out shows up on it straight away.
+Every site the net is working is listed, marked **Nobody here** until a station reaches it. The board follows the check-in list: a check-in, a move, or a check-out shows up straight away.
 
 <figure>
   <img src="/docs/img/net-control/sites-board.png"
        alt="The Sites board, listing the stations checked in on the SET net under where each one is: the net's sites in order, each with its town and a count of stations, such as Example County EOC, Windham, ME with N1LAKE and W1MILL, then the stations at home.">
-  <figcaption>Who is where right now. A site nobody has reached says so.</figcaption>
+  <figcaption>Who is where. A site nobody has reached says so.</figcaption>
 </figure>
 
-For a quick count, the **Sites Active** label at the top of the net shows how many sites have a station on right now. Point at it to see their names.
+For a quick count, the **Sites Active** label at the top of the net shows how many sites have a station checked in. Point at it to see their names.
 
 ## Next
 

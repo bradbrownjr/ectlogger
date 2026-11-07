@@ -174,7 +174,7 @@ const TrainingDialog: React.FC<TrainingDialogProps> = ({ open, onClose }) => {
         </DialogTitle>
         <DialogContent dividers>
           <Typography variant="body2" color="text.secondary" paragraph>
-            Training materials and videos are still being developed. More are on the way.
+            Training materials and videos are still being developed.
           </Typography>
 
           {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
@@ -299,7 +299,7 @@ const TrainingDialog: React.FC<TrainingDialogProps> = ({ open, onClose }) => {
 
           {sessions !== null && sessions.length === 0 && (
             <Typography variant="body2" color="text.secondary">
-              No training sessions are scheduled right now.
+              No training sessions are scheduled.
             </Typography>
           )}
 

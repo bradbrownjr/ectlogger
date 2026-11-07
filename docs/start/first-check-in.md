@@ -4,7 +4,7 @@ summary: Get an account, find the net your club is running, and put your callsig
 kind: Tutorial
 audience: Anyone new to ECTLogger
 owner: KC1JMH
-revised: 2026-10-30
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/start/first-check-in/
@@ -14,7 +14,7 @@ permalink: /docs/start/first-check-in/
 
 By the end of this you will have an account and your callsign will be on a net's check-in list, visible to Net Control and to everyone else watching.
 
-You need a callsign, an email address you can read right now, and a browser. Nothing to install.
+You need a callsign, an email address you can read, and a browser. Nothing to install.
 
 This walkthrough uses [app.ectlogger.us](https://app.ectlogger.us), the hosted instance. If your club runs its own, use that address instead; everything else is identical.
 
@@ -32,23 +32,23 @@ Type your email address and click **Send Magic Link**.
 
 There is no separate sign-up step. If that address has never been used here, clicking the link in the email creates the account on the spot.
 
-Now go and read your email. The message has a link in it; click it, and you are signed in. The link is good for 30 days, which is deliberate: during a multi-day activation nobody wants to be signed out at three in the morning. Bookmark that email rather than retyping your address every time, and you will stay signed in even if your browser clears its cookies or you move to another device.
+Now go and read your email. The message has a link in it; click it, and you are signed in. The link is good for 30 days, so nobody gets signed out at three in the morning during a multi-day activation. Bookmark that email rather than retyping your address every time, and you will stay signed in even if your browser clears its cookies or you move to another device.
 
-If the email does not arrive within a minute or two, check the spam folder. If your club runs its own instance and no message ever arrives, it is almost certainly the server's mail configuration and not you; tell whoever runs it.
+If the email does not arrive within a minute or two, check the spam folder. If your club runs its own instance and no message ever arrives, it is almost certainly the server's mail configuration; tell whoever runs it.
 
-If clicking **Send Magic Link** does nothing at all, or the link in the email opens a page that never finishes signing you in, the usual cause is an ad blocker or a script blocker on your own browser rather than anything at our end. [Signing in](/docs/operators/signing-in/#if-the-sign-in-page-does-nothing) explains what to allow.
+If clicking **Send Magic Link** does nothing at all, or the link in the email opens a page that never finishes signing you in, the usual cause is an ad blocker or script blocker in your browser. [Signing in](/docs/operators/signing-in/#if-the-sign-in-page-does-nothing) explains what to allow.
 
-There is a second way in, underneath: **Sign in with a password instead**. You have no password yet, so it will not help tonight, but it is worth setting later for the night your email is not working. [Signing in](/docs/operators/signing-in/) covers that, and two-factor authentication along with it.
+There is a second way in, underneath: **Sign in with a password instead**. You have no password yet, so it will not help tonight. Set one later for the night your email is not working. [Signing in](/docs/operators/signing-in/) covers that, and two-factor authentication along with it.
 
 ## 2. Fill in who you are
 
 The first time you sign in, ECTLogger asks for your name and your callsign before it lets you do anything else.
 
-Put your real name in **Name**, and your callsign in **Primary Call Sign**. Net Control will be reading both off the screen while they work the list, so this is not the place for a handle or a link. Put a callsign in even though the field says it is optional: it is what your check-ins get filed under, and the whole app is organized around it.
+Put your real name in **Name**, and your callsign in **Primary Call Sign**. Net Control will be reading both off the screen while they work the list, so this is not the place for a handle or a link. Put a callsign in even though the field says it is optional: your check-ins are filed under it.
 
 If you hold more than one callsign, or a GMRS callsign as well, add the rest later in your profile. See [your account and profile](/docs/operators/account-and-profile/).
 
-Click **Continue**. A short **ECTLogger Walkthrough** follows. It walks a new operator through finding a net, checking in, chat, the map and traffic, and its last card links on to a second set of cards about running a net. Step through it with **Next**, or click **Skip**. It does not come back on its own, but **Help**, then **Start Walkthrough**, reopens it any time, and there you can choose either set: **I check into nets** or **I run or manage nets**.
+Click **Continue**. A short **ECTLogger Walkthrough** follows. It covers finding a net, checking in, chat, the map and traffic, and its last card links to a second set of cards about running a net. Step through it with **Next**, or click **Skip**. It does not come back on its own. **Help**, then **Start Walkthrough**, reopens it, and there you can choose either set: **I check into nets** or **I run or manage nets**.
 
 ## 3. Find the net
 
@@ -98,12 +98,12 @@ Your callsign appears in the check-in list, with a green check mark against it a
 
 That is it. You are logged, Net Control can see you, and the net's record will show that you took part.
 
-A few things worth knowing before you close the tab:
+Before you close the tab:
 
-- **Set your status honestly if it changes.** The dropdown on your own row is yours. If you step away from the radio, set **Away**; if you are only monitoring, set **Listening only**. Net Control works the list from top to bottom and calls people who say they are there.
-- **Or use the toolbar, which is quicker.** Now that you are checked in, the toolbar has grown **Step away** and **Just listening** buttons, which set those same two statuses in one click without you finding your row at all. Each one toggles: click it again to come back. There is a **Raise hand** button there too, for when you want Net Control to notice you without changing your status.
+- **Keep your status current.** The dropdown on your own row is yours. If you step away from the radio, set **Away**; if you are only monitoring, set **Listening only**. Net Control works the list from top to bottom and calls people who say they are there.
+- **Or use the toolbar.** Now that you are checked in, it has **Step away** and **Just listening** buttons, which set those same two statuses without you finding your row. Each one toggles: click it again to come back. There is a **Raise hand** button there too, for when you want Net Control to notice you without changing your status.
 - **Missed something?** Click **Edit check-in** in the toolbar, or the pencil on your row, to fix it. See [Fixing your check-in](/docs/operators/checking-in/#fixing-your-check-in).
-- **Check out when you leave.** Click **Check out** in the toolbar. It does not remove you from the log or the map, it just tells Net Control not to wait for you.
+- **Check out when you leave.** Click **Check out** in the toolbar. It does not remove you from the log or the map; it tells Net Control not to wait for you.
 
 <figure>
   <img src="/docs/img/operators/self-status-toolbar.png"

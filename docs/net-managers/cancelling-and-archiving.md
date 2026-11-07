@@ -4,7 +4,7 @@ summary: Calling off a week without the schedule recreating it, hiding what's fi
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-25
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/cancelling-and-archiving/
@@ -12,19 +12,19 @@ permalink: /docs/net-managers/cancelling-and-archiving/
 
 # Cancelling, archiving, and restoring
 
-Three different actions live behind the trash-can icon on a net's card, and which one you get depends entirely on whether the net has actually happened yet. All three are reachable from the dashboard, and all three can be undone.
+Three different actions live behind the trash-can icon on a net's card, and which one you get depends on whether the net has happened yet. All three are reachable from the dashboard, and all three can be undone.
 
 ## Cancelling a net that hasn't happened
 
-A **draft** or **scheduled** net, one that hasn't started, can be **cancelled** instead of deleted. This is deliberate: deleting the row outright used to make the recurring schedule think that slot had never been filled and quietly recreate it, reminder email and all. Cancelling marks the net **Cancelled** with an optional reason, removes it from the active dashboard, and keeps it on record in **Archived Nets**. The schedule will never recreate that specific occurrence on its own.
+A **draft** or **scheduled** net, one that hasn't started, can be **cancelled** instead of deleted. Unlike deleting, cancelling stops the recurring schedule from recreating that slot. It marks the net **Cancelled** with an optional reason, removes it from the active dashboard, and keeps it on record in **Archived Nets**. The schedule won't recreate that occurrence.
 
 <figure>
   <img src="/docs/img/net-managers/cancel-net-dialog.png"
        alt="The Cancel confirmation dialog for a scheduled net, explaining that the net will be marked Cancelled rather than deleted and won't be recreated by the schedule, with an optional reason field and a Cancel Net button outlined in red.">
-  <figcaption>Cancelling keeps the occurrence on record in Archived Nets and stops the schedule from quietly recreating it.</figcaption>
+  <figcaption>Cancelling keeps the occurrence on record in Archived Nets and stops the schedule from recreating it.</figcaption>
 </figure>
 
-**Restore** puts a cancelled net back to Scheduled (if it had a start time) or Draft, clearing the cancellation, from the same Archived Nets list. If your plans change back, nothing about the cancellation is permanent.
+**Restore** puts a cancelled net back to Scheduled (if it had a start time) or Draft, clearing the cancellation, from the same Archived Nets list.
 
 ## Archiving a net that's finished
 
@@ -32,7 +32,7 @@ A **closed** net can be **archived** to clear it off the active dashboard while 
 
 ## Deleting
 
-Deleting is the one option here that isn't reversible, and it removes every check-in, every chat message, and every report tied to that net permanently. The net's statistics go with it: it drops out of the schedule's statistics and leaderboards and out of every operator's activity history, and not even an admin can bring it back. You can delete a draft, closed, or archived net as its manager; the confirmation lists all of this before anything is removed. It's offered as a deliberate alternative next to Cancel and Archive, not the default. If you only want a net off the active list, Cancel (for one that hasn't run) or Archive (for one that has) keeps the record and gets you the same tidy dashboard.
+Deleting is the one option here that isn't reversible, and it removes every check-in, every chat message, and every report tied to that net permanently. The net's statistics go with it: it drops out of the schedule's statistics and leaderboards and out of every operator's activity history, and not even an admin can bring it back. You can delete a draft, closed, or archived net as its manager; the confirmation lists all of this before anything is removed. It sits next to Cancel and Archive and isn't the default. If you only want a net off the active list, Cancel (for one that hasn't run) or Archive (for one that has) keeps the record and clears the dashboard the same way.
 
 ## Who can do this
 

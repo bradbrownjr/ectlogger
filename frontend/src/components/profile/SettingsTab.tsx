@@ -80,7 +80,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
 
         <Box sx={{ mb: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Choose a color theme for your account, or follow whatever the system default is set to.
+            Choose a color theme for your account, or follow the system default.
           </Typography>
           <ThemeSwatchPicker
             value={formData.theme}
@@ -198,9 +198,9 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
           <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
             Whether Chat, Activity Log, Script, Announcements, Notes, and the Map stay
             docked, floating, minimized, or popped out, along with panel and column
-            sizes, is cached on this device so they're the way you left them next time.
-            Turn this off if you'd rather every net start from the defaults. This
-            doesn't affect any other settings, and applies only to this device.
+            sizes, is saved on this device so each net opens the way you left it.
+            Turn this off to start every net from the defaults. It affects no other
+            setting.
           </Typography>
         </Box>
 
@@ -251,7 +251,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
             This clears every remembered panel position, size, dock state, minimized
             state, and resize ratio for Net View on this device — Chat, Activity Log,
             Script, Announcements, Notes, the Map, and the check-in list. It doesn't
-            affect any other settings, and only applies to this device. This can't be undone.
+            affect any other settings. This can't be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>

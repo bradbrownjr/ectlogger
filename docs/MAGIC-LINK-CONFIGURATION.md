@@ -50,7 +50,7 @@ For typical weekly net operations or short training exercises.
 ```env
 MAGIC_LINK_EXPIRE_DAYS=30
 ```
-For hurricane season activations, wildfire incidents, or extended emergency operations where operators need seamless access without interruption.
+For hurricane season activations, wildfire incidents, or extended emergency operations where operators need uninterrupted access.
 
 ### Ultra-Secure Environments (< 1 day)
 ```env
@@ -188,7 +188,7 @@ Check the API response when requesting a magic link:
 }
 ```
 
-This confirms the currently configured expiration period.
+This confirms the configured expiration period.
 
 ## Migration from Old Version
 

@@ -4,7 +4,7 @@ summary: Taking NCS, handing it off, stepping down, and what the paused-net bann
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-10-28
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/roles-and-stepping-away/
@@ -16,9 +16,9 @@ Net Control, Logger, and Relay are all per-net roles, held for one net and gone 
 
 ## Taking a role by checking yourself in
 
-If you're on the schedule's net staff or its NCS rotation for the schedule this net came from, you don't need anyone to hand you anything: checking yourself in offers a **Check In as NCS** or **Check In as Logger** choice right alongside the plain participant option, and it works even on a week you weren't specifically scheduled. This is deliberately opt-in. Checking in normally never silently makes you NCS or Logger, and a check-in someone else enters on your behalf (over the air, by voice) never grants a role either, no matter who you are.
+If you're on the schedule's net staff or its NCS rotation for the schedule this net came from, you don't need anyone to hand you a role: checking yourself in offers a **Check In as NCS** or **Check In as Logger** choice right alongside the plain participant option, and it works even on a week you weren't specifically scheduled. This is opt-in. Checking in normally never makes you NCS or Logger, and a check-in someone else enters for you (over the air, by voice) never grants a role either.
 
-This doesn't depend on whether the net already has an active NCS. A large exercise with several eligible staff each claiming NCS for their own desk within minutes of each other is the normal pattern, not something the system tries to prevent; [Frequencies and multiple net controls](/docs/net-control/frequencies-and-multi-ncs/) shows what that looks like on screen. The full eligibility rules (who counts as net staff, what a rotation member can do, and the difference between that and a schedule's co-manager tier) are in [Roles and permissions](/docs/reference/roles-and-permissions/); this page assumes you already know whether you're eligible and covers what happens once you act on it.
+This doesn't depend on whether the net already has an active NCS. Several eligible staff can each claim NCS for their own desk, as in a large exercise; [Frequencies and multiple net controls](/docs/net-control/frequencies-and-multi-ncs/) shows what that looks like on screen. The full eligibility rules (who counts as net staff, what a rotation member can do, and the difference between that and a schedule's co-manager tier) are in [Roles and permissions](/docs/reference/roles-and-permissions/); this page covers what happens once you act on it.
 
 If you aren't on the net staff or rotation of the net's schedule, self-grant isn't available, so someone already running the net has to assign you the role directly, covered next.
 
@@ -32,33 +32,33 @@ Open **Roles** on the toolbar (see [The net control desk](/docs/net-control/the-
   <figcaption>Assigning a role here works alongside self check-in; either path can put someone in NCS or Logger.</figcaption>
 </figure>
 
-This dialog is available to the net's manager, an admin, or (on a templated net) staff who already hold an active NCS or Logger role on this specific occurrence themselves. Being on the staff list or rotation isn't enough by itself if you don't also currently hold one of those two roles here, and since 2026-09-19 the **Roles** button doesn't appear at all unless you meet that bar. Before then it was shown to any net staff, and every action inside it was then refused. If a net has no NCS assigned at all, the net's manager or an admin can also use **Claim NCS**, a recovery button meant for an orphaned net rather than everyday handoffs.
+This dialog is available to the net's manager, an admin, or (on a templated net) staff who already hold an active NCS or Logger role on this specific occurrence themselves. Being on the staff list or rotation isn't enough without one of those two roles here, and the **Roles** button doesn't appear unless you meet that bar. If a net has no NCS assigned at all, the net's manager or an admin can also use **Claim NCS**, a recovery button for an orphaned net, not for everyday handoffs.
 
 ## Stepping down, and stepping away
 
-These are two different things, and it matters which one you mean.
+These are different things.
 
-**Stepping down** (the **Role: NCS** / **Role: Standard** toggle on the toolbar) toggles whether your existing NCS role is currently active. Step down and you genuinely lose NCS access to this net, because the backend enforces the same active flag the screen shows, so this isn't just a display change. You keep the role itself and can step back up to it later; you just aren't acting as NCS in the meantime. If you're the *only* active NCS on a net that's currently active, this toggle is blocked outright; assign or wait for another NCS first.
+**Stepping down** (the **Role: NCS** / **Role: Standard** toggle on the toolbar) toggles whether your existing NCS role is active. Step down and you lose NCS access to this net. You keep the role and can step back up later. If you're the *only* active NCS on a net that's currently active, this toggle is blocked; assign or wait for another NCS first.
 
 Choosing **Check In as Participant** when you check yourself in steps you down the same way, from NCS or Logger, with the same rule for the only active NCS.
 
 <figure>
   <img src="/docs/img/net-control/ncs-role-toggle.png"
        alt="The &quot;Role: NCS&quot; toolbar button, outlined in red, with the tooltip &quot;Acting as NCS — click to step down to Standard&quot;.">
-  <figcaption>This toggles your own active/standard status on the NCS role you already hold. It never grants NCS for the first time.</figcaption>
+  <figcaption>This toggles your own active/standard status on the NCS role you already hold. It never grants NCS.</figcaption>
 </figure>
 
-**Stepping away** (the **Step away** button) is a status change on your own check-in. It marks you Away, the same as anyone else's Away status. Unlike stepping down, this one *is* allowed even if you're the only active NCS, but if you are, it asks you to confirm first: "No one else is currently acting as NCS on this net. Stepping away leaves it without anyone actively running it until you return or hand the NCS role to someone else." Confirm and it goes ahead anyway; this is a warning, not a lock.
+**Stepping away** (the **Step away** button) is a status change on your own check-in. It marks you Away, the same as anyone else's Away status. Unlike stepping down, this is allowed even if you're the only active NCS, but then it asks you to confirm first: "No one else is acting as NCS on this net. Stepping away leaves it without anyone actively running it until you return or hand the NCS role to someone else." Confirm and it goes ahead; it's a warning, not a lock.
 
 ## The paused-net banner
 
-If none of the net's currently-active NCS are actually present (checked in, and not Away or Checked out), the net is considered **paused**. Every viewer sees a blue border around the whole browser window and a banner reading "Net Control has stepped away — this net has been paused until they return."
+If none of the net's active NCS are present (checked in, and not Away or Checked out), the net is considered **paused**. Every viewer sees a blue border around the whole browser window and a banner reading "Net Control has stepped away — this net has been paused until they return."
 
-A couple of things worth knowing about this:
+Notes:
 
-- It only happens when the net **has** an assigned NCS who isn't currently present. A net running with no NCS assigned at all isn't paused. That's the normal, by-design "open net, nobody's formally claimed control yet" state, not an error.
-- It clears itself the moment any active NCS becomes present again, and there's nothing to dismiss or reset by hand.
-- Pausing doesn't stop the clock on anything except the net's own tracked paused time. Check-ins, chat, and everything else keep working exactly as before. It's a visibility signal for anyone watching, not a lockout.
+- It only happens when the net **has** an assigned NCS who isn't currently present. A net running with no NCS assigned at all isn't paused. That's the normal "open net, nobody has claimed control yet" state, not an error.
+- It clears when any active NCS is present again. There's nothing to dismiss.
+- Check-ins, chat, and everything else keep working. Pausing is a signal for anyone watching, not a lockout. The only thing it changes is the net's running time: paused minutes are left out of the duration timer and the net's statistics.
 
 ## Next
 

@@ -28,7 +28,7 @@ A real-time net logger for amateur radio, built for emergency communications tea
 - Statistics and leaderboards per operator and per schedule
 - Scheduled, encrypted backups with off-site copies, and a one-command restore onto a new server
 
-The full feature list, and what each of those actually means in practice, is on the [documentation site](https://ectlogger.us/docs/).
+The full feature list is on the [documentation site](https://ectlogger.us/docs/).
 
 ---
 
@@ -48,7 +48,7 @@ Everything for operators, net control, net managers, administrators, and self-ho
 
 ## Running it yourself
 
-ECTLogger is a **Python 3.11+ FastAPI** backend and a **React + TypeScript + Vite** frontend, with SQLite by default and PostgreSQL or MySQL supported. It runs comfortably on a small Linux server.
+ECTLogger is a **Python 3.11+ FastAPI** backend and a **React + TypeScript + Vite** frontend, with SQLite by default and PostgreSQL or MySQL supported. It runs on a small Linux server.
 
 ```bash
 git clone https://github.com/bradbrownjr/ectlogger.git
@@ -67,7 +67,7 @@ That is enough to look at it. For anything other people depend on, read [product
 
 Issues and pull requests are welcome at [github.com/bradbrownjr/ectlogger](https://github.com/bradbrownjr/ectlogger).
 
-Before writing code, read [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) for the architecture and the patterns this codebase already uses, and [`docs/DESIGN.md`](docs/DESIGN.md) for the UI rules, which are stricter than they look and exist because inconsistent controls are genuinely dangerous during an activation.
+Before writing code, read [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) for the architecture and the patterns this codebase already uses, and [`docs/DESIGN.md`](docs/DESIGN.md) for the UI rules, which exist because inconsistent controls are dangerous during an activation.
 
 A change that alters user-facing behavior is not finished until the pages for its audience paths are updated. Which paths a change touches is decided when the roadmap item is written, not afterward.
 

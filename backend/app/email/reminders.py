@@ -76,7 +76,7 @@ async def send_ncs_reminder(
             
             <p>Hello {{ operator_name }} ({{ operator_callsign }}),</p>
             
-            <p>This is a reminder that you are scheduled to serve as <strong>Net Control Station (NCS)</strong> 
+            <p>You are scheduled to serve as <strong>Net Control Station (NCS)</strong> 
             for the upcoming net session.</p>
             
             <div class="details">
@@ -90,8 +90,8 @@ async def send_ncs_reminder(
                 </ul>
             </div>
             
-            <p>Please ensure you are ready to run the net at the scheduled time. 
-            If you are unable to fulfill your NCS duty, please arrange a swap with another operator as soon as possible.</p>
+            <p>Be ready to run the net at the scheduled time. 
+            If you can't fill the NCS slot, arrange a swap with another operator as soon as possible.</p>
             
             {% if net_url %}
             <p><strong>Your net is ready and waiting:</strong></p>
@@ -191,7 +191,7 @@ async def send_subscriber_reminder(
             
             <p>Hello {{ recipient_name }} ({{ recipient_callsign }}),</p>
             
-            <p>This is a reminder that a net you've subscribed to is starting soon.</p>
+            <p>A net you've subscribed to is starting soon.</p>
             
             <div class="details">
                 <h3>Net Details</h3>
@@ -415,7 +415,7 @@ async def send_staff_reminder(
 
             <p>Hello {{ recipient_name }} ({{ recipient_callsign }}),</p>
 
-            <p>This is your one-hour heads-up that <strong>{{ net_name }}</strong> is coming up. If no one else has opened the lobby yet, please do so when you're ready.</p>
+            <p><strong>{{ net_name }}</strong> starts in one hour. If no one else has opened the lobby yet, please do so when you're ready.</p>
 
             <div class="details">
                 <h3>Net Details</h3>

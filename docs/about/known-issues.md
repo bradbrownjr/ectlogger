@@ -4,7 +4,7 @@ summary: Confirmed, currently open problems and limitations, with a workaround f
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-11-01
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/about/known-issues/
@@ -12,7 +12,7 @@ permalink: /docs/about/known-issues/
 
 # Known issues
 
-This page lists confirmed problems and limitations that are open right now, each with a workaround. Problems that have been fixed are listed under Bug Fixes in the [changelog](/docs/CHANGELOG/), and planned work is on the [Roadmap](/docs/ROADMAP/).
+This page lists confirmed problems and limitations that are open, each with a workaround. Problems that have been fixed are listed under Bug Fixes in the [changelog](/docs/CHANGELOG/), and planned work is on the [Roadmap](/docs/ROADMAP/).
 
 <div class="table-scroll" markdown="1">
 

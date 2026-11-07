@@ -4,7 +4,7 @@ summary: The net report, the PDF, the ICS-309 Communications Log, the ICS-214, t
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-10-31
+revised: 2026-11-07
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/reports-and-exports/
@@ -12,7 +12,7 @@ permalink: /docs/net-managers/reports-and-exports/
 
 # Reports, ICS-309, and exports
 
-A closed net's toolbar has one **Reports** button, which opens a menu of everything the net produced. None of it requires reopening the net, and none of it affects the record: pulling a copy a second time doesn't re-send anything.
+A closed net's toolbar has one **Reports** button, which opens a menu of everything the net produced. None of it requires reopening the net or changes the record; pulling a copy again doesn't re-send anything.
 
 <figure>
   <img src="/docs/img/net-managers/net-export-toolbar.png"
@@ -37,18 +37,18 @@ The ICS-309 log is the copy that leaves your group and reaches a served agency, 
 <figure>
   <img src="/docs/img/net-managers/net-report-header.png"
        alt="The Net Report page's header with three buttons: Export PDF outlined in red, Export PNG, and View Net.">
-  <figcaption>The report page needs no sign-in, so the link is safe to hand to anyone who needs the record. Export PNG saves a summary image and the map, ready to post.</figcaption>
+  <figcaption>The report page needs no sign-in. Export PNG saves a summary image and the map, ready to post.</figcaption>
 </figure>
 
-This page pulls together everything about the net into one document, in this order: check-in statistics and a map, who was at each site (if the net has [sites](/docs/net-managers/sites/)) and station-to-station coverage (if the net used it), the check-in log (one row per station per place, with every [field](/docs/reference/check-in-fields/#in-reports-and-exports) the net used), chat, the ICS-309 log, and last, the activity log. **Export PDF** saves the whole thing as one file. The **Export PDF** button on a net's statistics page produces this same report.
+This page puts everything about the net into one document, in this order: check-in statistics and a map, who was at each site (if the net has [sites](/docs/net-managers/sites/)) and station-to-station coverage (if the net used it), the check-in log (one row per station per place, with every [field](/docs/reference/check-in-fields/#in-reports-and-exports) the net used), chat, the ICS-309 log, and last, the activity log. **Export PDF** saves the whole thing as one file. The **Export PDF** button on a net's statistics page produces this same report.
 
 In the check-in log, a station that checked in more than once at a place has one row, whose time reads how many check-ins it made and when the last one was. Its **Channels** column lists each channel the station checked in on, with the ones it only listed as reachable in brackets and any marked offline struck through. The ICS-309 and the CSV export still list every check-in.
 
-On screen, the report follows your light or dark setting like the rest of the app. The PDF is always in print colors on US Letter pages, and it comes out the same whether you export it from a phone or a computer, so it is ready to print either way.
+On screen, the report follows your light or dark setting like the rest of the app. The PDF is always in print colors on US Letter pages, and it comes out the same whether you export it from a phone or a computer.
 
-The report is about your net, so your net leads it. The top of the first page shows the net's logo, the net's name as the title, and the date and time it ran. ECTLogger is credited in a single line at the end. The report names the net's NCS as the ICS-309 and closing email do: whoever is credited for running it, or **Not recorded** (see [Who ran this net?](/docs/net-control/closing-the-net/#who-ran-this-net)). Every page of the PDF also carries the net's name, the date, and "Page 2 of 3" along the bottom, so a page separated from the rest of a printed copy still says what it belongs to.
+The top of the first page shows the net's logo, the net's name as the title, and the date and time it ran. ECTLogger is credited in a single line at the end. The report names the net's NCS as the ICS-309 and closing email do: whoever is credited for running it, or **Not recorded** (see [Who ran this net?](/docs/net-control/closing-the-net/#who-ran-this-net)). Every page of the PDF also carries the net's name, the date, and "Page 2 of 3" along the bottom, so a page separated from the rest of a printed copy still says what it belongs to.
 
-The report's headings, numbers, and graphs take their color from the logo. The color is matched to the nearest of a short list of standard colors (navy, blue, teal, green, red, maroon, purple, and a few others) that are all easy to read on a white page, so an unusual logo color never produces an unreadable report. In dark mode the same color is shown a little lighter on screen so it stays readable, and the PDF uses the original. A logo that is mostly grey, black and white, brown, or yellow, and a net with no logo at all, gets a standard blue. There is nothing to set: upload a logo on the net or its schedule (see [Creating a net](/docs/net-managers/creating-a-net/)) and the report follows it.
+The report's headings, numbers, and graphs take their color from the logo. The color is matched to the nearest of a short list of standard colors (navy, blue, teal, green, red, maroon, purple, and a few others) that are all easy to read on a white page. In dark mode the same color is shown a little lighter on screen so it stays readable, and the PDF uses the original. A logo that is mostly grey, black and white, brown, or yellow, and a net with no logo at all, gets a standard blue. There is nothing to set: upload a logo on the net or its schedule (see [Creating a net](/docs/net-managers/creating-a-net/)) and the report follows it.
 
 ### Images for social media
 
@@ -57,9 +57,9 @@ The report's headings, numbers, and graphs take their color from the logo. The c
 - **A summary image**: the net's logo, name, and date across the top, then the check-in count, operators, re-checks, and duration, the graphs, and a two-column list of every station with its name and town.
 - **The map**, with the same header, if any stations gave a location.
 
-No image is taller than a 4:5 portrait, the tallest shape Facebook and Instagram show without cropping in a feed. When a net has more stations than fit, the list carries on to a second image (and a third, if needed), marked "2 of 2" and repeating the header so each image makes sense on its own. A graph with only one category, such as a pie in which every station is "Checked In", is left out of the images because it says nothing in a post; the full report and PDF still show it. Each image carries a small footer crediting ECTLogger with the site's address, so anyone who sees the post knows where it came from. The **Export PNG** button on a net's statistics page produces these same images.
+No image is taller than a 4:5 portrait, the tallest shape Facebook and Instagram show without cropping in a feed. When a net has more stations than fit, the list carries on to a second image (and a third, if needed), marked "2 of 2" and repeating the header so each image makes sense on its own. A graph with only one category, such as a pie in which every station is "Checked In", is left out of the images because it says nothing in a post; the full report and PDF still show it. Each image carries a small footer crediting ECTLogger with the site's address. The **Export PNG** button on a net's statistics page produces these same images.
 
-This page needs no sign-in to view — callsign and licensee information are already public via the FCC's own license database, and free-text fields are redacted for a signed-out viewer the same way the check-in list and chat already are. That makes the link safe to hand to an emergency coordinator, a club newsletter editor, or anyone else who needs the record but doesn't have (or need) an ECTLogger account. A net that's still running can be shared the same way; see [Sharing a net with someone who has no account](/docs/operators/finding-a-net/#sharing-a-net-with-someone-who-has-no-account).
+This page needs no sign-in to view — callsign and licensee information are already public via the FCC's own license database, and free-text fields are redacted for a signed-out viewer the same way the check-in list and chat already are. That makes the link safe to hand to anyone who needs the record, with or without an ECTLogger account. A net that's still running can be shared the same way; see [Sharing a net with someone who has no account](/docs/operators/finding-a-net/#sharing-a-net-with-someone-who-has-no-account).
 
 ## Who automatically gets the closing log by email
 

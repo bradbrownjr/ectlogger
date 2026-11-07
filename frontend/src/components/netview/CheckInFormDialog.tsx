@@ -231,7 +231,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
                 <FormControlLabel value="participant" control={<Radio size="small" />} label="Standard participant" />
               </RadioGroup>
               <Typography variant="caption" color="text.secondary">
-                You're a co-manager, rotation member, or the net owner, so you can help run this net. Choose Standard if you're just checking in as a participant this time.
+                You're a co-manager, rotation member, or the net owner, so you can help run this net. Choose Standard if you're checking in as a participant this time.
               </Typography>
             </FormControl>
           )}

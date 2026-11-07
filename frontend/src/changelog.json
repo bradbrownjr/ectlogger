@@ -27,7 +27,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Net and Schedule: Reuse a logo — When you edit a net or schedule, Choose Existing lets you pick a logo already on the site, so you don't have to find the original image and upload it again. When you replace a logo, you can update your other nets and schedules that still show the old one in the same step.",
+              "text": "Net and Schedule: Reuse a logo — When you edit a net or schedule, Choose Existing lets you pick a logo already on the site, without finding the original image and uploading it again. When you replace a logo, you can update your other nets and schedules that still show the old one in the same step.",
               "userImpact": true,
               "docs": "/docs/net-managers/creating-a-net/#using-a-logo-thats-already-here"
             },
@@ -71,7 +71,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Net View: One row per station per site — Each station now gets one row for each site it works from, with a chip for every channel you've reached it on, so you can see at a glance how each site can be reached. Rechecks are still logged with their times; open the row to see them, and mark a channel offline if a station loses it.",
+              "text": "Net View: One row per station per site — Each station now gets one row for each site it works from, with a chip for every channel you've reached it on. Rechecks are still logged with their times; open the row to see them, and mark a channel offline if a station loses it.",
               "userImpact": true,
               "docs": "/docs/net-control/logging-check-ins/#a-stations-channels"
             },
@@ -130,7 +130,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Help: A walkthrough for your role — Start Walkthrough now asks whether you check into nets or run them, shows the screens as they look today, and links each step to its page in the user guide. A brand-new account starts with checking into nets, then can carry on to running one.",
+              "text": "Help: A walkthrough for your role — Start Walkthrough now asks whether you check into nets or run them, shows the current screens, and links each step to its page in the user guide. A brand-new account starts with checking into nets, then can go on to running one.",
               "userImpact": true,
               "docs": "/docs/start/first-check-in/"
             },
@@ -328,7 +328,7 @@
               "docs": "/docs/net-control/off-net-log/#adding-an-entry"
             },
             {
-              "text": "Net View: Clearer station counts — Checked Out now sits beside Checked In, so the two add up to every station that took part. On a net with sites, a new label shows how many sites have a station on right now; point at it to see which.",
+              "text": "Net View: Clearer station counts — Checked Out now sits beside Checked In, so the two add up to every station that took part. On a net with sites, a new label shows how many sites have a station on the air; point at it to see which.",
               "userImpact": true,
               "docs": "/docs/net-control/logging-check-ins/#rechecks"
             },
@@ -396,12 +396,12 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Net View: Net Info shows the whole net at a glance — Net Info now opens a card with the net's logo, description, schedule, frequencies, manager and staff, and links to its website and reports, and it stays available once the lobby opens or the net starts.",
+              "text": "Net View: Net Info shows the whole net — Net Info now opens a card with the net's logo, description, schedule, frequencies, manager and staff, and links to its website and reports, and it stays available once the lobby opens or the net starts.",
               "userImpact": true,
               "docs": "/docs/operators/finding-a-net/#learning-about-a-net"
             },
             {
-              "text": "Edit Net: Show only the selected frequencies — A Selected only switch above the frequency list hides the frequencies the net doesn't use, so you can check a net's frequencies without scrolling the whole list.",
+              "text": "Edit Net: Show only the selected frequencies — A Selected only switch above the frequency list hides the frequencies the net doesn't use.",
               "docs": "/docs/net-managers/creating-a-net/#communication-plan"
             },
             {
@@ -419,7 +419,7 @@
               "docs": "/docs/net-managers/sites/"
             },
             {
-              "text": "Check-in: Moving stations check out automatically — When a station checks in again from a different place, their earlier check-in is checked out for them, since nobody can be in two places at once. Before, NCS had to check them out by hand before the new check-in would go through.",
+              "text": "Check-in: Moving stations check out automatically — When a station checks in again from a different place, their earlier check-in is checked out for them. Before, NCS had to check them out by hand before the new check-in would go through.",
               "userImpact": true,
               "docs": "/docs/net-control/stations-at-sites/#when-a-station-moves"
             },
@@ -552,7 +552,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Coverage: Select all stations — The \"who can hear\" dialog now has an All stations checkbox (one per frequency on multi-frequency nets), so when a station reports hearing everyone but a few, you tick everyone in one click and untick the ones they missed.",
+              "text": "Coverage: Select all stations — The \"who can hear\" dialog now has an All stations checkbox (one per frequency on multi-frequency nets), so when a station reports hearing everyone but a few, you tick everyone and untick the ones they missed.",
               "userImpact": true,
               "docs": "/docs/operators/reporting-what-you-hear/#record-what-you-can-hear"
             }
@@ -583,7 +583,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Schedules: Build your team before everyone signs up — Add net control operators to your staff and NCS rotation by callsign before they have an account, and optionally email them an invitation to sign up. Swaps and the fifth week work for them too. When they're on duty, the net card, report and ICS-309 credit them as NCS, and a Logger can mark any station without an account as NCS. An invited operator takes over their spot as soon as they sign in with that address; for anyone else, you confirm it's really them with one click.",
+              "text": "Schedules: Build your team before everyone signs up — Add net control operators to your staff and NCS rotation by callsign before they have an account, and optionally email them an invitation to sign up. Swaps and the fifth week work for them too. When they're on duty, the net card, report and ICS-309 credit them as NCS, and a Logger can mark any station without an account as NCS. An invited operator takes over their spot as soon as they sign in with that address; for anyone else, you confirm it's them with one click.",
               "userImpact": true,
               "docs": "/docs/net-managers/net-staff-and-rotation/#operators-who-havent-signed-up-yet"
             }
@@ -594,7 +594,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Schedules Simplified: One place to manage your staff — An opened net’s Staff button and Edit Net now just show who’s running that net. Open the net's schedule template to edit its staff and rotation, so it’s always clear a change applies to the schedule. A swap on the schedule now also updates a net that’s already been created for that night.",
+              "text": "Schedules Simplified: One place to manage your staff — An opened net’s Staff button and Edit Net now just show who’s running that net. Open the net's schedule template to edit its staff and rotation, so a change clearly applies to the schedule. A swap on the schedule now also updates a net that’s already been created for that night.",
               "userImpact": true,
               "docs": "/docs/net-managers/net-staff-and-rotation/#from-a-net"
             }
@@ -649,7 +649,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Net View: Print the script, announcements, or notes — The Script, Announcements, and Notes panels each have a PDF button next to the pencil, so you can print just that one. The Paperwork button now includes the schedule's announcements too, and opening a panel in a new window gives you the full panel there, including editing and printing.",
+              "text": "Net View: Print the script, announcements, or notes — The Script, Announcements, and Notes panels each have a PDF button next to the pencil. The Paperwork button now includes the schedule's announcements too, and opening a panel in a new window gives you the full panel there, including editing and printing.",
               "userImpact": true,
               "docs": "/docs/net-managers/scripts-and-announcements/#the-printable-version"
             }
@@ -706,12 +706,12 @@
               "docs": "/docs/operators/location-and-the-map/#auto-filling-it-instead-of-typing-it"
             },
             {
-              "text": "Check-in: See who has a hand up — A raised hand now shows beside the station's callsign for everyone in the net, on phones too, so you can see who else is waiting with a question or input.",
+              "text": "Check-in: See who has a hand up — A raised hand now shows beside the station's callsign for everyone in the net, on phones too.",
               "userImpact": true,
               "docs": "/docs/operators/status-and-checking-out/"
             },
             {
-              "text": "Reports: Dark mode stays dark, PDFs print on Letter paper — Net reports and schedule statistics now follow your dark or light setting on screen instead of switching to a bright white page. Export PDF still prints in light colors, now on US Letter pages that come out the same whether you export from a phone or a computer.",
+              "text": "Reports: Dark mode stays dark, PDFs print on Letter paper — Net reports and schedule statistics now follow your dark or light setting on screen instead of switching to a bright white page. Export PDF still prints in light colors, now on US Letter pages that come out the same from a phone or a computer.",
               "userImpact": true,
               "docs": "/docs/net-managers/reports-and-exports/"
             }
@@ -725,7 +725,7 @@
               "text": "Schedules: Nets show up a day ahead again — Some recurring schedules only created their next net an hour before it started, and \"open the lobby before the net\" never opened the lobby. Both now happen on time."
             },
             {
-              "text": "Net View: See everyone's topic answers — After a net ends, the Topic of the Week answers under the check-in list now show everyone's answer, not just a few. Poll results are fixed the same way."
+              "text": "Net View: See everyone's topic answers — After a net ends, the Topic of the Week answers under the check-in list now show everyone's answer. Poll results are fixed the same way."
             },
             {
               "text": "Schedule Statistics: Readable column headings in dark mode — On a phone in dark mode, the column headings in a schedule's leaderboards and net history were black on black. They now read clearly."
@@ -762,7 +762,7 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Statistics: Total Nets counts only nets that ran — Cancelled nets and nets still waiting to start were included in the total, so it read higher than the number of nets actually held."
+              "text": "Statistics: Total Nets counts only nets that ran — Cancelled nets and nets still waiting to start were included in the total, so it read higher than the number of nets held."
             }
           ]
         }
@@ -819,7 +819,7 @@
               "docs": "/docs/operators/finding-a-net/#seeing-the-month-on-a-calendar"
             },
             {
-              "text": "Admin: Encrypted backups — Administrators can now schedule encrypted backups of the database and uploaded images from the Admin panel, send copies to another server or cloud storage, and see at a glance whether recent backups succeeded.",
+              "text": "Admin: Encrypted backups — Administrators can now schedule encrypted backups of the database and uploaded images from the Admin panel, send copies to another server or cloud storage, and see whether recent backups succeeded.",
               "docs": "/docs/admins/backups/"
             }
           ]
@@ -857,7 +857,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Schedules: Follow a net from its card — Net cards on the dashboard now have their own Subscribe button, so you can sign up for a net's emails wherever you see it listed. When a net's schedule has standing announcements, its card on the dashboard and on the Schedule page shows an Announcements link, so you can catch up on club news without joining the net, and save a copy as a PDF.",
+              "text": "Schedules: Follow a net from its card — Net cards on the dashboard now have their own Subscribe button, to sign up for a net's emails from wherever it is listed. When a net's schedule has standing announcements, its card on the dashboard and on the Schedule page shows an Announcements link, to catch up on club news without joining the net and save a copy as a PDF.",
               "userImpact": true,
               "docs": "/docs/operators/finding-a-net/#getting-emails-about-a-net"
             }
@@ -868,12 +868,12 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Nets: Open the lobby or start the net — Nets that haven't started now have an Open lobby button next to Start net (Lobby on dashboard cards), so you can open the lobby early for stations to gather. Start net always starts the net, even ahead of its scheduled time. Before, one button did either, depending on the clock.",
+              "text": "Nets: Open the lobby or start the net — Nets that haven't started now have an Open lobby button next to Start net (Lobby on dashboard cards), to open the lobby early for stations to gather. Start net always starts the net, even ahead of its scheduled time. Before, one button did either, depending on the clock.",
               "userImpact": true,
               "docs": "/docs/net-managers/lobby-and-auto-close/#open-lobby-or-start-net"
             },
             {
-              "text": "Sign In: One click for a new link — Opening a sign-in link that's more than 30 days old now tells you it has expired and offers a Send me a new link button that emails a fresh link to the same address, so you don't have to go back and type your email again.",
+              "text": "Sign In: One click for a new link — Opening a sign-in link that's more than 30 days old now tells you it has expired and offers a Send me a new link button that emails a fresh link to the same address, without typing your email again.",
               "userImpact": true,
               "docs": "/docs/operators/signing-in/"
             },
@@ -932,7 +932,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Frequencies: JS8Call, Packet, and Data modes — Frequencies can now be marked JS8Call, Packet, or Data (for FLDIGI and other digital modes), so a digital net's frequency list shows how to actually reach it.",
+              "text": "Frequencies: JS8Call, Packet, and Data modes — Frequencies can now be marked JS8Call, Packet, or Data (for FLDIGI and other digital modes), so a digital net's frequency list shows how to reach it.",
               "userImpact": false,
               "docs": "/docs/admins/frequencies/"
             }
@@ -951,7 +951,7 @@
               "userImpact": true
             },
             {
-              "text": "Net View: Buttons that match what you can do — The net toolbar and the net cards on the dashboard now show Close net, Import, Edit, Go live, Archive, Cancel, and Delete only to people who are allowed to use them, so schedule staff no longer see buttons that fail when clicked, a Logger can now find the Close net button, and stepping down as NCS really does hand those controls back.",
+              "text": "Net View: Buttons that match what you can do — The net toolbar and the net cards on the dashboard now show Close net, Import, Edit, Go live, Archive, Cancel, and Delete only to people who are allowed to use them, so schedule staff no longer see buttons that fail when clicked, a Logger can find the Close net button, and stepping down as NCS hands those controls back.",
               "userImpact": true
             },
             {
@@ -1061,7 +1061,7 @@
               "userImpact": true
             },
             {
-              "text": "Net Control: The Roles button only appears when you can use it — Net staff saw Roles on a net from their schedule before holding any role on that occurrence, and every action in the dialog it opened was then refused with a generic error. The button now appears only once you hold an active NCS or logger role there, which is what assigning roles actually requires.",
+              "text": "Net Control: The Roles button only appears when you can use it — Net staff saw Roles on a net from their schedule before holding any role on that occurrence, and every action in the dialog it opened was then refused with a generic error. The button now appears only once you hold an active NCS or logger role there, which is what assigning roles requires.",
               "userImpact": true
             },
             {
@@ -1111,7 +1111,7 @@
               "userImpact": true
             },
             {
-              "text": "Net Report: Maps agree with each other — A net's report map quietly left out stations that had checked out before the net closed, so it disagreed with the same net's statistics page about how many stations were on the air, and the two pages colored their pins differently on top of that. Both maps now plot everyone who participated, in the same colors as the live map during the net (including net control, logger and relay), each with a legend listing exactly the pins on it. The statistics map also no longer stops plotting after the tenth street address.",
+              "text": "Net Report: Maps agree with each other — A net's report map left out stations that had checked out before the net closed, so it disagreed with the same net's statistics page about how many stations were on the air, and the two pages colored their pins differently on top of that. Both maps now plot everyone who participated, in the same colors as the live map during the net (including net control, logger and relay), each with a legend listing the pins on it. The statistics map also no longer stops plotting after the tenth street address.",
               "userImpact": true
             }
           ]
@@ -1205,7 +1205,7 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Check-in: Self-check-in as NCS/Logger on staff-only nets — on a net where self check-in is turned off, an eligible co-manager or on-duty rotation member trying to check themselves in as NCS or Logger was blocked outright, with no way to get the role except asking someone who already had it to grant it to them by hand. That self-check-in now goes through when the requester is genuinely eligible for the role.",
+              "text": "Check-in: Self-check-in as NCS/Logger on staff-only nets — on a net where self check-in is turned off, an eligible co-manager or on-duty rotation member trying to check themselves in as NCS or Logger was blocked outright, with no way to get the role except asking someone who already had it to grant it to them by hand. That self-check-in now goes through when the requester is eligible for the role.",
               "userImpact": true
             }
           ]
@@ -1235,7 +1235,7 @@
               "docs": "/docs/operators/chat-and-polls/#editing-and-muting"
             },
             {
-              "text": "Security: Authenticated nets — on a net with the new Authenticated Net setting, NCS and Logger can confirm a checked-in station's identity by comparing the code on their authenticator app to the one ECTLogger computes for that account, turning the check-in row's padlock icon from open to locked once confirmed. Participants need an ECT Logger account with two-factor authentication (MFA) set up under Profile → Security for this to work; a station without it simply shows as unverified.",
+              "text": "Security: Authenticated nets — on a net with the new Authenticated Net setting, NCS and Logger can confirm a checked-in station's identity by comparing the code on their authenticator app to the one ECTLogger computes for that account, turning the check-in row's padlock icon from open to locked once confirmed. Participants need an ECT Logger account with two-factor authentication (MFA) set up under Profile → Security for this to work; a station without it shows as unverified.",
               "userImpact": true,
               "docs": "/docs/net-control/authenticated-nets/"
             },
@@ -1245,7 +1245,7 @@
               "docs": "/docs/operators/account-and-profile/"
             },
             {
-              "text": "Net View & Chat: Tap any callsign for a profile — callsigns are now clickable next to the avatar in chat and the check-in list, not just the avatar itself, and a check-in with no linked account now opens a profile too, showing its check-in history, so no one on the list is a dead end to click on.",
+              "text": "Net View & Chat: Tap any callsign for a profile — callsigns are now clickable next to the avatar in chat and the check-in list, and a check-in with no linked account now opens a profile too, showing its check-in history.",
               "userImpact": true
             }
           ]
@@ -1255,7 +1255,7 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Check-in: Sneak-in arrival arrow now clears — the off-screen arrival arrow could get stuck on screen, scroll away from the edge it was supposed to stay pinned to, and didn't respond to clicks. It now disappears once you've seen the new check-in, stays pinned to the table's visible edge while you scroll, and clicking it jumps you straight to the row, pointing up or down depending on which way it actually is.",
+              "text": "Check-in: Sneak-in arrival arrow now clears — the off-screen arrival arrow could get stuck on screen, scroll away from the edge it was supposed to stay pinned to, and didn't respond to clicks. It now disappears once you've seen the new check-in, stays pinned to the table's visible edge while you scroll, and clicking it jumps you straight to the row, pointing up or down toward it.",
               "userImpact": true,
               "docs": "/docs/net-control/logging-check-ins/#spotting-stations-who-check-themselves-in"
             },
@@ -1276,7 +1276,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Check-in: Sneak-in arrival alert — when a station checks itself in without NCS or Logger typing it in, its row briefly flashes gold so you notice the new arrival even if you're running the net mostly by voice. If it lands below what you're currently viewing, a small arrow fades in at the bottom of the table to point you there.",
+              "text": "Check-in: Sneak-in arrival alert — when a station checks itself in without NCS or Logger typing it in, its row briefly flashes gold so you notice the new arrival when you're running the net mostly by voice. If it lands below what you're currently viewing, a small arrow fades in at the bottom of the table to point you there.",
               "userImpact": true,
               "docs": "/docs/net-control/logging-check-ins/#spotting-stations-who-check-themselves-in"
             },
@@ -1297,7 +1297,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Check-in: Check In as Participant stands out — the plain participant option in the lobby check-in prompt is now a filled green button instead of a faint outline, so it's just as easy to spot as the NCS/Logger buttons next to it.",
+              "text": "Check-in: Check In as Participant stands out — the plain participant option in the lobby check-in prompt is now a filled green button instead of a faint outline, and is as easy to spot as the NCS/Logger buttons next to it.",
               "userImpact": true
             },
             {
@@ -1316,11 +1316,11 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Check-in: NCS crown no longer follows net ownership — a net owner who checked in as a plain participant was still shown wearing the NCS crown, and it demoted the real Net Control Station to a secondary crown the whole time they were checked in. Both now depend on who actually holds the NCS role, not who owns the net.",
+              "text": "Check-in: NCS crown no longer follows net ownership — a net owner who checked in as a plain participant was still shown wearing the NCS crown, and it demoted the real Net Control Station to a secondary crown the whole time they were checked in. Both now depend on who holds the NCS role, not who owns the net.",
               "userImpact": true
             },
             {
-              "text": "Net View: Poll and Topic results reachable on closed nets — the Poll Results and Topic of the Week summary below the check-in list could be clipped off the page with no way to scroll to it. The page now scrolls so you can actually see it.",
+              "text": "Net View: Poll and Topic results reachable on closed nets — the Poll Results and Topic of the Week summary below the check-in list could be clipped off the page with no way to scroll to it. The page now scrolls to it.",
               "userImpact": true
             }
           ]
@@ -1336,11 +1336,11 @@
           "type": "feature",
           "items": [
             {
-              "text": "Net & Schedule: Logo upload — add a club or net logo from the net or schedule editor. It shows on net and schedule cards and next to the net name on the check-in page, so your net is recognizable at a glance.",
+              "text": "Net & Schedule: Logo upload — add a club or net logo from the net or schedule editor. It shows on net and schedule cards and next to the net name on the check-in page.",
               "userImpact": true
             },
             {
-              "text": "Check-in: Check in as Logger — a net's owner (or an active co-manager/rotation member) can now check themselves in as Logger, the same way NCS already worked, so you can open a lobby and start logging stations while waiting for the scheduled NCS to arrive.",
+              "text": "Check-in: Check in as Logger — a net's owner (or an active co-manager/rotation member) can now check themselves in as Logger, the same way NCS already worked, so you can open a lobby and start logging while waiting for the scheduled NCS.",
               "userImpact": true,
               "docs": "/docs/net-control/roles-and-stepping-away/#taking-a-role-by-checking-yourself-in"
             }
@@ -1382,7 +1382,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Net Report and Statistics: One-click PNG export — a new Export PNG button on both pages downloads every section at once, and the images are now shaped for a social post: the graphs stack, the map is 4:3, and the buttons and expand arrows no longer appear in the picture. The graphs image also shows the total check-ins, unique operators, re-checks, and duration numbers alongside the charts, so it stands on its own without the rest of the page. Both pages now label their export buttons the same way.",
+              "text": "Net Report and Statistics: One-click PNG export — a new Export PNG button on both pages downloads every section at once, and the images are now shaped for a social post: the graphs stack, the map is 4:3, and the buttons and expand arrows no longer appear in the picture. The graphs image also shows the total check-ins, unique operators, re-checks, and duration numbers alongside the charts. Both pages now label their export buttons the same way.",
               "userImpact": true,
               "docs": "/docs/net-managers/reports-and-exports/#images-for-social-media"
             }
@@ -1410,11 +1410,11 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Net Roles: Backup NCS no longer piles on — checking in as an eligible rotation member or co-manager while someone else was already running the net could silently give you NCS access too, even though you were just there as a participant. Becoming NCS now always requires an explicit choice.",
+              "text": "Net Roles: Backup NCS no longer piles on — checking in as an eligible rotation member or co-manager while someone else was already running the net could give you NCS access too, even though you were there as a participant. Becoming NCS now always requires an explicit choice.",
               "userImpact": true
             },
             {
-              "text": "Net Report: The right net control operator is credited — nets that had more than one person holding net control credited the wrong one everywhere they appeared: the net card, the report, and the ICS-309 export all named whoever was added most recently rather than whoever actually ran the net, and an operator who had stepped back down to participant was still listed. Each net now credits its actual net control operator, and stepping down removes you from the listing.",
+              "text": "Net Report: The right net control operator is credited — nets that had more than one person holding net control credited the wrong one everywhere they appeared: the net card, the report, and the ICS-309 export all named whoever was added most recently rather than whoever ran the net, and an operator who had stepped back down to participant was still listed. Each net now credits its actual net control operator, and stepping down removes you from the listing.",
               "userImpact": true
             },
             {
@@ -1422,7 +1422,7 @@
               "userImpact": true
             },
             {
-              "text": "Schedule: Staff and rotation switches — the on/off switch next to each operator in a schedule's NCS Rotation list didn't actually do anything when clicked. Toggling it now works, and both the staff and rotation switches show what they control instead of relying on a hover tooltip.",
+              "text": "Schedule: Staff and rotation switches — the on/off switch next to each operator in a schedule's NCS Rotation list did nothing when clicked. Toggling it now works, and both the staff and rotation switches show what they control instead of relying on a hover tooltip.",
               "userImpact": true
             }
           ]
@@ -1438,7 +1438,7 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Check-in: Recheck on a different frequency — NCS could not log a station that was already checked in again on a different frequency (for example, a repeater check followed by a simplex check) without checking them out first; it was rejected as a duplicate check-in with no way to record it. It's now logged as its own timestamped row under the same station, so there's a clear record of exactly when each frequency was confirmed.",
+              "text": "Check-in: Recheck on a different frequency — NCS could not log a station that was already checked in again on a different frequency (for example, a repeater check followed by a simplex check) without checking them out first; it was rejected as a duplicate check-in with no way to record it. It's now logged as its own timestamped row under the same station, so the log shows when each frequency was confirmed.",
               "userImpact": true
             }
           ]
@@ -1523,12 +1523,12 @@
           "type": "feature",
           "items": [
             {
-              "text": "Help: Feedback becomes a trackable GitHub issue — bug reports and feature requests submitted through Submit Feedback are now also opened as public issues on the project's GitHub page (tagged with your callsign, not your email), so you can watch progress on what you reported instead of just sending it into an email.",
+              "text": "Help: Feedback becomes a trackable GitHub issue — bug reports and feature requests submitted through Submit Feedback are now also opened as public issues on the project's GitHub page (tagged with your callsign, not your email), so you can follow progress on what you reported.",
               "userImpact": true,
               "docs": "/docs/about/getting-help/#report-a-bug-or-ask-for-a-feature"
             },
             {
-              "text": "RSS Feeds: Subscribe to schedule and changelog updates — new RSS icons on the Scheduler page (next to Filters) and in the What's New dialog let you subscribe in any feed reader to see nets scheduled in the next 14 days or new changelog entries, without having to check the app.",
+              "text": "RSS Feeds: Subscribe to schedule and changelog updates — new RSS icons on the Scheduler page (next to Filters) and in the What's New dialog let you subscribe in any feed reader to see nets scheduled in the next 14 days or new changelog entries.",
               "userImpact": true,
               "docs": "/docs/reference/feeds/"
             }
@@ -1539,7 +1539,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Help menu: Roadmap link — the Help menu now links straight to the public roadmap, so you can see what's planned without leaving the app to go find it.",
+              "text": "Help menu: Roadmap link — the Help menu now links straight to the public roadmap.",
               "userImpact": true
             }
           ]
@@ -1572,7 +1572,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Net Script: Highlight important text — a new highlight button in the script toolbar wraps selected text in a yellow highlight, so instructions NCS operators shouldn't miss stand out from the rest of the script.",
+              "text": "Net Script: Highlight important text — a new highlight button in the script toolbar wraps selected text in a yellow highlight, so instructions NCS operators shouldn't miss stand out.",
               "userImpact": true,
               "docs": "/docs/net-managers/scripts-and-announcements/#the-net-script"
             }
@@ -1612,11 +1612,11 @@
               "userImpact": true
             },
             {
-              "text": "NCS Rotation: Roster changes take effect immediately — reordering the rotation, or adding and removing people, now sets the upcoming nets to match the list you just arranged, including a net that had already been created and staffed before you made the fix. Before, the schedule kept working from the old order underneath, so a correction never really took hold and had to be patched with a swap on every net from then on. When a roster change does move a net's assigned NCS, both the person coming off and the person going on duty get an email so nobody finds out by surprise.",
+              "text": "NCS Rotation: Roster changes take effect immediately — reordering the rotation, or adding and removing people, now sets the upcoming nets to match the list you just arranged, including a net that had already been created and staffed before you made the fix. Before, the schedule kept working from the old order underneath, so a correction never took hold and had to be patched with a swap on every net from then on. When a roster change does move a net's assigned NCS, both the person coming off and the person going on duty get an email.",
               "userImpact": true
             },
             {
-              "text": "NCS Rotation: Swaps record the right person — the operator a swap or cancellation says was originally scheduled is now the operator who actually had that date, so cancellation notices reach the person who was going to run the net instead of whoever happens to be first on the roster.",
+              "text": "NCS Rotation: Swaps record the right person — the operator a swap or cancellation says was originally scheduled is now the operator who had that date, so cancellation notices reach the person who was going to run the net instead of whoever is first on the roster.",
               "userImpact": true
             }
           ]
@@ -1632,7 +1632,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Net View: Share a net without an account — send someone a net's link and they can view it, no sign-in needed, so you can show a prospective member how ECT Logger works before they join. Any phone number or email address in check-in notes or chat stays hidden from them.",
+              "text": "Net View: Share a net without an account — send someone a net's link and they can view it, no sign-in needed. Any phone number or email address in check-in notes or chat stays hidden from them.",
               "userImpact": true,
               "docs": "/docs/operators/finding-a-net/#sharing-a-net-with-someone-who-has-no-account"
             }
@@ -1654,7 +1654,7 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Net Report: Complete check-in maps — the check-in map on a net's report no longer silently drops stations once a net has more than 10 different locations; every mappable station now shows up. Any station that still can't be placed (no location on file, or one we couldn't look up) is listed by callsign under the map instead of just vanishing with no explanation.",
+              "text": "Net Report: Complete check-in maps — the check-in map on a net's report no longer drops stations once a net has more than 10 different locations; every mappable station now shows up. Any station that still can't be placed (no location on file, or one we couldn't look up) is listed by callsign under the map instead of being left off.",
               "userImpact": true
             },
             {
@@ -1662,11 +1662,11 @@
               "userImpact": true
             },
             {
-              "text": "Net View: Fix roles on closed nets — NCS and Logger assignments can now be corrected after a net is closed or archived, not just while it's live, so a wrong or missing role from a backfilled import doesn't require reopening the net to fix.",
+              "text": "Net View: Fix roles on closed nets — NCS and Logger assignments can now be corrected after a net is closed or archived.",
               "userImpact": true
             },
             {
-              "text": "Net View: Archive reminder no longer covers import results — closing a net through a CSV import no longer pops the archive-reminder dialog immediately on top of the import summary, so you get a moment to read the results first.",
+              "text": "Net View: Archive reminder no longer covers import results — closing a net through a CSV import no longer pops the archive-reminder dialog immediately on top of the import summary.",
               "userImpact": true
             }
           ]
@@ -1682,7 +1682,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Net View: Backfill a net that ran off-app — if a net was run on paper or in another program and never started in ECT Logger, staff can now import its check-in log from a CSV, enter the net's real start and end times, and have the net recorded as closed in one step, so everyone who took part gets attendance credit and the schedule's participation statistics stay accurate. Rows that list only a time of day, like 7:05 PM, are now placed correctly when you pick your own time zone instead of UTC, and anyone on a schedule's staff can run the import rather than only the net's owner.",
+              "text": "Net View: Backfill a net that ran off-app — if a net was run on paper or in another program and never started in ECT Logger, staff can now import its check-in log from a CSV, enter the net's real start and end times, and have the net recorded as closed in one step, so everyone who took part gets attendance credit and the schedule's statistics stay accurate. Rows that list only a time of day, like 7:05 PM, are now placed correctly when you pick your own time zone instead of UTC, and anyone on a schedule's staff can run the import rather than only the net's owner.",
               "userImpact": true,
               "docs": "/docs/net-managers/importing-check-ins/#backfilling-a-net-that-never-ran-here"
             }
@@ -1699,7 +1699,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Admin: Checkbox custom fields — custom check-in fields can now be a checkbox, not just text or a dropdown, for capturing yes/no info like whether a station can do digital modes.",
+              "text": "Admin: Checkbox custom fields — custom check-in fields can now be a checkbox, for yes/no info like whether a station can do digital modes.",
               "userImpact": true,
               "docs": "/docs/admins/custom-fields/#adding-a-field"
             }
@@ -1716,7 +1716,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Net View: Coverage reports now show band — Station-to-station \"can hear\" reports and your Profile's coverage map now label (and color-code) each entry by the amateur band it was heard on, like 2m or 40m, blending colors on the map when a station's been heard on more than one, since HF and VHF/UHF propagation behave very differently. On nets with more than one frequency, the \"Who can this station hear?\" dialog now shows one column per frequency so you can record who you heard on each in a single pass, instead of switching a dropdown and re-checking the list per frequency.",
+              "text": "Net View: Coverage reports now show band — Station-to-station \"can hear\" reports and your Profile's coverage map now label (and color-code) each entry by the amateur band it was heard on, like 2m or 40m, blending colors on the map when a station's been heard on more than one. On nets with more than one frequency, the \"Who can this station hear?\" dialog now shows one column per frequency so you can record who you heard on each in one pass.",
               "userImpact": true,
               "docs": "/docs/net-control/station-coverage/#read-the-coverage-table"
             },
@@ -1752,12 +1752,12 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Traffic: Copy exported text — a piece of traffic's detail screen now shows the exact text that gets exported to a text file, with a copy icon right next to it, so you can hand it to whoever needs it without exporting and opening a file first.",
+              "text": "Traffic: Copy exported text — a piece of traffic's detail screen now shows the exact text that gets exported to a text file, with a copy icon next to it.",
               "userImpact": true,
               "docs": "/docs/net-control/handling-traffic/#exporting"
             },
             {
-              "text": "Traffic: Log who actually handled it — Log a Handoff now has a \"Handled by\" field for who performed the action (separate from \"Handed to,\" who it went to), pre-filled with your own callsign since you're usually logging your own work; overwrite it when you're instead logging a hop someone else verbally reported to you, like an NCS logging a relay a station reported over the net.",
+              "text": "Traffic: Log who handled it — Log a Handoff now has a \"Handled by\" field for who performed the action (separate from \"Handed to,\" who it went to), pre-filled with your own callsign; change it when you're logging a hop someone else verbally reported to you, like an NCS logging a relay a station reported over the net.",
               "userImpact": true,
               "docs": "/docs/net-control/handling-traffic/#logging-the-chain-of-custody"
             }
@@ -1784,7 +1784,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Net View: Stations can self-report their own coverage — any station can now log its own \"can hear\" report from the ear icon on its own check-in row, not just NCS, Logger, and Relay recording on its behalf. Net managers can turn this off per net or schedule under ARES & EmComm Features if they'd rather staff record every report themselves.",
+              "text": "Net View: Stations can self-report their own coverage — any station can now log its own \"can hear\" report from the ear icon on its own check-in row, not just NCS, Logger, and Relay recording on its behalf. Net managers can turn this off per net or schedule under ARES & EmComm Features.",
               "userImpact": true,
               "docs": "/docs/net-control/station-coverage/#who-can-record-a-report"
             },
@@ -1806,12 +1806,12 @@
           "type": "feature",
           "items": [
             {
-              "text": "Help: Diagnostics for support — the Help menu now has a Diagnostics option describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. Some problems only happen at particular window sizes and are otherwise almost impossible to track down. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it.",
+              "text": "Help: Diagnostics for support — the Help menu now has a Diagnostics option describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. Some problems only happen at particular window sizes. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it.",
               "userImpact": true,
               "docs": "/docs/about/getting-help/#check-diagnostics-before-you-report-too"
             },
             {
-              "text": "Sitewide: New-version banner — if a tab is left open through a deploy, it now shows a banner offering to reload once a new version has shipped, so you're never troubleshooting on outdated code without realizing it, and you won't be told to force a hard refresh to see something new.",
+              "text": "Sitewide: New-version banner — if a tab is left open through a deploy, it now shows a banner offering to reload once a new version has shipped, so you won't be told to force a hard refresh to see something new.",
               "docs": "/docs/admins/maintenance-banner/#how-this-differs-from-the-update-notice"
             },
             {
@@ -1826,7 +1826,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Admin: An accurate, up-to-date picture of who's online — the user list used to count anyone with a browser tab open as active every single minute, so admins couldn't tell who was genuinely on the site — and even then, seeing it meant reloading the page. \"Last active\" now updates only when someone actually does something, and the list refreshes itself every 30 seconds, with the time of the last update shown and a refresh button for an answer right now. Together that's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing.",
+              "text": "Admin: Who's online, kept current — the user list used to count anyone with a browser tab open as active every single minute, so admins couldn't tell who was on the site, and seeing it meant reloading the page. \"Last active\" now updates only when someone does something, and the list refreshes itself every 30 seconds, with the time of the last update shown and a refresh button for an update on demand. That lets us deploy at a moment that won't interrupt anyone mid-net.",
               "userImpact": false
             },
             {
@@ -1839,7 +1839,7 @@
               "docs": "/docs/admins/security-and-mfa/#also-on-this-tab"
             },
             {
-              "text": "Net View: Built to ride out a spotty connection — Nets may be run or attended from field sites, EOCs on generator, and rural links where the internet comes and goes. The net page now keeps trying to reconnect for as long as you leave it open, instead of quietly giving up after a few minutes, and it reconnects the moment your signal returns rather than waiting out a timer. When it reconnects it catches up on everything that happened while you were out — check-ins, statuses, chat, the activity log, and traffic. Before this, a page could come back looking perfectly normal while showing an out-of-date net, which is the worst way to lose track of a net. This applies to everyone taking part, not just Net Control.",
+              "text": "Net View: Built to ride out a spotty connection — Nets may be run or attended from field sites, EOCs on generator, and rural links where the internet comes and goes. The net page now keeps trying to reconnect for as long as you leave it open, instead of giving up after a few minutes, and it reconnects the moment your signal returns. When it reconnects it catches up on everything that happened while you were out — check-ins, statuses, chat, the activity log, and traffic. Before, a page could come back looking normal while showing an out-of-date net. This applies to everyone taking part, not just Net Control.",
               "userImpact": true,
               "docs": "/docs/operators/in-the-field/#what-degrades-on-a-bad-connection"
             },
@@ -1861,7 +1861,7 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Net View: Check-in changes appear instantly — picking a status used to leave the old icon on screen while the change saved, which made it look like the change hadn't taken and led people to click again. Your choice now shows the moment you make it, and new check-ins, edits, and deletions update the list right away instead of after a pause. The delay was worst on slow or mobile connections, where it could run to several seconds.",
+              "text": "Net View: Check-in changes appear immediately — picking a status used to leave the old icon on screen while the change saved, which made it look like the change hadn't taken and led people to click again. Your choice now shows the moment you make it, and new check-ins, edits, and deletions update the list right away instead of after a pause. The delay was worst on slow or mobile connections.",
               "userImpact": true
             },
             {
@@ -1869,7 +1869,7 @@
               "userImpact": true
             },
             {
-              "text": "Net View: Setting your own station's status — Whoever owns the net can now set their own station's status (mobile, away, has traffic, announcements, and the rest) instead of that one box being permanently locked. A status you set is now also shown in place of the NCS crown, so you can see it actually took effect, and the rest of the net can tell when Net Control has stepped away or gone mobile.",
+              "text": "Net View: Setting your own station's status — Whoever owns the net can now set their own station's status (mobile, away, has traffic, announcements, and the rest) instead of that one box being locked. A status you set is now also shown in place of the NCS crown, so you can see it took effect, and the rest of the net can tell when Net Control has stepped away or gone mobile.",
               "userImpact": true
             },
             {
@@ -1889,7 +1889,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Traffic: Weather and RRI strips — File Radio Relay International's WXOBS weather observation strip, the GYX-CAR SKYWARN regional variant, or paste any other RRI strip as a general entry. Don't see your area's strip? Paste a filled-in example, name each field, and it becomes a real, reusable type available to everyone from then on, the same as the built-in ones. Filing shows the named fields and the exact strip text side by side and keeps them in sync as you type, so you can also just paste a strip a station reads back over the air and have it split across the fields.",
+              "text": "Traffic: Weather and RRI strips — File Radio Relay International's WXOBS weather observation strip, the GYX-CAR SKYWARN regional variant, or paste any other RRI strip as a general entry. Don't see your area's strip? Paste a filled-in example, name each field, and it becomes a real, reusable type available to everyone from then on, the same as the built-in ones. Filing shows the named fields and the exact strip text side by side and keeps them in sync as you type, so you can paste a strip a station reads back over the air and have it split across the fields.",
               "userImpact": true,
               "docs": "/docs/operators/filing-traffic/"
             },
@@ -1916,7 +1916,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Traffic: Assisted traffic handling — File and track formal traffic (ARRL radiograms and ICS-213 general messages) from a net's Traffic panel or the standalone Traffic section. Every hop — originated, received, relayed, delivered, serviced, cancelled — is logged so you always know what happened to a message, and your personal inbox keeps anything you're still holding visible until you log that it moved on. Only the submitter, current holder, chain of custody, that net's NCS/logger, and admins can see a given piece of traffic, since it can carry a private individual's name, address, and phone number.",
+              "text": "Traffic: Assisted traffic handling — File and track formal traffic (ARRL radiograms and ICS-213 general messages) from a net's Traffic panel or the standalone Traffic section. Every hop — originated, received, relayed, delivered, serviced, cancelled — is logged so you can see what happened to a message, and your personal inbox keeps anything you're still holding visible until you log that it moved on. Only the submitter, current holder, chain of custody, that net's NCS/logger, and admins can see a given piece of traffic, since it can carry a private individual's name, address, and phone number.",
               "userImpact": true,
               "docs": "/docs/net-control/handling-traffic/"
             },
@@ -1946,7 +1946,7 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Net View: Station Coverage close button — The floating Station Coverage window's close (X) button was actually wired to \"dock back to main view,\" which had no effect on most screens, leaving the window stuck open. It now closes the window like the X anywhere else does.",
+              "text": "Net View: Station Coverage close button — The floating Station Coverage window's close (X) button was wired to \"dock back to main view,\" which had no effect on most screens, leaving the window stuck open. It now closes the window like the X anywhere else does.",
               "userImpact": true
             }
           ]
@@ -1962,12 +1962,12 @@
           "type": "feature",
           "items": [
             {
-              "text": "Net View: Station-to-station coverage logging — NCS, Logger, and Relay can now record which stations can hear each other during a net, not just who NCS hears. Turn it on per net under ARES & EmComm Features, then use the new ear icon on a check-in row to log who that station can hear. A new Coverage panel (alongside Chat, Activity Log, and the Check-In Map) shows the results as a sortable, filterable table, and an overlay on the Check-In Map draws the confirmed one-way and two-way paths — click a callsign in either place to see just that station's connections. This is the coverage-assessment picture ARES and SKYWARN drills need, without the paper notes. Your Profile also gets a personal map of stations you've confirmed hearing from home, each labeled with when you last heard them.",
+              "text": "Net View: Station-to-station coverage logging — NCS, Logger, and Relay can now record which stations can hear each other during a net. Turn it on per net under ARES & EmComm Features, then use the new ear icon on a check-in row to log who that station can hear. A new Coverage panel (alongside Chat, Activity Log, and the Check-In Map) shows the results as a sortable, filterable table, and an overlay on the Check-In Map draws the confirmed one-way and two-way paths — click a callsign in either place to see just that station's connections. Your Profile also gets a personal map of stations you've confirmed hearing from home, each labeled with when you last heard them.",
               "userImpact": true,
               "docs": "/docs/net-control/station-coverage/"
             },
             {
-              "text": "Net Report: Per-station coverage maps — When Station-to-Station Coverage Logging is on, the net report can now include a map for each reporting station showing who it heard, with every pin labeled by callsign, so an after-action report can show propagation station-by-station instead of just as a table. Off by default via a switch on the report's Station Coverage section, since it can add many pages to a large net's report.",
+              "text": "Net Report: Per-station coverage maps — When Station-to-Station Coverage Logging is on, the net report can now include a map for each reporting station showing who it heard, with every pin labeled by callsign, so an after-action report can show propagation station by station. Off by default via a switch on the report's Station Coverage section, since it can add many pages to a large net's report.",
               "userImpact": true,
               "docs": "/docs/net-control/station-coverage/#after-the-net"
             }
@@ -1982,7 +1982,7 @@
               "userImpact": true
             },
             {
-              "text": "Editor: Markdown preview — You can now toggle between Write and Preview while editing the net script, notes, or announcements, both in the net/schedule editor and in the floating dialogs, so you can check how your formatting will look before saving.",
+              "text": "Editor: Markdown preview — You can now toggle between Write and Preview while editing the net script, notes, or announcements, both in the net/schedule editor and in the floating dialogs, to check your formatting before saving.",
               "userImpact": true,
               "docs": "/docs/net-managers/scripts-and-announcements/"
             }
@@ -2014,7 +2014,7 @@
               "docs": "/docs/operators/account-and-profile/"
             },
             {
-              "text": "Net View: Run a net across multiple monitors — Check-Ins, Chat, and Activity Log can each open in their own real browser window, not just a movable panel inside the page, so a multi-monitor NCS station can dedicate a full screen to logging, another to chat, and another to the activity feed. Every window stays live and in sync with the net in real time. Already using the in-page floating panel? A new button on its title bar sends it straight to its own window — no need to dock it back first.",
+              "text": "Net View: Run a net across multiple monitors — Check-Ins, Chat, and Activity Log can each open in their own real browser window, not just a movable panel inside the page, so a multi-monitor NCS station can dedicate a full screen to logging, another to chat, and another to the activity feed. Every window stays live and in sync with the net in real time. Already using the in-page floating panel? A new button on its title bar sends it straight to its own window.",
               "userImpact": true,
               "docs": "/docs/net-control/multiple-monitors/"
             },
@@ -2029,7 +2029,7 @@
               "docs": "/docs/net-managers/scripts-and-announcements/#notes-for-tonight"
             },
             {
-              "text": "Profile: Choose whether your Net View layout is remembered — A \"Remember Net View Layout\" toggle and a one-click reset in Profile → Settings let you decide whether panel positions, sizes, and docking stay exactly the way you left them on that device (the default) or start fresh every time. Sizes already stay independent across a phone, a laptop, and an ultrawide monitor even if they share a browser.",
+              "text": "Profile: Choose whether your Net View layout is remembered — A \"Remember Net View Layout\" toggle and a one-click reset in Profile → Settings let you decide whether panel positions, sizes, and docking stay as you left them on that device (the default) or start fresh every time. Sizes already stay independent across a phone, a laptop, and an ultrawide monitor even if they share a browser.",
               "userImpact": true,
               "docs": "/docs/operators/account-and-profile/"
             }
@@ -2056,7 +2056,7 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Net View: Notes no longer overwrites your schedule's Announcements — Editing a net's Notes was silently saving into the schedule's Announcements text instead, so it could carry over onto every future net from that schedule. Notes now saves to just that net, and the button no longer stays hidden until something has already been written.",
+              "text": "Net View: Notes no longer overwrites your schedule's Announcements — Editing a net's Notes was saving into the schedule's Announcements text instead, so it could carry over onto every future net from that schedule. Notes now saves to that net only, and the button no longer stays hidden until something has already been written.",
               "userImpact": true
             },
             {
@@ -2080,7 +2080,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Reminders: Clearer buttons on net-starting and staff emails — The subscriber \"net starting\" email and the NCS staff reminder now have separate View Net and Check Into Net buttons, so you can jump straight to checking in instead of landing on the net page and hunting for the button.",
+              "text": "Reminders: Clearer buttons on net-starting and staff emails — The subscriber \"net starting\" email and the NCS staff reminder now have separate View Net and Check Into Net buttons.",
               "userImpact": true
             },
             {
@@ -2092,12 +2092,12 @@
               "userImpact": true
             },
             {
-              "text": "Admin: Users list improvements — New NCS and What's New subscriber badges show at a glance who has run a net as NCS and who is following development, without opening their profile. The table is also tighter so more columns fit on screen, and clicking Status, Last Active, Created, or either badge column now shows active/most-recent first instead of oldest first.",
+              "text": "Admin: Users list improvements — New NCS and What's New subscriber badges show who has run a net as NCS and who is following development, without opening their profile. The table is also tighter so more columns fit on screen, and clicking Status, Last Active, Created, or either badge column now shows active/most-recent first instead of oldest first.",
               "userImpact": true,
               "docs": "/docs/admins/users-and-roles/"
             },
             {
-              "text": "Net View: Check-in action buttons stay visible while scrolling — On a wide net or a narrow phone screen, the check-in list's action buttons (step away, raise hand, delete) now stay pinned to the edge as you scroll sideways through the other columns, so you don't have to scroll back to reach them.",
+              "text": "Net View: Check-in action buttons stay visible while scrolling — On a wide net or a narrow phone screen, the check-in list's action buttons (step away, raise hand, delete) now stay pinned to the edge as you scroll sideways through the other columns.",
               "userImpact": true
             },
             {
@@ -2105,7 +2105,7 @@
               "userImpact": true
             },
             {
-              "text": "Login: Sessions now last 90 days by default — Login sessions were resetting to 30 days by default, which meant infrequent operators sometimes had to request a new magic link. The login page also now points out that bookmarking the emailed magic link (valid 30 days and reusable) gets you back in instantly even if your browser clears cookies or you switch devices.",
+              "text": "Login: Sessions now last 90 days by default — Login sessions were resetting to 30 days by default, which meant infrequent operators sometimes had to request a new magic link. The login page also now points out that bookmarking the emailed magic link (valid 30 days and reusable) gets you back in even if your browser clears cookies or you switch devices.",
               "userImpact": true,
               "docs": "/docs/admins/security-and-mfa/#session-length"
             }
@@ -2124,7 +2124,7 @@
               "userImpact": true
             },
             {
-              "text": "Reminders: The 1-hour reminder now actually arrives about 1 hour ahead — It could go out anywhere from 90 minutes to 30 minutes before a net started, even though the subject line always said \"starts in 1 hour.\" It now consistently arrives within a couple minutes of that mark, for NCS, staff, and subscriber reminders alike.",
+              "text": "Reminders: The 1-hour reminder now arrives about 1 hour ahead — It could go out anywhere from 90 minutes to 30 minutes before a net started, even though the subject line always said \"starts in 1 hour.\" It now consistently arrives within a couple minutes of that mark, for NCS, staff, and subscriber reminders alike.",
               "userImpact": true
             }
           ]
@@ -2151,11 +2151,11 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Reminders: Subscribers hear about a net when the lobby opens — The net starting email now goes out the moment Net Control opens the lobby, instead of when the net goes live. You get real lead time to get to the radio rather than finding out once the net is already running.",
+              "text": "Reminders: Subscribers hear about a net when the lobby opens — The net starting email now goes out the moment Net Control opens the lobby, instead of when the net goes live. You have time to get to the radio before the net is running.",
               "userImpact": true
             },
             {
-              "text": "Reminders: Staff reminder names the NCS on duty — The one hour reminder sent to net staff now says who is scheduled as Net Control, so you no longer have to open the net or the rotation to find out who is running it.",
+              "text": "Reminders: Staff reminder names the NCS on duty — The one hour reminder sent to net staff now says who is scheduled as Net Control.",
               "userImpact": true
             }
           ]
@@ -2197,7 +2197,7 @@
               "docs": "/docs/net-control/the-net-control-desk/#the-command-bar"
             },
             {
-              "text": "Nets and Schedule: Redesigned card buttons — Every button on a net or schedule card now shows a short label beside its icon and offers a bigger target on a phone, so you can tell what each one does at a glance instead of hovering. Buttons that change something (Create, Edit, Cancel, Start, Delete) are grouped apart from the view-only buttons everyone sees, ordered so Start is easy to reach and no longer sits beside Cancel. Wide cards spread the two groups to opposite edges; narrow ones stack them.",
+              "text": "Nets and Schedule: Redesigned card buttons — Every button on a net or schedule card now shows a short label beside its icon and offers a bigger target on a phone. Buttons that change something (Create, Edit, Cancel, Start, Delete) are grouped apart from the view-only buttons everyone sees, ordered so Start is easy to reach and no longer sits beside Cancel. Wide cards spread the two groups to opposite edges; narrow ones stack them.",
               "userImpact": true
             },
             {
@@ -2209,7 +2209,7 @@
               "userImpact": true
             },
             {
-              "text": "Net View: Prior topics link back to their net — Each entry in the prior-topics list now opens the net it came from in a new tab, so you can look through past topics without losing your place in the net you have open.",
+              "text": "Net View: Prior topics link back to their net — Each entry in the prior-topics list now opens the net it came from in a new tab.",
               "docs": "/docs/operators/chat-and-polls/#prior-topics"
             }
           ]
@@ -2262,7 +2262,7 @@
               "userImpact": true
             },
             {
-              "text": "Check-in: No more duplicate rows for stations still checked in — Checking in a station that already has an active check-in (whether they try it themselves, or Net Control/Logger re-adds them) no longer creates a second row. You'll see a message that the station is already checked in instead. Re-checking in still works normally once a station has checked out.",
+              "text": "Check-in: No more duplicate rows for stations still checked in — Checking in a station that already has an active check-in (whether they try it themselves or Net Control/Logger re-adds them) no longer creates a second row. You'll see a message that the station is already checked in instead. Re-checking in still works normally once a station has checked out.",
               "userImpact": true
             }
           ]
@@ -2272,15 +2272,15 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Net Settings: Clearer feature sections — The settings in a schedule or net are now grouped as General Net Features (mobile priority sort, chat grace period, self check-in) above a smaller ARES & EmComm Features section that holds just the ICS-309 log format. Everyday options are no longer buried under an emergency-communications heading, and both the schedule editor and Create/Edit Net lay them out identically.",
+              "text": "Net Settings: Clearer feature sections — The settings in a schedule or net are now grouped as General Net Features (mobile priority sort, chat grace period, self check-in) above a smaller ARES & EmComm Features section that holds just the ICS-309 log format. Everyday options are no longer under an emergency-communications heading, and both the schedule editor and Create/Edit Net lay them out identically.",
               "userImpact": true
             },
             {
-              "text": "Platform: Behind-the-scenes cleanup — We spent the last few weeks reorganizing the app's internal code so future bug fixes and feature requests can ship faster and more safely. That work is done, and regular fixes and new features resume now.",
+              "text": "Platform: Behind-the-scenes cleanup — The app's internal code was reorganized so future fixes and features ship faster. Regular fixes and new features resume.",
               "userImpact": true
             },
             {
-              "text": "Net View: Redesigned toolbar — The net toolbar now spans the full width of the page with labeled buttons instead of unlabeled icons packed into a narrow column, so you can find Search, Stats, Roles, and the rest without hovering to guess. It automatically switches to icon-only on narrower screens so nothing gets cut off.",
+              "text": "Net View: Redesigned toolbar — The net toolbar now spans the full width of the page with labeled buttons instead of unlabeled icons packed into a narrow column. It switches to icon-only on narrower screens so nothing gets cut off.",
               "userImpact": true,
               "docs": "/docs/net-control/the-net-control-desk/#the-command-bar"
             }
@@ -2366,7 +2366,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Scheduled nets that are never opened now auto-archive 24 hours after their scheduled start time, keeping the Active Nets dashboard clean without requiring manual cleanup.",
+              "text": "Scheduled nets that are never opened now auto-archive 24 hours after their scheduled start time, keeping the Active Nets dashboard clean.",
               "userImpact": true,
               "docs": "/docs/net-managers/cancelling-and-archiving/"
             },
@@ -2400,7 +2400,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Profile: Callsign history — Changing your primary callsign now automatically preserves the old one so your check-in history and statistics follow you. Useful when upgrading your license class, requesting a vanity callsign, or moving to a new region.",
+              "text": "Profile: Callsign history — Changing your primary callsign now keeps the old one so your check-in history and statistics follow you. This helps when you upgrade your license class, get a vanity callsign, or move to a new region.",
               "userImpact": true
             }
           ]
@@ -2559,7 +2559,7 @@
           "type": "fix",
           "items": [
             {
-              "text": "Dashboard: Scheduled net cards now show the correct Next NCS — when a net is automatically created from a rotation schedule, the operator whose turn it is for that date is correctly identified and displayed, rather than showing the net manager or no one.",
+              "text": "Dashboard: Scheduled net cards now show the correct Next NCS — when a net is automatically created from a rotation schedule, the operator whose turn it is for that date is correctly identified and displayed, instead of the net manager or no one.",
               "userImpact": true
             }
           ]
@@ -2579,7 +2579,7 @@
               "docs": "/docs/operators/chat-and-polls/#chat-after-the-net-closes"
             },
             {
-              "text": "Net View: Presence dots on avatars — registered users now show a green dot when online and a gray dot when offline, so you can instantly tell who has a viewable profile versus a guest check-in.",
+              "text": "Net View: Presence dots on avatars — registered users now show a green dot when online and a gray dot when offline, to show who has a viewable profile versus a guest check-in.",
               "userImpact": true,
               "docs": "/docs/net-control/logging-check-ins/#whos-online"
             },
@@ -2667,11 +2667,11 @@
               "userImpact": true
             },
             {
-              "text": "Net Statistics & PDF Report: Check-in Activity chart shows the flow of the net — a smooth wave chart now highlights when stations were busiest and when traffic quieted, replacing the old cumulative line.",
+              "text": "Net Statistics & PDF Report: Check-in Activity chart shows the flow of the net — a wave chart now shows when stations were busiest and when traffic quieted, replacing the old cumulative line.",
               "userImpact": true
             },
             {
-              "text": "Net Statistics & PDF Report: Hover the status chart to see exact counts — mousing over a slice shows how many stations are in that status, not just the percentage.",
+              "text": "Net Statistics & PDF Report: Hover the status chart to see exact counts — mousing over a slice shows how many stations are in that status.",
               "userImpact": true
             }
           ]
@@ -2687,7 +2687,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Net Statistics: Charts now display side-by-side in a single row — the Check-in Status, Check-in Activity, and Check-ins by Frequency cards are arranged across one row so you can compare them at a glance without scrolling.",
+              "text": "Net Statistics: Charts now display side-by-side in a single row — the Check-in Status, Check-in Activity, and Check-ins by Frequency cards are arranged across one row to compare them without scrolling.",
               "userImpact": true
             },
             {
@@ -2722,7 +2722,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Net View: Floating windows remember scroll position after minimize — the Net Script and Announcements windows now restore to the exact position you were reading when you minimize and reopen them, so you don't lose your place mid-net.",
+              "text": "Net View: Floating windows remember scroll position after minimize — the Net Script and Announcements windows now restore to the position you were reading when you minimize and reopen them.",
               "userImpact": true
             },
             {
@@ -2731,7 +2731,7 @@
               "docs": "/docs/operators/chat-and-polls/#prior-topics"
             },
             {
-              "text": "Schedule: Template list now paginates at 25 per page — large schedule lists page through 25 at a time rather than rendering an unbounded scroll.",
+              "text": "Schedule: Template list now paginates at 25 per page — large schedule lists page through 25 at a time instead of one long scroll.",
               "userImpact": false
             },
             {
@@ -2761,11 +2761,11 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Net Reminders: Correct timing and no duplicates — reminder emails now arrive about one hour before a net in its own local time, instead of several hours early, and you receive a single reminder rather than a new one every 15 minutes. Reminders for nets that use a digital talkgroup also send reliably again.",
+              "text": "Net Reminders: Correct timing and no duplicates — reminder emails now arrive about one hour before a net in its own local time, instead of several hours early, and you receive a single reminder rather than a new one every 15 minutes. Reminders for nets that use a digital talkgroup send again.",
               "userImpact": true
             },
             {
-              "text": "Sign In: Friendlier expired-link screen — if a magic link has expired, the sign-in page now gives you a button to return and request a new one, and if you're already signed in on that device it simply confirms that instead of showing a verification error.",
+              "text": "Sign In: Friendlier expired-link screen — if a magic link has expired, the sign-in page now gives you a button to return and request a new one, and if you're already signed in on that device it confirms that instead of showing a verification error.",
               "userImpact": true
             },
             {
@@ -2808,7 +2808,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Changelog PDF: Styled layout — the PDF now matches the What's New email design with a color-coded header and labeled sections, making it easier to read and share.",
+              "text": "Changelog PDF: Styled layout — the PDF now matches the What's New email design with a color-coded header and labeled sections.",
               "userImpact": false
             },
             {
@@ -2816,7 +2816,7 @@
               "userImpact": true
             },
             {
-              "text": "Archived Nets: Filter to nets you participated in — two checkboxes in the Archived Nets dialog let you narrow the list to nets you personally attended or ran as NCS, so you can find your own history without scrolling through everything.",
+              "text": "Archived Nets: Filter to nets you participated in — two checkboxes in the Archived Nets dialog let you narrow the list to nets you personally attended or ran as NCS.",
               "userImpact": true,
               "docs": "/docs/operators/finding-a-net/#finding-a-net-that-already-happened"
             },
@@ -2918,7 +2918,7 @@
               "userImpact": true
             },
             {
-              "text": "The Activity Log panel now loads collapsed by default, freeing up screen space especially on mobile. It expands with one click and your preference is remembered for the rest of your session.",
+              "text": "The Activity Log panel now loads collapsed by default, freeing up screen space, especially on mobile. It expands with one click and your preference is remembered for the rest of your session.",
               "userImpact": true
             },
             {
@@ -2940,7 +2940,7 @@
               "userImpact": true
             },
             {
-              "text": "Profile photo uploads now include an in-browser crop and zoom step. After selecting a photo, a dialog lets you drag to position and scroll or pinch to zoom before uploading. Only the cropped square is sent to the server, so portrait, landscape, and oddly-framed photos always produce a clean avatar.",
+              "text": "Profile photo uploads now include an in-browser crop and zoom step. After selecting a photo, a dialog lets you drag to position and scroll or pinch to zoom before uploading. Only the cropped square is sent to the server, so portrait and landscape photos both produce a square avatar.",
               "userImpact": true,
               "docs": "/docs/operators/account-and-profile/#your-profile-photo"
             },
@@ -2971,7 +2971,7 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "NCS and subscriber reminder emails were firing several hours early and repeating every 15 minutes due to a timezone mismatch and deduplication bug. Fixed by using UTC consistently and storing the full scheduled datetime (not just the date) in the reminder log.",
+              "text": "NCS and subscriber reminder emails were firing several hours early and repeating every 15 minutes due to a timezone mismatch and deduplication bug. They now use UTC consistently and log the full scheduled date and time.",
               "importance": "critical",
               "userImpact": true
             }
@@ -2993,7 +2993,7 @@
               "docs": "/docs/net-managers/net-staff-and-rotation/#the-ncs-rotation-optional"
             },
             {
-              "text": "The up/down arrow buttons now reorder rows instantly without clearing or resizing the dialog. Changes are saved to the server in the background, and a red error toast appears if the sync fails.",
+              "text": "The up/down arrow buttons now reorder rows without clearing or resizing the dialog. Changes are saved to the server in the background, and a red error toast appears if the sync fails.",
               "userImpact": true
             },
             {
@@ -3093,7 +3093,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Raise Hand — Participants can now raise their hand during a net to signal they have comments or questions. Click the hand icon in your toolbar (next to check-out) to raise your hand — it lights up in orange so NCS can see it at a glance.",
+              "text": "Raise Hand — Participants can now raise their hand during a net to signal they have comments or questions. Click the hand icon in your toolbar (next to check-out) to raise your hand — it lights up in orange so NCS can see it.",
               "userImpact": true,
               "docs": "/docs/operators/status-and-checking-out/"
             },
@@ -3221,7 +3221,7 @@
               "userImpact": true
             },
             {
-              "text": "Profile now surfaces active GPS-derived live location and provides a one-click clear action, fixing cases where stale live location overrode the intended profile grid square during check-ins.",
+              "text": "Profile now shows an active GPS-derived live location with a one-click clear action, fixing cases where stale live location overrode the intended profile grid square during check-ins.",
               "importance": "medium",
               "userImpact": true
             }
@@ -3232,7 +3232,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Away check-ins now render with a distinct yellow highlight, and Mobile check-ins are automatically prioritized near the top of the list after NCS rows.",
+              "text": "Away check-ins now render with a yellow highlight, and Mobile check-ins are automatically prioritized near the top of the list after NCS rows.",
               "userImpact": true
             },
             {
@@ -3350,11 +3350,11 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Net Report maps now always display in light mode (OpenStreetMap tiles), ensuring the printed or exported PDF is always legible regardless of your dark-mode setting.",
+              "text": "Net Report maps now display in light mode (OpenStreetMap tiles), so the printed or exported PDF is legible in dark mode.",
               "userImpact": true
             },
             {
-              "text": "Net Report maps now show a 'Loading map...' spinner overlay while tiles are being fetched, so it's clear the map is loading rather than appearing blank.",
+              "text": "Net Report maps now show a 'Loading map...' spinner overlay while tiles are being fetched.",
               "userImpact": true
             }
           ]
@@ -3402,7 +3402,7 @@
               "userImpact": true
             },
             {
-              "text": "The Net Report and PDF export now label the check-in log with the event count, unique-station count, and re-check count for easy reference.",
+              "text": "The Net Report and PDF export now label the check-in log with the event count, unique-station count, and re-check count.",
               "userImpact": true
             }
           ]
@@ -3438,7 +3438,7 @@
               "userImpact": true
             },
             {
-              "text": "The map in exported Net Report PDFs now always uses light tiles, regardless of whether you're in dark mode.",
+              "text": "The map in exported Net Report PDFs now uses light tiles in dark mode too.",
               "userImpact": true
             },
             {
@@ -3502,7 +3502,7 @@
               "docs": "/docs/net-managers/cancelling-and-archiving/#deleting"
             },
             {
-              "text": "The delete confirmation dialog now spells out exactly what will be lost (check-ins, chat, reports) and offers an Archive Instead button when the net is closed. Buttons are color-coded: blue Cancel, yellow Archive, red Delete Permanently.",
+              "text": "The delete confirmation dialog now spells out what will be lost (check-ins, chat, reports) and offers an Archive Instead button when the net is closed. Buttons are color-coded: blue Cancel, yellow Archive, red Delete Permanently.",
               "userImpact": true
             },
             {
@@ -3532,7 +3532,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Save edits back to the schedule — The Edit Net page now has two save buttons: 'Save for this Net' (only affects the current net) and 'Save to Schedule' (pushes your edits back to the parent schedule so future nets inherit the new values). A confirmation dialog lists exactly what will be overwritten.",
+              "text": "Save edits back to the schedule — The Edit Net page now has two save buttons: 'Save for this Net' (only affects the current net) and 'Save to Schedule' (pushes your edits back to the parent schedule so future nets inherit the new values). A confirmation dialog lists what will be overwritten.",
               "userImpact": true
             },
             {
@@ -3665,7 +3665,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Status dropdowns on the check-in list now show a text label next to each emoji icon (e.g., 👂 Listening only, 📢 Announcements) so new NCS users don't have to memorize the icon legend.",
+              "text": "Status dropdowns on the check-in list now show a text label next to each emoji icon (e.g., 👂 Listening only, 📢 Announcements).",
               "userImpact": true
             },
             {
@@ -3673,7 +3673,7 @@
               "userImpact": true
             },
             {
-              "text": "Mobile 'New Check-in' form is now collapsible and starts collapsed — attendees of nets they aren't logging no longer have to scroll past a tall form.",
+              "text": "Mobile 'New Check-in' form is now collapsible and starts collapsed, so attendees of nets they aren't logging don't scroll past a tall form.",
               "userImpact": true
             }
           ]
@@ -3699,7 +3699,7 @@
               "docs": "/docs/net-managers/schedule-statistics/#net-history"
             },
             {
-              "text": "Export to PDF button on schedule statistics for a one-click performance report.",
+              "text": "Export to PDF button on schedule statistics for a performance report.",
               "userImpact": true,
               "docs": "/docs/net-managers/schedule-statistics/#the-schedule-report"
             },
@@ -3908,7 +3908,7 @@
               "userImpact": true
             },
             {
-              "text": "Check-in Pace chart on the Net Statistics page — shows cumulative arrivals over time so you can see at a glance whether stations checked in quickly or trickled in throughout the net.",
+              "text": "Check-in Pace chart on the Net Statistics page — shows cumulative arrivals over time, so you can see whether stations checked in quickly or trickled in.",
               "userImpact": true
             }
           ]
@@ -3970,7 +3970,7 @@
               "userImpact": true
             },
             {
-              "text": "Consistent Action Button Colors — All buttons now use consistent colors throughout the UI (blue for view/search, purple for people/staff, orange for stats, green for exports, teal for ICS-309, red for delete/close) making them easier to find.",
+              "text": "Consistent Action Button Colors — All buttons now use consistent colors throughout the UI (blue for view/search, purple for people/staff, orange for stats, green for exports, teal for ICS-309, red for delete/close).",
               "userImpact": true
             }
           ]

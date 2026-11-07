@@ -4,7 +4,7 @@ summary: Setting the backup passphrase, the schedule, and off-site copies, and c
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-09-29
+revised: 2026-11-07
 review_by: 2027-09-28
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/backups/
@@ -25,9 +25,9 @@ Nothing is backed up until there is a passphrase, because every backup is encryp
 3. Enter a passphrase of at least 12 characters twice, and click **Save**.
 4. Write the passphrase down somewhere other than this server, such as a password manager.
 
-The server keeps no copy of the passphrase. That is deliberate: someone who broke into the server could otherwise decrypt every backup already sent off-site. It also means **a lost passphrase cannot be recovered by anyone**, and backups made with it can no longer be opened.
+The server keeps no copy of the passphrase, so someone who broke into the server can't decrypt backups already sent off-site. **A lost passphrase cannot be recovered by anyone**, and backups made with it can no longer be opened.
 
-**Key file** downloads the small file that holds the encryption key, itself locked by the passphrase. A copy of it is already saved beside every backup, so you only need your own copy if you keep backups somewhere the app doesn't put them.
+**Key file** downloads the small file that holds the encryption key, itself locked by the passphrase. A copy of it is already saved beside every backup, so you only need your own copy if you keep backups somewhere else.
 
 <figure>
   <img src="/docs/img/admins/backups-status-and-key.png"
@@ -48,13 +48,13 @@ The server keeps no copy of the passphrase. That is deliberate: someone who brok
   <figcaption>Nothing changes until Save schedule is clicked. The time is in the time zone chosen here, not the server's.</figcaption>
 </figure>
 
-The first backup runs within about 15 minutes of turning the schedule on, so you find out straight away if something is wrong. After that it follows the schedule.
+The first backup runs within about 15 minutes of turning the schedule on. After that it follows the schedule.
 
-**Back up now**, at the top of the tab, makes one immediately, whatever the schedule says. It works even with the schedule off.
+**Back up now**, at the top of the tab, makes one immediately, even with the schedule off.
 
 ## Add an off-site copy
 
-A backup that lives only on the server is lost with the server. An off-site target gets a copy of every backup, already encrypted, so whoever runs that storage never sees your data.
+A backup that lives only on the server is lost with the server. An off-site target gets a copy of every backup, already encrypted, so whoever runs that storage can't read it.
 
 1. In **Off-site copies**, click **Add target**.
 2. Choose the type: **SFTP server**, or **S3-compatible storage** (Backblaze B2, Wasabi, AWS, MinIO, and others).
@@ -85,7 +85,7 @@ Each target has two switches:
 
 ## Check that a backup works
 
-A backup that has never been opened is a hope, not a backup. To check one:
+To check a backup:
 
 1. In **Recent backups**, click the **Check this backup** icon on its row.
 2. Enter the backup passphrase and click **Check**.
@@ -96,9 +96,9 @@ A backup that has never been opened is a hope, not a backup. To check one:
   <figcaption>A backup that has been checked shows a check mark. "Off-site copy failed" means the backup was made and kept here, but did not reach a target.</figcaption>
 </figure>
 
-The server decrypts the backup and compares every file against the checksum recorded when it was made, then checks the database for damage. It also confirms that the configuration saved in the backup can still unlock everyone's two-factor sign-in. A restore that got that wrong would bring every net back but lock every admin out. Nothing is changed. When it passes, the dialog shows how many users, nets, check-ins, and uploaded files the backup holds, so you can see it is the instance you expect.
+The server decrypts the backup and compares every file against the checksum recorded when it was made, then checks the database for damage. It also confirms that the configuration saved in the backup can still unlock everyone's two-factor sign-in. A restore that got that wrong would bring every net back but lock every admin out. Nothing is changed. When it passes, the dialog shows how many users, nets, check-ins, and uploaded files the backup holds.
 
-A row that passed shows a check-mark icon; hover over it to see when, and the same report. Doing this once after setting up, and again after changing the passphrase, proves you have the right passphrase before you ever need it.
+A row that passed shows a check-mark icon; hover over it to see when, and the same report. Check one after setting up and again after changing the passphrase, to confirm you have the right passphrase.
 
 ## Download a backup
 
@@ -113,17 +113,17 @@ With **Email administrators when a backup fails** on (the default), every admin 
 
 - a backup fails, with the reason;
 - a backup was made but an off-site copy did not arrive, naming the target;
-- no backup has succeeded for one and a half schedule periods (36 hours on a daily schedule). This one is sent once, and not again until a backup succeeds, and it catches the case where nothing is running backups at all.
+- no backup has succeeded for one and a half schedule periods (36 hours on a daily schedule). This one is sent once, and not again until a backup succeeds. It catches the case where nothing is running backups at all.
 
 The top of the tab shows the same thing: when the last good backup was, and a warning if the server's scheduler has stopped checking in.
 
 ## Things that surprise people
 
-**Change passphrase keeps every backup readable.** The key stays the same and only the passphrase that unlocks it changes, so old backups open with the new passphrase. You need the current passphrase to change it.
+**Change passphrase keeps every backup readable.** The key stays the same; only the passphrase that unlocks it changes, so old backups open with the new passphrase. You need the current passphrase to change it.
 
 **Replace key starts over.** Use it only when the old passphrase is lost or exposed. Backups made after it use a new key; backups made before it still need the old passphrase. Both key files stay beside the backups.
 
-**The newest backup is never deleted**, whatever the retention counts say.
+**The newest backup is never deleted**, whatever the retention counts are.
 
 **The backup folder is set on the server, not here.** The tab shows where it is. An admin session cannot point backups at another folder.
 

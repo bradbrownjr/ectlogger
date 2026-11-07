@@ -1,6 +1,6 @@
 ---
 title: fail2ban
-summary: Banning the addresses that keep trying: the filters, the jail, and how to verify it is actually catching anything.
+summary: Banning the addresses that keep trying: the filters, the jail, and how to verify it is catching anything.
 kind: How-to
 audience: Server operators
 owner: KC1JMH
