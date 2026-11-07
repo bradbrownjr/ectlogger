@@ -1,10 +1,10 @@
 ---
 title: Finding a net
-summary: The dashboard, what each net status means, the Schedule page's calendar, and how to find one that hasn't started yet or already finished.
+summary: The dashboard, what each net status means, a schedule's own page, the Schedule page's calendar, and how to find one that hasn't started yet or already finished.
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-10-30
+revised: 2026-11-07
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/finding-a-net/
@@ -40,7 +40,7 @@ Open any Active or Lobby net and, if you're signed in and haven't checked in yet
 
 ## Learning about a net
 
-Click **Net info** on the net's toolbar for a card about the net: its logo and description, when it runs, its frequencies, its manager, NCS and staff, and links to its website, its schedule's subscribe page, and, once it has closed, its report and statistics. Click a callsign on the card to see that operator's profile. Net info is there before, during and after the net, whether or not you're signed in.
+Click **Net info** on the net's toolbar for a card about the net: its logo and description, when it runs, its frequencies, its manager, NCS and staff, and links to its website, its schedule's page, its subscribe link, and, once it has closed, its report and statistics. Click a callsign on the card to see that operator's profile. Net info is there before, during and after the net, whether or not you're signed in.
 
 ## Sharing a net with someone who has no account
 
@@ -82,11 +82,11 @@ When a net's schedule has standing announcements (club news, upcoming exam sessi
 
 Once you're signed in, a net card from a schedule has a **Subscribe** button. It subscribes you to the schedule, not just tonight's net, so you hear about every net it runs. The button turns into **Unsubscribe** once you're subscribed, and it's the same subscription as the one on the Schedule page, so you can change it from either place. Which emails you actually get (the net starting, the net closing with its log, a reminder beforehand) is up to your [profile's notification settings](/docs/operators/account-and-profile/).
 
-A net manager may also send you a **subscribe link**. It opens a page for that one net, so there's no need to hunt for it on the Schedule page. Click **Subscribe**, or **Sign in to subscribe** if you aren't signed in yet; signing in brings you back to the same page to finish. It's the same subscription as the button on the card, and the page offers **Unsubscribe** if you open the link again later.
+A net manager may also send you a **subscribe link**. It opens the [schedule's own page](#a-schedules-own-page) with its **Subscribe** button outlined, so there's no need to hunt for the net on the Schedule page. Click **Subscribe**, or **Sign in to subscribe** if you aren't signed in yet; signing in brings you back to the same page to finish. It's the same subscription as the button on the card, and the page offers **Unsubscribe** if you open the link again later.
 
 <figure>
   <img src="/docs/img/operators/subscribe-page.png"
-       alt="The page a subscribe link opens, for a visitor who is not signed in: the net's name, description, when it runs, and its frequencies, with the Sign in to subscribe button outlined in red.">
+       alt="The top of a schedule's page, for a visitor who is not signed in: the net's name, description, when it runs, its frequencies, and its Stats button, with the Sign in to subscribe button outlined in red.">
   <figcaption>The page names the net before asking for anything, so you know what you're subscribing to.</figcaption>
 </figure>
 
@@ -95,6 +95,18 @@ A net manager may also send you a **subscribe link**. It opens a page for that o
 Many nets aren't one-off events. They run weekly, monthly, or on some other recurrence. Recurring nets are set up as a **schedule** (the [net managers](/docs/net-managers/) path covers creating one). You don't need any special access to look at `/scheduler` and see what schedules exist and roughly when they next run; once ECTLogger auto-creates the next occurrence, it shows up on the dashboard the same as any other Scheduled net.
 
 In the card and list views, schedules you've starred come first under **Favorites**. The rest are split the way the calendar splits them: schedules with a regular time under **Scheduled nets**, then ones started on demand under **Ad-hoc nets**.
+
+## A schedule's own page
+
+Every schedule has a page of its own. Click a schedule's name on the Schedule page to open it, or **Schedule** on a net's **Net info** card. Your club may also link to it from its own website, since its address never changes. You don't need to sign in to read it. From top to bottom it shows:
+
+- **The net's details** - its description, when it runs, its frequencies, a link to its website, its **Stats**, and **Subscribe**.
+- **On the air** - the net from this schedule that's running now, or one that has been created and hasn't started yet. Click it to open the net. If nothing is running, the page says so.
+- **Upcoming** - the next few dates, with who is on NCS when the schedule has a rotation. A schedule that only runs when it's called up, like a SKYWARN activation, has no dates and skips this part.
+- **Net staff** - the net manager and the operators who run the net. **Staff** opens the full list and the rotation.
+- **Past nets** - the latest ten, each opening its report. **All past nets and statistics** opens the schedule's statistics.
+
+Your club's website may instead have a **live net** link. It opens the net that's on the air right now, and the schedule's page when none is, or when more than one is running at once.
 
 ## Seeing the month on a calendar
 

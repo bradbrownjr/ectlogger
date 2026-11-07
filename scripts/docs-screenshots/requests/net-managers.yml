@@ -328,6 +328,34 @@ shots:
       icons on the top three rows.
     caption: Each leaderboard is its own ranking; a station can lead Check-ins without ever running the net as NCS.
 
+  - id: schedule-page-links
+    section: net-managers
+    page: /docs/net-managers/net-staff-and-rotation/
+    route: /scheduler/{{template:weekly}}
+    as: W1PINE
+    wait_for: 'input[value$="/live"]'
+    steps:
+      # Show the hosted site's address, as in subscribe-link below
+      - evaluate: >
+          document.querySelectorAll('input[readonly]').forEach((el) => {
+            if (el.value.includes('/scheduler/')) {
+              el.value = 'https://app.ectlogger.us' + el.value.slice(el.value.indexOf('/scheduler/'));
+            }
+          })
+    element: 'main .MuiPaper-root:has(h2:has-text("On the air"))'
+    pad: 16
+    annotate:
+      - selector: 'div:has(> .MuiTextField-root input[value$="/live"]) > button'
+        style: box
+    alt: >
+      The On the air section of a schedule's page, seen by its manager: the
+      net running now with its NCS, check-in count and an On the air chip, a
+      Create another net button, and two links to copy, This page and Live
+      net, with the Live net link's Copy link button outlined in red.
+    caption: >
+      The Live net link opens whichever net is on the air, so one link on
+      your website always works.
+
   - id: subscribe-link
     section: net-managers
     page: /docs/net-managers/net-staff-and-rotation/

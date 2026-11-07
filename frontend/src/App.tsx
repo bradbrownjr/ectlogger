@@ -27,7 +27,9 @@ import DrillPlanPage from './pages/DrillPlan';
 import Ics214Page from './pages/Ics214';
 import ScheduleStatistics from './pages/ScheduleStatistics';
 import Unsubscribe from './pages/Unsubscribe';
-import SubscribeToSchedule from './pages/SubscribeToSchedule';
+import ScheduleHome from './pages/ScheduleHome';
+import ScheduleLiveRedirect from './pages/ScheduleLiveRedirect';
+import { scheduleSubscribeTarget } from './utils/scheduleLinks';
 import Traffic from './pages/Traffic';
 import Navbar from './components/Navbar';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
@@ -162,6 +164,13 @@ const NetInfoRedirect: React.FC = () => {
   return <Navigate to={`/nets/${netId}?info=1`} replace />;
 };
 
+// The subscribe link staff share. The separate subscribe page became the
+// schedule home page (2026-11-07); the link opens it with Subscribe highlighted.
+const SubscribeRedirect: React.FC = () => {
+  const { scheduleId } = useParams();
+  return <Navigate to={scheduleSubscribeTarget(scheduleId || '')} replace />;
+};
+
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
@@ -194,8 +203,8 @@ const AppRoutes: React.FC = () => {
           <Route path="/auth/verify" element={<VerifyMagicLink />} />
           <Route path="/auth/confirm-email" element={<ConfirmEmailChange />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
-          {/* A schedule's shared subscribe link. Public: signed-out visitors land here. */}
-          <Route path="/subscribe/:scheduleId" element={<SubscribeToSchedule />} />
+          {/* A schedule's shared subscribe link. Public: opens the schedule home page. */}
+          <Route path="/subscribe/:scheduleId" element={<SubscribeRedirect />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route
             path="/nets/create"
@@ -273,6 +282,9 @@ const AppRoutes: React.FC = () => {
               </PrivateRoute>
             }
           />
+          {/* Schedule home page and its live-net link. Public, for a club's own website. */}
+          <Route path="/scheduler/:scheduleId" element={<ScheduleHome />} />
+          <Route path="/scheduler/:scheduleId/live" element={<ScheduleLiveRedirect />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/statistics/nets/:netId" element={<NetStatistics />} />
           <Route path="/statistics/schedules/:templateId" element={<ScheduleStatistics />} />

@@ -117,6 +117,25 @@ async def test_list_nets_template_schedule_type_matches_get_net(client, db, owne
     assert nets[0]["template_schedule_type"] == "weekly"
 
 
+
+@pytest.mark.asyncio
+async def test_list_nets_template_id_filter(client, db, owner):
+    """The schedule home page asks for one schedule's nets, signed out too."""
+    template = await _make_template(db, owner.id, schedule_type="ad_hoc")
+    other_template = await _make_template(db, owner.id, schedule_type="ad_hoc")
+    created = await client.post(f"/api/templates/{template.id}/create-net", headers=auth_headers(owner))
+    await client.post(f"/api/templates/{other_template.id}/create-net", headers=auth_headers(owner))
+    await client.post("/api/nets/", json={"name": "Ad hoc"}, headers=auth_headers(owner))
+    net_id = created.json()["id"]
+
+    resp = await client.get("/api/nets/", params={"template_id": template.id})
+    assert resp.status_code == 200
+    assert [n["id"] for n in resp.json()] == [net_id]
+
+    # Combined with a status filter: a draft is not on the air
+    resp = await client.get("/api/nets/", params=[("template_id", template.id), ("status", "lobby"), ("status", "active")])
+    assert resp.json() == []
+
 # ---------------------------------------------------------------------------
 # is_owner_or_ncs — reported bug: an admin using the frontend's "View as
 # Regular User" simulation could still create/edit a net or schedule they

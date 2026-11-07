@@ -531,17 +531,18 @@ shots:
   - id: subscribe-page
     section: operators
     page: /docs/operators/finding-a-net/
-    route: /subscribe/{{template:weekly}}
+    route: /scheduler/{{template:weekly}}
     wait_for: 'button:has-text("Sign in to subscribe")'
+    # The page's first section: the schedule's details and Subscribe
     element: 'main .MuiPaper-root'
     pad: 16
     annotate:
       - selector: 'button:has-text("Sign in to subscribe")'
         style: box
     alt: >
-      The page a subscribe link opens, for a visitor who is not signed in:
-      the net's name, description, when it runs, and its frequencies, with
-      the Sign in to subscribe button outlined in red.
+      The top of a schedule's page, for a visitor who is not signed in: the
+      net's name, description, when it runs, its frequencies, and its Stats
+      button, with the Sign in to subscribe button outlined in red.
     caption: >
       The page names the net before asking for anything, so you know what
       you're subscribing to.

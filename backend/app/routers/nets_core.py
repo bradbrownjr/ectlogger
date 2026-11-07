@@ -142,13 +142,15 @@ def _actions_for(access):
 async def list_nets(
     status: Optional[List[NetStatus]] = Query(None),
     include_archived: bool = False,
+    template_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """List nets with optional status filter (repeatable, e.g. ?status=archived&status=cancelled),
-    excludes archived/cancelled by default (no auth required for guest access)"""
+    excludes archived/cancelled by default (no auth required for guest access).
+    ?template_id= narrows it to one schedule's nets (the schedule home page)."""
     query = select(Net).options(
         selectinload(Net.frequencies),
         selectinload(Net.owner),
@@ -161,7 +163,9 @@ async def list_nets(
         # Exclude archived and cancelled nets by default - both are terminal
         # "not on the active dashboard" states, findable instead via Archived Nets.
         query = query.where(Net.status.notin_([NetStatus.ARCHIVED, NetStatus.CANCELLED]))
-    
+    if template_id is not None:
+        query = query.where(Net.template_id == template_id)
+
     query = query.offset(skip).limit(limit).order_by(Net.created_at.desc())
     
     result = await db.execute(query)

@@ -91,7 +91,7 @@ interface NCSStaffScheduleTabProps {
 // shared fetchData/setError, since a successful swap needs to refresh
 // scheduleEntries (owned by the parent, shared with the Rotation tab).
 
-const formatDate = (dateStr: string) => {
+export const formatScheduleEntryDate = (dateStr: string) => {
   const date = new Date(dateStr);
   return date.toLocaleDateString(undefined, {
     weekday: 'short',
@@ -199,7 +199,7 @@ const NCSStaffScheduleTab: React.FC<NCSStaffScheduleTabProps> = ({
             <TableBody>
               {scheduleEntries.slice(0, 12).map((entry: ScheduleEntry, idx: number) => (
                 <TableRow key={idx}>
-                  <TableCell>{formatDate(entry.date)}</TableCell>
+                  <TableCell>{formatScheduleEntryDate(entry.date)}</TableCell>
                   <TableCell>
                     {entry.is_cancelled ? (
                       <Chip icon={<BlockIcon />} label="Cancelled" size="small" color="default" />
@@ -252,7 +252,7 @@ const NCSStaffScheduleTab: React.FC<NCSStaffScheduleTabProps> = ({
           <Typography variant="body2" sx={{ mb: 2 }}>
             {selectedEntry && (
               <>
-                <strong>Date:</strong> {formatDate(selectedEntry.date)}<br />
+                <strong>Date:</strong> {formatScheduleEntryDate(selectedEntry.date)}<br />
                 <strong>Current NCS:</strong> {selectedEntry.user_callsign || 'TBD'}
               </>
             )}
