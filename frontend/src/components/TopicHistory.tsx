@@ -25,7 +25,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
-import api from '../services/api';
+import api, { netApi } from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
 
 const PAGE_SIZE = 25;
@@ -45,6 +45,18 @@ interface TopicHistoryProps {
   // Only staff (owner/admin/NCS/co-manager) may add historical topic
   // entries — everyone else gets a read-only list.
   canManage: boolean;
+  // The net the dialog was opened from. Its current topic is shown at the
+  // top, so a stale question (one inherited from the schedule) is obvious,
+  // and whoever may edit the net can set it here: this is where net control
+  // goes looking for it (Brad, 2026-11-08, after KC1UIX couldn't find where
+  // to change the ME Dirigo Net's question).
+  netId: number;
+  netTopicEnabled: boolean;
+  netTopic: string | null | undefined;
+  // permissions.may_edit_net (net manager or active NCS), the rule the
+  // server applies to PUT /nets/{id}.
+  canSetNetTopic: boolean;
+  onNetTopicSaved: () => void;
 }
 
 const TopicHistory: React.FC<TopicHistoryProps> = ({
@@ -53,6 +65,11 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
   templateId,
   templateName,
   canManage,
+  netId,
+  netTopicEnabled,
+  netTopic,
+  canSetNetTopic,
+  onNetTopicSaved,
 }) => {
   const [topics, setTopics] = useState<TopicHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,6 +83,8 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTopic, setEditTopic] = useState('');
   const [editDate, setEditDate] = useState('');
+  const [showNetTopicForm, setShowNetTopicForm] = useState(false);
+  const [netTopicDraft, setNetTopicDraft] = useState('');
 
   useEffect(() => {
     if (open && templateId) {
@@ -113,6 +132,32 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
       await loadTopicHistory();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to add topic'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ---- This net's topic ----
+  // Saved on the net itself (PUT /nets/{id}), which also records it in the
+  // schedule's topic history, so the list below picks it up on reload.
+  const handleToggleNetTopicForm = () => {
+    if (!showNetTopicForm) {
+      setNetTopicDraft(netTopic || '');
+      setShowAddForm(false);
+    }
+    setShowNetTopicForm(!showNetTopicForm);
+  };
+
+  const handleSaveNetTopic = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await netApi.update(netId, { topic_of_week_prompt: netTopicDraft.trim() || null });
+      setShowNetTopicForm(false);
+      onNetTopicSaved();
+      await loadTopicHistory();
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Failed to save the topic'));
     } finally {
       setSaving(false);
     }
@@ -168,28 +213,93 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      {/* ========== HEADER: TITLE + STAFF BUTTONS ==========
+          Buttons sit below the title on phones (the title wrapped to a
+          narrow column beside them) and beside it from sm up. */}
       <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'stretch', sm: 'center' },
+            justifyContent: 'space-between',
+            gap: 1.5,
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <HistoryIcon />
             <Typography variant="h6">Prior Topics — {templateName}</Typography>
           </Box>
-          {/* Adding historical entries is a staff action — regular
-              participants only get the read-only list below. */}
-          {canManage && (
-            <Button
-              startIcon={<AddIcon />}
-              size="small"
-              onClick={() => setShowAddForm(!showAddForm)}
-              variant={showAddForm ? 'contained' : 'outlined'}
-            >
-              Add Historical Topic
-            </Button>
+          {(canSetNetTopic || canManage) && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, flexShrink: 0 }}>
+              {/* Shows for net managers and active NCS (may_edit_net) */}
+              {canSetNetTopic && (
+                <Button
+                  startIcon={<EditIcon />}
+                  size="small"
+                  onClick={handleToggleNetTopicForm}
+                  variant={showNetTopicForm ? 'contained' : 'outlined'}
+                >
+                  Set This Net's Topic
+                </Button>
+              )}
+              {/* Adding historical entries is a staff action — regular
+                  participants only get the read-only list below. */}
+              {canManage && (
+                <Button
+                  startIcon={<AddIcon />}
+                  size="small"
+                  onClick={() => { setShowAddForm(!showAddForm); setShowNetTopicForm(false); }}
+                  variant={showAddForm ? 'contained' : 'outlined'}
+                >
+                  Add Historical Topic
+                </Button>
+              )}
+            </Box>
           )}
         </Box>
       </DialogTitle>
 
       <DialogContent dividers>
+        {/* ========== THIS NET'S TOPIC ==========
+            Shown to everyone when the net has Topic of the Week on, so anyone
+            can see which question tonight's net is asking; the form is for
+            may_edit_net only. */}
+        {netTopicEnabled && (
+        <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+          <Typography variant="subtitle2" color="text.secondary">
+            This net's topic
+          </Typography>
+          {showNetTopicForm && canSetNetTopic ? (
+            <>
+              <TextField
+                fullWidth
+                label="Topic"
+                value={netTopicDraft}
+                onChange={(e) => setNetTopicDraft(e.target.value)}
+                placeholder="What was your favorite radio moment this year?"
+                sx={{ mt: 1, mb: 2 }}
+                multiline
+                minRows={2}
+                autoFocus
+              />
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button onClick={handleSaveNetTopic} disabled={saving} variant="contained" size="small">
+                  {saving ? 'Saving...' : 'Save'}
+                </Button>
+                <Button onClick={() => setShowNetTopicForm(false)} size="small">
+                  Cancel
+                </Button>
+              </Box>
+            </>
+          ) : (
+            <Typography variant="body1" color={netTopic ? 'text.primary' : 'text.secondary'} sx={{ mt: 0.5 }}>
+              {netTopic || 'Not set'}
+            </Typography>
+          )}
+        </Box>
+        )}
+
         {/* ========== ADD FORM (staff only) ========== */}
         <Collapse in={canManage && showAddForm}>
           <Box sx={{ mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>

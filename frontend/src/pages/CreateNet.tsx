@@ -354,7 +354,6 @@ const CreateNet: React.FC = () => {
     auto_lobby_minutes: autoLobbyEnabled ? autoLobbyMinutes : null,
     auto_close_after_minutes: autoCloseEnabled ? autoCloseAfterMinutes : null,
     topic_of_week_enabled: topicOfWeekEnabled,
-    topic_of_week_prompt: topicOfWeekPrompt || null,
     poll_enabled: pollEnabled,
     poll_question: pollQuestion || null,
   });
@@ -368,10 +367,16 @@ const CreateNet: React.FC = () => {
     await coverageSiteApi.saveSites(id, payload);
   };
 
-  // The net's own settings: the shared ones plus its one-night Notes and start time.
+  // The net's own settings: the shared ones plus its one-night Notes, start
+  // time and topic. The topic of the week is this occurrence's question, so
+  // Save to Schedule never sends it: until 2026-11-08 it did, the schedule's
+  // default became that night's question, and every later net started with
+  // last week's topic (ME Dirigo Net, net 157). A schedule's standing
+  // default is set in the schedule's own editor.
   const buildNetPayload = () => ({
     ...buildSharedSettings(),
     announcements,
+    topic_of_week_prompt: topicOfWeekPrompt || null,
     scheduled_start_time: scheduledStartTime ? new Date(scheduledStartTime).toISOString() : null,
   });
 
@@ -717,8 +722,8 @@ const CreateNet: React.FC = () => {
                 <li>ICS-309, Topic of the Week, and Poll settings</li>
               </ul>
               Future nets opened from this schedule will inherit these values.
-              Net staff/rotation are managed separately from the Net Staff dialog
-              and aren't changed here.
+              This net's topic stays on this net. Net staff/rotation are managed
+              separately from the Net Staff dialog and aren't changed here.
             </DialogContentText>
           </DialogContent>
           <DialogActions>

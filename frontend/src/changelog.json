@@ -1,8 +1,8 @@
 {
-  "version": "2026.11.08",
+  "version": "2026.11.08b",
   "entries": [
     {
-      "version": "2026.11.08",
+      "version": "2026.11.08b",
       "date": "2026-11-08",
       "sections": [
         {
@@ -13,6 +13,26 @@
               "text": "Net View: Subscribe when a net closes — When a net you're watching closes, the notice now offers to subscribe you to its schedule, so you get an email when it next starts. If you aren't signed in, it takes you to sign in and brings you back to subscribe.",
               "userImpact": true,
               "docs": "/docs/operators/finding-a-net/#getting-emails-about-a-net"
+            },
+            {
+              "text": "Net View: Set this net's topic from Topics — Topics now shows the net's current topic of the week, and net control can change it there. On a phone, the dialog's buttons sit below its title.",
+              "userImpact": true,
+              "docs": "/docs/operators/chat-and-polls/#prior-topics"
+            },
+            {
+              "text": "Check-in: New check-ins flash — Every new check-in now flashes its row gold when it arrives, including ones net control types in, so you can see where it landed.",
+              "userImpact": true,
+              "docs": "/docs/net-control/logging-check-ins/#spotting-new-check-ins"
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net View: Last week's topic carried forward — Save to Schedule copied that night's topic of the week onto the schedule, so the next net started with last week's question. It now saves the topic to that net only.",
+              "docs": "/docs/net-managers/creating-a-net/#saving"
             }
           ]
         }
@@ -1274,7 +1294,7 @@
             {
               "text": "Check-in: Sneak-in arrival arrow now clears — the off-screen arrival arrow could get stuck on screen, scroll away from the edge it was supposed to stay pinned to, and didn't respond to clicks. It now disappears once you've seen the new check-in, stays pinned to the table's visible edge while you scroll, and clicking it jumps you straight to the row, pointing up or down toward it.",
               "userImpact": true,
-              "docs": "/docs/net-control/logging-check-ins/#spotting-stations-who-check-themselves-in"
+              "docs": "/docs/net-control/logging-check-ins/#spotting-new-check-ins"
             },
             {
               "text": "Profile & Check-in: Name field also catches links — the warning that flags an email address in the Name field now also catches web links, so a URL doesn't end up shown on the public check-in list either.",
@@ -1295,7 +1315,7 @@
             {
               "text": "Check-in: Sneak-in arrival alert — when a station checks itself in without NCS or Logger typing it in, its row briefly flashes gold so you notice the new arrival when you're running the net mostly by voice. If it lands below what you're currently viewing, a small arrow fades in at the bottom of the table to point you there.",
               "userImpact": true,
-              "docs": "/docs/net-control/logging-check-ins/#spotting-stations-who-check-themselves-in"
+              "docs": "/docs/net-control/logging-check-ins/#spotting-new-check-ins"
             },
             {
               "text": "Net View: Just Listening button — Mark yourself as monitoring only with one click from the toolbar, instead of typing \"just listening\" into the Topic of the Week answer or check-in notes.",

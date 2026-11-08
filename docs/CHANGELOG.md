@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-08
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -21,6 +21,12 @@ All notable changes to ECTLogger are documented here.
 ## Improvements
 
 * **Net View: Subscribe when a net closes** — When a net you're watching closes, the notice now offers to subscribe you to its schedule, so you get an email when it next starts. If you aren't signed in, it takes you to sign in and brings you back to subscribe.
+* **Net View: Set this net's topic from Topics** — Topics now shows the net's current topic of the week, and net control can change it there. On a phone, the dialog's buttons sit below its title. [Learn more](/docs/operators/chat-and-polls/#prior-topics)
+* **Check-in: New check-ins flash** — Every new check-in now flashes its row gold when it arrives, including ones net control types in, so you can see where it landed. [Learn more](/docs/net-control/logging-check-ins/#spotting-new-check-ins)
+
+## Bug Fixes
+
+* **Net View: Last week's topic carried forward** — Save to Schedule copied that night's topic of the week onto the schedule, so the next net started with last week's question. It now saves the topic to that net only. [Learn more](/docs/net-managers/creating-a-net/#saving)
 
 ---
 
@@ -522,7 +528,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
-* **Check-in: Sneak-in arrival arrow now clears** — The off-screen arrival arrow could get stuck on screen, scroll away from the edge it was supposed to stay pinned to, and didn't respond to clicks. It now disappears once you've seen the new check-in, stays pinned to the table's visible edge while you scroll, and clicking it jumps you straight to the row, pointing up or down toward it. [Learn more](/docs/net-control/logging-check-ins/#spotting-stations-who-check-themselves-in)
+* **Check-in: Sneak-in arrival arrow now clears** — The off-screen arrival arrow could get stuck on screen, scroll away from the edge it was supposed to stay pinned to, and didn't respond to clicks. It now disappears once you've seen the new check-in, stays pinned to the table's visible edge while you scroll, and clicking it jumps you straight to the row, pointing up or down toward it. [Learn more](/docs/net-control/logging-check-ins/#spotting-new-check-ins)
 * **Profile & Check-in: Name field also catches links** — The warning that flags an email address in the Name field now also catches web links, so a URL doesn't end up shown on the public check-in list either.
 
 ---
@@ -531,7 +537,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Check-in: Sneak-in arrival alert** — When a station checks itself in without NCS or Logger typing it in, its row briefly flashes gold so you notice the new arrival when you're running the net mostly by voice. If it lands below what you're currently viewing, a small arrow fades in at the bottom of the table to point you there. [Learn more](/docs/net-control/logging-check-ins/#spotting-stations-who-check-themselves-in)
+* **Check-in: Sneak-in arrival alert** — When a station checks itself in without NCS or Logger typing it in, its row briefly flashes gold so you notice the new arrival when you're running the net mostly by voice. If it lands below what you're currently viewing, a small arrow fades in at the bottom of the table to point you there. [Learn more](/docs/net-control/logging-check-ins/#spotting-new-check-ins)
 * **Net View: Just Listening button** — Mark yourself as monitoring only with one click from the toolbar, instead of typing "just listening" into the Topic of the Week answer or check-in notes. [Learn more](/docs/operators/status-and-checking-out/)
 * **Chat: Edit, @mention, and reply** — Fix a typo or a wrong frequency by editing your own message in place (marked "(edited)"), tag a station with @callsign so the message flashes on their screen instead of scrolling past, and quote a message to reply to it, which tags the original sender the same way. [Learn more](/docs/operators/chat-and-polls/)
 

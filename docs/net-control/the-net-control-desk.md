@@ -4,7 +4,7 @@ summary: Every control on the net view, what it does, and which ones you'll use.
 kind: Explanation
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-08
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/the-net-control-desk/
@@ -38,7 +38,8 @@ Every button is gated by who you are and what state the net is in, so a Standard
 - **Traffic** — opens the traffic panel for this net, if the net has formal traffic handling enabled and you're the net's manager, an admin, or hold an active NCS or Logger role. A Standard participant doesn't see this button, even on a traffic-enabled net. See [Handling traffic](/docs/net-control/handling-traffic/).
 - **Off-net** — the [off-net log](/docs/net-control/off-net-log/), for contacts your stations make away from this net, such as a check-in on a state net or a Winlink message.
 - **Drill plan** — opens the net's [drill plan](/docs/net-managers/drill-plans/) in a new tab, when it has one.
-- **Script** / **Announcements** / **Notes** / **Topics** / **Stats** — read-only views of the net script, the schedule's announcements, this net's own notes, the schedule's [prior topics](/docs/operators/chat-and-polls/#prior-topics), and this net's statistics page.
+- **Script** / **Announcements** / **Notes** / **Stats** — read-only views of the net script, the schedule's announcements, this net's own notes, and this net's statistics page.
+- **Topics** — this net's topic of the week and the schedule's [prior topics](/docs/operators/chat-and-polls/#prior-topics). Set or change tonight's question here with **Set This Net's Topic**.
 - **Paperwork** — saves the script, the schedule's announcements, and this net's notes as one PDF to print. See [Scripts, notes, and announcements](/docs/net-managers/scripts-and-announcements/).
 - **Audio** and **Website**, when the net has a stream URL or an info URL set, open those in a new tab.
 

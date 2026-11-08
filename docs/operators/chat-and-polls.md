@@ -4,7 +4,7 @@ summary: Talking alongside the net without talking over it: replying, editing, m
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-08
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/chat-and-polls/
@@ -48,9 +48,9 @@ Topics and polls are separate from chat; they're covered here because the same k
 
 ### Prior topics
 
-A net from a schedule keeps a history of its topics. Once the net has check-ins, **Topics** on the net toolbar opens **Prior Topics**: every topic the schedule has used, newest first, with the date on the left and a search box to find an old one. A topic asked on a net in ECTLogger links to that net, which opens in a new tab.
+A net from a schedule keeps a history of its topics. Once the net has check-ins, **Topics** on the net toolbar opens **Prior Topics**. At the top is this net's own topic, and below it every topic the schedule has used, newest first, with the date on the left and a search box to find an old one. A topic asked on a net in ECTLogger links to that net, which opens in a new tab.
 
-A topic goes into the history as soon as net control sets it, not only when the net closes. The net manager and the NCS can also edit or delete an entry, and **Add Historical Topic** records one from before the club used ECTLogger. An entry added for a date that's still ahead becomes the topic of that date's net. On the net's Edit page, the topic field offers the prior topics as suggestions, to show whether a question has been asked before.
+The net manager and the NCS set this net's topic with **Set This Net's Topic** at the top of the dialog; they see **Topics** before anyone has checked in, too. A topic goes into the history as soon as it's set, not only when the net closes. They can also edit or delete an entry, and **Add Historical Topic** records one from before the club used ECTLogger. An entry added for a date that's still ahead becomes the topic of that date's net. On the net's Edit page, the topic field offers the prior topics as suggestions, to show whether a question has been asked before.
 
 <figure>
   <img src="/docs/img/operators/prior-topics.png"

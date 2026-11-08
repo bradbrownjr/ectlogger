@@ -4,7 +4,7 @@ summary: The net form field by field: frequencies, check-in fields, self check-i
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-08
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/creating-a-net/
@@ -82,7 +82,7 @@ Callsign is the only field every net always requires. Everything else (Name, Loc
 
 ## Saving
 
-**Create Net** (or **Save for this Net** when editing) saves changes to this occurrence only. If the net was created from a schedule, editing it also offers **Save to Schedule**, which saves this net and pushes everything on this tab set (name, description, script, the schedule's announcements, frequencies, check-in fields, the check-in, chat, traffic, lobby and auto-close settings, and the ICS-309/topic/poll toggles) back to the schedule so every future net inherits it. This net's own notes stay on this net. Net staff and the rotation are managed separately and are never touched by Save to Schedule.
+**Create Net** (or **Save for this Net** when editing) saves changes to this occurrence only. If the net was created from a schedule, editing it also offers **Save to Schedule**, which saves this net and pushes everything on this tab set (name, description, script, the schedule's announcements, frequencies, check-in fields, the check-in, chat, traffic, lobby and auto-close settings, and the ICS-309/topic/poll toggles) back to the schedule so every future net inherits it. This net's own notes and its topic of the week stay on this net. A schedule's default topic, a question every net asks, is set in the schedule's own settings; leave it blank and set each net's question in **Topics** on the net. Net staff and the rotation are managed separately and are never touched by Save to Schedule.
 
 You can edit a closed or archived net to fix a typo or a wrong setting. Editing updates the record only; it doesn't re-send the closing email or trigger a notification.
 

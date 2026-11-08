@@ -302,7 +302,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   return (
             <Box sx={wrapperSx}>
               {/* ========== SNEAK-IN OFF-SCREEN ARROW ========== */}
-              {/* Says "a new self check-in just landed outside the visible area"
+              {/* Says "a new check-in just landed outside the visible area"
                   and scrolls it into view on click. See sneakInHighlight.ts. */}
               <OffscreenArrivalArrow
                 visible={offscreenArrival.visible}

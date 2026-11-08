@@ -4,7 +4,7 @@ summary: Adding a station, editing a row in place, fixing a misheard callsign or
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-08
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/logging-check-ins/
@@ -26,9 +26,9 @@ When you type a callsign into the check-in form and move on to the next field, E
 
 On a net with [sites](/docs/net-managers/sites/), the form has a **Site** box ahead of Location for where the station is tonight: a shelter, Home, Field Deployed, or Traveling. [Stations at sites](/docs/net-control/stations-at-sites/) covers it, and what happens when a station checks in from somewhere new.
 
-## Spotting stations who check themselves in
+## Spotting new check-ins
 
-While you're running a net by voice, stations can also check themselves in from the app without calling. A station's own check-in flashes its row gold for a couple of seconds when it arrives. A check-in you or another logger typed in doesn't flash, and neither does your own.
+A new check-in flashes its row gold for a couple of seconds when it arrives, whether the station checked itself in from the app or you or another logger typed it in. The list's sort can put a new row somewhere you weren't looking, such as a mobile station at the top, and the flash shows where it went. Your own check-in doesn't flash.
 
 If the new row lands outside the part of the list you can see, a round arrow button appears at the top or bottom edge of the list, pointing toward it. Click it to scroll the station into view; it goes away once you've seen the row.
 

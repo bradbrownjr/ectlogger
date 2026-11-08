@@ -536,7 +536,9 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     },
     {
       key: 'topics', group: 'info', priority: 2,
-      visible: checkInsCount > 0 && !!net.template_id,
+      // Net control sees it before anyone checks in too, since Topics is
+      // where this net's question is set (TopicHistory.tsx).
+      visible: !!net.template_id && (checkInsCount > 0 || (actions.edit && !!net.topic_of_week_enabled)),
       Icon: HistoryIcon, color: neutralIconColor, label: 'Topics',
       tooltip: 'View prior topics', onClick: () => topicHistory.onOpen(),
     },

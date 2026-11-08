@@ -3019,6 +3019,11 @@ const NetView: React.FC = () => {
           templateId={net.template_id}
           templateName={net.name}
           canManage={canManage}
+          netId={net.id}
+          netTopicEnabled={!!net.topic_of_week_enabled}
+          netTopic={net.topic_of_week_prompt}
+          canSetNetTopic={actions.edit && !!net.topic_of_week_enabled}
+          onNetTopicSaved={fetchNet}
         />
       )}
 

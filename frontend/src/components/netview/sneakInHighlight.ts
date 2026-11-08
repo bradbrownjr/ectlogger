@@ -2,21 +2,20 @@ import { keyframes } from '@mui/system';
 import { useEffect, useRef, useState } from 'react';
 
 // ========== SNEAK-IN HIGHLIGHT ==========
-// Draws a brief attention flash on a check-in row that a station added to the
-// net *itself* through the web app -- as opposed to NCS/Logger typing them in
-// by voice -- so staff running the net can notice a new arrival even if they
-// weren't watching the table. Requested after the ME Dirigo Net's NCS
-// (Brian Wall, 2026-09-06) asked for a way to catch stations who "sneak in"
-// on their own while the net is being run largely by voice.
+// Draws a brief attention flash on a check-in row when it arrives, so
+// whoever is watching the list sees where the new station landed. Started
+// for stations who check themselves in through the web app while the net is
+// run by voice (ME Dirigo Net's NCS, Brian Wall, 2026-09-06, asked for a way
+// to catch stations who "sneak in"). Widened 2026-11-08 (Brad) to check-ins
+// NCS/Logger type in too: the list's sort can move a new row (a Mobile
+// station, say) away from where the operator is looking, and the flash and
+// off-screen arrow show where it went.
 //
-// "Self check-in" reuses the exact signal the backend already uses to gate
-// NCS/Logger self-grant eligibility (check_ins.py, `current_user.id ==
-// linked_user_id`): a CheckInResponse row where `user_id` is set and equals
-// `checked_in_by_id`. A staff-entered check-in (NCS/Logger logging a station
-// in themselves) always has `checked_in_by_id` pointing at the staff member
-// instead, so it's naturally excluded without any extra flag. The viewer's
-// own check-in is also excluded -- there's no point flashing "you checked
-// in" back at the person who just did it.
+// The one row that never flashes is a station checking *itself* in from the
+// viewer's own screen (`user_id` set, equal to `checked_in_by_id`, and equal
+// to the viewer) -- there's no point flashing "you checked in" back at the
+// person who just did it. A row the viewer typed in for someone else does
+// flash for them, since that is exactly the case where the sort moves it.
 
 export const SNEAK_IN_HIGHLIGHT_MS = 2500;
 
@@ -31,14 +30,14 @@ export const sneakInFade = keyframes`
   100% { background-color: transparent; }
 `;
 
-const isSneakInCheckIn = (checkIn: any, viewerUserId: number | undefined) =>
-  checkIn.user_id != null &&
-  checkIn.user_id === checkIn.checked_in_by_id &&
-  checkIn.user_id !== viewerUserId;
+const isOwnSelfCheckIn = (checkIn: any, viewerUserId: number | undefined) =>
+  viewerUserId != null &&
+  checkIn.user_id === viewerUserId &&
+  checkIn.checked_in_by_id === viewerUserId;
 
 // Returns the set of check-in ids currently mid-flash. Diffs each new
 // `checkIns` array against the previously-seen id set to find rows that are
-// both brand new and a sneak-in; each id auto-clears itself after
+// brand new and not the viewer's own self check-in; each id clears itself after
 // SNEAK_IN_HIGHLIGHT_MS. The very first population of `checkIns` (page load,
 // reconnect, or a net switch) is deliberately never flashed -- otherwise
 // every already-checked-in station would flash at once on every reload,
@@ -57,7 +56,7 @@ export function useSneakInHighlight(checkIns: any[], viewerUserId: number | unde
 
     for (const checkIn of checkIns) {
       nextKnown.add(checkIn.id);
-      if (hadBaseline && !previouslyKnown.has(checkIn.id) && isSneakInCheckIn(checkIn, viewerUserId)) {
+      if (hadBaseline && !previouslyKnown.has(checkIn.id) && !isOwnSelfCheckIn(checkIn, viewerUserId)) {
         newlyArrived.push(checkIn.id);
       }
     }
@@ -124,7 +123,7 @@ export interface OffscreenArrivalIndicator {
   onClick: () => void;
 }
 
-// Drives the small floating button that says "a self check-in just landed
+// Drives the small floating button that says "a new check-in just landed
 // outside the visible area of this table". Deliberately does NOT reuse
 // `highlightedCheckInIds`'s own lifetime for the indicator's visibility --
 // that set expires each id on its own independent timer (see

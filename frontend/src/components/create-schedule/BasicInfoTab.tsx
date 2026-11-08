@@ -170,7 +170,7 @@ const BasicInfoTab: React.FC = () => {
               value={topicOfWeekPrompt}
               onChange={(e) => setTopicOfWeekPrompt(e.target.value)}
               placeholder="e.g., What's your favorite radio memory?"
-              helperText="This can be changed when starting each net"
+              helperText="Every new net starts with this question. Leave it blank to set each net's topic in Topics."
               sx={{ mt: 1, mb: 2, ml: 4.5, width: 'calc(100% - 36px)' }}
             />
           )}
@@ -194,7 +194,7 @@ const BasicInfoTab: React.FC = () => {
               value={pollQuestion}
               onChange={(e) => setPollQuestion(e.target.value)}
               placeholder="e.g., What band do you operate most?"
-              helperText="This can be changed when starting each net"
+              helperText="Every new net starts with this question. Leave it blank to set each net's topic in Topics."
               sx={{ mt: 1, mb: 2, ml: 4.5, width: 'calc(100% - 36px)' }}
             />
           )}

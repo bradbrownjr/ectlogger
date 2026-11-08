@@ -180,7 +180,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
   return (
     <Box sx={{ position: 'relative', display: { xs: 'block', md: 'none' }, maxHeight: 400 }}>
       {/* ========== SNEAK-IN OFF-SCREEN ARROW ========== */}
-      {/* Says "a new self check-in just landed outside the visible area" and
+      {/* Says "a new check-in just landed outside the visible area" and
           scrolls it into view on click. See sneakInHighlight.ts. */}
       <OffscreenArrivalArrow
         visible={offscreenArrival.visible}
