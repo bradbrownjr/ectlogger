@@ -49,10 +49,9 @@ interface ChatProps {
   netStartedAt?: string;
   netStatus?: string;
   searchQuery?: string;
-  canManage?: boolean;
   // NCS or Logger on this net -- gates the net-wide mute control
-  // (shift+click the mute icon). A superset of canManage, which excludes
-  // Logger. Matches the backend's check_net_permission(..., ["NCS", "LOGGER"])
+  // (shift+click the mute icon). A superset of the page's canManage, which
+  // excludes Logger. Matches the backend's check_net_permission(..., ["NCS", "LOGGER"])
   // gate on POST/DELETE /chat/nets/{id}/net-mutes.
   canManageCheckIns?: boolean;
   chatGracePeriodMinutes?: number;
@@ -95,14 +94,13 @@ const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
 const MENTION_TOKEN_AT_END = /(^|\s)@([A-Za-z0-9/_-]*)$/;
 const MAX_MENTION_SUGGESTIONS = 6;
 
-const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, canManageCheckIns, chatGracePeriodMinutes, closedAt, onlineUserIds = [], onProfileClick, onNewMessage, onDetach, onPopOut, minimized, onMinimize, onRestore, topicOfWeekEnabled, topicOfWeekPrompt, pollEnabled, pollQuestion, checkIns = [] }) => {
+const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManageCheckIns, chatGracePeriodMinutes, closedAt, onlineUserIds = [], onProfileClick, onNewMessage, onDetach, onPopOut, minimized, onMinimize, onRestore, topicOfWeekEnabled, topicOfWeekPrompt, pollEnabled, pollQuestion, checkIns = [] }) => {
   const { user } = useAuth();
   const theme = useTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [showClosedToast, setShowClosedToast] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
   const [lightboxImage, setLightboxImage] = useState<ChatImagePayload | null>(null);
@@ -215,13 +213,6 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
     !!chatGracePeriodMinutes &&
     !!closedAt &&
     now - new Date(closedAt).getTime() < chatGracePeriodMinutes * 60_000;
-
-  // Show toast when net is closed/archived — suppressed for managers since NetView shows the archive reminder instead
-  useEffect(() => {
-    if ((netStatus === 'closed' || netStatus === 'archived') && !canManage) {
-      setShowClosedToast(true);
-    }
-  }, [netStatus, canManage]);
 
   useEffect(() => {
     // Listen for chat_message events dispatched from NetView WebSocket
@@ -1293,18 +1284,6 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
         </Alert>
       </Snackbar>
 
-      <Snackbar
-        open={showClosedToast}
-        autoHideDuration={5000}
-        onClose={() => setShowClosedToast(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={() => setShowClosedToast(false)} severity="info" sx={{ width: '100%' }}>
-          {netStatus === 'archived' 
-            ? 'This net has been archived. You are viewing historical data.'
-            : 'This net has been closed. Check-ins are no longer accepted.'}
-        </Alert>
-      </Snackbar>
     </Paper>
   );
 };

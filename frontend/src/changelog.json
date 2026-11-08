@@ -1,6 +1,23 @@
 {
-  "version": "2026.11.07",
+  "version": "2026.11.08",
   "entries": [
+    {
+      "version": "2026.11.08",
+      "date": "2026-11-08",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Net View: Subscribe when a net closes — When a net you're watching closes, the notice now offers to subscribe you to its schedule, so you get an email when it next starts. If you aren't signed in, it takes you to sign in and brings you back to subscribe.",
+              "userImpact": true,
+              "docs": "/docs/operators/finding-a-net/#getting-emails-about-a-net"
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.11.07",
       "date": "2026-11-07",

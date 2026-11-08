@@ -16,6 +16,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# November 8, 2026
+
+## Improvements
+
+* **Net View: Subscribe when a net closes** — When a net you're watching closes, the notice now offers to subscribe you to its schedule, so you get an email when it next starts. If you aren't signed in, it takes you to sign in and brings you back to subscribe.
+
+---
+
 # November 7, 2026
 
 ## New Features

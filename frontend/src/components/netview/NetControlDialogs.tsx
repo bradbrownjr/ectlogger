@@ -45,13 +45,6 @@ interface NetControlDialogsProps {
   onNcsCheckInIdChange: (checkInId: number | null) => void;
   checkIns: { id: number; callsign: string; name?: string | null }[];
 
-  // Subscribe to schedule
-  subscribeDialog: UseDialogResult;
-  netName: string | undefined;
-  subscribing: boolean;
-  onSkipSubscribe: () => void;
-  onSubscribe: () => void;
-
   // Topic / Poll configuration
   topicPollDialog: UseDialogResult;
   topicEnabled: boolean;
@@ -84,11 +77,6 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
   ncsCheckInId,
   onNcsCheckInIdChange,
   checkIns,
-  subscribeDialog,
-  netName,
-  subscribing,
-  onSkipSubscribe,
-  onSubscribe,
   topicPollDialog,
   topicEnabled,
   pollEnabled,
@@ -189,43 +177,6 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
             startIcon={closingAction === 'send' ? <CircularProgress size={20} color="inherit" /> : undefined}
           >
             Close and send the log
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ========== SUBSCRIBE TO SCHEDULE DIALOG ========== */}
-      {/* Shown after a net closes if user checked in and isn't already subscribed */}
-      <Dialog
-        open={subscribeDialog.open}
-        onClose={onSkipSubscribe}
-        maxWidth="sm"
-        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
-      >
-        <DialogTitle>
-          📬 Subscribe to Future Nets?
-        </DialogTitle>
-        <DialogContent>
-          <Typography sx={{ mb: 2 }}>
-            Thanks for checking in to <strong>{netName}</strong>!
-          </Typography>
-          <Typography>
-            Would you like to receive email notifications when future instances of this net are scheduled or go active?
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            You can manage your subscriptions and notification preferences in your profile settings.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onSkipSubscribe} color="inherit">
-            No Thanks
-          </Button>
-          <Button
-            onClick={onSubscribe}
-            variant="contained"
-            disabled={subscribing}
-            startIcon={subscribing ? <CircularProgress size={16} /> : null}
-          >
-            {subscribing ? 'Subscribing...' : 'Subscribe'}
           </Button>
         </DialogActions>
       </Dialog>
