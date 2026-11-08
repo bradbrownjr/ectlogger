@@ -388,8 +388,12 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
           <Box>
             {paginated.map((topic, index) => (
               <React.Fragment key={topic.id}>
+                {/* Rows wrap on phones: date and icons on one line, the
+                    topic full width under them. One row of three columns
+                    left the topic a word wide and pushed the icons off
+                    the dialog's edge. */}
                 {editingId === topic.id ? (
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, py: 1.5, px: 1 }}>
+                  <Box sx={{ display: 'flex', flexWrap: { xs: 'wrap', sm: 'nowrap' }, alignItems: 'flex-start', gap: { xs: 1, sm: 2 }, py: 1.5, px: 1 }}>
                     <TextField
                       type="date"
                       size="small"
@@ -404,7 +408,7 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
                       multiline
                       value={editTopic}
                       onChange={(e) => setEditTopic(e.target.value)}
-                      sx={{ flex: 1 }}
+                      sx={{ flex: { xs: '1 1 100%', sm: 1 }, order: { xs: 2, sm: 0 } }}
                     />
                     <Tooltip title="Save">
                       <span>
@@ -423,8 +427,10 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
                   <Box
                     sx={{
                       display: 'flex',
+                      flexWrap: { xs: 'wrap', sm: 'nowrap' },
                       alignItems: 'baseline',
-                      gap: 2,
+                      columnGap: 2,
+                      rowGap: 0.5,
                       py: 1.5,
                       px: 1,
                     }}
@@ -433,13 +439,14 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ flexShrink: 0, width: 100 }}
+                      sx={{ flexShrink: 0, width: { xs: 'auto', sm: 100 }, alignSelf: { xs: 'center', sm: 'baseline' } }}
                     >
                       {formatDate(topic.used_date)}
                     </Typography>
-                    <Typography variant="body1" sx={{ flex: 1 }}>
+                    <Typography variant="body1" sx={{ flex: { xs: '1 1 100%', sm: 1 }, order: { xs: 2, sm: 0 } }}>
                       {topic.topic}
                     </Typography>
+                    <Box sx={{ display: 'flex', flexShrink: 0, ml: { xs: 'auto', sm: 0 } }}>
                     {/* Opens in a new tab so browsing history doesn't lose
                         the visitor's place in the currently-open net. */}
                     {topic.net_id && (
@@ -472,6 +479,7 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
                         </Tooltip>
                       </>
                     )}
+                    </Box>
                   </Box>
                 )}
                 {index < paginated.length - 1 && <Divider />}
