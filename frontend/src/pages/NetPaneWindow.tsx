@@ -221,7 +221,6 @@ const NetPaneWindow: React.FC = () => {
           // NOT net.can_manage, which does and would leak a simulating
           // admin's real access back in. Matches the canManage formula
           // further down this file and in NetView.tsx.
-          canManage={paneCanManage}
           canManageCheckIns={paneCanManage || paneIsNCSOrLogger}
           chatGracePeriodMinutes={chatGraceMinutes(net)}
           closedAt={net.closed_at}

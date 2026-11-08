@@ -42,8 +42,7 @@ import { chatGraceMinutes } from '../../utils/netLog';
 interface NetViewSidePanelsProps {
   netId: string | undefined;
   net: any;
-  canManage: boolean;
-  // NCS or Logger (a superset of canManage, which excludes Logger) -- gates
+  // NCS or Logger (a superset of NetView's canManage, which excludes Logger) -- gates
   // the net-wide chat mute control in <Chat>, matching the backend's
   // check_net_permission(..., ["NCS", "LOGGER"]) gate exactly.
   canManageCheckIns: boolean;
@@ -112,8 +111,7 @@ interface NetViewSidePanelsProps {
   onShowCoverageOnMap: () => void;
   // Who may correct an existing report's frequency in the Coverage panel -
   // mirrors NetView.tsx's own canReportCanHear (NCS/Logger/Relay); distinct
-  // from the plain `canManage` above, which is narrower (owner/admin/NCS
-  // only) and used for other panels' own permission checks.
+  // from NetView's canManage, which is narrower (owner/admin/NCS only).
   canReportCanHear: boolean;
   onToast: (message: string) => void;
   // Traffic side panel (Assisted Traffic Handling & Forms). On-demand like
@@ -140,7 +138,6 @@ interface NetViewSidePanelsProps {
 const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   netId,
   net,
-  canManage,
   canManageCheckIns,
   searchQuery,
   onlineUserIds,
@@ -280,7 +277,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
               on Activity Log's identical wrapper below). */}
           <Box sx={{ height: { xs: chatMinimized ? 'auto' : 450, md: '100%' }, display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-              <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} canManageCheckIns={canManageCheckIns} onDetach={handleDetachChat} onPopOut={handlePopOutChat}
+              <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManageCheckIns={canManageCheckIns} onDetach={handleDetachChat} onPopOut={handlePopOutChat}
                 chatGracePeriodMinutes={chatGraceMinutes(net)} closedAt={net?.closed_at}
                 onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
                 checkIns={filteredCheckIns}
@@ -464,7 +461,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           minHeight={250}
           storageKey="chat"
         >
-          <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} canManageCheckIns={canManageCheckIns}
+          <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManageCheckIns={canManageCheckIns}
             chatGracePeriodMinutes={chatGraceMinutes(net)} closedAt={net?.closed_at}
             onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
             checkIns={filteredCheckIns}

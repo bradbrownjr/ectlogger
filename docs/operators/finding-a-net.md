@@ -4,7 +4,7 @@ summary: The dashboard, what each net status means, a schedule's own page, the S
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-08
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/finding-a-net/
@@ -89,6 +89,8 @@ A net manager may also send you a **subscribe link**. It opens the [schedule's o
        alt="The top of a schedule's page, for a visitor who is not signed in: the net's name, description, when it runs, its frequencies, and its Stats button, with the Sign in to subscribe button outlined in red.">
   <figcaption>The page names the net before asking for anything.</figcaption>
 </figure>
+
+When a net you're watching closes, the notice that it has closed also offers **Subscribe**, or **Sign in to subscribe** if you aren't signed in. It appears for a net from a schedule that runs again, and only if you aren't subscribed already. You'll also see it when you open a net that has already closed.
 
 ## Finding a net that runs on a schedule
 

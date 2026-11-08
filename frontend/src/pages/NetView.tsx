@@ -76,6 +76,7 @@ import { exportElementToPdf } from '../utils/pdfExport';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
 import { exportMarkdownDocsPdf, pdfFileStem } from '../utils/markdownDocsPdf';
 import { useAuth } from '../contexts/AuthContext';
+import NetClosedNotice from '../components/netview/NetClosedNotice';
 import { useLocation } from '../contexts/LocationContext';
 import CheckInMap from '../components/CheckInMap';
 import BulkCheckIn from '../components/BulkCheckIn';
@@ -237,7 +238,6 @@ const NetView: React.FC = () => {
   const search = useDialog();
   const [searchQuery, setSearchQuery] = useState('');
   const closeNetDialog = useDialog();
-  const subscribeDialog = useDialog();
   const archiveReminder = useDialog();
   const archiveHelp = useDialog();
   const archiveDeleteConfirm = useDialog();
@@ -258,7 +258,6 @@ const NetView: React.FC = () => {
   // (dialog open when non-null). Holds {id, callsign} directly rather than
   // just an id since IdentityVerifyDialog only needs those two fields.
   const [identityVerifyCheckIn, setIdentityVerifyCheckIn] = useState<{ id: number; callsign: string } | null>(null);
-  const [subscribing, setSubscribing] = useState(false);
   const [startingNet, setStartingNet] = useState(false);
   const script = usePersistedDialog(STORAGE_KEYS.SCRIPT_OPEN);
   const announcements = usePersistedDialog(STORAGE_KEYS.ANNOUNCEMENTS_OPEN);
@@ -1179,45 +1178,12 @@ const NetView: React.FC = () => {
   const handleCloseNet = async (holdLog = false, action?: ClosingAction) => {
     setClosingAction(action ?? (holdLog ? 'hold' : 'send'));
     try {
-      // Capture values before closing since net state will change
-      const templateId = net?.template_id;
-      const currentCheckIns = [...checkIns];
-      
       await netApi.close(Number(netId), holdLog, ncsNeeded ? ncsCheckInId : null);
       closeNetDialog.onClose();
       // Poll results and topic answers are derived from the check-in list
       // (utils/netResponses.ts), so they need no fetch of their own here
       await fetchNet();
       
-      // ========== SUBSCRIPTION PROMPT ==========
-      // If net was created from a RECURRING schedule (has template_id AND
-      // that template's schedule_type isn't ad_hoc/one_time -- a one-time
-      // net's template exists only to hold that single net's settings, so
-      // there will never be a "next instance" to subscribe to; reported:
-      // this prompt appeared for a one-time net regardless), user is logged
-      // in, and user checked in to this net, ask if they want to subscribe.
-      if (templateId && user && isAuthenticated) {
-        // Check if current user checked in to this net
-        const userCheckedIn = currentCheckIns.some(ci => ci.user_id === user.id);
-
-        if (userCheckedIn) {
-          // Check if user is already subscribed to this template
-          try {
-            const templateResponse = await templateApi.get(templateId);
-            const isAlreadySubscribed = templateResponse.data.is_subscribed;
-            const scheduleType = templateResponse.data.schedule_type;
-            const isRecurring = !!scheduleType && scheduleType !== 'ad_hoc' && scheduleType !== 'one_time';
-
-            if (!isAlreadySubscribed && isRecurring) {
-              // Show subscription dialog
-              subscribeDialog.onOpen();
-            }
-          } catch (err) {
-            // Template might not exist anymore, skip the prompt
-            console.log('Could not check subscription status:', err);
-          }
-        }
-      }
       // A held log can't be archived yet; the banner offers Send the log.
       if (holdLog) {
         setToastMessage('Net closed. Send the log when it is finished.');
@@ -1257,27 +1223,6 @@ const NetView: React.FC = () => {
       console.error('Failed to send net log:', error);
       setToastMessage(getErrorMessage(error, 'Failed to send the net log'));
     }
-  };
-
-  // Handle subscribing to the schedule template
-  const handleSubscribe = async () => {
-    if (!net?.template_id) return;
-    
-    setSubscribing(true);
-    try {
-      await templateApi.subscribe(net.template_id);
-      subscribeDialog.onClose();
-      setToastMessage('Subscribed! You will receive notifications for future instances of this net.');
-    } catch (error: any) {
-      console.error('Failed to subscribe:', error);
-      setToastMessage(getErrorMessage(error, 'Failed to subscribe'));
-    } finally {
-      setSubscribing(false);
-    }
-  };
-  
-  const handleSkipSubscribe = () => {
-    subscribeDialog.onClose();
   };
 
   // Go Live: Transition from LOBBY to ACTIVE mode
@@ -2616,7 +2561,6 @@ const NetView: React.FC = () => {
             <NetViewSidePanels
               netId={netId}
               net={net}
-              canManage={canManage}
               canManageCheckIns={canManageCheckIns}
               searchQuery={searchQuery}
               onlineUserIds={onlineUserIds}
@@ -2873,11 +2817,6 @@ const NetView: React.FC = () => {
         ncsCheckInId={ncsCheckInId}
         onNcsCheckInIdChange={setNcsCheckInId}
         checkIns={checkIns}
-        subscribeDialog={subscribeDialog}
-        netName={net?.name}
-        subscribing={subscribing}
-        onSkipSubscribe={handleSkipSubscribe}
-        onSubscribe={handleSubscribe}
         topicPollDialog={topicPollDialog}
         topicEnabled={!!net?.topic_of_week_enabled}
         pollEnabled={!!net?.poll_enabled}
@@ -3165,6 +3104,10 @@ const NetView: React.FC = () => {
         onArchive={handleArchive}
         onDeleteConfirmed={handleDeleteConfirmed}
       />
+
+      {/* ========== NET CLOSED NOTICE ========== */}
+      {/* Shows to viewers who aren't net staff once the net has closed, with the offer to subscribe */}
+      <NetClosedNotice status={net?.status} templateId={net?.template_id} suppressed={canManage} />
 
       {/* ========== CHECK-IN PROMPT FOR VIEWERS ========== */}
       {/* Shows once for authenticated users viewing an active/lobby net they haven't joined */}
