@@ -4,7 +4,7 @@ summary: Adding a station, editing a row in place, fixing a misheard callsign or
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-11-08
+revised: 2026-11-12
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/logging-check-ins/
@@ -16,9 +16,17 @@ Whoever holds NCS or Logger on a net can add a check-in for any callsign, edit o
 
 ## Adding a station who calls in over the air
 
-The fastest way to log one more caller while you're already busy running the net is the **Bulk add** box [Speed entry](/docs/net-control/speed-entry/) covers. Open it, type the callsign (and whatever else the net asks for), and submit. One line works the same as fifty.
+The quickest way to log a caller is the entry row under the check-in list. It works like logging a contact in N3FJP or N1MM: type the callsign and press Tab, and the station's details fill in (see below). Add anything else the net asks for, then press **Enter** or click **Add**. The station appears on every screen, and the cursor goes back to the Callsign box for the next caller. The row is there while the log is open, under the list on the page and in a detached list.
 
-A second way in is the toolbar's **Check in** button (see [The net control desk](/docs/net-control/the-net-control-desk/)). It opens the same form [Checking in](/docs/operators/checking-in/) describes for participants, but it only appears while your own account has no active check-in on this net, and it pre-fills the callsign field with your own callsign. You can clear that field and type someone else's. Once you've checked yourself in it becomes **Edit check-in**, which reopens the form for your own row only (see [Fixing your check-in](/docs/operators/checking-in/#fixing-your-check-in)). It's most useful at the start of a net, before you've logged yourself in as NCS or Logger; after that, use Bulk add to add a station.
+<figure>
+  <img src="/docs/img/net-control/check-in-entry-row.png"
+       alt="The bottom of a check-in list with the entry row under it outlined in red. N1DUNE is typed in the Callsign box, and the Name and Location boxes beside it are already filled in with Robin Teague and the station's town.">
+  <figcaption>Type a callsign and press Tab; Enter logs the station and puts you back in the Callsign box.</figcaption>
+</figure>
+
+When callers come in faster than one at a time, the **Bulk add** box [Speed entry](/docs/net-control/speed-entry/) covers takes a string of them at once.
+
+A third way in is the toolbar's **Check in** button (see [The net control desk](/docs/net-control/the-net-control-desk/)). It opens the same form [Checking in](/docs/operators/checking-in/) describes for participants, but it only appears while your own account has no active check-in on this net, and it pre-fills the callsign field with your own callsign. You can clear that field and type someone else's. Once you've checked yourself in it becomes **Edit check-in**, which reopens the form for your own row only (see [Fixing your check-in](/docs/operators/checking-in/#fixing-your-check-in)). It's most useful at the start of a net, before you've logged yourself in as NCS or Logger; after that, use the entry row to add a station.
 
 On a phone or a narrow window, NCS and Logger also get a collapsible **New Check-in** panel above the check-in list, whatever your own check-in status.
 

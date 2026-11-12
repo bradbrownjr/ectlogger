@@ -10,20 +10,22 @@ version as a PDF and list it under "Slide decks" on `docs/training/index.md`.
 
 | Path | What it is |
 |---|---|
-| `ECTLogger_WSSM_Presentation.pptx` | PowerPoint export, as downloaded 2026-10-30 (23 slides) |
-| `source/deck.json` | Slide order, sections, and fonts for the Claude Slides artifact |
+| `ECTLogger_WSSM_Presentation.pptx` | The deck for this talk (27 slides). Edit this file |
+| `source/deck.json` | Slide order, sections, and fonts the deck was built from |
 | `source/slides/<id>.html` | One slide each, 1920x1080, speaker notes in the closing `<aside>` |
 | `qr-app-ectlogger-us.png` | QR code for https://app.ectlogger.us, used on `p1-demo` and `thanks` |
 
-The editable copy is the Claude Slides artifact
-https://claude.ai/artifact/HhDnkR6nJ15rm4yZTb9QdU (private to Brad). `source/` matches
-its published version as of 2026-10-30. Edit there, or edit `source/` and republish it
-to that artifact, then copy the result back here so the two stay the same.
+The repo is the source of truth. The `.pptx` is the copy presented on Nov 12, and
+`source/` is the material it was built from, kept for reuse in later presentations.
+When a slide's content changes, change it in both. The deck was first built as the
+Claude Slides artifact https://claude.ai/artifact/HhDnkR6nJ15rm4yZTb9QdU (private to
+Brad), which is no longer kept in step and stopped at the 2026-10-30 version.
 
 ## Images
 
-The slides point at images stored with the artifact (`/_blob/<id>`). Every one is a
-file already in this repo:
+Most slides in `source/` point at images stored with the artifact (`/_blob/<id>`).
+Every one is a file already in this repo. `p2-desk` and `p2-order` point at their repo files
+directly, since they were added after the artifact stopped being kept in step.
 
 | Asset id | Repo file | Used on |
 |---|---|---|
@@ -33,7 +35,9 @@ file already in this repo:
 | `b125ff4b49837b719102fb24bca6c9cc` | `docs/img/operators/check-in-dialog.png` | p1-checkin |
 | `8b26d8b2cc5e0c24413ef8494059e66a` | `docs/img/operators/schedule-calendar.png` | p1-chat |
 | `347d23990d9e14d92a67e3108511ad93` | `docs/img/net-managers/staff-and-rotation.png` | p2-schedule |
-| `fb44f706c72205e7c993a99a23cbd97a` | `docs/img/start/bulk-add-window.png` | p2-desk |
+| (none) | `docs/img/net-control/check-in-entry-row.png` | p2-desk |
+| `fb44f706c72205e7c993a99a23cbd97a` | `docs/img/start/bulk-add-window.png` | p2-bulk |
+| (none) | `docs/img/net-control/muted-stations-dialog.png` | p2-order |
 | `4d11de8b082765e907ff908c5321af3c` | `docs/img/net-control/close-net-dialog.png` | p2-close |
 | `b9ae6753533d088ce082762139094d48` | `docs/img/net-control/ultrawide-desk.png` | p3-freq |
 | `2fb2ea18ae9899fb3a9ea9efed44215c` | `docs/img/net-control/coverage-panel.png` | p3-coverage |
@@ -48,12 +52,12 @@ The QR code was made with
 
 ## Still to do before the talk
 
-- **about:** the speaker note ends with "[Your story: what got you started building ECTLogger.]"
-- **stats, who:** numbers are from `GET /api/statistics/global` on 2026-10-30 (123 nets,
-  1,517 check-ins, 151 users, 330 operators; last 30 days 29 nets, 488 check-ins).
-  Refresh them from the Stats page the day of the talk.
-- **p1-demo:** name the demo net ("[demo net name]"), create it, and open its lobby.
-- **p2-demo:** pick the Logger volunteer and make sure they have an account.
-- **p3-demo:** pick the second NCS volunteer, give the demo net two frequencies, turn on
-  station coverage, and add the volunteer to its staff.
+The demos run on production (app.ectlogger.us), which is reachable from the bunker.
+
+- **p1-demo, p2-demo:** create **Demo Club Net** on production and open its lobby so it
+  shows on Nets. The Logger volunteer is picked in the room; they will have signed in
+  during the first demo, so Roles can give them Logger.
+- **p3-demo:** create **Demo ARES Net** with two frequencies (the repeater and a simplex
+  frequency) and station coverage turned on, and open its lobby. The second NCS is a
+  volunteer from the room, given NCS from Roles.
 - Optional: generated art for the cover and part title slides.

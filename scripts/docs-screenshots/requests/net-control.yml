@@ -74,6 +74,44 @@ shots:
     caption: The Bulk add button, leftmost in the net control toolbar.
 
   # ========== Logging check-ins ==========
+  # The entry row under the list, after typing a callsign and pressing Tab:
+  # the lookup has filled in the station's name and location. N1DUNE is the
+  # one seeded account not already checked into the active net. Nothing is
+  # submitted, so this shot writes nothing.
+  - id: check-in-entry-row
+    section: net-control
+    page: /docs/net-control/logging-check-ins/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    # Short enough that the list scrolls and the entry row sits right under
+    # its last few rows.
+    viewport:
+      width: 1440
+      height: 720
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - fill: { selector: 'input[placeholder="Callsign"]', text: 'N1DUNE' }
+      # The fill leaves focus in the Callsign box; Tab moves on and starts
+      # the lookup, as it does for net control.
+      - press: 'Tab'
+      - wait: 1500
+      - evaluate: "document.querySelectorAll('.MuiTableContainer-root').forEach(c => { c.scrollTop = c.scrollHeight; })"
+    hide:
+      - '.MuiTooltip-popper'
+      - '.MuiAutocomplete-popper'
+    element:
+      - '.MuiTableContainer-root'
+      - 'tr:has(input[placeholder="Callsign"]):visible'
+    pad: 0
+    annotate:
+      - selector: 'tr:has(input[placeholder="Callsign"]):visible'
+        style: box
+    alt: >
+      The bottom of a check-in list with the entry row under it outlined in
+      red. N1DUNE is typed in the Callsign box, and the Name and Location boxes
+      beside it are already filled in with Robin Teague and the station's town.
+    caption: Type a callsign and press Tab; Enter logs the station and puts you back in the Callsign box.
+
   - id: inline-edit-open
     section: net-control
     page: /docs/net-control/logging-check-ins/

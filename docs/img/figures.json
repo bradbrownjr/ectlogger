@@ -143,6 +143,12 @@
     "caption": "Site comes before Location, so a shelter is picked from the list rather than typed into Location.",
     "page": "/docs/net-control/stations-at-sites/"
   },
+  "net-control/check-in-entry-row": {
+    "path": "/docs/img/net-control/check-in-entry-row.png",
+    "alt": "The bottom of a check-in list with the entry row under it outlined in red. N1DUNE is typed in the Callsign box, and the Name and Location boxes beside it are already filled in with Robin Teague and the station's town.\n",
+    "caption": "Type a callsign and press Tab; Enter logs the station and puts you back in the Callsign box.",
+    "page": "/docs/net-control/logging-check-ins/"
+  },
   "net-control/close-net-dialog": {
     "path": "/docs/img/net-control/close-net-dialog.png",
     "alt": "The Close Net dialog, explaining that closing ends the net, with a notice that 1 off-net entry is awaiting review, and Cancel, Review, Finish the log later, Accept all and send, and Close and send the log buttons. Close and send the log is outlined in red.\n",
