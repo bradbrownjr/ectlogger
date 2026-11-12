@@ -4,7 +4,7 @@
   "lists": "css",
   "title": "ECTLogger: WSSM Presentation",
   "cover": "cover",
-  "order": ["cover", "about", "what", "stats", "who", "agenda", "p1", "p1-find", "p1-checkin", "p1-chat", "p1-demo", "p2", "p2-schedule", "p2-desk", "p2-bulk", "p2-order", "p2-close", "p2-demo", "p3", "p3-freq", "p3-coverage", "p3-more", "p3-demo", "advanced", "next", "help", "thanks"],
+  "order": ["cover", "about", "what", "stats", "who", "agenda", "p1", "p1-find", "p1-checkin", "p1-chat", "p2", "p2-schedule", "p2-desk", "p2-bulk", "p2-order", "p2-close", "p2-demo", "p1-demo", "p3", "p3-freq", "p3-coverage", "p3-more", "p3-demo", "advanced", "next", "help", "thanks"],
   "sections": {
     "s1": {"description": "Who I am, what ECTLogger is, and who is using it", "start": "cover"},
     "s2": {"description": "Part 1: joining a net as a participant", "start": "p1"},
