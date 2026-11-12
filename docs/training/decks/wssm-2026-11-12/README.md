@@ -42,6 +42,7 @@ Every one is a file already in this repo:
 | `b9ae6753533d088ce082762139094d48` | `docs/img/net-control/ultrawide-desk.png` | p3-freq |
 | `2fb2ea18ae9899fb3a9ea9efed44215c` | `docs/img/net-control/coverage-panel.png` | p3-coverage |
 | `9cf298ca04a95d08e0c4b0b538005d4d` | `qr-app-ectlogger-us.png` | p1-demo, thanks |
+| `6d91b4aa2be5198b624c359dc2c09de2` | `changelog-button.png` (What's New button, from Brad) | thanks |
 
 Uploaded but not used yet: `docs/img/operators/mobile-checkin-list.png`
 (`3e2f2068...`), `docs/img/net-control/sites-board.png` (`bd8bd784...`),
