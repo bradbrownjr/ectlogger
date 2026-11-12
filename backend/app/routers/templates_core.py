@@ -458,6 +458,13 @@ async def get_template(
     return await _template_response_for_viewer(db, template, current_user)
 
 
+# Schedule text fields that may be emptied from Edit Schedule (see update_template).
+CLEARABLE_TEXT_FIELDS = (
+    "description", "info_url", "stream_url", "script", "announcements",
+    "topic_of_week_prompt", "poll_question",
+)
+
+
 @router.put("/{template_id}", response_model=NetTemplateResponse)
 async def update_template(
     template_id: int,
@@ -481,16 +488,13 @@ async def update_template(
     # Update fields
     if template_data.name is not None:
         template.name = template_data.name
-    if template_data.description is not None:
-        template.description = template_data.description
-    if template_data.info_url is not None:
-        template.info_url = template_data.info_url
-    if template_data.stream_url is not None:
-        template.stream_url = template_data.stream_url
-    if template_data.script is not None:
-        template.script = template_data.script
-    if template_data.announcements is not None:
-        template.announcements = template_data.announcements
+    # Text a manager can clear: an explicit null (the form sends `|| null` for
+    # an emptied field) must clear it, so these go by model_fields_set, not
+    # "is not None". Until 2026-11-12 a null was skipped, and the ME Dirigo
+    # Net's Default Topic Prompt could not be deleted from Edit Schedule.
+    for field in CLEARABLE_TEXT_FIELDS:
+        if field in template_data.model_fields_set:
+            setattr(template, field, getattr(template_data, field))
     if template_data.field_config is not None:
         template.field_config = json.dumps(template_data.field_config)
     if template_data.is_active is not None:
@@ -545,12 +549,8 @@ async def update_template(
         template.auto_close_after_minutes = template_data.auto_close_after_minutes
     if template_data.topic_of_week_enabled is not None:
         template.topic_of_week_enabled = template_data.topic_of_week_enabled
-    if template_data.topic_of_week_prompt is not None:
-        template.topic_of_week_prompt = template_data.topic_of_week_prompt
     if template_data.poll_enabled is not None:
         template.poll_enabled = template_data.poll_enabled
-    if template_data.poll_question is not None:
-        template.poll_question = template_data.poll_question
     if template_data.authenticated is not None:
         template.authenticated = template_data.authenticated
     if template_data.participants_only is not None:

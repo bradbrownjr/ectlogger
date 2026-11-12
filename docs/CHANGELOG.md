@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-11-08
+revised: 2026-11-12
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,14 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# November 12, 2026
+
+## Bug Fixes
+
+* **Schedule: Emptied fields stay empty** — Clearing the default topic, poll question, info or stream link, or announcements in Edit Schedule left the old text in place after saving. Emptying a field now clears it.
 
 ---
 

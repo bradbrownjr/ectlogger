@@ -1,6 +1,22 @@
 {
-  "version": "2026.11.08b",
+  "version": "2026.11.12",
   "entries": [
+    {
+      "version": "2026.11.12",
+      "date": "2026-11-12",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Schedule: Emptied fields stay empty — Clearing the default topic, poll question, info or stream link, or announcements in Edit Schedule left the old text in place after saving. Emptying a field now clears it.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.11.08b",
       "date": "2026-11-08",
