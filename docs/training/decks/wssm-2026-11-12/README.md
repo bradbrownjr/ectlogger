@@ -19,13 +19,13 @@ The repo is the source of truth. The `.pptx` is the copy presented on Nov 12, an
 `source/` is the material it was built from, kept for reuse in later presentations.
 When a slide's content changes, change it in both. The deck was first built as the
 Claude Slides artifact https://claude.ai/artifact/HhDnkR6nJ15rm4yZTb9QdU (private to
-Brad), which is no longer kept in step and stopped at the 2026-10-30 version.
+Brad). `source/` was republished to it on 2026-11-12 (version 8), and its PowerPoint
+download is one way to rebuild the `.pptx` from `source/`.
 
 ## Images
 
-Most slides in `source/` point at images stored with the artifact (`/_blob/<id>`).
-Every one is a file already in this repo. `p2-desk` and `p2-order` point at their repo files
-directly, since they were added after the artifact stopped being kept in step.
+The slides in `source/` point at images stored with the artifact (`/_blob/<id>`).
+Every one is a file already in this repo:
 
 | Asset id | Repo file | Used on |
 |---|---|---|
@@ -35,9 +35,9 @@ directly, since they were added after the artifact stopped being kept in step.
 | `b125ff4b49837b719102fb24bca6c9cc` | `docs/img/operators/check-in-dialog.png` | p1-checkin |
 | `8b26d8b2cc5e0c24413ef8494059e66a` | `docs/img/operators/schedule-calendar.png` | p1-chat |
 | `347d23990d9e14d92a67e3108511ad93` | `docs/img/net-managers/staff-and-rotation.png` | p2-schedule |
-| (none) | `docs/img/net-control/check-in-entry-row.png` | p2-desk |
+| `be61e0b5483dd11206e13797c2424d8d` | `docs/img/net-control/check-in-entry-row.png`, bottom 985 px | p2-desk |
 | `fb44f706c72205e7c993a99a23cbd97a` | `docs/img/start/bulk-add-window.png` | p2-bulk |
-| (none) | `docs/img/net-control/muted-stations-dialog.png` | p2-order |
+| `9b5f6d99d296e3ce1f7c414d6bd65c33` | `docs/img/net-control/muted-stations-dialog.png` | p2-order |
 | `4d11de8b082765e907ff908c5321af3c` | `docs/img/net-control/close-net-dialog.png` | p2-close |
 | `b9ae6753533d088ce082762139094d48` | `docs/img/net-control/ultrawide-desk.png` | p3-freq |
 | `2fb2ea18ae9899fb3a9ea9efed44215c` | `docs/img/net-control/coverage-panel.png` | p3-coverage |
