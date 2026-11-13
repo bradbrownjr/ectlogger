@@ -183,6 +183,10 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
       if (!background) {
         const duplicates = await userApi.listDuplicates();
         setDuplicatePairs(duplicates.data);
+        // The chip that turns the filter off hides once no pairs are left, so
+        // the filter goes with it; otherwise merging the last pair leaves an
+        // empty list with no way out (2026-11-13).
+        if (duplicates.data.length === 0) setShowDuplicates(false);
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
