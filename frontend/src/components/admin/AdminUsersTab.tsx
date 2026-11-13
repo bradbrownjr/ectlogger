@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -123,9 +122,12 @@ interface Props {
   refreshTrigger?: number;
   /** Opens the Activity tab narrowed to this account. */
   onShowActivity?: (person: { id: number; label: string }) => void;
+  /** Pre-fills the filter; from an admin email's link (early access request,
+   *  callsign-taken alert). */
+  initialSearch?: string;
 }
 
-const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowActivity }) => {
+const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowActivity, initialSearch = '' }) => {
   const { user: currentUser } = useAuth();
 
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -151,10 +153,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger, onShowAc
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [emailForm, setEmailForm] = useState({ subject: '', message: '' });
   const [emailSending, setEmailSending] = useState(false);
-  // ?search=<text> pre-fills the filter (the callsign-taken alert email links
-  // to /admin/users?tab=users&search=<the newer account's email>).
-  const [searchParams] = useSearchParams();
-  const [userFilter, setUserFilter] = useState(() => searchParams.get('search') ?? '');
+  const [userFilter, setUserFilter] = useState(initialSearch);
   const [usersPage, setUsersPage] = useState(0);
   const [usersPerPage, setUsersPerPage] = useState(25);
   const [scheduleMinAccountAgeDays, setScheduleMinAccountAgeDays] = useState(0);

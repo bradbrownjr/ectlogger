@@ -9,6 +9,7 @@ admin grants it from the Users tab (routers/users.py::set_schedule_age_bypass).
 """
 
 from typing import Optional
+from urllib.parse import quote
 
 from app.config import settings
 from app.email.base import send_email
@@ -52,7 +53,7 @@ async def send_early_access_request(
             <p><strong>Nets attended:</strong> {{ nets_participated }} (requirement: {{ min_participations }})</p>
         </div>
         {% if note %}<div class="body-box">{{ note }}</div>{% endif %}
-        <p>To grant it, open the Users tab, click the timer button on their row, and they will be emailed that they can go ahead. Click their callsign there to see their net history first.</p>
+        <p>The button opens the Users tab showing only them. To grant it, click the timer button on their row, and they will be emailed that they can go ahead. Click their callsign there to see their net history first.</p>
         <p><a class="button" href="{{ admin_url }}">Open the Users tab</a></p>
         <div class="footer"><p>Reply to {{ requester_email }} directly to follow up with them.</p></div>
     </div></body></html>
@@ -66,7 +67,8 @@ async def send_early_access_request(
         nets_participated=nets_participated,
         min_participations=min_participations,
         note=note,
-        admin_url=f"{settings.frontend_url}/admin/users?tab=users",
+        # Filtered to the requester, so the admin lands on their row.
+        admin_url=f"{settings.frontend_url}/admin/users?tab=users&search={quote(requester_email)}",
     )
 
     logger.info("EMAIL", f"Sending early access request from {requester_display} to admin {to_email}")

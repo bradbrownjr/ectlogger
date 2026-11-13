@@ -4,7 +4,7 @@ summary: Two-factor enrollment and reset, failed-login lockouts, session length,
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-13
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/security-and-mfa/
@@ -54,7 +54,7 @@ Five wrong password attempts in a row locks that account out for 15 minutes. The
 
 The **Security Alerts** card sends email when the [activity log](/docs/admins/activity-log/) shows trouble. Each kind has its own switch and its own numbers, and each goes out at most once per account per period, so repeated attempts on an account don't flood anyone's inbox.
 
-- **Failed sign-in alerts** — when an account collects this many wrong passwords or two-factor codes within this many minutes, its owner and every admin get an email listing each attempt with its time, internet address, approximate location, and browser. The default is 5 within 15 minutes, matching the lockout above. A wrong two-factor code alerts on the first one, because whoever typed it had the right password. The owner's copy tells them what to do if it wasn't them.
+- **Failed sign-in alerts** — when an account collects this many wrong passwords or two-factor codes within this many minutes, its owner and every admin get an email listing each attempt with its time, internet address, approximate location, and browser. The default is 5 within 15 minutes, matching the lockout above. A wrong two-factor code alerts on the first one, because whoever typed it had the right password. The owner's copy tells them what to do if it wasn't them. The admin's copy links to that account's activity.
 - **Muted-by-others alerts** — when this many different people have muted one station in chat within this many days, every admin gets an email. The default is 3 within 30 days. Both kinds of mute count: a participant muting a station for themselves, and Net Control muting one for everyone. The muted station is never told. The email and the activity log give the count and the nets for personal mutes, never who.
 
 Click **Save Settings** on the card to apply changes.

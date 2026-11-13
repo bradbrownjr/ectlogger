@@ -56,9 +56,11 @@ const isInUse = (freq: Frequency) => freq.net_count > 0 || freq.schedule_count >
 
 interface Props {
   showSnackbar: (message: string, severity: 'success' | 'error') => void;
+  /** Pre-fills the filter; from a frequency change request email's link. */
+  initialSearch?: string;
 }
 
-const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar }) => {
+const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar, initialSearch = '' }) => {
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [frequenciesLoading, setFrequenciesLoading] = useState(false);
   const [frequencyDialogOpen, setFrequencyDialogOpen] = useState(false);
@@ -73,7 +75,7 @@ const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar }) => {
   const [frequencySaving, setFrequencySaving] = useState(false);
   const [deleteFrequencyDialogOpen, setDeleteFrequencyDialogOpen] = useState(false);
   const [frequencyToDelete, setFrequencyToDelete] = useState<Frequency | null>(null);
-  const [frequencyFilter, setFrequencyFilter] = useState('');
+  const [frequencyFilter, setFrequencyFilter] = useState(initialSearch);
 
   const { sortField: frequencySortField, sortDirection: frequencySortDirection, handleSort: handleFrequencySort } =
     useSortableTable<FrequencySortField>('frequency');

@@ -4,7 +4,7 @@ summary: Maintaining the instance-wide list of repeaters, simplex frequencies, a
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-13
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/frequencies/
@@ -32,7 +32,7 @@ Editing an entry updates it everywhere it's used, so you can fix a typo without 
 
 Everyone else who creates nets can add to the list and pick from it. They can also edit or delete an entry **they added themselves**, from the net or schedule form, until another net or schedule uses it or a station checks in on it. Only an admin can change entries added before 2026-10-22, which have no record of who added them.
 
-When someone can't make a change, the form offers to send it to you instead. Every admin gets an email naming the entry, what they want it changed to (or that they want it deleted), which nets and schedules use it, and their note. Make the change here; there is nothing to approve in the app.
+When someone can't make a change, the form offers to send it to you instead. Every admin gets an email naming the entry, what they want it changed to (or that they want it deleted), which nets and schedules use it, and their note. Its **Open the Frequencies tab** button opens this list filtered to that entry. Make the change here; there is nothing to approve in the app.
 
 <figure>
   <img src="/docs/img/admins/frequency-in-use-row.png"

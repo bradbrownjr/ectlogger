@@ -9,6 +9,7 @@ requester's email address.
 """
 
 from typing import List, Optional
+from urllib.parse import quote
 
 from jinja2 import Template as JinjaTemplate
 
@@ -24,6 +25,7 @@ async def send_frequency_change_request(
     requester_email: str,
     action: str,
     current: str,
+    search: str,
     proposed: Optional[str],
     reason: str,
     uses: Optional[str],
@@ -31,7 +33,8 @@ async def send_frequency_change_request(
     schedule_names: List[str],
     note: Optional[str],
 ):
-    """Ask an admin to edit or delete one shared frequency."""
+    """Ask an admin to edit or delete one shared frequency. search is the text
+    the Frequencies tab is filtered to when the button opens it."""
     # autoescape: the note, names and frequency text are all user-typed.
     html_content = JinjaTemplate("""
     <!DOCTYPE html>
@@ -67,7 +70,7 @@ async def send_frequency_change_request(
         net_names=net_names,
         schedule_names=schedule_names,
         note=note,
-        admin_url=f"{settings.frontend_url}/admin/users?tab=frequencies",
+        admin_url=f"{settings.frontend_url}/admin/users?tab=frequencies&search={quote(search)}",
     )
 
     verb = "deletion" if action == "delete" else "change"

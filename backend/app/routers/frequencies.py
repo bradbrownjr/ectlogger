@@ -460,6 +460,12 @@ def _frequency_text(f) -> str:
     return f"{text} ({f.description})" if f.description else text
 
 
+def _frequency_search_term(f) -> str:
+    """What the request email's button filters the Frequencies tab to: the
+    entry's most specific field (the tab matches one field at a time)."""
+    return f.frequency or f.description or f.talkgroup or f.network or ""
+
+
 @router.post("/{frequency_id}/change-request")
 @_limiter.limit("10/day")
 async def request_frequency_change(
@@ -511,6 +517,7 @@ async def request_frequency_change(
                 requester_email=current_user.email,
                 action=data.action,
                 current=_frequency_text(frequency),
+                search=_frequency_search_term(frequency),
                 proposed=_frequency_text(data.proposed) if data.proposed and data.action == "edit" else None,
                 reason=refusal,
                 uses=describe_uses(len(uses.net_ids), len(uses.template_ids), uses.check_in_count) if uses.in_use else None,

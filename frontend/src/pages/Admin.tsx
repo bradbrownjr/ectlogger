@@ -58,6 +58,11 @@ const TAB_KEYS = ['users', 'contacts', 'fields', 'frequencies', 'security', 'mai
 const Admin: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [tabValue, setTabValue] = useState(() => Math.max(0, TAB_KEYS.indexOf(searchParams.get('tab') ?? '')));
+  // ?search=<text> in an admin email's link filters the tab the link names
+  // (early access request and callsign-taken alert: users; frequency change
+  // request: frequencies). Only that tab gets it, or switching tabs would
+  // filter another list by text that can't match it (2026-11-13).
+  const linkSearch = (tab: string) => (searchParams.get('tab') === tab ? searchParams.get('search') ?? '' : '');
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -158,6 +163,7 @@ const Admin: React.FC = () => {
           <AdminUsersTab
             showSnackbar={showSnackbar}
             refreshTrigger={usersRefreshTrigger}
+            initialSearch={linkSearch('users')}
             onShowActivity={(person) => {
               setActivityPerson(person);
               setTabValue(TAB_KEYS.indexOf('activity'));
@@ -180,7 +186,7 @@ const Admin: React.FC = () => {
 
         {/* ========== TAB 3: FREQUENCIES ========== */}
         <TabPanel value={tabValue} index={3}>
-          <AdminFrequenciesTab showSnackbar={showSnackbar} />
+          <AdminFrequenciesTab showSnackbar={showSnackbar} initialSearch={linkSearch('frequencies')} />
         </TabPanel>
 
         {/* ========== TAB 4: SECURITY ========== */}

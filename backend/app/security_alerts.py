@@ -86,10 +86,10 @@ async def check_failed_sign_ins(db: AsyncSession, user: User, mfa: bool, now: Op
         from app.services.account_email import account_addresses
         addresses = await account_addresses(db, user)
         for address in addresses:
-            await EmailService.send_failed_sign_in_alert(address, user_label(user), rows, two_factor=mfa, to_admin=False)
+            await EmailService.send_failed_sign_in_alert(address, user_label(user), user.id, rows, two_factor=mfa, to_admin=False)
         for admin_email in await _admin_emails(db):
             if admin_email not in addresses:
-                await EmailService.send_failed_sign_in_alert(admin_email, user_label(user), rows, two_factor=mfa, to_admin=True)
+                await EmailService.send_failed_sign_in_alert(admin_email, user_label(user), user.id, rows, two_factor=mfa, to_admin=True)
     except Exception as exc:
         logger.error("SECURITY_ALERT", f"Failed sign-in alert for user {user.id} not sent: {exc}")
     return True

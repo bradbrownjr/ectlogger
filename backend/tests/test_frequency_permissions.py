@@ -212,6 +212,7 @@ async def test_change_request_only_when_refused(client, db, owner, other, admin,
     assert r.status_code == 200
     assert [s["to_email"] for s in sent] == [admin.email]
     assert sent[0]["proposed"].startswith("146.940 FM")
+    assert sent[0]["search"] == "146.520"  # the email button filters the Frequencies tab to it
     # An edit request must say what to change it to.
     r = await client.post(f"/api/frequencies/{freq.id}/change-request", json={"action": "edit"}, headers=auth_headers(other))
     assert r.status_code == 422

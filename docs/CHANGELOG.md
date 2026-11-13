@@ -21,6 +21,7 @@ All notable changes to ECTLogger are documented here.
 ## Improvements
 
 * **Schedules: Told before you start** — When your account can't create a schedule yet, clicking **+** now says why straight away and offers **Request early access**, instead of after you've filled in the whole form.
+* **Admin: Request emails open on the right row** — The button in an early access request now opens the Users tab showing only that person, a frequency request opens on that frequency, and a failed sign-in alert opens that account's activity, so there's nothing to search for.
 
 ---
 

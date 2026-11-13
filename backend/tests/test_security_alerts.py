@@ -30,7 +30,7 @@ def alerts(monkeypatch):
     """Capture alert emails instead of sending them."""
     sent = {"signin": [], "mute": []}
 
-    async def _signin(to_email, account, attempts, two_factor, to_admin):
+    async def _signin(to_email, account, user_id, attempts, two_factor, to_admin):
         sent["signin"].append({"to": to_email, "account": account, "attempts": attempts,
                                "two_factor": two_factor, "to_admin": to_admin})
 

@@ -28,7 +28,8 @@ def _when(value) -> str:
     return str(value)
 
 
-async def send_failed_sign_in_alert(to_email: str, account: str, attempts: List[dict], two_factor: bool, to_admin: bool):
+async def send_failed_sign_in_alert(to_email: str, account: str, user_id: int, attempts: List[dict], two_factor: bool,
+                                    to_admin: bool):
     """Failed sign-ins on one account. attempts: dicts with when, what, ip,
     location, browser. The owner's copy says what to do; the admin's copy
     names the account and links to its activity."""
@@ -59,7 +60,7 @@ async def send_failed_sign_in_alert(to_email: str, account: str, attempts: List[
         </tr>
         {% endfor %}
       </table>
-      {% if to_admin %}<p><a href="{{ activity_url }}">Open the activity log</a></p>{% endif %}
+      {% if to_admin %}<p><a href="{{ activity_url }}">See {{ account }}'s activity</a></p>{% endif %}
       <div class="footer">
         <p>Locations are approximate. {{ attribution }}</p>
         {% if not to_admin %}<p>If you didn't expect this, contact an administrator of {{ app_name }}.</p>{% endif %}
@@ -69,7 +70,7 @@ async def send_failed_sign_in_alert(to_email: str, account: str, attempts: List[
     html = template.render(
         style=_STYLE, app_name=settings.app_name, account=account, two_factor=two_factor, to_admin=to_admin,
         attempts=[{**a, "when": _when(a["when"])} for a in attempts], attribution=ATTRIBUTION_HTML,
-        activity_url=f"{settings.frontend_url}/admin/users?tab=activity",
+        activity_url=f"{settings.frontend_url}/admin/users?tab=activity&user={user_id}&label={quote(account)}",
     )
     subject = (f"Failed sign-ins on {account}" if to_admin
                else f"Someone tried to sign in to your {settings.app_name} account")
