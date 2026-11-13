@@ -4,7 +4,7 @@ summary: Turning a net into a schedule, the recurrence options, what each net it
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-13
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/recurring-schedules/
@@ -22,7 +22,7 @@ Your instance's admins can require an account to be a minimum age and to have ch
 
 Every net you were checked into counts toward the net requirement, under any of the callsigns on your profile, including nets where net control logged you before you had an account. It is the same count your profile shows.
 
-If you are turned away, the message offers **Request early access**. Add a note if you like, such as which net you are setting up, and it goes to the admins by email. You get an email back when one of them grants it.
+If your account can't create a schedule yet, you are told as soon as you click **+**, before you fill anything in. For the account age or net requirement, the message offers **Request early access**. Add a note if you like, such as which net you are setting up, and it goes to the admins by email. You get an email back when one of them grants it.
 
 ## Recurrence types
 

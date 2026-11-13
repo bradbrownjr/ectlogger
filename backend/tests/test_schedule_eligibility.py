@@ -138,3 +138,45 @@ async def test_grant_lets_user_create_and_emails_them_once(client, db, owner, ad
     assert sent == [(owner.email,)]
     resp = await client.post("/api/templates/", json={"name": "Mine"}, headers=auth_headers(owner))
     assert resp.status_code == 201
+
+
+# ========== ASKED BEFORE THE FORM (GET /templates/eligibility) ==========
+# KD1OM, 2026-11-13: the refusal only came on save, after the whole form was
+# filled in. The new-schedule page now asks first; its answer must match the
+# save's for every refusal, or the page would wave through what the save
+# refuses (or the reverse).
+
+async def _eligibility(client, user):
+    resp = await client.get("/api/templates/eligibility", headers=auth_headers(user))
+    assert resp.status_code == 200, resp.text
+    return resp.json()
+
+
+@pytest.mark.asyncio
+async def test_eligibility_matches_the_save_for_too_new_and_no_nets(client, db, owner):
+    for days in (1, 30):  # too new, then old enough with no nets
+        await _age(db, owner, days)
+        asked = await _eligibility(client, owner)
+        saved = await client.post("/api/templates/", json={"name": "Mine"}, headers=auth_headers(owner))
+        assert saved.status_code == 403
+        assert asked == {"eligible": False, "message": saved.json()["detail"]["message"],
+                         "code": SCHEDULE_REQUIREMENTS_NOT_MET}
+
+
+@pytest.mark.asyncio
+async def test_eligibility_daily_limit_has_no_code(client, db, owner):
+    await _age(db, owner, 30)
+    await _staff_logged_check_in(db, owner.callsign)
+    db.add(AppSettings(id=1, schedule_max_per_day=1))
+    await db.commit()
+
+    assert (await _eligibility(client, owner))["eligible"] is True
+    assert (await client.post("/api/templates/", json={"name": "One"}, headers=auth_headers(owner))).status_code == 201
+    asked = await _eligibility(client, owner)
+    saved = await client.post("/api/templates/", json={"name": "Two"}, headers=auth_headers(owner))
+    assert asked == {"eligible": False, "message": saved.json()["detail"], "code": None}
+
+
+@pytest.mark.asyncio
+async def test_eligibility_needs_sign_in(client):
+    assert (await client.get("/api/templates/eligibility")).status_code in (401, 403)

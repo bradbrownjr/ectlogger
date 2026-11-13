@@ -184,6 +184,31 @@ class EarlyAccessRequest(BaseModel):
     note: Optional[str] = Field(None, max_length=1000)
 
 
+class ScheduleEligibilityResponse(BaseModel):
+    eligible: bool
+    message: str = ""
+    # SCHEDULE_REQUIREMENTS_NOT_MET when early access would lift the refusal
+    # (the same code create_template's 403 carries), else None.
+    code: Optional[str] = None
+
+
+@router.get("/eligibility", response_model=ScheduleEligibilityResponse)
+async def get_schedule_eligibility(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Whether the signed-in user may create a schedule right now, asked when
+    the new-schedule page opens so a refusal comes before the form is filled
+    in (KD1OM, 2026-11-13). The same check create_template makes on save.
+    Response: { eligible, message, code }."""
+    outcome = await check_schedule_creation_eligibility(db, current_user)
+    return ScheduleEligibilityResponse(
+        eligible=outcome.eligible,
+        message=outcome.message,
+        code=SCHEDULE_REQUIREMENTS_NOT_MET if outcome.early_access_would_help else None,
+    )
+
+
 @router.post("/early-access-request")
 @_limiter.limit("3/day")
 async def request_early_access(

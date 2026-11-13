@@ -158,6 +158,29 @@ const CreateSchedule: React.FC = () => {
   }>({ open: false, message: '' });
   // Refusal for account age / nets attended, which an admin can waive (null when closed)
   const [earlyAccessMessage, setEarlyAccessMessage] = useState<string | null>(null);
+  // True when the refusal came as the page opened: closing it leaves the
+  // page, since the form could not be saved anyway.
+  const [refusedOnOpen, setRefusedOnOpen] = useState(false);
+
+  // ---- Can this account create a schedule? ----
+  // Asked as the page opens (both + buttons land here), so a refusal comes
+  // before the form is filled in rather than on save (KD1OM, 2026-11-13).
+  // Save still checks, for a limit reached meanwhile in another tab.
+  useEffect(() => {
+    if (isEdit) return;
+    templateApi.scheduleEligibility()
+      .then(({ data }) => {
+        if (data.eligible) return;
+        setRefusedOnOpen(true);
+        if (data.code === 'schedule_requirements_not_met') {
+          setEarlyAccessMessage(data.message);
+        } else {
+          setBlockingAlert({ open: true, message: data.message, title: 'Cannot Create Schedule', severity: 'error' });
+        }
+      })
+      .catch(() => { /* the save makes the same check */ });
+  }, [isEdit]);
+  const leaveIfRefusedOnOpen = () => { if (refusedOnOpen) navigate(-1); };
 
   // ---- Reference data fetches ----
   useEffect(() => {
@@ -519,17 +542,18 @@ const CreateSchedule: React.FC = () => {
         {/* ========== BLOCKING ALERT FOR ERRORS ========== */}
         <BlockingAlert
           open={blockingAlert.open}
-          onClose={() => setBlockingAlert({ ...blockingAlert, open: false })}
+          onClose={() => { setBlockingAlert({ ...blockingAlert, open: false }); leaveIfRefusedOnOpen(); }}
           message={blockingAlert.message}
           title={blockingAlert.title}
           severity={blockingAlert.severity}
         />
 
         {/* ========== EARLY ACCESS REQUEST ========== */}
-        {/* Shows when creating is refused for account age or nets attended */}
+        {/* Shows when creating is refused for account age or nets attended,
+            as the page opens or on save */}
         <EarlyAccessRequestDialog
           open={earlyAccessMessage !== null}
-          onClose={() => setEarlyAccessMessage(null)}
+          onClose={() => { setEarlyAccessMessage(null); leaveIfRefusedOnOpen(); }}
           message={earlyAccessMessage ?? ''}
         />
 

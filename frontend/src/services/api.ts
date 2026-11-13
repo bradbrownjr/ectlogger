@@ -447,6 +447,8 @@ export const templateApi = {
   create: (data: any) => api.post('/templates/', data),
   // Emails the admins asking for early access to schedule creation
   // (templates_core.py::request_early_access). 400 if not needed, 429 after 3/day.
+  // Whether the signed-in user may create a schedule: { eligible, message, code }
+  scheduleEligibility: () => api.get('/templates/eligibility'),
   requestEarlyAccess: (note?: string) => api.post('/templates/early-access-request', { note }),
   list: (params?: { my_templates?: boolean; include_inactive?: boolean }) => 
     api.get('/templates/', { params }),

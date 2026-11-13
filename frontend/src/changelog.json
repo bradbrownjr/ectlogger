@@ -1,6 +1,22 @@
 {
-  "version": "2026.11.12",
+  "version": "2026.11.13",
   "entries": [
+    {
+      "version": "2026.11.13",
+      "date": "2026-11-13",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Schedules: Told before you start — When your account can't create a schedule yet, clicking + now says why straight away and offers Request early access, instead of after you've filled in the whole form.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.11.12",
       "date": "2026-11-12",

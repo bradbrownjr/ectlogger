@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-11-12
+revised: 2026-11-13
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,14 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# November 13, 2026
+
+## Improvements
+
+* **Schedules: Told before you start** — When your account can't create a schedule yet, clicking **+** now says why straight away and offers **Request early access**, instead of after you've filled in the whole form.
 
 ---
 
