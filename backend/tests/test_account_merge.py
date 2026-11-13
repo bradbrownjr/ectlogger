@@ -55,9 +55,11 @@ async def pair(db):
     return original, second
 
 
-async def _merge(client, admin, admin_code, target, source):
-    return await client.post(f"/api/users/{target.id}/merge", json={"source_id": source.id, "mfa_code": admin_code()},
-                             headers=auth_headers(admin))
+async def _merge(client, admin, admin_code, target, source, choices=None):
+    body = {"source_id": source.id, "mfa_code": admin_code()}
+    if choices is not None:
+        body["choices"] = choices
+    return await client.post(f"/api/users/{target.id}/merge", json=body, headers=auth_headers(admin))
 
 
 # ========== EVERY ACCOUNT REFERENCE IS COVERED ==========
@@ -153,16 +155,79 @@ async def test_merge_moves_everything_and_keeps_the_originals_copy(client, db, a
 
 
 @pytest.mark.asyncio
-async def test_a_second_primary_callsign_is_kept_as_a_previous_one(client, db, admin, admin_code, pair, notices):
+async def test_a_second_primary_callsign_is_kept_as_an_additional_one(client, db, admin, admin_code, pair, notices):
+    """Still pickable at check-in, not hidden as a previous callsign."""
     original, second = pair
-    second.callsign = "KC1NEW"
+    second.callsign = "K9NPD/1"
     await db.commit()
     oid = original.id
     assert (await _merge(client, admin, admin_code, original, second)).status_code == 200
     db.expire_all()
     merged_user = (await db.execute(select(User).where(User.id == oid))).scalar_one()
     assert merged_user.callsign == "K9NPD"
-    assert json.loads(merged_user.previous_callsigns) == ["KC1NEW"]
+    assert json.loads(merged_user.callsigns) == ["K9NPD/1"]
+    assert json.loads(merged_user.previous_callsigns) == []
+
+
+@pytest.mark.asyncio
+async def test_admin_picks_each_value_from_either_account(client, db, admin, admin_code, notices):
+    """KD1OM, 2026-11-13: two accounts, KD1OM on the older and KD1OM/1 on
+    the newer, which has the address he uses. Merging the older into the
+    newer, the admin keeps KD1OM as the callsign and the newer address as
+    primary; the rest of each account comes along."""
+    older = User(email="op@yahoo.example", callsign="KD1OM", name="Steve", location="Gorham, ME",
+                 role=UserRole.USER, is_active=True, oauth_provider="email", oauth_id="op@yahoo.example")
+    newer = User(email="op@gmail.example", callsign="KD1OM/1", name="Steve J", role=UserRole.USER,
+                 is_active=True, oauth_provider="email", oauth_id="op@gmail.example")
+    db.add_all([older, newer])
+    await db.commit()
+    kept_id = newer.id
+
+    resp = await _merge(client, admin, admin_code, newer, older,
+                        choices={"callsign": "source", "name": "target", "email": "target"})
+    assert resp.status_code == 200, resp.text
+    db.expire_all()
+    kept = (await db.execute(select(User).where(User.id == kept_id))).scalar_one()
+    assert (kept.email, kept.callsign, kept.name, kept.location) == ("op@gmail.example", "KD1OM", "Steve J", "Gorham, ME")
+    assert json.loads(kept.callsigns) == ["KD1OM/1"]
+    backups = [e.email for e in (await db.execute(select(UserEmail).where(UserEmail.user_id == kept_id))).scalars()]
+    assert backups == ["op@yahoo.example"]
+    for address in ("op@gmail.example", "op@yahoo.example"):
+        signed = await client.post("/api/auth/magic-link/verify", json={"token": create_magic_link_token(address)})
+        assert signed.json()["user"]["id"] == kept_id
+    merged = (await db.execute(select(AuditEvent).where(AuditEvent.action == "user.merged"))).scalars().one()
+    assert json.loads(merged.details)["taken_from_merged"] == ["callsign"]
+
+
+@pytest.mark.asyncio
+async def test_the_merged_accounts_address_can_become_primary(client, db, admin, admin_code, pair, notices):
+    """The kept account's own address becomes the backup, and both still
+    sign in to it."""
+    original, second = pair
+    oid = original.id
+    resp = await _merge(client, admin, admin_code, original, second, choices={"email": "source"})
+    assert resp.status_code == 200, resp.text
+    db.expire_all()
+    kept = (await db.execute(select(User).where(User.id == oid))).scalar_one()
+    assert (kept.email, kept.oauth_id) == ("k9npd@gmail.example", "k9npd@gmail.example")
+    backups = [e.email for e in (await db.execute(select(UserEmail).where(UserEmail.user_id == oid))).scalars()]
+    assert backups == ["k9npd@arrl.example"]
+    for address in ("k9npd@gmail.example", "k9npd@arrl.example"):
+        signed = await client.post("/api/auth/magic-link/verify", json={"token": create_magic_link_token(address)})
+        assert signed.json()["user"]["id"] == oid
+
+
+@pytest.mark.asyncio
+async def test_a_blank_value_is_never_chosen_and_unknown_fields_are_refused(client, db, admin, admin_code, pair, notices):
+    original, second = pair
+    oid, sid = original.id, second.id
+    resp = await _merge(client, admin, admin_code, original, second, choices={"password_hash": "source"})
+    assert resp.status_code == 400
+    assert (await db.execute(select(User).where(User.id == sid))).scalar_one_or_none() is not None
+    # second has no callsign: choosing it leaves the original's.
+    assert (await _merge(client, admin, admin_code, original, second, choices={"callsign": "source"})).status_code == 200
+    db.expire_all()
+    assert (await db.execute(select(User).where(User.id == oid))).scalar_one().callsign == "K9NPD"
 
 
 @pytest.mark.asyncio

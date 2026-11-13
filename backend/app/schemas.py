@@ -1572,6 +1572,9 @@ class AccountMergeRequest(BaseModel):
     """Merge account source_id into the account in the path (admin)."""
     source_id: int
     mfa_code: str = Field(min_length=1, max_length=32)
+    # Which account each profile value comes from (account_merge.CHOOSABLE_FIELDS);
+    # a field left out keeps the kept account's value, its blanks filled.
+    choices: Dict[str, Literal["source", "target"]] = Field(default_factory=dict)
 
 
 class AccountMergeSide(BaseModel):
@@ -1579,6 +1582,11 @@ class AccountMergeSide(BaseModel):
     email: str
     callsign: Optional[str] = None
     name: Optional[str] = None
+    gmrs_callsign: Optional[str] = None
+    location: Optional[str] = None
+    skywarn_number: Optional[str] = None
+    website_url: Optional[str] = None
+    timezone: Optional[str] = None
     created_at: Optional[datetime] = None
     last_active: Optional[datetime] = None
 

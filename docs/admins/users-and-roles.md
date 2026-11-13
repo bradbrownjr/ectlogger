@@ -4,7 +4,7 @@ summary: Inviting people, editing an account's identity and role, undoing a call
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-13
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/users-and-roles/
@@ -84,10 +84,11 @@ When you're satisfied it is the same person, merge the accounts:
 
 1. On the newer account's row, click **Merge into another account** (the merge icon).
 2. In **Account to keep**, pick their original account, usually the older one with the callsign and check-ins. From the duplicates list it is already filled in with the account that has a callsign and the most check-ins.
-3. Read the comparison and the list of what moves. Where both accounts have the same thing, such as a spot on the same schedule's staff, the kept account's stays.
-4. Type your two-factor code and click **Merge accounts**.
+3. Where the two accounts have different values, such as two addresses or two callsigns, tap the one to keep. A check mark shows the value that stays. The kept account's value is selected at first.
+4. Read the list of what moves. Where both accounts have the same thing, such as a spot on the same schedule's staff, the kept account's stays.
+5. Click **Merge accounts**, type your two-factor code, and click **Merge accounts** again.
 
-Everything the newer account had moves to the original: check-ins, net roles, staff and rotation spots, subscriptions, chat, traffic, and its activity-log history. Blank profile fields on the original, such as a missing name or location, are filled in from the newer one; anything already filled in stays. A different primary callsign on the newer account is kept as a previous callsign, so its check-ins still count. Its address becomes a [backup email](/docs/operators/signing-in/#add-a-backup-email) on the original, so either address signs them in from now on. The newer account is then deleted. A merge can't be undone, which is why it takes a fresh two-factor code. Both addresses are emailed that it happened, and the activity log records it as **Accounts merged**, with what moved.
+Everything the newer account had moves to the original: check-ins, net roles, staff and rotation spots, subscriptions, chat, traffic, and its activity-log history. Blank profile fields on the original, such as a missing name or location, are filled in from the newer one. The callsign you didn't pick becomes an additional callsign on their profile, so they can still check in with it and its check-ins still count. The address you didn't pick becomes a [backup email](/docs/operators/signing-in/#add-a-backup-email), so either address signs them in from now on. Any other value you didn't pick is dropped. The newer account is then deleted. A merge can't be undone, which is why it takes a fresh two-factor code. Both addresses are emailed that it happened, and the activity log records it as **Accounts merged**, with what moved.
 
 Merging is refused for a banned account (unban it first, or don't merge it), and for the account you're signed in as. Passwords and two-factor settings never move: the original keeps its own.
 

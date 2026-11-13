@@ -1157,8 +1157,8 @@ async def _merge_pair(db: AsyncSession, target_id: int, source_id: int, admin: U
 
 
 def _merge_side(user: User) -> AccountMergeSide:
-    return AccountMergeSide(id=user.id, email=user.email, callsign=user.callsign, name=user.name,
-                            created_at=user.created_at, last_active=user.last_active)
+    return AccountMergeSide(id=user.id, email=user.email, created_at=user.created_at, last_active=user.last_active,
+                            **{f: getattr(user, f) for f in account_merge.FILLED_FIELDS})
 
 
 @router.get("/{target_id}/merge-preview", response_model=AccountMergePreview)
@@ -1184,20 +1184,26 @@ async def merge_account(
     """Move everything of source_id's onto target_id, make its addresses
     backup sign-in addresses there, and delete it. Can't be undone, and it
     hands target a new sign-in address, so it takes a fresh two-factor code.
-    Request: { source_id, mfa_code }. Response: the merged account."""
+    Request: { source_id, mfa_code, choices? } where choices maps a profile
+    field (account_merge.CHOOSABLE_FIELDS) to "source" or "target".
+    Response: the merged account."""
     from app.auth import decrypt_mfa_secret, verify_totp_code
 
     secret = decrypt_mfa_secret(current_user.mfa_secret_encrypted) if current_user.mfa_secret_encrypted else None
     if not secret or not verify_totp_code(secret, body.mfa_code):
         raise HTTPException(status_code=403, detail="That two-factor code is not valid.")
+    unknown = set(body.choices) - set(account_merge.CHOOSABLE_FIELDS)
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"Can't choose {', '.join(sorted(unknown))} in a merge.")
     source, target = await _merge_pair(db, target_id, body.source_id, current_user)
 
     moves = await account_merge.preview(db, source)
     merged = {"id": source.id, "email": source.email, "callsign": source.callsign, "name": source.name}
-    added = await account_merge.merge_accounts(db, source, target)
+    added = await account_merge.merge_accounts(db, source, target, body.choices)
     record_event(db, "user.merged", current_user, target_type="user", target_id=target.id,
                  target_label=user_label(target), subject=target,
-                 details={"merged": merged, "moved": moves, "addresses_added": added})
+                 details={"merged": merged, "moved": moves, "addresses_added": added,
+                          "taken_from_merged": sorted(f for f, side in body.choices.items() if side == "source")})
     await db.commit()
     await db.refresh(target)
     await notify_sign_in_address_change(db, target, "merged", merged["email"], by_admin=True)

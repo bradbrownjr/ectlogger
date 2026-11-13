@@ -21,7 +21,7 @@ stored as JSON on chat messages.
 """
 import json
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy import and_, delete, exists, select, update
 from sqlalchemy import func
@@ -29,6 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import Base
 from app.models import AuditEvent, ChatMessage, ChatMute, User, UserEmail
+from app.services.account_email import make_backup_primary
 from app.utils import normalize_email
 
 # Tables with no unique constraint that still hold one row per account per
@@ -42,11 +43,16 @@ SOFT_UNIQUE: Dict[Tuple[str, str], Tuple[str, ...]] = {
     ("net_invitations", "user_id"): ("net_id",),
 }
 
-# Profile fields the original keeps, filled from the second account only
-# where the original's is blank. Never sign-in secrets (password, two-factor):
-# the second account's addresses already sign in, and nothing else of its
-# should be able to.
+# Profile fields the admin may take from either account (the merge dialog's
+# comparison table). By default the original's value stays and its blanks are
+# filled from the second account. Never sign-in secrets (password,
+# two-factor): the second account's addresses already sign in, and nothing
+# else of its should be able to.
 FILLED_FIELDS = ("name", "callsign", "gmrs_callsign", "location", "skywarn_number", "website_url", "timezone")
+# The primary address can be taken from either account too; the other one
+# stays a backup sign-in address (KD1OM, 2026-11-13: keep the newer gmail
+# address as primary and the older account's callsign).
+CHOOSABLE_FIELDS = FILLED_FIELDS + ("email",)
 
 # What the preview calls each column; anything else is named from its table.
 LABELS = {
@@ -129,11 +135,26 @@ async def preview(db: AsyncSession, source: User) -> List[dict]:
     return sorted(rows, key=lambda r: (-r["count"], r["label"]))
 
 
-async def merge_accounts(db: AsyncSession, source: User, target: User) -> List[str]:
+def _picks_source(field: str, kept, other, choices: Dict[str, str]) -> bool:
+    """Whether target's field takes source's value: the admin's choice
+    when made, else only to fill a blank. A blank is never chosen over a
+    value."""
+    if not other:
+        return False
+    if not kept:
+        return True
+    return choices.get(field) == "source"
+
+
+async def merge_accounts(db: AsyncSession, source: User, target: User,
+                         choices: Optional[Dict[str, str]] = None) -> List[str]:
     """Move everything of source's onto target and delete source. Does not
     commit, so the caller's activity-log entry lands in the same
-    transaction. Returns the addresses added to target as backups."""
+    transaction. choices maps a CHOOSABLE_FIELDS name to "source" or
+    "target"; a field left out keeps target's value. Returns the addresses
+    added to target as backups."""
     src, tgt = source.id, target.id
+    choices = choices or {}
 
     # A personal mute of each other would become a mute of oneself.
     await db.execute(delete(ChatMute).where(
@@ -171,18 +192,20 @@ async def merge_accounts(db: AsyncSession, source: User, target: User) -> List[s
         if src in ids:
             message.mentioned_user_ids = json.dumps(list(dict.fromkeys(tgt if i == src else i for i in ids)))
 
-    # Profile: the original's values, its blanks filled from source. The
-    # callsign columns are unique, so source lets go of them first.
-    filled = {f: getattr(source, f) for f in FILLED_FIELDS if not getattr(target, f) and getattr(source, f)}
-    source_callsign = source.callsign
+    # Profile: each chosen value, else the original's with its blanks filled
+    # from source. The callsign columns are unique, so source lets go of
+    # them first.
+    filled = {f: getattr(source, f) for f in FILLED_FIELDS
+              if _picks_source(f, getattr(target, f), getattr(source, f), choices)}
+    primaries = [target.callsign, source.callsign]
     source.callsign = None
     source.gmrs_callsign = None
     callsigns = _json_list(target.callsigns) + _json_list(source.callsigns)
     previous = _json_list(target.previous_callsigns) + _json_list(source.previous_callsigns)
-    # A different primary callsign on source keeps its check-ins attached,
-    # the same way a callsign change does (routers/users.py).
-    if source_callsign and "callsign" not in filled:
-        previous.append(source_callsign.upper())
+    # The primary callsign not chosen stays an additional callsign: it can
+    # still be picked at check-in, and its check-ins stay attached
+    # (utils.py reads both lists). The chosen one is dropped below.
+    callsigns += [cs.upper() for cs in primaries if cs]
     await db.flush()
     for field, value in filled.items():
         setattr(target, field, value)
@@ -206,6 +229,16 @@ async def merge_accounts(db: AsyncSession, source: User, target: User) -> List[s
 
     await db.delete(source)
     await db.flush()
+
+    # Source's address as the primary: swap it with target's, which becomes
+    # the backup. After source is deleted, since User.email is unique.
+    if choices.get("email") == "source" and source.email:
+        address = normalize_email(source.email)
+        row = (await db.execute(select(UserEmail).where(UserEmail.user_id == tgt, UserEmail.email == address))
+               ).scalar_one_or_none()
+        if row is not None:
+            make_backup_primary(target, row)
+            await db.flush()
     return added
 
 

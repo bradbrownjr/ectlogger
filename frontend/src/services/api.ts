@@ -150,8 +150,9 @@ export const userApi = {
   // Merge account sourceId into targetId (admin). The preview changes nothing.
   mergePreview: (targetId: number, sourceId: number) =>
     api.get(`/users/${targetId}/merge-preview`, { params: { source_id: sourceId } }),
-  mergeAccount: (targetId: number, sourceId: number, mfaCode: string) =>
-    api.post(`/users/${targetId}/merge`, { source_id: sourceId, mfa_code: mfaCode }),
+  // choices: profile field -> 'source' | 'target' (which account's value is kept)
+  mergeAccount: (targetId: number, sourceId: number, mfaCode: string, choices: Record<string, 'source' | 'target'> = {}) =>
+    api.post(`/users/${targetId}/merge`, { source_id: sourceId, mfa_code: mfaCode, choices }),
   revertCallsignClaim: (userId: number, claimId: number) =>
     api.post(`/users/${userId}/callsign-claims/${claimId}/revert`),
   getProfile: () => api.get('/users/me'),

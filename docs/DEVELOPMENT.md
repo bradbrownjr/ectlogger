@@ -865,10 +865,15 @@ hold one row per account without a constraint), then repoints the rest. The
 activity log's `actor_user_id`/`subject_user_id` and the `mentioned_user_ids` JSON
 on chat messages have no foreign key and are handled by name;
 `tests/test_account_merge.py` fails if any other column that looks like an account
-id lacks a foreign key. Blank profile fields on the target are filled from the
-source (`FILLED_FIELDS`); passwords and two-factor never move. The source's
+id lacks a foreign key. The request's `choices` maps a `CHOOSABLE_FIELDS` name
+to `source` or `target`; a field left out keeps the target's value, its blanks
+filled from the source, and a blank is never chosen over a value. Passwords and
+two-factor never move. The primary callsign not chosen goes into `callsigns`
+(additional, still usable at check-in), not `previous_callsigns`. The source's
 addresses become target backups (the 3-address limit applies to self-service adds
-only), then the source is deleted. The endpoint needs a fresh admin TOTP code,
+only), then the source is deleted; choosing the source's address swaps it with the
+target's through `make_backup_primary` after that delete, since `User.email` is
+unique. The endpoint needs a fresh admin TOTP code,
 refuses a banned account and the admin's own, and logs `user.merged` with what
 moved. Checked against a copy of production's database before shipping: 600
 merges, no errors, no reference left behind.
