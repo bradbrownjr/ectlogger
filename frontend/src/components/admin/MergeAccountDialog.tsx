@@ -268,8 +268,8 @@ const MergeAccountDialog: React.FC<MergeAccountDialogProps> = ({ source, initial
       <DialogContent>
         <DialogContentText sx={{ mb: 2 }}>
           Use this when one operator has two accounts. Pick the account to keep: its password, two-factor setup, role
-          and early access stay as they are. Everything the other account has moves to it, and the other account is
-          deleted.
+          and early access stay as they are. Everything else is merged into it. Below, choose which email and callsign
+          are primary, and which profile details to keep.
         </DialogContentText>
         <Autocomplete
           options={candidates}
