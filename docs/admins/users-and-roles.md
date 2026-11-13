@@ -84,7 +84,7 @@ When you're satisfied it is the same person, merge the accounts:
 
 1. On the newer account's row, click **Merge into another account** (the merge icon).
 2. In **Account to keep**, pick their original account, usually the older one with the callsign and check-ins. From the duplicates list it is already filled in with the account that has a callsign and the most check-ins.
-3. Where the two accounts have different values, such as two addresses or two callsigns, tap the one to keep. A check mark shows the value that stays. The kept account's value is selected at first.
+3. Under **Email and callsign**, tap the address and the callsign to make primary. Both are kept: the other address becomes a backup sign-in address and the other callsign an additional callsign. Under **Profile**, which lists only details the two accounts disagree on, tap the value to keep; the other is dropped. Each value is labelled with what happens to it, and the kept account's values are selected at first.
 4. Read the list of what moves. Where both accounts have the same thing, such as a spot on the same schedule's staff, the kept account's stays.
 5. Click **Merge accounts**, type your two-factor code, and click **Merge accounts** again.
 

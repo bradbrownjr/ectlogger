@@ -77,6 +77,17 @@ const CHOOSABLE: { field: ChoosableField; label: string }[] = [
 
 const valueOf = (side: MergeSide, field: ChoosableField) => (side[field] || '').trim();
 
+// Both values survive a merge: the one not made primary stays as a backup
+// sign-in address or an additional callsign (backend account_merge.py).
+const PAIRED: { field: 'email' | 'callsign'; label: string; other: string }[] = [
+  { field: 'email', label: 'Email', other: 'Backup sign-in' },
+  { field: 'callsign', label: 'Callsign', other: 'Additional' },
+];
+// Only one value survives; the other is dropped.
+const SINGLE = CHOOSABLE.filter(({ field }) => field !== 'email' && field !== 'callsign');
+
+const accountName = (u: MergeSide) => u.callsign || u.email;
+
 // A choice is offered only when both accounts have a value and they differ;
 // otherwise the merge keeps whichever value exists, as the server does.
 const isChoice = (preview: MergePreview, field: ChoosableField) => {
@@ -170,27 +181,31 @@ const MergeAccountDialog: React.FC<MergeAccountDialogProps> = ({ source, initial
     }
   };
 
-  const sideRow = (label: string, pick: (s: MergeSide) => React.ReactNode) => (
-    <TableRow key={label}>
-      <TableCell component="th" scope="row">{label}</TableCell>
-      <TableCell>{preview && pick(preview.target)}</TableCell>
-      <TableCell>{preview && pick(preview.source)}</TableCell>
-    </TableRow>
-  );
   const when = (value?: string | null) => (value ? formatDate(value, preferUtc) : 'Never');
 
-  // One cell of a choosable row: a button when the two accounts differ, the
-  // value with a check mark when it is the one that stays.
-  const choiceCell = (p: MergePreview, field: ChoosableField, side: Side) => {
+  // One value in a comparison row. Where the two accounts differ it is a
+  // button; either way it says what happens to it (Primary, Backup, Kept,
+  // Dropped), since a value can survive from either account.
+  const valueCell = (p: MergePreview, field: ChoosableField, side: Side, roleUsed: string, roleOther: string) => {
     const value = valueOf(side === 'target' ? p.target : p.source, field);
-    const used = !!value && sideUsed(p, field, choices) === side;
+    if (!value) return <TableCell />;
+    const used = sideUsed(p, field, choices) === side;
+    const dropped = !used && roleOther === 'Dropped';
     // Only an address or link may break mid-word, or a narrow phone column
     // splits ordinary words ("Gorha m").
     const wrap = field === 'email' || field === 'website_url' ? 'anywhere' : 'normal';
     const content = (
-      <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.75, overflowWrap: wrap }}>
-        {used && <CheckCircleIcon fontSize="small" color="primary" aria-hidden />}
-        <span>{value}</span>
+      <Box component="span" sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, overflowWrap: wrap, minWidth: 0 }}>
+        {used && <CheckCircleIcon fontSize="small" color="primary" aria-hidden sx={{ mt: 0.25 }} />}
+        <Box component="span" sx={{ minWidth: 0 }}>
+          <Box component="span" sx={{ display: 'block', textDecoration: dropped ? 'line-through' : 'none',
+            color: dropped ? 'text.secondary' : 'text.primary' }}>
+            {value}
+          </Box>
+          <Typography component="span" variant="caption" sx={{ display: 'block', color: used ? 'primary.main' : 'text.secondary' }}>
+            {used ? roleUsed : roleOther}
+          </Typography>
+        </Box>
       </Box>
     );
     if (!isChoice(p, field)) return <TableCell>{content}</TableCell>;
@@ -199,12 +214,11 @@ const MergeAccountDialog: React.FC<MergeAccountDialogProps> = ({ source, initial
         <ButtonBase
           onClick={() => setChoices((c) => ({ ...c, [field]: side }))}
           aria-pressed={used}
-          aria-label={`Keep ${value}`}
+          aria-label={roleUsed === 'Primary' ? `Make ${value} primary` : `Keep ${value}`}
           sx={{
-            width: '100%', minHeight: 44, px: 1, justifyContent: 'flex-start', textAlign: 'left', borderRadius: 1,
+            width: '100%', minHeight: 44, px: 1, py: 0.5, justifyContent: 'flex-start', textAlign: 'left', borderRadius: 1,
             border: 1, borderColor: used ? 'primary.main' : 'divider',
             bgcolor: used ? 'action.selected' : 'transparent',
-            fontWeight: used ? 500 : 400,
           }}
         >
           {content}
@@ -213,10 +227,39 @@ const MergeAccountDialog: React.FC<MergeAccountDialogProps> = ({ source, initial
     );
   };
 
+  // A section's table. The column headings name the two accounts, not what
+  // happens to them: KD1OM's gmail address was the one kept, under a heading
+  // that read "Merged away" (2026-11-13).
+  const comparison = (p: MergePreview, rows: React.ReactNode) => (
+    <Table size="small" sx={{ tableLayout: 'fixed', mb: 2 }}>
+      <colgroup>
+        <col style={{ width: '28%' }} />
+        <col style={{ width: '36%' }} />
+        <col style={{ width: '36%' }} />
+      </colgroup>
+      <TableHead>
+        <TableRow>
+          <TableCell />
+          <TableCell sx={{ overflowWrap: 'anywhere' }}>{accountName(p.target)}</TableCell>
+          <TableCell sx={{ overflowWrap: 'anywhere' }}>{accountName(p.source)}</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>{rows}</TableBody>
+    </Table>
+  );
+
+  const sectionTitle = (title: string, hint: string) => (
+    <>
+      <Typography variant="subtitle2">{title}</Typography>
+      <Typography variant="body2" color="text.secondary">{hint}</Typography>
+    </>
+  );
+
   // What the kept account signs in with after the merge, for the warning.
   const primaryEmail = preview ? (sideUsed(preview, 'email', choices) === 'source' ? preview.source : preview.target).email : '';
   const backupEmail = preview ? (primaryEmail === preview.source.email ? preview.target.email : preview.source.email) : '';
-  const anyChoice = preview ? CHOOSABLE.some(({ field }) => isChoice(preview, field)) : false;
+  // Profile values only one of which can stay; the rest are kept as they are.
+  const profileChoices = preview ? SINGLE.filter(({ field }) => isChoice(preview, field)) : [];
 
   return (
     <>
@@ -224,8 +267,9 @@ const MergeAccountDialog: React.FC<MergeAccountDialogProps> = ({ source, initial
       <DialogTitle>Merge {source ? describe(source) : ''} into another account</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ mb: 2 }}>
-          Use this when one operator has two accounts. Pick the one to keep, usually the older one with their callsign
-          and check-ins.
+          Use this when one operator has two accounts. Pick the account to keep: its password, two-factor setup, role
+          and early access stay as they are. Everything the other account has moves to it, and the other account is
+          deleted.
         </DialogContentText>
         <Autocomplete
           options={candidates}
@@ -242,33 +286,51 @@ const MergeAccountDialog: React.FC<MergeAccountDialogProps> = ({ source, initial
         {/* Shows once an account to keep is picked */}
         {preview && (
           <>
-            <Table size="small" sx={{ mb: 2 }}>
-              <TableHead>
+            {/* ========== THE TWO ACCOUNTS ========== */}
+            {comparison(preview, (
+              <>
                 <TableRow>
-                  <TableCell />
-                  <TableCell>Kept</TableCell>
-                  <TableCell>Merged away</TableCell>
+                  <TableCell component="th" scope="row">Account</TableCell>
+                  <TableCell><Typography variant="body2" color="primary.main">Kept</Typography></TableCell>
+                  <TableCell><Typography variant="body2" color="text.secondary">Deleted after the merge</Typography></TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {/* Profile values: tappable where the two accounts differ */}
-                {CHOOSABLE.filter(({ field }) => valueOf(preview.target, field) || valueOf(preview.source, field)).map(({ field, label }) => (
+                <TableRow>
+                  <TableCell component="th" scope="row">Created</TableCell>
+                  <TableCell>{when(preview.target.created_at)}</TableCell>
+                  <TableCell>{when(preview.source.created_at)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell component="th" scope="row">Last active</TableCell>
+                  <TableCell>{when(preview.target.last_active)}</TableCell>
+                  <TableCell>{when(preview.source.last_active)}</TableCell>
+                </TableRow>
+              </>
+            ))}
+
+            {/* ========== BOTH KEPT: PICK THE PRIMARY ========== */}
+            {sectionTitle('Email and callsign', 'Both are kept. Tap the one to make primary.')}
+            {comparison(preview, PAIRED.filter(({ field }) => valueOf(preview.target, field) || valueOf(preview.source, field))
+              .map(({ field, label, other }) => (
+                <TableRow key={field}>
+                  <TableCell component="th" scope="row">{label}</TableCell>
+                  {valueCell(preview, field, 'target', 'Primary', other)}
+                  {valueCell(preview, field, 'source', 'Primary', other)}
+                </TableRow>
+              )))}
+
+            {/* ========== ONE KEPT: PICK WHICH ========== */}
+            {/* Shows when the accounts have different values for a profile field */}
+            {profileChoices.length > 0 && (
+              <>
+                {sectionTitle('Profile', "Only one is kept. Tap the one to keep. Details only one account has, or both share, are kept as they are.")}
+                {comparison(preview, profileChoices.map(({ field, label }) => (
                   <TableRow key={field}>
                     <TableCell component="th" scope="row">{label}</TableCell>
-                    {choiceCell(preview, field, 'target')}
-                    {choiceCell(preview, field, 'source')}
+                    {valueCell(preview, field, 'target', 'Kept', 'Dropped')}
+                    {valueCell(preview, field, 'source', 'Kept', 'Dropped')}
                   </TableRow>
-                ))}
-                {sideRow('Created', (s) => when(s.created_at))}
-                {sideRow('Last active', (s) => when(s.last_active))}
-              </TableBody>
-            </Table>
-            {/* Shows when at least one value differs between the accounts */}
-            {anyChoice && (
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Where they differ, tap the value to keep. The address you don't pick stays a backup sign-in address,
-                and the callsign you don't pick stays an additional callsign. Other values you don't pick are dropped.
-              </Typography>
+                )))}
+              </>
             )}
 
             <Typography variant="subtitle2" gutterBottom>What moves to the kept account</Typography>
