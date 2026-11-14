@@ -206,3 +206,20 @@ async def test_admin_user_list_is_not_capped(client, db, admin):
     resp = await client.get("/api/users", headers=auth_headers(admin))
     assert resp.status_code == 200
     assert len(resp.json()) == 106
+
+
+# ========== TRAFFIC REMINDER SWITCH ==========
+
+@pytest.mark.asyncio
+async def test_traffic_reminder_switch_defaults_on_and_persists(client, owner):
+    """notify_traffic_reminder is on by default and can be turned off from Profile."""
+    resp = await client.get("/api/users/me", headers=auth_headers(owner))
+    assert resp.status_code == 200
+    assert resp.json()["notify_traffic_reminder"] is True
+
+    resp = await client.put("/api/users/me", json={"notify_traffic_reminder": False}, headers=auth_headers(owner))
+    assert resp.status_code == 200
+    assert resp.json()["notify_traffic_reminder"] is False
+
+    resp = await client.get("/api/users/me", headers=auth_headers(owner))
+    assert resp.json()["notify_traffic_reminder"] is False

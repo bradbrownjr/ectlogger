@@ -168,6 +168,7 @@ class UserUpdate(BaseModel):
     notify_net_start: Optional[bool] = None
     notify_net_close: Optional[bool] = None
     notify_net_reminder: Optional[bool] = None
+    notify_traffic_reminder: Optional[bool] = None
     notify_ics309: Optional[bool] = None
     notify_whats_new: Optional[bool] = None
     timezone: Optional[str] = Field(None, max_length=64)
@@ -257,6 +258,7 @@ class UserResponse(UserBase):
     notify_net_start: bool = True
     notify_net_close: bool = True
     notify_net_reminder: bool = False
+    notify_traffic_reminder: bool = True
     notify_ics309: bool = False
     notify_whats_new: bool = False
     timezone: Optional[str] = None

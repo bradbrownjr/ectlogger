@@ -122,6 +122,7 @@ const Profile: React.FC = () => {
     notify_net_start: user?.notify_net_start ?? true,
     notify_net_close: user?.notify_net_close ?? true,
     notify_net_reminder: user?.notify_net_reminder ?? false,
+    notify_traffic_reminder: user?.notify_traffic_reminder ?? true,
     notify_ics309: user?.notify_ics309 ?? false,
     notify_whats_new: user?.notify_whats_new ?? false,
     theme: user?.theme ?? null,

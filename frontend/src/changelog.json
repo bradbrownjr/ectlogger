@@ -1,6 +1,22 @@
 {
-  "version": "2026.11.13b",
+  "version": "2026.11.14",
   "entries": [
+    {
+      "version": "2026.11.14",
+      "date": "2026-11-14",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Profile: Traffic reminders have their own switch — You can now stop traffic reminder emails under Notifications without turning off every email.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.11.13b",
       "date": "2026-11-13",

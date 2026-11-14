@@ -124,6 +124,24 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
               Receive a reminder email 1 hour before scheduled nets start
             </Typography>
 
+            {/* ========== Traffic reminders (on by default) ==========
+                Covers both emails from traffic_reminder_service.py: held-message
+                reminders to the holder, and the weekly stale-traffic digest to
+                a schedule's managers. */}
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.notify_traffic_reminder}
+                  onChange={(e) => setFormData({ ...formData, notify_traffic_reminder: e.target.checked })}
+                  disabled={!formData.email_notifications}
+                />
+              }
+              label="Traffic reminders"
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
+              Reminders about formal traffic you're still holding, and the weekly list of stale traffic for schedules you manage
+            </Typography>
+
             {/* ========== "What's New" digest opt-in (off by default) ==========
                 Sends a single daily email at 8 AM (user's local TZ, PST fallback)
                 summarizing platform updates from the previous day. */}

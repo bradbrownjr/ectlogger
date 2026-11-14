@@ -16,6 +16,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# November 14, 2026
+
+## Bug Fixes
+
+* **Profile: Traffic reminders have their own switch** — You can now stop traffic reminder emails under Notifications without turning off every email.
+
+---
+
 # November 13, 2026
 
 ## Improvements
