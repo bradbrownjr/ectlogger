@@ -18,6 +18,10 @@ All notable changes to ECTLogger are documented here.
 
 # November 14, 2026
 
+## Improvements
+
+* **Net forms: Easier to work through** — Everyday settings, now including Traffic Handling, stay at the top of Basic Info, and the Community, ARES and SKYWARN options fold into sections that open by themselves when one of their options is on. The communication plan lists frequencies 25 at a time and keeps your checks when you change pages.
+
 ## Bug Fixes
 
 * **Profile: Traffic reminders have their own switch** — You can now stop traffic reminder emails under Notifications without turning off every email.

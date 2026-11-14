@@ -33,6 +33,13 @@ import AnnouncementsPanel from '../components/forms/AnnouncementsPanel';
 import MarkdownRender from '../components/shared/MarkdownRender';
 import CheckInFieldsPanel from '../components/forms/CheckInFieldsPanel';
 import FormWizardFooter from '../components/forms/FormWizardFooter';
+import type { FeatureSectionExpansion } from '../utils/netFeatureSections';
+
+// Tab order. Next walks through every tab, so it is derived from this list
+// rather than a literal (until 2026-11-14 Next stopped at Announcements and
+// Check-In Fields could only be reached by clicking its tab).
+const NET_TABS = ['Basic Info', 'Net Staff', 'Communication Plan', 'Net Script', 'Announcements', 'Check-In Fields'];
+const LAST_TAB = NET_TABS.length - 1;
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -73,6 +80,10 @@ const CreateNet: React.FC = () => {
   // The net's own status, fetched alongside its other fields. Used only to
   // show the closed/archived notice below -- nothing here is status-gated.
   const [netStatus, setNetStatus] = useState<string | null>(null);
+  // Edit mode: true once the net's own settings have loaded (or failed to),
+  // so Basic Info decides which feature sections start open from real data.
+  const [netLoaded, setNetLoaded] = useState(false);
+  const [featureSectionsExpanded, setFeatureSectionsExpanded] = useState<FeatureSectionExpansion | null>(null);
 
   // ---- Core form fields ----
   const [name, setName] = useState('');
@@ -285,6 +296,8 @@ const CreateNet: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch net:', error);
       alert('Failed to load net data');
+    } finally {
+      setNetLoaded(true);
     }
   };
 
@@ -512,6 +525,11 @@ const CreateNet: React.FC = () => {
     topicHistory,
     templateId,
     showToast,
+    featureSections: {
+      loaded: !isEditMode || netLoaded,
+      expanded: featureSectionsExpanded,
+      setExpanded: setFeatureSectionsExpanded,
+    },
   };
 
   // ---- Render ----
@@ -544,12 +562,7 @@ const CreateNet: React.FC = () => {
               variant="scrollable"
               scrollButtons="auto"
             >
-              <Tab label="Basic Info" />
-              <Tab label="Net Staff" />
-              <Tab label="Communication Plan" />
-              <Tab label="Net Script" />
-              <Tab label="Announcements" />
-              <Tab label="Check-In Fields" />
+              {NET_TABS.map((label) => <Tab key={label} label={label} />)}
             </Tabs>
           </Box>
 
@@ -650,7 +663,7 @@ const CreateNet: React.FC = () => {
             cancelLabel="Cancel"
             onCancel={() => navigate(isEditMode ? `/nets/${netId}` : '/dashboard')}
             onPrevious={activeTab > 0 ? () => setActiveTab(activeTab - 1) : undefined}
-            onNext={activeTab < 4 ? () => setActiveTab(activeTab + 1) : undefined}
+            onNext={activeTab < LAST_TAB ? () => setActiveTab(activeTab + 1) : undefined}
             nextDisabled={!canProceedFromTab(activeTab)}
             nextHint={
               activeTab === 2 && selectedFrequencyIds.length === 0 ? 'Select at least one frequency to continue'

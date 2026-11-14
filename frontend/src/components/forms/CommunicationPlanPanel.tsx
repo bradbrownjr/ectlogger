@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   TextField,
   Typography,
@@ -14,6 +14,7 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
+  TablePagination,
   IconButton,
   InputAdornment,
   Button,
@@ -35,6 +36,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getErrorMessage } from '../../utils/apiErrors';
 import { FREQUENCY_MODES, frequencyEntryFor } from '../../utils/frequencyModes';
 import FrequencyChangeRequestDialog, { FrequencyChangeRequest } from './FrequencyChangeRequestDialog';
+import {
+  FrequencySortField,
+  SortDirection,
+  clampPage,
+  filterFrequencies,
+  pageRows,
+  sortFrequencies,
+} from '../../utils/communicationPlanTable';
 
 // ========== SHARED COMMUNICATION PLAN PANEL ==========
 // Frequency / channel selection table used by both CreateSchedule and CreateNet.
@@ -89,9 +98,6 @@ const describeFrequency = (f: { frequency?: string | null; network?: string | nu
   return f.description ? `${text} (${f.description})` : text;
 };
 
-type FrequencySortField = 'mode' | 'frequency' | 'talkgroup' | 'description';
-type SortDirection = 'asc' | 'desc';
-
 interface CommunicationPlanPanelProps {
   frequencies: FrequencyItem[];
   setFrequencies: React.Dispatch<React.SetStateAction<FrequencyItem[]>>;
@@ -129,41 +135,48 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
   const [selectedOnly, setSelectedOnly] = useState(false);
   const [frequencySortField, setFrequencySortField] = useState<FrequencySortField>('mode');
   const [frequencySortDirection, setFrequencySortDirection] = useState<SortDirection>('asc');
+  // Default order lists the frequencies already in use first; clicking a
+  // column heading turns that off and sorts by the column alone.
+  const [selectedFirst, setSelectedFirst] = useState(true);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
 
-  // ---- Filtering and sorting ----
-  const filteredFrequencies = frequencies.filter((freq: FrequencyItem) => {
-    if (selectedOnly && !(freq.id != null && selectedFrequencyIds.includes(freq.id))) return false;
-    if (!frequencyFilter) return true;
-    const s = frequencyFilter.toLowerCase();
-    return (
-      (freq.frequency?.toLowerCase().includes(s)) ||
-      (freq.mode?.toLowerCase().includes(s)) ||
-      (freq.network?.toLowerCase().includes(s)) ||
-      (freq.talkgroup?.toLowerCase().includes(s)) ||
-      (freq.description?.toLowerCase().includes(s))
-    );
-  });
+  // ---- Snapshot of the selection when the tab opened ----
+  // Listed first by default. Follows the selection until the user first
+  // ticks, adds or deletes something (an edit form's net or schedule loads
+  // after this tab can mount), then stays put so rows don't move under the
+  // pointer. A frequency added here joins it, so it shows at the top.
+  const [pinnedIds, setPinnedIds] = useState<number[]>(selectedFrequencyIds);
+  const pinnedFrozen = useRef(false);
+  useEffect(() => {
+    if (!pinnedFrozen.current) setPinnedIds(selectedFrequencyIds);
+  }, [selectedFrequencyIds]);
 
-  const sortedFrequencies = [...filteredFrequencies].sort((a: FrequencyItem, b: FrequencyItem) => {
-    let aVal = '';
-    let bVal = '';
-    switch (frequencySortField) {
-      case 'mode': aVal = a.mode || ''; bVal = b.mode || ''; break;
-      case 'frequency': aVal = a.frequency || a.network || ''; bVal = b.frequency || b.network || ''; break;
-      case 'talkgroup': aVal = a.talkgroup || ''; bVal = b.talkgroup || ''; break;
-      case 'description': aVal = a.description || ''; bVal = b.description || ''; break;
-    }
-    const cmp = aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: 'base' });
-    return frequencySortDirection === 'asc' ? cmp : -cmp;
-  });
+  // ---- Filtering, sorting and paging (utils/communicationPlanTable.ts) ----
+  // Filter and Selected only apply to the whole list, before paging.
+  const filteredFrequencies = filterFrequencies(frequencies, frequencyFilter, selectedOnly, selectedFrequencyIds);
+  const sortedFrequencies = sortFrequencies(
+    filteredFrequencies,
+    frequencySortField,
+    frequencySortDirection,
+    selectedFirst ? pinnedIds : null,
+  );
+  const currentPage = clampPage(page, sortedFrequencies.length, rowsPerPage);
+  const visibleFrequencies = pageRows(sortedFrequencies, currentPage, rowsPerPage);
 
   const handleFrequencySort = (field: FrequencySortField) => {
-    if (frequencySortField === field) {
+    if (selectedFirst) {
+      // First heading click: plain ascending sort by that column
+      setSelectedFirst(false);
+      setFrequencySortField(field);
+      setFrequencySortDirection('asc');
+    } else if (frequencySortField === field) {
       setFrequencySortDirection(frequencySortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setFrequencySortField(field);
       setFrequencySortDirection('asc');
     }
+    setPage(0);
   };
 
   // ---- Add a frequency ----
@@ -174,6 +187,8 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
       const response = await frequencyApi.create(toPayload(newFrequency));
       setFrequencies([...frequencies, response.data]);
       setSelectedFrequencyIds([...selectedFrequencyIds, response.data.id]);
+      pinnedFrozen.current = true;
+      setPinnedIds((prev) => [...prev, response.data.id]);
       setNewFrequency(EMPTY_DRAFT);
     } catch (error) {
       console.error('Failed to create frequency:', error);
@@ -247,6 +262,7 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
     setDeleteTarget(null);
     try {
       await frequencyApi.delete(freq.id!, context);
+      pinnedFrozen.current = true;
       setFrequencies(frequencies.filter((f) => f.id !== freq.id));
       setSelectedFrequencyIds((prev) => prev.filter((id) => id !== freq.id));
       setCoverageExcludedFrequencyIds?.((prev) => prev.filter((id) => id !== freq.id));
@@ -262,6 +278,7 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
   };
 
   const toggleSelection = (id: number) => {
+    pinnedFrozen.current = true;
     setSelectedFrequencyIds((prev: number[]) =>
       prev.includes(id) ? prev.filter((fid: number) => fid !== id) : [...prev, id]
     );
@@ -411,7 +428,7 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
       <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
         <TextField
           size="small" placeholder="Filter frequencies..." value={frequencyFilter}
-          onChange={(e) => setFrequencyFilter(e.target.value)}
+          onChange={(e) => { setFrequencyFilter(e.target.value); setPage(0); }}
           sx={{ flexGrow: 1, maxWidth: 400 }}
           InputProps={{
             startAdornment: (
@@ -419,18 +436,21 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
             ),
             endAdornment: frequencyFilter && (
               <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setFrequencyFilter('')}><ClearIcon fontSize="small" /></IconButton>
+                <IconButton size="small" aria-label="Clear filter" onClick={() => { setFrequencyFilter(''); setPage(0); }}><ClearIcon fontSize="small" /></IconButton>
               </InputAdornment>
             ),
           }}
         />
         <FormControlLabel
-          control={<Switch size="small" checked={selectedOnly} onChange={(e) => setSelectedOnly(e.target.checked)} />}
+          control={<Switch size="small" checked={selectedOnly} onChange={(e) => { setSelectedOnly(e.target.checked); setPage(0); }} />}
           label="Selected only"
           sx={{ mr: 0, whiteSpace: 'nowrap' }}
         />
         <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
           {filteredFrequencies.length} of {frequencies.length}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+          {selectedFrequencyIds.length} selected
         </Typography>
       </Box>
 
@@ -440,9 +460,10 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
             <TableRow>
               <TableCell padding="checkbox">Use</TableCell>
               {(['mode', 'frequency', 'talkgroup', 'description'] as FrequencySortField[]).map((field) => (
-                <TableCell key={field} sortDirection={frequencySortField === field ? frequencySortDirection : false}>
+                // No heading shows as sorted while the default selected-first order is on
+                <TableCell key={field} sortDirection={!selectedFirst && frequencySortField === field ? frequencySortDirection : false}>
                   <TableSortLabel
-                    active={frequencySortField === field}
+                    active={!selectedFirst && frequencySortField === field}
                     direction={frequencySortField === field ? frequencySortDirection : 'asc'}
                     onClick={() => handleFrequencySort(field)}
                   >
@@ -454,11 +475,22 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedFrequencies.map((freq: FrequencyItem) => renderRow(freq))}
+            {visibleFrequencies.map((freq: FrequencyItem) => renderRow(freq))}
+            {/* The add row is on every page */}
             {renderNewRow()}
           </TableBody>
         </Table>
       </TableContainer>
+      <TablePagination
+        component="div"
+        count={sortedFrequencies.length}
+        page={currentPage}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+        rowsPerPageOptions={[25, 50, { label: 'All', value: -1 }]}
+        labelRowsPerPage="Per page:"
+      />
 
       {/* ========== DELETE CONFIRMATION ========== */}
       <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)}>

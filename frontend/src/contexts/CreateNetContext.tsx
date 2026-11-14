@@ -1,3 +1,4 @@
+import type { FeatureSectionsState } from '../components/forms/NetFeaturesPanel';
 import type { SiteDraft } from '../utils/siteDrafts';
 import { createContext, useContext, Dispatch, SetStateAction } from 'react';
 import { FrequencyItem } from '../components/forms/CommunicationPlanPanel';
@@ -86,6 +87,9 @@ export interface CreateNetContextValue {
 
   // Toast notification
   showToast: (message: string, severity?: 'info' | 'success' | 'error' | 'warning') => void;
+
+  // Which folding feature sections on Basic Info are open (NetFeaturesPanel)
+  featureSections: FeatureSectionsState;
 }
 
 export const CreateNetContext = createContext<CreateNetContextValue | null>(null);

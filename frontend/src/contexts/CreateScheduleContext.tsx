@@ -1,3 +1,4 @@
+import type { FeatureSectionsState } from '../components/forms/NetFeaturesPanel';
 import { createContext, useContext, Dispatch, SetStateAction } from 'react';
 
 // ---- Shared domain types (exported for tab components) ----
@@ -171,6 +172,9 @@ export interface CreateScheduleContextValue {
 
   // Toast notification (Snackbar rendered by parent shell)
   showToast: (message: string) => void;
+
+  // Which folding feature sections on Basic Info are open (NetFeaturesPanel)
+  featureSections: FeatureSectionsState;
 }
 
 export const CreateScheduleContext = createContext<CreateScheduleContextValue | null>(null);

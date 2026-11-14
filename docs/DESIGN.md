@@ -317,6 +317,49 @@ verb phrase: "Create new net", "Filter nets", "View archived nets".
 
 ---
 
+## Folding Form Sections (`FoldingFormSection.tsx`)
+
+A long settings form groups its optional switches into sections, and a
+section nobody uses folds away. The first use is the feature switches on the
+Basic Info tab of the net and schedule forms
+(`components/forms/NetFeaturesPanel.tsx`, shared by both forms so they cannot
+drift): **General Net Features** is always open, while **Community Net
+Features**, **ARES & EmComm Features** and **SKYWARN Features** fold.
+
+- **One component.** Use `components/forms/FoldingFormSection.tsx` (an MUI
+  `Accordion`, `variant="outlined"`, `elevation={0}`, `disableGutters`, with a
+  rounded border and the default divider line hidden). Never hand-build
+  another folding row.
+- **The folded row says what is inside.** It shows the section title in
+  bold, a muted "N options" count, the section's one-line caption, and a
+  small outlined primary chip for each option that is on ("ICS-309",
+  "Sites (3)", "RRI strips"). A folded section with chips tells the user
+  something is set in there without opening it.
+- **It reads as something to open.** "Show options" (or "Hide" when open)
+  sits at the right in the primary color, beside the expand arrow. The whole
+  row is the button (48 px tall, keyboard focusable, `aria-expanded`, and
+  `aria-controls` pointing at the region).
+- **Start open when in use.** A section starts open when any of its options
+  is on, and folded otherwise, on create and on edit. A switch that is on by
+  default and only refines another option (Hide muted stations from ICS-309,
+  Allow stations to self-report) does not count, or the section would open
+  on every new form. Keep the rule in a pure, tested helper
+  (`utils/netFeatureSections.ts`), not in the component.
+- **Decide once, after the data loads.** In edit mode the record loads after
+  the first render, so the open/folded state stays undecided until the page
+  says its data is loaded, then is set once. It is never folded again by
+  the code: switching off the last option leaves the section open. The state
+  lives on the page, not in the tab, because a tab unmounts when another tab
+  is shown.
+- **Not for required fields.** Anything the form insists on stays outside a
+  folding section, and so does anything most users set every time.
+- **Phone width.** The summary is a wrapping row: the title, the count, and
+  "Show options" (always at the right edge, on its own line if the title
+  leaves no room), then the caption and the chips, each on a full line of
+  their own. Check it at 400 px.
+
+---
+
 ## Dialog Button Colors
 
 A dialog's buttons are colored by **what the action does**, so the color alone
@@ -1359,6 +1402,13 @@ horizontal line:
 
 This keeps dates scannable in a left-anchored column while giving full width
 to the content.
+
+A full-width table that users browse and tick (the Communication Plan's
+frequency list, the admin Contacts table) uses MUI `TablePagination` under
+the table instead, with **25 / 50 / All** and the label "Per page:". The
+search and any "Selected only" switch apply to the whole list before
+paging, reset to the first page when they change, and checked boxes are page
+state that survives paging. An inline add row stays on every page.
 
 ### Reference implementation
 

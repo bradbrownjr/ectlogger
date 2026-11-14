@@ -337,7 +337,7 @@
   },
   "net-managers/create-net-frequencies": {
     "path": "/docs/img/net-managers/create-net-frequencies.png",
-    "alt": "The Communication Plan tab, a table of frequencies with a checkbox column labelled Use outlined in red, plus a row for adding a new frequency.\n",
+    "alt": "The Communication Plan tab: a filter box with the match and selected counts beside it, a table of frequencies with a checkbox column labelled Use outlined in red, a row for adding a new frequency, and the Per page control under the table.\n",
     "caption": "Check a frequency's box to make it available on this net; add a new one from the blank row at the bottom.",
     "page": "/docs/net-managers/creating-a-net/"
   },

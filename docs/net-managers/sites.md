@@ -4,7 +4,7 @@ summary: Giving a net the places its stations deploy to, such as shelters, offic
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-14
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/sites/
@@ -23,7 +23,7 @@ You need to be able to edit the net: its manager, its schedule's manager or a co
 ## Set up the sites
 
 1. Open the net's settings (**Edit** on the net, or the form when creating it) and go to **Basic Info**.
-2. Under **ARES & EmComm Features**, find **Sites** and click **Add site**.
+2. Under **ARES & EmComm Features** (click **Show options** if it's folded), find **Sites** and click **Add site**.
 3. Type the site as one line: **Name, Town, ST**, such as `Naples Shelter, Naples, ME`, or a name followed by a grid square, such as `Gray Weather Office FN43rv`. The line underneath shows how it was split. If it says no place was found, add a comma before the town.
 4. Pick the site's **Type**: **Emergency Operations Center (EOC)**, **Official office** for an agency office that isn't running as an EOC, **Shelter**, **Point of distribution (POD)**, **Staging area**, **Hospital**, or **Other** for anywhere else, such as an aid station or a checkpoint.
 5. Leave **Supported** ticked on each site your teams will staff. A site you add by hand starts ticked.

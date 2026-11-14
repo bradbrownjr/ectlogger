@@ -51,9 +51,10 @@ shots:
       - selector: 'div[role="tabpanel"]:visible th:has-text("Use")'
         style: box
     alt: >
-      The Communication Plan tab, a table of frequencies with a checkbox
-      column labelled Use outlined in red, plus a row for adding a new
-      frequency.
+      The Communication Plan tab: a filter box with the match and selected
+      counts beside it, a table of frequencies with a checkbox column
+      labelled Use outlined in red, a row for adding a new frequency, and
+      the Per page control under the table.
     caption: Check a frequency's box to make it available on this net; add a new one from the blank row at the bottom.
 
   # ========== Recurring schedules ==========
@@ -397,6 +398,9 @@ shots:
     viewport:
       width: 1000
       height: 2400
+    # Sites sit in the folding ARES & EmComm Features section, which opens
+    # on its own once the form loads because this net has sites
+    # (utils/netFeatureSections.ts). Add site is hidden until then.
     wait_for: 'button:has-text("Add site")'
     steps:
       # The sites load after the form; wait for the third one.

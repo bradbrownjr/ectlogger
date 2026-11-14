@@ -4,7 +4,7 @@ summary: Setting up a drill that tests where you can reach, not who, such as an 
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-14
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/coverage-drills/
@@ -25,7 +25,7 @@ You need to be able to edit the net: its manager, its schedule's manager or a co
 ## Set up the drill
 
 1. Open the net's settings (**Edit** on the net, or the form when creating it) and go to **Basic Info**.
-2. Under **ARES & EmComm Features**, turn on **Enable Station-to-Station Coverage Logging**.
+2. Under **ARES & EmComm Features** (click **Show options** if it's folded), turn on **Enable Station-to-Station Coverage Logging**.
 3. Add the sites teams operate from, as [Sites](/docs/net-managers/sites/) describes.
 4. Click the star beside each office every other site should be able to reach, usually the county and regional offices. These are the **primary** sites, and the results are measured against them. The star appears once coverage logging is on.
 5. Add each repeater and node teams will try to get into, as a site of type **Repeater or node**. See [Repeaters and nodes](#repeaters-and-nodes) below.

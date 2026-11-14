@@ -38,6 +38,12 @@ import NetScriptTab from '../components/create-schedule/NetScriptTab';
 import AnnouncementsTab from '../components/create-schedule/AnnouncementsTab';
 import CheckInFieldsTab from '../components/create-schedule/CheckInFieldsTab';
 import FormWizardFooter from '../components/forms/FormWizardFooter';
+import type { FeatureSectionExpansion } from '../utils/netFeatureSections';
+
+// Tab order. Next and its double-submit guard are derived from this list
+// rather than literal indexes, so adding a tab can't strand the last one.
+const SCHEDULE_TABS = ['Basic Info', 'Schedule', 'Net Staff', 'Communication Plan', 'Net Script', 'Announcements', 'Check-In Fields'];
+const LAST_TAB = SCHEDULE_TABS.length - 1;
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -148,6 +154,10 @@ const CreateSchedule: React.FC = () => {
 
   // ---- Shell UI state ----
   const [activeTab, setActiveTab] = useState(0);
+  // Edit mode: true once the schedule's settings have loaded (or failed to),
+  // so Basic Info decides which feature sections start open from real data.
+  const [scheduleLoaded, setScheduleLoaded] = useState(false);
+  const [featureSectionsExpanded, setFeatureSectionsExpanded] = useState<FeatureSectionExpansion | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [blockingAlert, setBlockingAlert] = useState<{
@@ -287,15 +297,17 @@ const CreateSchedule: React.FC = () => {
       setAnnouncements(schedule.announcements || '');
     } catch (error) {
       console.error('Failed to fetch schedule:', error);
+    } finally {
+      setScheduleLoaded(true);
     }
   };
 
   // ---- Tab navigation ----
   const handleNextTab = () => {
-    if (activeTab === 5) {
+    if (activeTab === LAST_TAB - 1) {
       // Brief disable to prevent accidental double-submit when advancing to the final tab
       setIsTransitioning(true);
-      setActiveTab(6);
+      setActiveTab(LAST_TAB);
       setTimeout(() => setIsTransitioning(false), 500);
     } else {
       setActiveTab(activeTab + 1);
@@ -450,6 +462,11 @@ const CreateSchedule: React.FC = () => {
     staff, setStaff,
     rotationMembers, setRotationMembers,
     showToast: (message: string) => setToastMessage(message),
+    featureSections: {
+      loaded: !isEdit || scheduleLoaded,
+      expanded: featureSectionsExpanded,
+      setExpanded: setFeatureSectionsExpanded,
+    },
   };
 
   return (
@@ -474,13 +491,7 @@ const CreateSchedule: React.FC = () => {
               variant="scrollable"
               scrollButtons="auto"
             >
-              <Tab label="Basic Info" />
-              <Tab label="Schedule" />
-              <Tab label="Net Staff" />
-              <Tab label="Communication Plan" />
-              <Tab label="Net Script" />
-              <Tab label="Announcements" />
-              <Tab label="Check-In Fields" />
+              {SCHEDULE_TABS.map((label) => <Tab key={label} label={label} />)}
             </Tabs>
           </Box>
 
@@ -524,7 +535,7 @@ const CreateSchedule: React.FC = () => {
             <FormWizardFooter
               onCancel={() => navigate('/scheduler')}
               onPrevious={activeTab > 0 ? () => setActiveTab(activeTab - 1) : undefined}
-              onNext={activeTab < 6 ? handleNextTab : undefined}
+              onNext={activeTab < LAST_TAB ? handleNextTab : undefined}
             >
               <Button
                 type="submit"

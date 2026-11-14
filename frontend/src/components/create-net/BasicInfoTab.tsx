@@ -5,61 +5,147 @@ import {
   Box,
   Select,
   MenuItem,
-  FormControlLabel,
-  Switch,
-  Divider,
-  Autocomplete,
   Button,
 } from '@mui/material';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import { useCreateNetContext } from '../../contexts/CreateNetContext';
-import TrafficSettingsPanel from '../forms/TrafficSettingsPanel';
+import NetFeaturesPanel, { FeatureSwitch } from '../forms/NetFeaturesPanel';
 import CoverageSitesEditor from '../forms/CoverageSitesEditor';
 import NetLogoSection from '../NetLogoSection';
+import { draftsToPayload } from '../../utils/siteDrafts';
+
+// ========== NET TIMING SWITCHES ==========
+// Chat grace, lobby and auto-close for this net, shown in General Net
+// Features after the shared switches. The schedule form keeps these on its
+// Schedule tab, where they depend on the schedule type.
+const NetTimingSwitches: React.FC = () => {
+  const {
+    chatGracePeriodEnabled, setChatGracePeriodEnabled,
+    chatGracePeriodMinutes, setChatGracePeriodMinutes,
+    autoLobbyEnabled, setAutoLobbyEnabled,
+    autoLobbyMinutes, setAutoLobbyMinutes,
+    autoCloseEnabled, setAutoCloseEnabled,
+    autoCloseAfterMinutes, setAutoCloseAfterMinutes,
+    scheduledStartTime,
+  } = useCreateNetContext();
+
+  return (
+    <>
+      <FeatureSwitch
+        label="Keep chat open after closing"
+        caption="Chat stays open for a set time after the net closes, so participants can wrap up off-air conversations before it goes read-only."
+        checked={chatGracePeriodEnabled}
+        onChange={setChatGracePeriodEnabled}
+      >
+        {/* Shows when the chat grace period is on */}
+        {chatGracePeriodEnabled && (
+          <Box sx={{ ml: 4.5 }}>
+            <Select
+              size="small" value={chatGracePeriodMinutes}
+              onChange={(e) => setChatGracePeriodMinutes(Number(e.target.value))}
+            >
+              <MenuItem value={15}>15 minutes</MenuItem>
+              <MenuItem value={30}>30 minutes</MenuItem>
+              <MenuItem value={60}>60 minutes</MenuItem>
+            </Select>
+          </Box>
+        )}
+      </FeatureSwitch>
+
+      {/* Lobby, no start time: nothing to count down from, so the switch
+          only decides whether Open lobby is offered next to Start net
+          (utils/netStart.ts::canOpenLobby). Same control as the schedule
+          form's Ad-Hoc case. Until 2026-10-22 this form hid the lobby
+          setting entirely without a start time, so a one-time net saved
+          with none could never offer Open lobby (net 137). */}
+      {!scheduledStartTime && (
+        <FeatureSwitch
+          label="Enable lobby"
+          caption="This net has no start time, so there's nothing to count down from. When this is on, the net shows an Open lobby button next to Start net, so stations can check in and chat before Net Control clicks Go Live."
+          checked={autoLobbyEnabled}
+          onChange={setAutoLobbyEnabled}
+        />
+      )}
+
+      {/* Auto-open lobby: needs a scheduled start time to count back from.
+          Inherited from the schedule; changing it here affects this net only. */}
+      {!!scheduledStartTime && (
+        <FeatureSwitch
+          label="Open the lobby automatically before the net"
+          caption="Stations can check in and chat ahead of the official start without waiting for Net Control to open the net. Turn this off if you aren't sure this net will run."
+          checked={autoLobbyEnabled}
+          onChange={setAutoLobbyEnabled}
+        >
+          {/* Shows when auto-open is on */}
+          {autoLobbyEnabled && (
+            <Box sx={{ ml: 4.5 }}>
+              <Select
+                size="small" value={autoLobbyMinutes}
+                onChange={(e) => setAutoLobbyMinutes(Number(e.target.value))}
+              >
+                <MenuItem value={5}>5 minutes before</MenuItem>
+                <MenuItem value={10}>10 minutes before</MenuItem>
+                <MenuItem value={15}>15 minutes before</MenuItem>
+                <MenuItem value={30}>30 minutes before</MenuItem>
+                <MenuItem value={60}>60 minutes before</MenuItem>
+              </Select>
+            </Box>
+          )}
+        </FeatureSwitch>
+      )}
+
+      {/* Auto-close on inactivity: independent of a scheduled start time,
+          unlike auto-open lobby above; based on the last check-in/recheck
+          or chat message instead of the clock. */}
+      <FeatureSwitch
+        label="Close this net automatically after inactivity"
+        caption="If nobody checks in, rechecks, or chats for this long, the net closes itself and the usual closing log still goes out. Off by default — leave off for a SKYWARN/ARES activation that may go hours between check-ins."
+        checked={autoCloseEnabled}
+        onChange={setAutoCloseEnabled}
+      >
+        {/* Shows when auto-close is on */}
+        {autoCloseEnabled && (
+          <Box sx={{ ml: 4.5 }}>
+            <Select
+              size="small" value={autoCloseAfterMinutes}
+              onChange={(e) => setAutoCloseAfterMinutes(Number(e.target.value))}
+            >
+              <MenuItem value={60}>1 hour of inactivity</MenuItem>
+              <MenuItem value={120}>2 hours of inactivity</MenuItem>
+              <MenuItem value={180}>3 hours of inactivity</MenuItem>
+              <MenuItem value={240}>4 hours of inactivity</MenuItem>
+            </Select>
+          </Box>
+        )}
+      </FeatureSwitch>
+    </>
+  );
+};
 
 // ========== TAB 0: BASIC INFO ==========
-// Net name, description, URLs, stream URL, scheduled start time,
-// general net features, community net features (topic/poll), and ARES/EmComm features
+// Net name, description, URLs, stream URL, scheduled start time, logo,
+// actual times, then the feature switches (components/forms/NetFeaturesPanel.tsx)
 
 const BasicInfoTab: React.FC = () => {
+  const ctx = useCreateNetContext();
   const {
     name, setName,
     description, setDescription,
     infoUrl, setInfoUrl,
     streamUrl, setStreamUrl,
     logoUrl, setLogoUrl,
-    ics309Enabled, setIcs309Enabled,
-    ics309HideMutedStations, setIcs309HideMutedStations,
-    propagationLoggingEnabled, setPropagationLoggingEnabled,
-    selfCanHearEnabled, setSelfCanHearEnabled,
+    propagationLoggingEnabled,
     coverageSites, setCoverageSites,
     frequencies, selectedFrequencyIds,
-    authenticated, setAuthenticated,
-    trafficEnabled, setTrafficEnabled,
-    trafficFormTypes, setTrafficFormTypes,
-    trafficStripFormType, setTrafficStripFormType,
-    trafficStripTemplate, setTrafficStripTemplate,
-    mobilePrioritySort, setMobilePrioritySort,
-    chatGracePeriodEnabled, setChatGracePeriodEnabled,
-    chatGracePeriodMinutes, setChatGracePeriodMinutes,
-    selfCheckinEnabled, setSelfCheckinEnabled,
-    participantsOnly, setParticipantsOnly,
-    autoLobbyEnabled, setAutoLobbyEnabled,
-    autoLobbyMinutes, setAutoLobbyMinutes,
-    autoCloseEnabled, setAutoCloseEnabled,
-    autoCloseAfterMinutes, setAutoCloseAfterMinutes,
-    topicOfWeekEnabled, setTopicOfWeekEnabled,
-    topicOfWeekPrompt, setTopicOfWeekPrompt,
     topicHistory,
-    pollEnabled, setPollEnabled,
-    pollQuestion, setPollQuestion,
     scheduledStartTime, setScheduledStartTime,
     startedAt, setStartedAt,
     closedAt, setClosedAt,
     onSaveTimes,
     netId,
     isEditMode,
-  } = useCreateNetContext();
+    featureSections,
+  } = ctx;
 
   return (
     <>
@@ -149,298 +235,50 @@ const BasicInfoTab: React.FC = () => {
         </Box>
       )}
 
-      {/* ========== General Net Features ========== */}
-      <Box sx={{ mt: 2 }}>
-        <FormControlLabel
-          control={<Switch checked={mobilePrioritySort} onChange={(e) => setMobilePrioritySort(e.target.checked)} />}
-          label="Prioritize mobile stations in check-in list"
-        />
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-          When enabled, mobile stations appear at the top of the check-in list (after NCS) so they can be called before they move out of range. Disable for strict chronological order.
-        </Typography>
-      </Box>
-
-      <Box sx={{ mt: 2 }}>
-        <FormControlLabel
-          control={<Switch checked={chatGracePeriodEnabled} onChange={(e) => setChatGracePeriodEnabled(e.target.checked)} />}
-          label="Keep chat open after closing"
-        />
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: chatGracePeriodEnabled ? 1 : 0 }}>
-          Chat stays open for a set time after the net closes, so participants can wrap up off-air conversations before it goes read-only.
-        </Typography>
-        {chatGracePeriodEnabled && (
-          <Box sx={{ ml: 4.5 }}>
-            <Select
-              size="small" value={chatGracePeriodMinutes}
-              onChange={(e) => setChatGracePeriodMinutes(Number(e.target.value))}
-            >
-              <MenuItem value={15}>15 minutes</MenuItem>
-              <MenuItem value={30}>30 minutes</MenuItem>
-              <MenuItem value={60}>60 minutes</MenuItem>
-            </Select>
-          </Box>
-        )}
-      </Box>
-
-      <Box sx={{ mt: 2 }}>
-        <FormControlLabel
-          control={<Switch checked={selfCheckinEnabled} onChange={(e) => setSelfCheckinEnabled(e.target.checked)} />}
-          label="Allow self check-in"
-        />
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-          When disabled, stations can't check themselves in from the app; only Net Control and logging staff can add check-ins. Use this if self check-in causes confusion alongside voice roll call.
-        </Typography>
-      </Box>
-
-      {/* Participants only: a label, not a gate (models.Net.participants_only) */}
-      <Box sx={{ mt: 2 }}>
-        <FormControlLabel
-          control={<Switch checked={participantsOnly} onChange={(e) => setParticipantsOnly(e.target.checked)} />}
-          label="Participants only"
-        />
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-          For the stations taking part in an event or incident, such as a drill's deployed teams. Self check-in can stay open. The net shows a red Participants only label, and the check-in form tells stations it is for those taking part. Net control can remove and block anyone else.
-        </Typography>
-      </Box>
-
-      {/* Lobby, no start time: nothing to count down from, so the switch
-          only decides whether Open lobby is offered next to Start net
-          (utils/netStart.ts::canOpenLobby). Same control as the schedule
-          form's Ad-Hoc case. Until 2026-10-22 this form hid the lobby
-          setting entirely without a start time, so a one-time net saved
-          with none could never offer Open lobby (net 137). */}
-      {!scheduledStartTime && (
-        <Box sx={{ mt: 2 }}>
-          <FormControlLabel
-            control={<Switch checked={autoLobbyEnabled} onChange={(e) => setAutoLobbyEnabled(e.target.checked)} />}
-            label="Enable lobby"
-          />
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-            This net has no start time, so there's nothing to count down from. When this is on, the net shows an Open lobby button next to Start net, so stations can check in and chat before Net Control clicks Go Live.
-          </Typography>
-        </Box>
-      )}
-
-      {/* Auto-open lobby — needs a scheduled start time to count back from.
-          Inherited from the schedule; changing it here affects this net only. */}
-      {!!scheduledStartTime && (
-        <Box sx={{ mt: 2 }}>
-          <FormControlLabel
-            control={<Switch checked={autoLobbyEnabled} onChange={(e) => setAutoLobbyEnabled(e.target.checked)} />}
-            label="Open the lobby automatically before the net"
-          />
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: autoLobbyEnabled ? 1 : 0 }}>
-            Stations can check in and chat ahead of the official start without waiting for Net Control to open the net. Turn this off if you aren't sure this net will run.
-          </Typography>
-          {autoLobbyEnabled && (
-            <Box sx={{ ml: 4.5 }}>
-              <Select
-                size="small" value={autoLobbyMinutes}
-                onChange={(e) => setAutoLobbyMinutes(Number(e.target.value))}
-              >
-                <MenuItem value={5}>5 minutes before</MenuItem>
-                <MenuItem value={10}>10 minutes before</MenuItem>
-                <MenuItem value={15}>15 minutes before</MenuItem>
-                <MenuItem value={30}>30 minutes before</MenuItem>
-                <MenuItem value={60}>60 minutes before</MenuItem>
-              </Select>
-            </Box>
-          )}
-        </Box>
-      )}
-
-      {/* Auto-close on inactivity — independent of a scheduled start time,
-          unlike auto-open lobby above; based on the last check-in/recheck
-          or chat message instead of the clock. */}
-      <Box sx={{ mt: 2 }}>
-        <FormControlLabel
-          control={<Switch checked={autoCloseEnabled} onChange={(e) => setAutoCloseEnabled(e.target.checked)} />}
-          label="Close this net automatically after inactivity"
-        />
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: autoCloseEnabled ? 1 : 0 }}>
-          If nobody checks in, rechecks, or chats for this long, the net closes itself and the usual closing log still goes out. Off by default — leave off for a SKYWARN/ARES activation that may go hours between check-ins.
-        </Typography>
-        {autoCloseEnabled && (
-          <Box sx={{ ml: 4.5 }}>
-            <Select
-              size="small" value={autoCloseAfterMinutes}
-              onChange={(e) => setAutoCloseAfterMinutes(Number(e.target.value))}
-            >
-              <MenuItem value={60}>1 hour of inactivity</MenuItem>
-              <MenuItem value={120}>2 hours of inactivity</MenuItem>
-              <MenuItem value={180}>3 hours of inactivity</MenuItem>
-              <MenuItem value={240}>4 hours of inactivity</MenuItem>
-            </Select>
-          </Box>
-        )}
-      </Box>
-
-      {/* ========== Community Net Features ========== */}
-      <Divider sx={{ my: 3 }} />
-      <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
-        Community Net Features
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Optional features for informal community nets.
-      </Typography>
-
-      {/* Topic of the Week */}
-      <Box sx={{ mt: 2 }}>
-        <FormControlLabel
-          control={<Switch checked={topicOfWeekEnabled} onChange={(e) => setTopicOfWeekEnabled(e.target.checked)} />}
-          label="Topic of the Week"
-        />
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-          Ask participants a question during check-in. Responses are collected and can be exported for club newsletters or blogs.
-        </Typography>
-        {topicOfWeekEnabled && (
-          <Autocomplete
-            freeSolo
-            options={topicHistory}
-            value={topicOfWeekPrompt}
-            onChange={(_, newValue) => setTopicOfWeekPrompt(newValue || '')}
-            onInputChange={(_, newInputValue) => setTopicOfWeekPrompt(newInputValue)}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Topic Question" margin="normal"
-                placeholder="e.g., What's your favorite radio or antenna?"
-                helperText={topicHistory.length > 0 ? 'Select from prior topics or enter a new one' : 'The question to ask participants during check-in'}
-              />
-            )}
-            sx={{ ml: 4.5, width: 'calc(100% - 36px)' }}
-          />
-        )}
-      </Box>
-
-      {/* Poll */}
-      <Box sx={{ mt: 2 }}>
-        <FormControlLabel
-          control={<Switch checked={pollEnabled} onChange={(e) => setPollEnabled(e.target.checked)} />}
-          label="Participant Poll"
-        />
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-          Run a quick poll during the net. Answers autocomplete so they stay consistent, and results are shown as a chart.
-        </Typography>
-        {pollEnabled && (
-          <TextField
-            fullWidth label="Poll Question" value={pollQuestion}
-            onChange={(e) => setPollQuestion(e.target.value)}
-            margin="normal"
-            placeholder="e.g., What mode do you use most: SSB, FM, or Digital?"
-            helperText="The poll question. NCS enters responses with autocomplete so answers stay consistent."
-            sx={{ ml: 4.5, width: 'calc(100% - 36px)' }}
-          />
-        )}
-      </Box>
-
-      {/* ========== ARES & EmComm Features ========== */}
-      <Divider sx={{ my: 3 }} />
-      <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
-        ARES &amp; EmComm Features
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Features for emergency communications and formal net operations.
-      </Typography>
-
-      <Box sx={{ mt: 2 }}>
-        <FormControlLabel
-          control={<Switch checked={ics309Enabled} onChange={(e) => setIcs309Enabled(e.target.checked)} />}
-          label="Enable ICS-309 Communications Log format"
-        />
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-          When on, everyone who gets the closing log receives it as an ICS-309, the form used by ARES, RACES, and served agencies. When off, they get the plain check-in log, except anyone who chose ICS-309 in their own profile, who still gets one.
-        </Typography>
-      </Box>
-
-      <Box sx={{ mt: 2 }}>
-        <FormControlLabel
-          control={<Switch checked={ics309HideMutedStations} onChange={(e) => setIcs309HideMutedStations(e.target.checked)} />}
-          label="Hide muted stations from ICS-309"
-        />
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-          A station net control mutes for spam or disruption is left out of the ICS-309 log (CSV, PDF, and the closing email) — the copy that reaches a served agency. Their chat log and check-in stay on record either way.
-        </Typography>
-      </Box>
-
-      <Box sx={{ mt: 2 }}>
-        <FormControlLabel
-          control={<Switch checked={propagationLoggingEnabled} onChange={(e) => setPropagationLoggingEnabled(e.target.checked)} />}
-          label="Enable Station-to-Station Coverage Logging"
-        />
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-          Adds a 'can hear' action to each check-in. Stations can record their own reception; NCS, Logger, and Relay can record on behalf of any station.
-        </Typography>
-        {propagationLoggingEnabled && (
-          <Box sx={{ mt: 1, ml: 4.5 }}>
-            <FormControlLabel
-              control={<Switch checked={selfCanHearEnabled} onChange={(e) => setSelfCanHearEnabled(e.target.checked)} />}
-              label="Allow stations to self-report"
-            />
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-              When disabled, only Net Control, Logger, and Relay can record 'can hear' reports; regular stations won't see the action.
-            </Typography>
-          </Box>
-        )}
-      </Box>
-
-      {/* ========== SITES ========== */}
-      {/* Any net may have sites (shelters, aid stations); coverage logging
-          adds repeaters/nodes and primary sites to the same list. */}
-      <Box sx={{ mt: 2 }}>
-        <CoverageSitesEditor
-          sites={coverageSites}
-          setSites={setCoverageSites}
-          frequencies={frequencies.filter((f) => f.id != null && selectedFrequencyIds.includes(f.id))}
-          netId={isEditMode && netId ? Number(netId) : undefined}
-          coverage={propagationLoggingEnabled}
-        />
-      </Box>
-
-      <Box sx={{ mt: 2 }}>
-        <FormControlLabel
-          control={<Switch checked={authenticated} onChange={(e) => setAuthenticated(e.target.checked)} />}
-          label="Authenticated Net"
-        />
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-          Lets NCS or Logger verify a checked-in station's identity by comparing the code on their
-          authenticator app to the one ECTLogger computes for their account. Stations without
-          two-factor authentication set up show as unverified.
-        </Typography>
-      </Box>
-
-      {/* Drill plan: its own page, so only once the net exists */}
-      {isEditMode && netId && (
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="subtitle2">Drill plan</Typography>
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-            For an exercise: the scenario, objectives, and schedule of events, with prepared ICS-213s for the
-            sites that send them, and a printed packet for each site.
-          </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<AssignmentIcon />}
-            href={`/nets/${netId}/drill-plan`}
-            target="_blank"
-            rel="noopener"
-          >
-            Open drill plan
-          </Button>
-        </Box>
-      )}
-
-      {/* Assisted Traffic Handling — shared with the Schedule editor */}
-      <TrafficSettingsPanel
+      {/* ========== FEATURES ========== */}
+      {/* Shared with the schedule form; this net's own extras are passed in */}
+      <NetFeaturesPanel
         scope="net"
-        trafficEnabled={trafficEnabled}
-        setTrafficEnabled={setTrafficEnabled}
-        trafficFormTypes={trafficFormTypes}
-        setTrafficFormTypes={setTrafficFormTypes}
-        trafficStripFormType={trafficStripFormType}
-        setTrafficStripFormType={setTrafficStripFormType}
-        trafficStripTemplate={trafficStripTemplate}
-        setTrafficStripTemplate={setTrafficStripTemplate}
+        fields={ctx}
+        sections={featureSections}
+        topicHistory={topicHistory}
+        generalExtra={<NetTimingSwitches />}
+        sites={{
+          count: draftsToPayload(coverageSites).length,
+          editor: (
+            // Any net may have sites (shelters, aid stations); coverage logging
+            // adds repeaters/nodes and primary sites to the same list.
+            <CoverageSitesEditor
+              sites={coverageSites}
+              setSites={setCoverageSites}
+              frequencies={frequencies.filter((f) => f.id != null && selectedFrequencyIds.includes(f.id))}
+              netId={isEditMode && netId ? Number(netId) : undefined}
+              coverage={propagationLoggingEnabled}
+            />
+          ),
+        }}
+        aresExtra={
+          // Drill plan: its own page, so only once the net exists
+          isEditMode && netId ? (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2">Drill plan</Typography>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                For an exercise: the scenario, objectives, and schedule of events, with prepared ICS-213s for the
+                sites that send them, and a printed packet for each site.
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<AssignmentIcon />}
+                href={`/nets/${netId}/drill-plan`}
+                target="_blank"
+                rel="noopener"
+              >
+                Open drill plan
+              </Button>
+            </Box>
+          ) : undefined
+        }
       />
     </>
   );

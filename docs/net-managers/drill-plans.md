@@ -4,7 +4,7 @@ summary: Writing an exercise plan on a net, with objectives, a schedule of event
 kind: How-to
 audience: Net owners, schedule owners, and net control staff
 owner: KC1JMH
-revised: 2026-10-21
+revised: 2026-11-14
 review_by: 2027-10-21
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/drill-plans/
@@ -31,7 +31,7 @@ One net holds one drill's plan. For a drill with sites, set those up first: see 
 
 ## Write the plan
 
-1. Open the net's settings with **Edit net**, and on **Basic Info**, under **Drill plan**, click **Open drill plan**. The plan opens in its own tab.
+1. Open the net's settings with **Edit net**. On **Basic Info**, open **ARES & EmComm Features** (click **Show options** if it's folded), and under **Drill plan**, click **Open drill plan**. The plan opens in its own tab.
 2. Click **Create drill plan**. The exercise name starts as the net's name; change it to the exercise's, since it's also the incident name on every ICS-213 for this drill.
 3. Fill in the overview. The exercise announcement starts with the standard wording; keep it or use your section's.
 4. Under **Objectives**, click **Add objective** for each one. Type a **Heading** to group it; a new objective takes the heading of the one above it. Use the arrows to reorder.
