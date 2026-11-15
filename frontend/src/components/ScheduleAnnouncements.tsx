@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { templateApi } from '../services/api';
 import MarkdownDocPanel from './shared/MarkdownDocPanel';
+import type { DocNet } from '../utils/markdownDocsPdf';
 
 // ========== SCHEDULE ANNOUNCEMENTS ==========
 // The schedule's standing announcements (NetTemplate.announcements), shown on
@@ -12,7 +13,7 @@ interface ScheduleAnnouncementsProps {
   open: boolean;
   onClose?: () => void;
   templateId: number;
-  netName: string;
+  net: DocNet;
   canEdit?: boolean;
   embedded?: boolean;
   onUndock?: () => void;

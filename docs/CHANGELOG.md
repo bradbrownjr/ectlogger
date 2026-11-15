@@ -26,7 +26,7 @@ All notable changes to ECTLogger are documented here.
 ## Improvements
 
 * **Chat: See who reacted** — Hover over a reaction on a chat message to see the callsigns of everyone who chose it, or press and hold on a phone.
-* **Net View: Every download in the Reports menu** — The Paperwork button is now separate Net script, Announcements and Net notes PDFs in the Reports menu, ready before the net starts. The menu lists what helps run the net first, then the ICS forms, then the net report and spreadsheet.
+* **Net View: Every download in the Reports menu** — The Paperwork button is now separate Net script, Announcements and Net notes PDFs in the Reports menu, ready before the net starts. Each carries the net's logo, larger text, and the address to get the latest copy. The menu lists what helps run the net first, then the ICS forms, then the net report and spreadsheet.
 
 ---
 

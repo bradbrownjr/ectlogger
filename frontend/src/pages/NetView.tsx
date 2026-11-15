@@ -74,7 +74,7 @@ import { activeSiteNames, reportingSites } from '../utils/coverageSites';
 import api from '../services/api';
 import { exportElementToPdf } from '../utils/pdfExport';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
-import { exportMarkdownDocsPdf, pdfFileStem } from '../utils/markdownDocsPdf';
+import { exportNetDocPdf } from '../utils/markdownDocsPdf';
 import { useAuth } from '../contexts/AuthContext';
 import NetClosedNotice from '../components/netview/NetClosedNotice';
 import { useLocation } from '../contexts/LocationContext';
@@ -1333,12 +1333,7 @@ const NetView: React.FC = () => {
       notes: { title: 'Net Notes', content: net.announcements || '' },
     }[doc];
     try {
-      await exportMarkdownDocsPdf({
-        netName: net.name,
-        label: title,
-        sections: [{ title, content }],
-        filename: `${pdfFileStem(net.name)}_${pdfFileStem(title)}`,
-      });
+      await exportNetDocPdf({ net, title, content, preferUtc: user?.prefer_utc || false });
     } catch (error) {
       console.error(`Failed to export ${title} PDF:`, error);
     }
@@ -2969,7 +2964,7 @@ const NetView: React.FC = () => {
         open={script.open}
         onClose={script.onClose}
         script={net?.script || ''}
-        netName={net?.name || 'Net'}
+        net={net}
         netId={Number(netId)}
         templateId={net?.template_id}
         canEdit={actions.edit && !!net?.template_id}
@@ -2985,7 +2980,7 @@ const NetView: React.FC = () => {
         open={announcements.open}
         onClose={announcements.onClose}
         announcements={net?.announcements || ''}
-        netName={net?.name || 'Net'}
+        net={net}
         netId={Number(netId)}
         canEdit={actions.edit}
         onSaved={(newAnnouncements) => setNet((prev: any) => prev ? { ...prev, announcements: newAnnouncements } : prev)}
@@ -3000,7 +2995,7 @@ const NetView: React.FC = () => {
           open={scheduleAnnouncements.open}
           onClose={scheduleAnnouncements.onClose}
           templateId={net.template_id}
-          netName={net?.name || 'Net'}
+          net={net}
           canEdit={canManage}
           onDock={isXlUp ? handleDockScheduleAnnouncements : undefined}
           onPopOut={handlePopOutScheduleAnnouncements}

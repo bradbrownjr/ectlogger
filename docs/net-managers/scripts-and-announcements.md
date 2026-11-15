@@ -56,7 +56,7 @@ The **Notes for this net only** box on Edit Net's Announcements tab (opened live
 
 ## The printable version
 
-Each of the three panels (**Script**, **Announcements**, and **Notes**) has a PDF button next to its pencil. It saves only that document, with the net's name and the date at the top, wherever the panel is open: docked, floating, or in its own window. A Net Control operator who wants a paper copy in hand prints the script this way instead of reading it from a second screen.
+Each of the three panels (**Script**, **Announcements**, and **Notes**) has a PDF button next to its pencil. It saves only that document, wherever the panel is open: docked, floating, or in its own window. The PDF is laid out like the net's report, with the net's logo and name at the top, the date it was saved, and the address to get the latest copy: the schedule's page for announcements, the net's page for the script and notes. Every page is numbered and names the net. A Net Control operator who wants a paper copy in hand prints the script this way instead of reading it from a second screen.
 
 The net's **Reports** menu has the same three downloads, **Net script PDF**, **Announcements PDF**, and **Net notes PDF**, without opening a panel. Each is listed only when that document has something in it, before, during, and after the net.
 

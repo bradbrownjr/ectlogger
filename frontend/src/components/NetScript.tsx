@@ -1,6 +1,7 @@
 import React from 'react';
 import { netApi, templateApi } from '../services/api';
 import MarkdownDocPanel from './shared/MarkdownDocPanel';
+import type { DocNet } from '../utils/markdownDocsPdf';
 
 // ========== NET SCRIPT ==========
 // A net's script, copied from its schedule when the net is created. All of
@@ -16,7 +17,7 @@ interface NetScriptProps {
   open: boolean;
   onClose?: () => void;
   script: string;
-  netName: string;
+  net: DocNet;
   netId: number;
   templateId?: number;
   canEdit?: boolean;

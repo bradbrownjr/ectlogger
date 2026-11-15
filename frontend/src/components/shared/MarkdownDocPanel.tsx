@@ -32,7 +32,8 @@ import { useFloatingRect } from '../../hooks/useFloatingRect';
 import { FLOATING_DRAG_CANCEL, fitFloatingRect } from '../../utils/floatingWindow';
 import useEditDraft from '../../hooks/useEditDraft';
 import MarkdownRender from './MarkdownRender';
-import { exportMarkdownDocsPdf, pdfFileStem } from '../../utils/markdownDocsPdf';
+import { exportNetDocPdf, DocNet } from '../../utils/markdownDocsPdf';
+import { useAuth } from '../../contexts/AuthContext';
 
 // ========== MARKDOWN DOCUMENT PANEL ==========
 // The one panel behind the net's three Markdown documents: Net Script
@@ -49,11 +50,12 @@ import { exportMarkdownDocsPdf, pdfFileStem } from '../../utils/markdownDocsPdf'
 //   where the browser's own window controls replace close/minimize/detach.
 
 interface MarkdownDocPanelProps {
-  // Panel title, also the PDF's label and filename suffix ("Net Script").
+  // Panel title, also the PDF's title and filename suffix ("Net Script").
   title: string;
   content: string;
   emptyText: string;
-  netName: string;
+  // The net the document belongs to: its name, logo and address print on the PDF.
+  net: DocNet;
   open: boolean;
   // Absent in a popped-out window, where the browser closes it.
   onClose?: () => void;
@@ -85,7 +87,7 @@ const MarkdownDocPanel: React.FC<MarkdownDocPanelProps> = ({
   title,
   content,
   emptyText,
-  netName,
+  net,
   open,
   onClose,
   canEdit,
@@ -103,6 +105,7 @@ const MarkdownDocPanel: React.FC<MarkdownDocPanelProps> = ({
   onMinimize: onDockedMinimize,
   onRestore: onDockedRestore,
 }) => {
+  const { user } = useAuth();
   const [minimized, setMinimized] = useState(false);
   const { editing, setEditing, editValue, setEditValue } = useEditDraft(draftKey, content);
   const [saving, setSaving] = useState(false);
@@ -203,12 +206,7 @@ const MarkdownDocPanel: React.FC<MarkdownDocPanelProps> = ({
   const handleExportPdf = async () => {
     setExporting(true);
     try {
-      await exportMarkdownDocsPdf({
-        netName,
-        label: title,
-        sections: [{ title, content }],
-        filename: `${pdfFileStem(netName)}_${pdfFileStem(title)}`,
-      });
+      await exportNetDocPdf({ net, title, content, preferUtc: user?.prefer_utc || false });
     } catch (error) {
       console.error(`Failed to export ${title} PDF:`, error);
     } finally {

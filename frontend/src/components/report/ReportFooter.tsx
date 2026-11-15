@@ -10,7 +10,8 @@ import AppLogo from '../AppLogo';
 // the end of the report; every page separately gets the net name and
 // "Page X of Y" from exportToPdf's pageFooter.
 
-const ReportFooter: React.FC<{ generatedAt: string }> = ({ generatedAt }) => (
+// credit: what the app did for this page; a printed script was not logged.
+const ReportFooter: React.FC<{ generatedAt: string; credit?: string }> = ({ generatedAt, credit = 'Logged with ECTLogger' }) => (
   <Box
     sx={{
       display: 'flex',
@@ -30,7 +31,7 @@ const ReportFooter: React.FC<{ generatedAt: string }> = ({ generatedAt }) => (
       {/* The theme's logo on screen; the light one in a PDF (utils/pdfExport.ts) */}
       <Box component="span" data-export-hide sx={{ display: 'inline-flex' }}><AppLogo size={16} /></Box>
       <Box component="span" data-export-show="inline-flex" sx={{ display: 'none' }}><AppLogo size={16} variant="light" /></Box>
-      Logged with ECTLogger · {window.location.host}
+      {credit} · {window.location.host}
     </Box>
     <Box>Generated {generatedAt}</Box>
   </Box>

@@ -1,8 +1,8 @@
 {
-  "version": "2026.11.15c",
+  "version": "2026.11.15d",
   "entries": [
     {
-      "version": "2026.11.15c",
+      "version": "2026.11.15d",
       "date": "2026-11-15",
       "sections": [
         {
@@ -28,7 +28,7 @@
               "userImpact": true
             },
             {
-              "text": "Net View: Every download in the Reports menu — The Paperwork button is now separate Net script, Announcements and Net notes PDFs in the Reports menu, ready before the net starts. The menu lists what helps run the net first, then the ICS forms, then the net report and spreadsheet.",
+              "text": "Net View: Every download in the Reports menu — The Paperwork button is now separate Net script, Announcements and Net notes PDFs in the Reports menu, ready before the net starts. Each carries the net's logo, larger text, and the address to get the latest copy. The menu lists what helps run the net first, then the ICS forms, then the net report and spreadsheet.",
               "userImpact": true
             }
           ]

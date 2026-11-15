@@ -1,6 +1,7 @@
 import React from 'react';
 import { netApi } from '../services/api';
 import MarkdownDocPanel from './shared/MarkdownDocPanel';
+import type { DocNet } from '../utils/markdownDocsPdf';
 
 // ========== NET NOTES ==========
 // This one net's own notes (net.announcements), titled "Net Notes" on
@@ -11,7 +12,7 @@ interface AnnouncementsProps {
   open: boolean;
   onClose?: () => void;
   announcements: string;
-  netName: string;
+  net: DocNet;
   netId: number;
   canEdit?: boolean;
   onSaved?: (newAnnouncements: string) => void;

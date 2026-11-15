@@ -342,7 +342,7 @@ const NetPaneWindow: React.FC = () => {
             embedded
             open
             script={net.script || ''}
-            netName={net.name || 'Net'}
+            net={net}
             netId={Number(netId)}
             templateId={net.template_id}
             canEdit={canEditNet && !!net.template_id}
@@ -354,7 +354,7 @@ const NetPaneWindow: React.FC = () => {
             embedded
             open
             templateId={net.template_id}
-            netName={net.name || 'Net'}
+            net={net}
             canEdit={canManage}
           />
         )}
@@ -363,7 +363,7 @@ const NetPaneWindow: React.FC = () => {
             embedded
             open
             announcements={net.announcements || ''}
-            netName={net.name || 'Net'}
+            net={net}
             netId={Number(netId)}
             canEdit={canEditNet}
             onSaved={(text) => setNet((prev: any) => prev ? { ...prev, announcements: text } : prev)}
