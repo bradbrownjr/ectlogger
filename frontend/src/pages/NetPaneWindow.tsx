@@ -80,7 +80,7 @@ const PANE_LABELS: Record<string, string> = {
 // NetView's data layer.
 const NetPaneWindow: React.FC = () => {
   const { netId, paneType } = useParams<{ netId: string; paneType: string }>();
-  const { user, simulateRegularUser } = useAuth();
+  const { user } = useAuth();
   const [toastMessage, setToastMessage] = useState('');
   const [, setHighlightCheckIn] = useState(false);
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
@@ -134,7 +134,7 @@ const NetPaneWindow: React.FC = () => {
     fetchNet, fetchCheckIns, fetchNetRoles, fetchNetStats,
   } = useNetData(netId);
   // Delete confirmation, with Remove and block for net control.
-  const deletePrompt = useDeleteCheckInPrompt(getNetActions(net, simulateRegularUser).block_station);
+  const deletePrompt = useDeleteCheckInPrompt(getNetActions(net).block_station);
   const siteCoverage = useSiteCoverage(netId ? Number(netId) : null, !!net?.propagation_logging_enabled);
 
   // Which check-ins are currently mid-flash for having self-checked-in
@@ -216,11 +216,9 @@ const NetPaneWindow: React.FC = () => {
           netId={Number(netId)}
           netStartedAt={net.started_at}
           netStatus={net.status}
-          // user?.role (from useAuth(), already masked by simulateRegularUser)
-          // plus net.is_owner_or_ncs (never carries the admin bypass) --
-          // NOT net.can_manage, which does and would leak a simulating
-          // admin's real access back in. Matches the canManage formula
-          // further down this file and in NetView.tsx.
+          // user?.role ('admin' only while admin mode is open, AuthContext)
+          // plus net.is_owner_or_ncs. Matches the canManage formula further
+          // down this file and in NetView.tsx.
           canManageCheckIns={paneCanManage || paneIsNCSOrLogger}
           chatGracePeriodMinutes={chatGraceMinutes(net)}
           closedAt={net.closed_at}
@@ -279,7 +277,7 @@ const NetPaneWindow: React.FC = () => {
           highlightedCallsign={coverageHighlight}
           onHighlightCallsign={setCoverageHighlight}
           netFrequencyOptions={coverageFrequencyOptions(net.frequencies)}
-          canManage={getNetActions(net, simulateRegularUser).record_coverage}
+          canManage={getNetActions(net).record_coverage}
           currentUserId={user?.id}
           onToast={setToastMessage}
           siteCoverage={siteCoverage.summary}
@@ -322,10 +320,7 @@ const NetPaneWindow: React.FC = () => {
   const isAssignedNCS = userNetRole?.role === 'NCS';
   const isNCS = isAssignedNCS && userNetRole?.is_active !== false;
   const isNCSOrLogger = userNetRole && ((userNetRole.role === 'NCS' && userNetRole.is_active !== false) || userNetRole.role === 'LOGGER');
-  // net.is_owner_or_ncs, not net.can_manage -- see NetView.tsx's identical
-  // canManage computation for the full explanation (can_manage carries an
-  // admin bypass computed from the real/unmasked identity, which leaks
-  // through simulateRegularUser's "View as Regular User" mode).
+  // Same formula as NetView.tsx's canManage.
   const canManage = isOwner || isAdmin || isNCS || !!net?.is_owner_or_ncs;
   const canManageCheckIns = canManage || isNCSOrLogger;
 
@@ -334,7 +329,7 @@ const NetPaneWindow: React.FC = () => {
   // are gated exactly as NetView gates them: Script and Notes save to the
   // net (actions.edit), Announcements only to the schedule (canManage).
   if (paneType === 'script' || paneType === 'announcements' || paneType === 'notes') {
-    const canEditNet = getNetActions(net, simulateRegularUser).edit;
+    const canEditNet = getNetActions(net).edit;
     return (
       <Box sx={{ height: '100vh', width: '100vw', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {paneType === 'script' && (
@@ -374,7 +369,7 @@ const NetPaneWindow: React.FC = () => {
   }
 
   // Same per-action rule NetView.tsx uses (utils/netActions.ts).
-  const canReportCanHear = getNetActions(net, simulateRegularUser).record_coverage;
+  const canReportCanHear = getNetActions(net).record_coverage;
   const canHearDialogCheckIn = canHearDialogCheckInId !== null
     ? checkIns.find((ci: any) => ci.id === canHearDialogCheckInId) || null
     : null;

@@ -4,7 +4,7 @@ summary: Inviting people, editing an account's identity and role, undoing a call
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-11-13
+revised: 2026-11-15
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/users-and-roles/
@@ -114,11 +114,15 @@ Someone who is turned away when they try to create a schedule can send all admin
 
 Early access bypasses the account-age and net-participation requirements only. It does not raise the daily cap on how many schedules an account can create.
 
-## Seeing the app the way everyone else does
+## Admin mode
 
-An admin's screen differs from a club member's: every net shows management buttons. To check what an ordinary account gets, open your avatar menu at the top right and choose **View as Regular User**. Admin-only controls disappear, the net and schedule pages offer only what your own roles and staff memberships would give you, and an orange **User View** chip sits in the navigation bar as a reminder. Click the chip, or **Exit User View** in the same menu, to switch back.
+When you sign in you see ECTLogger the way a club member does: the nets and schedules you run, and nothing extra. Your admin role does nothing until you switch to admin.
 
-It changes what the screen shows, not what your account can do. Treat it as a preview, not a test account: anything you click still happens with an admin's authority. The setting is remembered in that browser until you turn it off or sign out.
+To switch, open your avatar menu at the top right and choose **Switch to admin**, then enter the code from your authenticator app (a backup code also works). Opening the **Admin** page asks for the code too. While admin mode is on, an orange **Admin** chip in the navigation bar shows how many minutes are left.
+
+Admin mode turns off after 15 minutes without activity, or when you click the chip or choose **Lock admin** in the same menu. If it turns off while you're working, the next admin action asks for your code and then carries on.
+
+Admin mode belongs to the browser you switched in. Your phone stays a regular account while your laptop is in admin mode. Switching to admin and locking it are recorded in the [activity log](/docs/admins/activity-log/).
 
 ## Not here
 

@@ -138,6 +138,10 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     expire = now + (expires_delta or timedelta(days=DEFAULT_SESSION_LIFETIME_DAYS))
     # iat ties the token to the account it was issued to: see token_issued_to.
     to_encode.update({"exp": expire, "iat": int(now.timestamp())})
+    # sid names this browser session, so admin mode opened in one browser is
+    # not open in another (app/admin_mode.py). A renewal passes the old sid.
+    if not to_encode.get("sid"):
+        to_encode["sid"] = secrets.token_urlsafe(16)
     logger.debug("AUTH", f"Creating JWT for sub={to_encode.get('sub')}")
     return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 

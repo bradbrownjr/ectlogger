@@ -74,6 +74,30 @@ def _reset_rate_limiters():
     yield
 
 
+@pytest.fixture(autouse=True)
+def _admin_mode_open_for_admins(request, monkeypatch):
+    """Treat every admin as already in admin mode (app/admin_mode.py), so
+    the many tests about what an admin may do don't each have to open it
+    first. tests/test_admin_mode.py tests the real rule and opts out with
+    @pytest.mark.real_admin_mode.
+
+    Only users loaded by get_current_user are affected, as in production:
+    a User loaded any other way still reads as not in admin mode."""
+    if request.node.get_closest_marker("real_admin_mode"):
+        yield
+        return
+    import app.dependencies as deps
+    real = deps.load_admin_mode
+
+    async def _open_for_admins(db, user, sid, *, keep_open):
+        await real(db, user, sid, keep_open=keep_open)
+        if user.role == UserRole.ADMIN:  # admin-mode-ok: test fixture
+            user._admin_mode_open = True
+
+    monkeypatch.setattr(deps, "load_admin_mode", _open_for_admins)
+    yield
+
+
 @pytest_asyncio.fixture()
 async def client(engine):
     """An AsyncClient whose requests hit the real ASGI app with an overridden DB."""
@@ -122,6 +146,13 @@ async def admin(db):
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    return user
+
+
+def in_admin_mode(user: User) -> User:
+    """Put an admin loaded outside a request into admin mode, for a test
+    that calls a permission function directly (app/admin_mode.py)."""
+    user._admin_mode_open = True
     return user
 
 

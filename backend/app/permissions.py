@@ -3,19 +3,19 @@ Shared permission helpers for net and template authorization.
 
 Centralizes the owner/admin/role checks that were previously duplicated
 across routers/nets.py, routers/templates.py, and routers/ncs_rotation.py,
-and normalizes the admin-check idiom to `user.role == UserRole.ADMIN`
-throughout.  Use `is_admin(user)` in new code rather than either of the
-old inline styles.
+and holds the one admin check, `is_admin(user)`, which also requires admin
+mode to be open (app/admin_mode.py).
 """
 from __future__ import annotations
 
 import enum
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Dict, FrozenSet, Iterable, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.admin_mode import admin_mode_open
 from app.models import (
     Form,
     Net,
@@ -40,8 +40,11 @@ class FormPermissionResult(str, enum.Enum):
 
 
 def is_admin(user: User) -> bool:
-    """Return True when the user holds the global admin role."""
-    return user.role == UserRole.ADMIN
+    """True when the server should act on this user as an admin: they hold the
+    admin role AND admin mode is open for the browser session making this
+    request (app/admin_mode.py). The only admin check for what someone may
+    do; tests/test_admin_mode.py fails on a raw role comparison elsewhere."""
+    return user.role == UserRole.ADMIN and admin_mode_open(user)  # admin-mode-ok
 
 
 async def check_net_permission(
@@ -241,10 +244,6 @@ class NetAccess:
     is_template_owner: bool
     is_template_co_manager: bool
 
-    def as_regular_user(self) -> "NetAccess":
-        """The same facts with the admin bypass removed, for the "View as
-        Regular User" preview (see NetResponse.actions_as_regular_user)."""
-        return replace(self, is_admin=False)
 
 
 def _manager(a: NetAccess) -> bool:
@@ -693,9 +692,6 @@ async def check_template_permission(
 
     This is the canonical implementation; the previous copies in
     routers/templates.py and routers/ncs_rotation.py are removed.
-    The ncs_rotation.py copy had a silent bug: it compared
-    ``user.role == 'admin'`` (enum vs string, always False) instead of
-    ``user.role == UserRole.ADMIN``.
     """
     if is_admin(user):
         return True

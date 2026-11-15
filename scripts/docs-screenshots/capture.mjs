@@ -239,6 +239,19 @@ async function tokenFor(callsign) {
   if (!result.access_token) {
     throw new Error(`No token for ${callsign}: ${JSON.stringify(result)}`);
   }
+  // An admin acts as a regular user until they switch to admin with a code
+  // (backend app/admin_mode.py). Switch for this token so admin-panel shots
+  // show the admin panel. It stays on while the run keeps making requests.
+  if (user.role === 'admin') {
+    const secret = user.mfa_secret || seed.mfa_secrets?.[callsign]
+      || (seed.admin_mfa?.callsign === callsign ? seed.admin_mfa.secret : null);
+    const res = await fetch(`${DEMO_API}/auth/admin-mode`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${result.access_token}` },
+      body: JSON.stringify({ totp_code: totp(secret) }),
+    });
+    if (!res.ok) throw new Error(`Switch to admin failed for ${callsign}: ${res.status} ${await res.text()}`);
+  }
   tokenCache.set(callsign, result.access_token);
   return result.access_token;
 }

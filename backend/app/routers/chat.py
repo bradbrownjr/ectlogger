@@ -30,7 +30,7 @@ from app.schemas import (
     decode_mentioned_user_ids,
 )
 from app.dependencies import get_current_user, get_current_user_optional
-from app.permissions import check_net_permission
+from app.permissions import check_net_permission, is_admin
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -387,7 +387,7 @@ async def delete_message(
         raise HTTPException(status_code=404, detail="Message not found")
     
     # Only allow deleting own messages or if admin
-    if message.user_id != current_user.id and current_user.role != "admin":
+    if message.user_id != current_user.id and not is_admin(current_user):
         raise HTTPException(status_code=403, detail="Not authorized to delete this message")
 
     # Someone else's message: keep what it said, since the evidence is

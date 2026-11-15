@@ -48,6 +48,8 @@ export const ACTION_LABELS: Record<string, string> = {
   'auth.password_failed': 'Wrong password',
   'auth.mfa_failed': 'Wrong two-factor code',
   'auth.banned_sign_in_refused': 'Banned account tried to sign in',
+  'admin_mode.opened': 'Switched to admin',
+  'admin_mode.locked': 'Locked admin',
 
   'user.created': 'Account created',
   'user.created_by_admin': 'Account created by an admin',

@@ -13,6 +13,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select, func
 from sqlalchemy.pool import StaticPool
 
+from tests.conftest import in_admin_mode
+
 from app.models import (
     Base, User, UserRole, NetTemplate, Net, NetStatus,
     NetTemplateSubscription, TemplateStaff, NCSRotationMember,
@@ -369,7 +371,7 @@ async def test_merge_permission_checks(merge_engine):
     async with factory() as db:
         t_a = (await db.execute(select(NetTemplate).where(NetTemplate.id == 1))).scalar_one()
         t_b = (await db.execute(select(NetTemplate).where(NetTemplate.id == 2))).scalar_one()
-        admin_u = (await db.execute(select(User).where(User.id == 1))).scalar_one()
+        admin_u = in_admin_mode((await db.execute(select(User).where(User.id == 1))).scalar_one())
         owner_a = (await db.execute(select(User).where(User.id == 2))).scalar_one()
         owner_b = (await db.execute(select(User).where(User.id == 3))).scalar_one()
 

@@ -87,7 +87,7 @@ const TrainingDialog: React.FC<TrainingDialogProps> = ({ open, onClose }) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const { user, isAuthenticated } = useAuth();
-  // "View as Regular User" makes user.role 'user', so the editing controls follow it
+  // user.role is 'admin' only while admin mode is open (AuthContext), so the editing controls follow it
   const isAdmin = user?.role === 'admin';
 
   const [sessions, setSessions] = useState<TrainingSession[] | null>(null);

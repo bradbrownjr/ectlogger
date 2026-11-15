@@ -4,7 +4,7 @@ summary: Two-factor enrollment and reset, failed-login lockouts, session length,
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-11-13
+revised: 2026-11-15
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/security-and-mfa/
@@ -17,6 +17,8 @@ Two-factor authentication (MFA: a code from an authenticator app, on top of your
 ## Why admin MFA can't be skipped
 
 An admin can read every net and edit every user, so that account is the one most worth stealing. The requirement is checked on every admin-only action, not just at sign-in. An admin who hasn't enrolled can still sign in, but is sent to enrollment (Profile → Security) and can't reach the admin panel until they finish. An old session or a half-finished setup doesn't get in.
+
+An enrolled admin also uses the code to switch to [admin mode](/docs/admins/users-and-roles/#admin-mode), which turns off after 15 minutes without activity. A wrong code there counts toward the failed sign-in alerts below, the same as one at sign-in.
 
 Enrollment itself (scanning a QR code into an authenticator app, confirming the first code, and saving the one-time backup codes) happens on each person's own Profile → Security tab, not here; [signing in](/docs/operators/signing-in/) is the page to send someone who asks how. This page is about what happens when that goes wrong for someone else.
 

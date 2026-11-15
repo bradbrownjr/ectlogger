@@ -58,12 +58,9 @@ export interface Schedule {
   is_subscribed: boolean;
   can_manage?: boolean;
   can_create_net?: boolean;
-  // True owner/staff/rotation-member access, WITHOUT the admin blanket
-  // bypass can_manage/can_create_net carry -- see permissions.py's
-  // check_template_staff_access(). Used by Scheduler.tsx to correctly hide
-  // management controls while an admin has "View as Regular User" on;
-  // can_manage/can_create_net stay true for a simulating admin regardless,
-  // since they're computed from that admin's REAL (unmasked) identity.
+  // True owner/staff/rotation-member access, without the admin bypass
+  // can_manage/can_create_net carry while admin mode is open -- see
+  // permissions.py's check_template_staff_access().
   is_owner_or_staff?: boolean;
   // The schedule's manager or an active co-manager, no admin bypass: may
   // merge or delete it (templates_core.may_administer_schedule).

@@ -392,9 +392,9 @@ const NetView: React.FC = () => {
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
   // Auto-start ref to prevent multiple go-live triggers
   const autoStartTriggeredRef = useRef(false);
-  const { user, isAuthenticated, simulateRegularUser } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   // Delete confirmation, with Remove and block for net control.
-  const deletePrompt = useDeleteCheckInPrompt(getNetActions(net, simulateRegularUser).block_station);
+  const deletePrompt = useDeleteCheckInPrompt(getNetActions(net).block_station);
   const { gridSquare, town } = useLocation();
   // Location pre-filled into the user's own check-in: with location awareness
   // on, the town their GPS position is in (net control reads it on the air),
@@ -532,12 +532,9 @@ const NetView: React.FC = () => {
 
   // Auto-open lobby when ?open_lobby=1 is present (from staff reminder email button).
   // Fires once after the net and user permissions are loaded. Uses
-  // net.is_owner_or_ncs (server-computed, includes template staff, but NOT
-  // the admin blanket bypass net.can_manage carries) so a simulating admin
-  // (AuthContext.tsx's simulateRegularUser) is correctly excluded here just
-  // like a real non-staff user would be -- the separate isOwnerOrAdmin term
-  // below still covers real owner/admin access via the already-masked
-  // user.role.
+  // net.is_owner_or_ncs (server-computed, includes template staff); the
+  // separate isOwnerOrAdmin term below covers the owner, and an admin while
+  // admin mode is open (user.role, AuthContext).
   useEffect(() => {
     if (!net || !user) return;
     if (searchParams.get('open_lobby') !== '1') return;
@@ -630,7 +627,7 @@ const NetView: React.FC = () => {
           // net control is present. Nobody there means the net stays in the
           // lobby. This checked any NCS role until 2026-10-28, so an NCS who
           // had stepped down fired a refused request every second.
-          const canAutoStart = getNetActions(net, simulateRegularUser).edit;
+          const canAutoStart = getNetActions(net).edit;
           
           if (net.status === 'lobby' && canAutoStart && !autoStartTriggeredRef.current) {
             autoStartTriggeredRef.current = true;
@@ -751,7 +748,7 @@ const NetView: React.FC = () => {
     const interval = setInterval(updateTimers, 1000);
 
     return () => clearInterval(interval);
-  }, [net?.scheduled_start_time, net?.started_at, net?.status, net?.owner_id, net?.id, net?.paused_at, net?.total_paused_seconds, net?.auto_close_at, net?.actions, net?.actions_as_regular_user, simulateRegularUser, user?.id, user?.role, netRoles]);
+  }, [net?.scheduled_start_time, net?.started_at, net?.status, net?.owner_id, net?.id, net?.paused_at, net?.total_paused_seconds, net?.auto_close_at, net?.actions, user?.id, user?.role, netRoles]);
 
   // Show check-in prompt for authenticated users viewing an active/lobby net they haven't checked into
   useEffect(() => {
@@ -775,9 +772,7 @@ const NetView: React.FC = () => {
   }, [net?.status, isAuthenticated, checkIns, user?.id, netRoles]);
 
   // Show archive reminder once per page load for closed nets when viewed by a manager or staff member.
-  // user?.role (masked by simulateRegularUser) covers a real admin here,
-  // same as everywhere else this pattern appears -- net.is_owner_or_ncs
-  // alone would incorrectly hide this from a genuine, non-simulating admin too.
+  // user?.role is 'admin' only while admin mode is open (AuthContext).
   useEffect(() => {
     const canManageThisNet = user?.role === 'admin' || !!net?.is_owner_or_ncs;
     if (canArchiveNet(net) && canManageThisNet && !archiveReminderShownRef.current) {
@@ -1459,15 +1454,8 @@ const NetView: React.FC = () => {
   
   // NCS users can manage the net (edit settings, close, etc.) - they're co-owners.
   // net.is_owner_or_ncs is also true for active template staff (set
-  // server-side) -- NOT net.can_manage, which additionally carries the
-  // admin blanket bypass. That bypass is real for a genuine admin (isAdmin,
-  // computed just above from the already-masked user.role, covers that
-  // case on its own), but net.can_manage is computed server-side from the
-  // REAL/unmasked identity, so it stays true for an admin using "View as
-  // Regular User" (AuthContext.tsx's simulateRegularUser) regardless of
-  // that toggle -- reported: an admin could still edit/close/archive/
-  // delete nets they weren't actually staff of while simulating, because
-  // this exact OR chain let net.can_manage leak the bypass back in.
+  // server-side). isAdmin comes from user.role, which is 'admin' only while
+  // admin mode is open (AuthContext).
   const canManage = isOwner || isAdmin || isNCS || !!net?.is_owner_or_ncs;
   const canManageCheckIns = canManage || isNCSOrLogger;
 
@@ -1487,7 +1475,7 @@ const NetView: React.FC = () => {
 
   // Per-action permissions from the server (utils/netActions.ts): each
   // management button is gated on the flag for its own action.
-  const actions = getNetActions(net, simulateRegularUser);
+  const actions = getNetActions(net);
   const canStartNet = actions.start;
   // Off-net log: net control staff, or a signed-in station checked in here,
   // on a net that keeps an ICS-309 (the only place its entries go; an ARES

@@ -4,7 +4,7 @@ summary: Finding out who deleted, cancelled, or changed a net, schedule, or acco
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-15
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/activity-log/
@@ -18,7 +18,7 @@ Only admins can see it. Net managers and Net Control can't, so the answer to the
 
 ## What gets recorded
 
-- **Sign-ins:** every sign-in, every wrong password or two-factor code on a real account, and every attempt by a banned account.
+- **Sign-ins:** every sign-in, every wrong password or two-factor code on a real account, every attempt by a banned account, and each time an admin switches to [admin mode](/docs/admins/users-and-roles/#admin-mode) or locks it.
 - **Accounts:** new accounts, profile changes with the old and new value of each field, profile pictures, passwords set or changed, two-factor turned on, replaced, or off, email changes (both the request and the confirmed change), and backup emails asked for, added, removed, or made primary.
 - **Admin actions on accounts:** edits, role changes, bans and unbans, password and two-factor resets, early schedule access, reverted callsign takeovers, merged accounts (with what moved), deletions, and emails sent to all users. A merge carries the merged account's history over, so its sign-ins and changes show under the account it was merged into.
 - **Nets:** closing, cancelling, restoring, archiving, unarchiving, and deleting, including the ones ECTLogger does by itself (an idle net closed automatically, an old net archived when its schedule's next one is created). Those show **Automatic** in the **Who** column.

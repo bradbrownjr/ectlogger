@@ -76,7 +76,6 @@ export interface Net {
   can_manage?: boolean;
   is_owner_or_ncs?: boolean;
   actions?: Partial<NetActions> | null;
-  actions_as_regular_user?: Partial<NetActions> | null;
   user_attended?: boolean | null;
   user_ran?: boolean | null;
 }

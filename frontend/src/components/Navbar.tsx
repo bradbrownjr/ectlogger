@@ -25,6 +25,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { adminMinutesLeft } from '../utils/adminMode';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { useLocation } from '../contexts/LocationContext';
@@ -168,9 +169,38 @@ const NavbarClock: React.FC<NavbarClockProps> = ({ compact = false }) => {
   );
 };
 
+// Minutes left in admin mode, refreshed every 15 s so the chip counts down.
+const useAdminMinutesLeft = (closesAt: Date | null): number => {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    if (!closesAt) return;
+    setNow(new Date());
+    const timer = window.setInterval(() => setNow(new Date()), 15000);
+    return () => window.clearInterval(timer);
+  }, [closesAt]);
+  return adminMinutesLeft(closesAt, now);
+};
+
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout, isAuthenticated, isActualAdmin, simulateRegularUser, toggleSimulateRegularUser } = useAuth();
+  const { user, logout, isAuthenticated, isActualAdmin, adminModeOpen, adminModeClosesAt, requestAdminMode, lockAdmin } = useAuth();
+  const adminMinutes = useAdminMinutesLeft(adminModeClosesAt);
+
+  // ========== ADMIN MODE: SWITCH AND LOCK ==========
+  // Pages hold permissions the server worked out for the mode they loaded in,
+  // so reload after either change. Locking on an Admin page goes home rather
+  // than straight back to the code prompt.
+  const handleSwitchToAdmin = async () => {
+    if (await requestAdminMode()) window.location.reload();
+  };
+  const handleLockAdmin = async () => {
+    try {
+      await lockAdmin();
+    } finally {
+      if (window.location.pathname.startsWith('/admin')) window.location.href = '/dashboard';
+      else window.location.reload();
+    }
+  };
   const { count: trafficInboxCount } = useTrafficInbox();
   const { mode, toggleColorMode } = useThemeMode();
   const theme = useTheme();
@@ -321,21 +351,23 @@ const Navbar: React.FC = () => {
 
           <Box sx={{ flexGrow: 1 }} />
 
-          {/* Visible indicator when admin is simulating regular user */}
-          {simulateRegularUser && (
-            <Chip
-              label="User View"
-              size="small"
-              icon={<LockOpenIcon />}
-              onClick={toggleSimulateRegularUser}
-              sx={{
-                mr: 1,
-                color: 'warning.contrastText',
-                bgcolor: 'warning.main',
-                '& .MuiChip-icon': { color: 'warning.contrastText' },
-                cursor: 'pointer',
-              }}
-            />
+          {/* Shows while admin mode is open: minutes left; click to lock */}
+          {adminModeOpen && (
+            <Tooltip title="Lock admin">
+              <Chip
+                label={`Admin ${adminMinutes} min`}
+                size="small"
+                icon={<LockOpenIcon />}
+                onClick={handleLockAdmin}
+                sx={{
+                  mr: 1,
+                  color: 'warning.contrastText',
+                  bgcolor: 'warning.main',
+                  '& .MuiChip-icon': { color: 'warning.contrastText' },
+                  cursor: 'pointer',
+                }}
+              />
+            </Tooltip>
           )}
 
           {isMobile ? (
@@ -424,11 +456,11 @@ const Navbar: React.FC = () => {
                       </ListItem>
                       {isActualAdmin && (
                         <ListItem disablePadding>
-                          <ListItemButton onClick={() => { toggleSimulateRegularUser(); setDrawerOpen(false); }}>
+                          <ListItemButton onClick={() => { setDrawerOpen(false); adminModeOpen ? handleLockAdmin() : handleSwitchToAdmin(); }}>
                             <ListItemIcon>
-                              {simulateRegularUser ? <LockIcon /> : <LockOpenIcon />}
+                              {adminModeOpen ? <LockIcon /> : <AdminPanelSettingsIcon />}
                             </ListItemIcon>
-                            <ListItemText primary={simulateRegularUser ? 'Exit User View' : 'View as Regular User'} />
+                            <ListItemText primary={adminModeOpen ? 'Lock admin' : 'Switch to admin'} />
                           </ListItemButton>
                         </ListItem>
                       )}
@@ -553,13 +585,13 @@ const Navbar: React.FC = () => {
                       {mode === 'light' ? 'Switch to Dark' : 'Switch to Light'}
                     </MenuItem>
                     {isActualAdmin && (
-                      <MenuItem onClick={() => { toggleSimulateRegularUser(); setUserMenuAnchor(null); }}>
+                      <MenuItem onClick={() => { setUserMenuAnchor(null); adminModeOpen ? handleLockAdmin() : handleSwitchToAdmin(); }}>
                         <ListItemIcon>
-                          {simulateRegularUser
+                          {adminModeOpen
                             ? <LockIcon fontSize="small" />
-                            : <LockOpenIcon fontSize="small" />}
+                            : <AdminPanelSettingsIcon fontSize="small" />}
                         </ListItemIcon>
-                        {simulateRegularUser ? 'Exit User View' : 'View as Regular User'}
+                        {adminModeOpen ? 'Lock admin' : 'Switch to admin'}
                       </MenuItem>
                     )}
 

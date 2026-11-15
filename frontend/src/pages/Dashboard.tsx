@@ -124,17 +124,16 @@ const Dashboard: React.FC = () => {
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({ open: false, message: '', severity: 'info' });
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAuthenticated, simulateRegularUser } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   // Sort order persists on the account so it follows the user across devices
   const [netSortOrder, setNetSortOrder] = useAccountSortOrder<'status' | 'alpha'>(
     user?.dashboard_sort_order, 'dashboard_sort_order', 'status', STORAGE_KEYS.DASHBOARD_SORT_ORDER
   );
-  // In admin simulation mode, use the non-admin permission flag so buttons reflect what a real user would see
-  const canManage = (net: Net) => simulateRegularUser ? (net.is_owner_or_ncs ?? false) : (net.can_manage ?? false);
+  const canManage = (net: Net) => net.can_manage ?? false;
   // Per-action permissions (utils/netActions.ts): each management button is
   // gated on the flag for its own action, which the server computes with the
   // same rule it enforces.
-  const actionsFor = (net: Net) => getNetActions(net, simulateRegularUser);
+  const actionsFor = (net: Net) => getNetActions(net);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 

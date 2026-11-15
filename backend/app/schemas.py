@@ -302,6 +302,10 @@ class UserResponse(UserBase):
     # Admin-set field locks (Admin Users "Edit User" dialog), enforced
     # server-side in update_my_profile. See User.locked_fields.
     locked_fields: List[str] = Field(default_factory=list)
+    # Admin mode for the browser session making the request (app/admin_mode.py).
+    # Always false for anyone but the signed-in admin themselves.
+    admin_mode_open: bool = False
+    admin_mode_closes_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -310,7 +314,10 @@ class UserResponse(UserBase):
     def from_orm(cls, obj):
         import json
         from app.utils import get_avatar_url
+        from app.admin_mode import admin_mode_closes_at, admin_mode_open
         obj.has_password = bool(getattr(obj, 'password_hash', None))
+        obj.admin_mode_open = admin_mode_open(obj)
+        obj.admin_mode_closes_at = admin_mode_closes_at(obj)
         # Deserialize callsigns JSON field
         if hasattr(obj, 'callsigns') and obj.callsigns:
             try:
@@ -831,12 +838,10 @@ class NetResponse(NetBase):
     frequencies: List[FrequencyResponse] = []
     check_in_count: Optional[int] = None
     can_manage: bool = False  # True if current user can edit (owner, admin, or NCS)
-    # Per-action permissions (see NetActions). actions_as_regular_user is the
-    # same set with the admin bypass removed, sent only to admins, for the
-    # "View as Regular User" preview; null for everyone else.
+    # Per-action permissions (see NetActions). An admin outside admin mode
+    # gets a regular user's answers (app/admin_mode.py).
     actions: NetActions = NetActions()
-    actions_as_regular_user: Optional[NetActions] = None
-    is_owner_or_ncs: bool = False  # True if user has non-admin access (owner/NCS/staff) — used by admin simulation mode
+    is_owner_or_ncs: bool = False  # True if user has non-admin access (owner/NCS/staff)
     current_user_ncs_eligible: bool = False  # True if checking in would auto-grant current user NCS (see permissions.is_eligible_for_ncs_auto_grant) — drives the NCS/Standard choice on the check-in prompt/dialog
     current_user_logger_eligible: bool = False  # True if checking in would auto-grant current user LOGGER (see permissions.is_eligible_for_logger_self_grant) — drives the Logger choice on the check-in prompt/dialog
     user_attended: Optional[bool] = None  # True if current user checked into this net
@@ -859,7 +864,7 @@ class NetResponse(NetBase):
     has_drill_plan: bool = False
 
     @classmethod
-    def from_orm(cls, net, *, signed_in: bool, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, actions: dict = None, actions_as_regular_user: dict = None, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, current_user_logger_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None, auto_close_at: datetime = None, has_drill_plan: bool = False):
+    def from_orm(cls, net, *, signed_in: bool, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, actions: dict = None, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, current_user_logger_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None, auto_close_at: datetime = None, has_drill_plan: bool = False):
         import json
         data = {
             'id': net.id,
@@ -920,7 +925,6 @@ class NetResponse(NetBase):
             'check_in_count': check_in_count,
             'can_manage': can_manage,
             'actions': actions or {},
-            'actions_as_regular_user': actions_as_regular_user,
             'is_owner_or_ncs': is_owner_or_ncs,
             'current_user_ncs_eligible': current_user_ncs_eligible,
             'current_user_logger_eligible': current_user_logger_eligible,
@@ -1772,6 +1776,20 @@ class MfaReplaceStartRequest(BaseModel):
     # Proven by account password, not a TOTP code -- this flow exists
     # specifically for "I lost the device with the old code."
     password: str = Field(min_length=1, max_length=128)
+
+
+class AdminModeRequest(BaseModel):
+    """A two-factor code, or a backup code, to open admin mode."""
+    totp_code: str = Field(min_length=6, max_length=20)
+
+
+class AdminModeStatus(BaseModel):
+    admin_mode_open: bool
+    admin_mode_closes_at: Optional[datetime] = None
+    # Set when the request's token had no session id (issued before admin
+    # mode existed): the app must switch to this token, which carries the
+    # session the admin mode was opened for.
+    access_token: Optional[str] = None
 
 
 class MfaDisableRequest(BaseModel):

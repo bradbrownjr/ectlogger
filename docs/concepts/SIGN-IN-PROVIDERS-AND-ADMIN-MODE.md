@@ -2,7 +2,8 @@
 
 Last updated: 2026-11-15
 
-Status: design agreed with Brad on 2026-11-15, not built. Branch `feature/oidc-sign-in`.
+Status: design agreed with Brad on 2026-11-15. Phase 1 (admin mode) built on the
+branch; Phase 2 not started. Branch `feature/oidc-sign-in`.
 Replaces [issue #11](https://github.com/bradbrownjr/ectlogger/issues/11) (OAuth sign-in
 is a 501 stub).
 
@@ -34,7 +35,7 @@ up to 90 days of admin access on that browser.
   An admin can limit a provider to listed email domains, or turn new accounts off for it.
 - **Admins sign in through a provider without a code.** The provider is trusted to have
   checked the person. Every admin action still needs admin mode, which needs a code.
-- **Admin mode closes after 15 minutes with no admin action**, and has a Lock admin
+- **Admin mode closes after 15 minutes without activity**, and has a Lock admin
   button. A code for every single admin request was considered and rejected: opening
   the Admin panel alone makes several requests, and a code only changes every 30
   seconds.
@@ -52,13 +53,14 @@ up to 90 days of admin access on that browser.
   overrides on other people's nets and schedules are absent.
 - The account menu has **Switch to admin**. It asks for the two-factor code (or a backup
   code) and opens admin mode.
-- While admin mode is open, an **Admin** chip shows in the top bar, with **Lock admin**
-  in its menu.
-- After 15 minutes with no admin action, admin mode closes. The next admin action asks
-  for the code again, then carries on with what the admin was doing.
-- An admin who has not set up two-factor yet can sign in and use the app as a regular
-  user. Switch to admin takes them to two-factor setup first. Today they are stopped at
-  sign-in (`mfa_setup_required`).
+- While admin mode is open, an **Admin** chip shows the minutes left in the top bar.
+  Clicking it locks admin mode, as does **Lock admin** in the account menu. Either
+  reloads the page, so permissions the server worked out for the old mode go away.
+- After 15 minutes without activity, admin mode closes. The next admin action asks
+  for the code again, then sends the refused request again. The Admin page asks for
+  the code when opened outside admin mode, instead of sending the admin away.
+- An admin who has not set up two-factor is still sent to set it up at sign-in, as
+  before (`mfa_setup_required`), and Switch to admin sends them there too.
 
 ### Server
 
@@ -79,9 +81,14 @@ up to 90 days of admin access on that browser.
   helper, so a new check cannot bypass admin mode.
   - `user.role` is never changed in memory to fake a regular user: the session could
     commit it.
-- **What keeps admin mode open:** any request that needed admin powers. Requests sent
-  with `X-Background-Request: 1` never do, for the same reason they don't update
-  `last_active`: an open tab polling in the background is not an admin at work.
+- **What keeps admin mode open:** any request the admin made themselves, admin or
+  not. Requests sent with `X-Background-Request: 1` never do, for the same reason
+  they don't update `last_active`: an open tab polling in the background is not an
+  admin at work. Counting only requests that used admin powers was considered and
+  dropped: the check runs inside synchronous helpers, and most reads never commit,
+  so it could not be recorded reliably. The walk-away case is covered either way.
+- **The browser learns the closing time** from an `X-Admin-Mode-Closes-At` header
+  (ISO time, or `closed`) on every response to an admin.
 - **Endpoints**
   - `POST /auth/admin-mode` with `totp_code`: checks it the same way sign-in does
     (`verify_totp_code` or a backup code), opens admin mode, returns the token with a
@@ -107,7 +114,8 @@ up to 90 days of admin access on that browser.
   it. `simulateRegularUser`, the "View as Regular User" menu item, and
   `NetResponse.actions_as_regular_user` are removed: the server now answers as a
   regular user, so `actions` alone is right.
-- The Admin chip shows the time left and refreshes from `/users/me`.
+- At the closing time the app asks `/users/me` as a background request, so asking
+  does not keep admin mode open.
 
 ## Phase 2: Sign-in providers
 

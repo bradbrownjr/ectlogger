@@ -42,13 +42,11 @@ const NO_ACTIONS: NetActions = {
 
 interface WithActions {
   actions?: Partial<NetActions> | null;
-  actions_as_regular_user?: Partial<NetActions> | null;
 }
 
-// An admin using "View as Regular User" (AuthContext's simulateRegularUser)
-// gets the server's no-admin-bypass copy, since their real requests would
-// still succeed and the preview is meant to show what everyone else sees.
-export const getNetActions = (net: WithActions | null | undefined, simulateRegularUser: boolean): NetActions => ({
+// The server answers for an admin as a regular user unless admin mode is open
+// (backend app/admin_mode.py), so `actions` is already right either way.
+export const getNetActions = (net: WithActions | null | undefined): NetActions => ({
   ...NO_ACTIONS,
-  ...((simulateRegularUser && net?.actions_as_regular_user) || net?.actions || {}),
+  ...(net?.actions || {}),
 });

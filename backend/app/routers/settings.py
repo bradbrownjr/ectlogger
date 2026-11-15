@@ -120,11 +120,9 @@ def _settings_snapshot(settings: AppSettings) -> dict:
 async def update_settings(
     settings_update: AppSettingsUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_admin_user)
 ):
     """Update application settings (admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin access required")
 
     settings = await get_or_create_settings(db)
     before = _settings_snapshot(settings)
@@ -360,11 +358,9 @@ async def list_field_definitions(
 async def create_field_definition(
     field_data: FieldDefinitionCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_admin_user)
 ):
     """Create a new field definition (admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin access required")
     
     # Check for duplicate name
     result = await db.execute(
@@ -399,11 +395,9 @@ async def update_field_definition(
     field_id: int,
     field_data: FieldDefinitionUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_admin_user)
 ):
     """Update a field definition (admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin access required")
     
     result = await db.execute(
         select(FieldDefinition).where(FieldDefinition.id == field_id)
@@ -448,11 +442,9 @@ async def update_field_definition(
 async def archive_field_definition(
     field_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_admin_user)
 ):
     """Archive a field definition (admin only). Built-in fields cannot be archived."""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin access required")
     
     result = await db.execute(
         select(FieldDefinition).where(FieldDefinition.id == field_id)

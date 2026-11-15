@@ -122,22 +122,23 @@ async def test_inactive_co_manager_cannot_change_lifecycle(client, db, owner, ot
 
 
 @pytest.mark.asyncio
-async def test_admin_gets_a_regular_user_preview(client, db, owner, admin):
+async def test_admin_in_admin_mode_may_do_everything(client, db, owner, admin):
+    """conftest opens admin mode for admins; tests/test_admin_mode.py covers
+    an admin outside it, who gets a regular user's answers."""
     net = await _net(db, owner)
     await db.commit()
 
     body = (await client.get(f"/api/nets/{net.id}", headers=auth_headers(admin))).json()
     assert all(body["actions"].values())
-    assert not any(body["actions_as_regular_user"].values())
+    assert "actions_as_regular_user" not in body
 
 
 @pytest.mark.asyncio
-async def test_non_admin_gets_no_preview(client, db, owner):
+async def test_owner_may_claim_ncs(client, db, owner):
     net = await _net(db, owner)
     await db.commit()
 
     body = (await client.get(f"/api/nets/{net.id}", headers=auth_headers(owner))).json()
-    assert body["actions_as_regular_user"] is None
     assert body["actions"]["claim_ncs"] is True
 
 

@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.permissions import is_admin
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import (
@@ -446,7 +447,7 @@ async def list_linkable_nets(
         .order_by(Net.started_at.desc().nullslast(), Net.created_at.desc())
         .limit(500)
     )
-    if current_user.role != UserRole.ADMIN:
+    if not is_admin(current_user):
         query = query.where(Net.owner_id == current_user.id)
 
     result = await db.execute(query)

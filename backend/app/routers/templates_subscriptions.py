@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.permissions import is_admin as acts_as_admin
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.logger import logger
@@ -150,7 +151,7 @@ async def create_net_from_template(
     
     # Check if user has permission to create a net from this template
     # Must be: admin, template owner, staff member, or NCS rotation member
-    is_admin = current_user.role == UserRole.ADMIN
+    is_admin = acts_as_admin(current_user)
     is_owner = template.owner_id == current_user.id
     is_rotation_member = any(member.user_id == current_user.id for member in template.rotation_members)
     

@@ -6,6 +6,7 @@ from typing import List, Optional
 from datetime import datetime, UTC
 import json
 import logging
+from app.permissions import is_admin as acts_as_admin
 from app.database import get_db
 from app.services.callsign_people import find_user_by_callsign, follow_callsign_correction
 from app.audit import record_net_event
@@ -1070,7 +1071,7 @@ async def toggle_hand_raised(
     
     # Check if user is authorized to toggle the hand
     is_owner = net.owner_id == current_user.id
-    is_admin = current_user.role == UserRole.ADMIN
+    is_admin = acts_as_admin(current_user)
     is_own_check_in = check_in.user_id == current_user.id
     
     # Check if user is NCS or logger for this net

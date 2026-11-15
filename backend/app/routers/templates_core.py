@@ -13,6 +13,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.permissions import is_admin
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
@@ -78,7 +79,7 @@ async def may_administer_schedule(db: AsyncSession, template: NetTemplate, user:
     answer (minus the admin bypass) to the Schedule page's Merge and Delete
     buttons; until 2026-10-23 those checked manager-or-admin only, so a
     co-manager the server allowed never saw them."""
-    return user.role == UserRole.ADMIN or await is_owner_or_co_manager(db, template, user)
+    return is_admin(user) or await is_owner_or_co_manager(db, template, user)
 
 
 # Code sent in a 403's detail when the account-age or net-participation
@@ -128,7 +129,7 @@ async def check_schedule_creation_eligibility(db: AsyncSession, user: User) -> S
     Admins bypass all checks. Early access (``schedule_age_bypass``) bypasses
     the account-age and participation requirements but not the daily limit.
     """
-    if user.role == UserRole.ADMIN:
+    if is_admin(user):
         return ScheduleEligibility(eligible=True)
 
     result = await db.execute(select(AppSettings).where(AppSettings.id == 1))

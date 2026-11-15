@@ -1868,3 +1868,24 @@ class TrainingBannerDismissal(Base):
     __table_args__ = (
         UniqueConstraint('user_id', 'session_id', name='uq_training_banner_dismissal'),
     )
+
+
+class AdminSession(Base):
+    """Admin mode for one browser session (migration 103). An admin acts as a
+    regular user until they enter a two-factor code (POST /auth/admin-mode),
+    which opens a row here keyed by the token's `sid` claim, so opening it on
+    one device never opens it on another. It is open while `closed_at` is null
+    and `last_used_at` is within ADMIN_MODE_IDLE_MINUTES (app/admin_mode.py);
+    any request the admin makes themselves moves `last_used_at` on, background
+    polls do not. Lock admin sets `closed_at`. See
+    docs/concepts/SIGN-IN-PROVIDERS-AND-ADMIN-MODE.md."""
+    __tablename__ = "admin_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    sid = Column(String(64), nullable=False, index=True)
+    opened_at = Column(DateTime(timezone=True), nullable=False)
+    last_used_at = Column(DateTime(timezone=True), nullable=False)
+    closed_at = Column(DateTime(timezone=True), nullable=True)
+    ip = Column(String(64), nullable=True)
+    user_agent = Column(String(255), nullable=True)

@@ -11,7 +11,11 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from app.session_config import get_session_config
 from app.database import get_db
-from app.dependencies import get_current_user
+from fastapi.security import HTTPAuthorizationCredentials
+from app.dependencies import get_current_user, security, MFA_SETUP_REQUIRED_DETAIL
+from app.admin_mode import (
+    admin_mode_closes_at, admin_mode_open, close_admin_mode, open_admin_mode,
+)
 from app.models import User, UserEmail, UserRole, Contact
 from app.schemas import (
     Token, UserResponse, MagicLinkRequest, MagicLinkVerify, MagicLinkResend,
@@ -19,9 +23,10 @@ from app.schemas import (
     MfaSetupStartResult, MfaSetupConfirmRequest, MfaSetupConfirmResult,
     MfaReplaceStartRequest, MfaDisableRequest, EmailChangeRequest, EmailChangeConfirm,
     AccountEmailsResponse, BackupEmailAction, BackupEmailEntry,
+    AdminModeRequest, AdminModeStatus,
 )
 from app.auth import (
-    create_access_token, create_magic_link_token, verify_magic_link_token,
+    verify_token, create_access_token, create_magic_link_token, verify_magic_link_token,
     magic_link_email_ignoring_age,
     hash_password, verify_password, encrypt_mfa_secret, decrypt_mfa_secret,
     generate_totp_secret, totp_provisioning_uri, verify_totp_code,
@@ -172,7 +177,7 @@ async def get_or_create_user(db: AsyncSession, email: str, name: Optional[str], 
     
     if contact:
         logger.info("API", f"New user auto-populated from contact: {email} (callsign={contact.callsign})")
-    if user.role == UserRole.ADMIN:
+    if user.role == UserRole.ADMIN:  # admin-mode-ok: account role
         logger.info("API", f"First user created as admin: {email}")
 
     # Someone invited from a schedule's Staff dialog arrives with their
@@ -223,7 +228,7 @@ async def _resolve_mfa(db: AsyncSession, user: User, totp_code: Optional[str]) -
     enforced at login -- an "optional" second factor a user turned on but
     that's silently skipped would be worse than not offering it.
     """
-    if user.role == UserRole.ADMIN and not user.mfa_enabled:
+    if user.role == UserRole.ADMIN and not user.mfa_enabled:  # admin-mode-ok: sign-in rule
         return "mfa_setup_required"
     if not user.mfa_enabled:
         return "ok"
@@ -234,7 +239,7 @@ async def _resolve_mfa(db: AsyncSession, user: User, totp_code: Optional[str]) -
         # must still block access (force re-enrollment); for a non-admin
         # there's nothing left to verify against, so don't lock them out of
         # their own account over an operational key rotation.
-        return "mfa_setup_required" if user.role == UserRole.ADMIN else "ok"
+        return "mfa_setup_required" if user.role == UserRole.ADMIN else "ok"  # admin-mode-ok: sign-in rule
 
     if totp_code and (verify_totp_code(secret, totp_code) or await _consume_backup_code(db, user, totp_code)):
         return "ok"
@@ -256,7 +261,7 @@ def _require_non_admin_mfa_self_service(user: User):
     "MFA mandatory for admins" trivially. Recovery is another admin using
     the admin reset endpoint, or scripts/reset_admin_mfa.py as a last
     resort if no other admin exists."""
-    if user.role == UserRole.ADMIN:
+    if user.role == UserRole.ADMIN:  # admin-mode-ok: account role
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin MFA can't be self-managed this way. Ask another admin to reset it, "
@@ -894,6 +899,80 @@ async def oauth_callback(
         status_code=501,
         detail="OAuth callback implementation requires full OAuth flow setup"
     )
+
+
+# ========== ADMIN MODE ==========
+# An admin acts as a regular user until they enter a code here; see
+# app/admin_mode.py and docs/concepts/SIGN-IN-PROVIDERS-AND-ADMIN-MODE.md.
+
+def _admin_mode_status(user: User, access_token: Optional[str] = None) -> AdminModeStatus:
+    return AdminModeStatus(
+        admin_mode_open=admin_mode_open(user),
+        admin_mode_closes_at=admin_mode_closes_at(user),
+        access_token=access_token,
+    )
+
+
+@router.post("/admin-mode", response_model=AdminModeStatus)
+@_limiter.limit("10/minute")
+async def open_admin_mode_route(
+    request: Request,
+    payload: AdminModeRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Switch to admin: check the two-factor or backup code and open admin
+    mode for this browser session.
+
+    403 for a non-admin. MFA_SETUP_REQUIRED_DETAIL for an admin without
+    two-factor (the app sends them to set it up). 401 for a wrong code, which
+    counts toward the failed sign-in alerts like one at sign-in.
+    """
+    if current_user.role != UserRole.ADMIN:  # admin-mode-ok: who may open it
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    secret = (decrypt_mfa_secret(current_user.mfa_secret_encrypted)
+              if current_user.mfa_enabled and current_user.mfa_secret_encrypted else None)
+    if not secret:
+        # Not enrolled, or the secret can no longer be read (SECRET_KEY
+        # rotated): either way there is nothing to check a code against.
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=MFA_SETUP_REQUIRED_DETAIL)
+
+    code = payload.totp_code.strip()
+    if not (verify_totp_code(secret, code) or await _consume_backup_code(db, current_user, code)):
+        await _record_mfa_failure(db, current_user, code, "admin mode")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect code.")
+
+    # A token from before admin mode has no session id. Give it one, with
+    # the same expiry, so the admin mode opened here belongs to this browser.
+    token_payload = verify_token(credentials.credentials) or {}
+    sid = token_payload.get("sid")
+    new_token = None
+    if not sid:
+        sid = secrets.token_urlsafe(16)
+        remaining = max(0, token_payload.get("exp", 0) - datetime.now(timezone.utc).timestamp())
+        new_token = create_access_token(data={"sub": str(current_user.id), "sid": sid},
+                                        expires_delta=timedelta(seconds=remaining))
+
+    await open_admin_mode(db, current_user, sid, get_client_ip(request),
+                          request.headers.get("user-agent"))
+    record_event(db, "admin_mode.opened", current_user)
+    await db.commit()
+    return _admin_mode_status(current_user, new_token)
+
+
+@router.delete("/admin-mode", response_model=AdminModeStatus)
+async def lock_admin_mode_route(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Lock admin: close admin mode for this browser session now."""
+    token_payload = verify_token(credentials.credentials) or {}
+    if await close_admin_mode(db, current_user, token_payload.get("sid")):
+        record_event(db, "admin_mode.locked", current_user)
+    await db.commit()
+    return _admin_mode_status(current_user)
 
 
 @router.get("/me", response_model=UserResponse)

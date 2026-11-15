@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.permissions import is_admin as acts_as_admin
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
 from app.audit import record_net_event
@@ -137,14 +138,9 @@ async def create_net(
 
 
 def _actions_for(access):
-    """(actions, actions_as_regular_user) for NetResponse. The second is only
-    sent to admins, for the "View as Regular User" preview."""
-    if access is None:
-        return {}, None
-    actions = net_actions(access)
-    if not access.is_admin:
-        return actions, None
-    return actions, net_actions(access.as_regular_user())
+    """NetResponse.actions. An admin outside admin mode gets a regular user's
+    answers, since net_access asks permissions.is_admin."""
+    return {} if access is None else net_actions(access)
 
 
 @router.get("/", response_model=List[NetResponse])
@@ -245,11 +241,11 @@ async def list_nets(
         is_owner_or_ncs = False
         if current_user:
             is_owner = net.owner_id == current_user.id
-            is_admin = current_user.role == UserRole.ADMIN
+            is_admin = acts_as_admin(current_user)
             is_ncs = net.id in user_ncs_net_ids
             is_owner_or_ncs = is_owner or is_ncs  # non-admin access; used by frontend simulation mode
             can_manage = is_owner_or_ncs or is_admin
-        actions, actions_as_regular_user = _actions_for(access_by_net.get(net.id))
+        actions = _actions_for(access_by_net.get(net.id))
 
         ncs_callsign, ncs_name = ncs_by_net.get(net.id, (None, None))
         user_attended = (net.id in user_attended_net_ids) if compute_user_flags else None
@@ -262,7 +258,6 @@ async def list_nets(
             check_in_count=check_in_counts.get(net.id, 0),
             can_manage=can_manage,
             actions=actions,
-            actions_as_regular_user=actions_as_regular_user,
             is_owner_or_ncs=is_owner_or_ncs,
             ncs_callsign=ncs_callsign,
             ncs_name=public_display_name(ncs_name, current_user is not None),
@@ -295,11 +290,11 @@ async def get_net(
 
     # Compute can_manage for this user
     can_manage = False
-    actions, actions_as_regular_user = _actions_for(None)
+    actions = _actions_for(None)
     is_owner_or_ncs = False
     if current_user:
         is_owner = net.owner_id == current_user.id
-        is_admin = current_user.role == UserRole.ADMIN
+        is_admin = acts_as_admin(current_user)
         # Check if user is NCS for this net. limit(1) because net_roles has no
         # uniqueness constraint on (net_id, user_id, role) -- same bounded
         # existence check every other NetRole lookup uses.
@@ -328,7 +323,7 @@ async def get_net(
         can_manage = is_owner_or_ncs or is_admin
         # Per-action permissions, each the rule its server action enforces.
         # Narrower than can_manage on purpose: see permissions.NetAccess.
-        actions, actions_as_regular_user = _actions_for(await net_access(db, net, current_user))
+        actions = _actions_for(await net_access(db, net, current_user))
 
     # Would checking in right now auto-grant this user NCS? Drives the
     # NCS/Standard choice on the check-in prompt/dialog. Independent of
@@ -372,7 +367,6 @@ async def get_net(
         owner_name=public_display_name(net.owner.name if net.owner else None, current_user is not None),
         can_manage=can_manage,
         actions=actions,
-        actions_as_regular_user=actions_as_regular_user,
         is_owner_or_ncs=is_owner_or_ncs,
         current_user_ncs_eligible=current_user_ncs_eligible,
         current_user_logger_eligible=current_user_logger_eligible,
@@ -600,7 +594,7 @@ async def link_net_to_template(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
 
-    is_admin = current_user.role == UserRole.ADMIN
+    is_admin = acts_as_admin(current_user)
     if not (is_admin or net.owner_id == current_user.id):
         raise HTTPException(status_code=403, detail="Only the net owner or an admin can change this net's schedule")
 

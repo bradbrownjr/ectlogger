@@ -102,7 +102,7 @@ const Scheduler: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [scheduleToDelete, setScheduleToDelete] = useState<Schedule | null>(null);
   const navigate = useNavigate();
-  const { user, isAuthenticated, simulateRegularUser } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   // Sort order persists on the account so it follows the user across devices
@@ -195,16 +195,10 @@ const Scheduler: React.FC = () => {
   };
 
   const isAdmin = user?.role === 'admin';
-  // In admin simulation mode, use the non-admin permission flag so buttons
-  // reflect what a real user would see -- same reasoning and pattern as
-  // Dashboard.tsx's own canManage(net). schedule.can_manage/can_create_net
-  // are computed server-side from the REAL/unmasked identity and so stay
-  // true for an admin using "View as Regular User" regardless of the
-  // toggle; schedule.is_owner_or_staff never carries that bypass. Both
-  // server fields are literally the same permission (can_create_net is set
-  // equal to can_manage in templates_core.py), so one helper covers both.
-  const canManageSchedule = (schedule: Schedule) =>
-    simulateRegularUser ? (schedule.is_owner_or_staff ?? false) : (schedule.can_manage ?? false);
+  // can_manage and can_create_net are the same permission (templates_core.py
+  // sets one equal to the other), so one helper covers both. The server
+  // answers for an admin as a regular user unless admin mode is open.
+  const canManageSchedule = (schedule: Schedule) => schedule.can_manage ?? false;
 
   // ========== MERGE MODE HELPERS ==========
   /** Can the current user merge or delete this schedule? Its manager, an

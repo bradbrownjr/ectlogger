@@ -5,6 +5,7 @@ type PaletteMode = 'light' | 'dark';
 import { CssBaseline, Box } from '@mui/material';
 import { SnackbarProvider } from 'notistack';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import AdminModeDialog from './components/AdminModeDialog';
 import { ThemeContext } from './contexts/ThemeContext';
 import { LocationProvider } from './contexts/LocationContext';
 import { THEMES, DEFAULT_THEME_KEY, ThemeDefinition } from './theme/themes';
@@ -379,6 +380,8 @@ const ThemedApp: React.FC = () => {
             <ErrorBoundary>
               <AppRoutes />
             </ErrorBoundary>
+            {/* Two-factor prompt for Switch to admin (AuthContext requestAdminMode) */}
+            <AdminModeDialog />
           </LocationProvider>
         </SnackbarProvider>
       </ThemeProvider>

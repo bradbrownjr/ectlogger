@@ -92,7 +92,7 @@ const ScheduleHome: React.FC = () => {
   const { scheduleId } = useParams<{ scheduleId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, simulateRegularUser } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const preferUtc = user?.prefer_utc || false;
 
   const [schedule, setSchedule] = useState<Schedule | null>(null);
@@ -163,11 +163,8 @@ const ScheduleHome: React.FC = () => {
     fetchSections();
   }, [fetchSchedule, fetchSections, isAuthenticated]);
 
-  // Same rule as the schedule card's Create button (Scheduler.tsx::canManageSchedule):
-  // in "View as Regular User" an admin sees only what their own staff access allows.
-  const canCreateNet = !!schedule && (simulateRegularUser
-    ? (schedule.is_owner_or_staff ?? false)
-    : (schedule.can_create_net ?? false));
+  // Same rule as the schedule card's Create button (Scheduler.tsx::canManageSchedule).
+  const canCreateNet = !!schedule && (schedule.can_create_net ?? false);
 
   const handleCreateNet = async () => {
     setCreating(true);

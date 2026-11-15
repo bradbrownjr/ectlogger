@@ -917,6 +917,47 @@ request quietly, not get bounced off a page they're allowed to be on.
 
 ---
 
+## Admin mode
+
+An admin acts as a regular user until they enter a two-factor code, for one
+browser session, and admin mode closes after 15 minutes with no request they
+made themselves (Brad, 2026-11-15; design in
+`docs/concepts/SIGN-IN-PROVIDERS-AND-ADMIN-MODE.md`).
+
+- **`permissions.is_admin(user)` is the only check** for what someone may do.
+  It needs the admin role and admin mode open. `get_current_user` (and
+  `get_current_user_optional`) call `admin_mode.load_admin_mode` once per
+  request, which records the answer on the user object; a `User` loaded any
+  other way reads as not in admin mode. Never compare a user's `role` to
+  `UserRole.ADMIN` to grant something: `tests/test_admin_mode.py` scans
+  `backend/app` and fails on one. A check on the account's role itself (sign-in
+  rules, who gets the `X-Admin-Mode-Closes-At` header) carries an
+  `# admin-mode-ok: why` comment. Queries on the `User.role` column (which
+  admins to email) are not affected.
+- **Per browser session.** Every token carries a random `sid`
+  (`auth.create_access_token`); rolling renewal keeps it. `AdminSession`
+  (migration 103) holds one row per opening, keyed by `(user_id, sid)`.
+  `POST /auth/admin-mode` checks the code (TOTP or backup) and gives a token
+  without a `sid` a new one, returning it as `access_token`.
+  `DELETE /auth/admin-mode` is Lock admin.
+- **What keeps it open:** any request without `X-Background-Request: 1`, the
+  same rule as `last_active`. A poll from a tab left open must not.
+- **Refusals.** `get_admin_user` answers 403 `ADMIN_MODE_REQUIRED_DETAIL`;
+  `services/api.ts` opens the code prompt (`AdminModeDialog.tsx`) and retries
+  the request once. The two copies of that text, and of the 15 minutes, are
+  checked against each other by `test_frontend_copies_match_the_server`.
+- **In the app**, `AuthContext` gives `user.role` as `'admin'` only while admin
+  mode is open, so every role check follows it; `isActualAdmin` is the
+  account's role. It reads the closing time from the `X-Admin-Mode-Closes-At`
+  header on each response, and at that time asks `/users/me` as a background
+  request, so asking doesn't keep it open.
+- **Tests.** `conftest.py` treats admins as already in admin mode, so tests
+  about admin powers don't each open it; `tests/test_admin_mode.py` opts out
+  with `@pytest.mark.real_admin_mode`. A test that calls a permission function
+  with an admin it loaded itself wraps it in `in_admin_mode(user)`.
+- **Docs screenshots** switch the demo admin to admin mode in
+  `capture.mjs::tokenFor`.
+
 ## Activity log
 
 `models.AuditEvent` (migration 088) is the admin-only record of who did what, from

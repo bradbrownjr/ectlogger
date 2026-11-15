@@ -77,7 +77,7 @@ const Admin: React.FC = () => {
     return id ? { id, label: searchParams.get('label') || `Account ${id}` } : null;
   });
 
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, isActualAdmin, adminModeOpen, requestAdminMode } = useAuth();
   const navigate = useNavigate();
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -86,11 +86,17 @@ const Admin: React.FC = () => {
   const showSnackbar = (message: string, severity: 'success' | 'error') =>
     setSnackbar({ open: true, message, severity });
 
+  // Not an admin: nothing here for them. An admin outside admin mode is asked
+  // for their code first, and sent home if they cancel.
   useEffect(() => {
-    if (currentUser?.role !== 'admin') {
+    if (!isActualAdmin) {
       navigate('/dashboard');
+    } else if (!adminModeOpen) {
+      requestAdminMode().then((opened) => {
+        if (!opened) navigate('/dashboard');
+      });
     }
-  }, [currentUser, navigate]);
+  }, [isActualAdmin, adminModeOpen, requestAdminMode, navigate]);
 
   // Swipe left/right to switch tabs on touch devices
   const handleTouchStart = (e: React.TouchEvent) => {

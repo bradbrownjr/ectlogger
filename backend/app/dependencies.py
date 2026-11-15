@@ -10,6 +10,10 @@ from app.auth import verify_token, create_access_token, token_issued_to
 from app.logger import logger
 from app.security import get_client_ip
 from app.session_config import get_session_config
+from app.admin_mode import (
+    ADMIN_MODE_HEADER, ADMIN_MODE_REQUIRED_DETAIL, admin_mode_closes_at, admin_mode_open, load_admin_mode,
+)
+from app.permissions import is_admin
 
 # auto_error=False on both: get_current_user raises its own 401 for a missing
 # or non-Bearer Authorization header. HTTPBearer's built-in error is 403 before
@@ -111,10 +115,18 @@ async def get_current_user(
     
     # Update last_active timestamp for online tracking. Automatic polls are
     # excluded so an idle open tab doesn't read as someone using the app --
-    # see BACKGROUND_REQUEST_HEADER above.
-    if not is_background_request(request):
+    # see BACKGROUND_REQUEST_HEADER above. The same rule keeps admin mode
+    # open: a poll from a tab left behind must not.
+    deliberate = not is_background_request(request)
+    await load_admin_mode(db, user, payload.get("sid"), keep_open=deliberate)
+    if deliberate:
         user.last_active = datetime.now(timezone.utc)
         await db.commit()
+    # Every request may move admin mode's closing time, so tell an admin's
+    # browser each time; its countdown and auto-lock read this.
+    if user.role == UserRole.ADMIN:  # admin-mode-ok: who gets the header
+        closes = admin_mode_closes_at(user)
+        response.headers[ADMIN_MODE_HEADER] = closes.isoformat() if closes else "closed"
 
     # Rolling refresh: if enabled and fewer than 7 days remain, issue a new
     # token so active users never have to re-authenticate. A token from
@@ -125,7 +137,8 @@ async def get_current_user(
     expiring = rolling_renewal and exp and (exp - datetime.now(timezone.utc).timestamp()) < 7 * 24 * 60 * 60
     if expiring or payload.get("iat") is None:
         new_token = create_access_token(
-            data={"sub": str(user.id)},
+            # Keep the session id, or a renewal would close admin mode.
+            data={"sub": str(user.id), "sid": payload.get("sid")},
             expires_delta=timedelta(days=lifetime_days) if expiring
             else timedelta(seconds=max(0, exp - datetime.now(timezone.utc).timestamp())),
         )
@@ -135,6 +148,7 @@ async def get_current_user(
 
 
 async def get_current_user_optional(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
     db: AsyncSession = Depends(get_db)
 ) -> Optional[User]:
@@ -143,12 +157,18 @@ async def get_current_user_optional(
         return None
     
     try:
-        user = await user_from_token_payload(db, verify_token(credentials.credentials))
+        payload = verify_token(credentials.credentials)
+        user = await user_from_token_payload(db, payload)
         if user is None or not user.is_active:
             return None
-        return user
     except Exception:
         return None
+    # Outside the try: a database error here is a real error, not a guest.
+    deliberate = not is_background_request(request)
+    await load_admin_mode(db, user, payload.get("sid"), keep_open=deliberate)
+    if deliberate and admin_mode_open(user):
+        await db.commit()
+    return user
 
 
 async def get_current_active_user(
@@ -161,7 +181,7 @@ async def get_current_active_user(
 
 def require_role(required_role: UserRole):
     async def role_checker(current_user: User = Depends(get_current_user)) -> User:
-        if current_user.role != required_role and current_user.role != UserRole.ADMIN:
+        if current_user.role != required_role and not is_admin(current_user):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Insufficient permissions. {required_role.value} role required."
@@ -177,17 +197,23 @@ MFA_SETUP_REQUIRED_DETAIL = "Set up two-factor authentication to use admin featu
 
 
 async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
-    if current_user.role != UserRole.ADMIN:
+    if current_user.role != UserRole.ADMIN:  # admin-mode-ok: who holds the role
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    # MFA is mandatory for admins. Login itself still succeeds for an
-    # unenrolled admin (see routers/auth.py::_resolve_mfa's mfa_setup_required
-    # status), but every other admin-only route is blocked until they enroll.
+    # MFA is mandatory for admins: admin mode can't be opened without it, so
+    # an unenrolled admin is sent to set it up rather than asked for a code.
     if not current_user.mfa_enabled:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=MFA_SETUP_REQUIRED_DETAIL
+        )
+    # The account is an admin's, but the server only acts on it as one while
+    # admin mode is open for this browser session (app/admin_mode.py).
+    if not is_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=ADMIN_MODE_REQUIRED_DETAIL
         )
     return current_user

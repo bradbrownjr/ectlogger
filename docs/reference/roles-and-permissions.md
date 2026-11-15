@@ -4,7 +4,7 @@ summary: Every role ECTLogger has, at every level, and a grid of who can do what
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-15
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/roles-and-permissions/
@@ -24,7 +24,7 @@ Every account has one of these, set on the account rather than on any particular
 
 | Role | What it changes |
 |---|---|
-| Admin | Full access to every net and schedule and the admin panel. **Must have two-factor authentication (TOTP) enabled.** An admin who hasn't enrolled is locked out of admin actions until they do. |
+| Admin | Full access to every net and schedule and the admin panel, while in [admin mode](/docs/admins/users-and-roles/#admin-mode). Outside admin mode an admin has the same access as a User. **Must have two-factor authentication (TOTP) enabled.** An admin who hasn't enrolled is locked out of admin actions until they do. |
 | User | The default for every real account. No special access on its own; what a User can do on any given net or schedule comes entirely from the per-net and schedule-level roles below. |
 | NCS | Assignable from the admin panel's user editor. It is treated the same as User and does not grant NCS on any net. Per-net NCS access comes from a per-net role or an eligible self-grant (both explained below). |
 | Guest | Not assigned to anyone. A check-in with no linked account (someone who checked in by callsign only) is a guest *check-in*, which is a different thing from this account role. |

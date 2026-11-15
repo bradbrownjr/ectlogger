@@ -4,7 +4,7 @@ summary: Posting a training session so it shows in everyone's Help menu, changin
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-15
 review_by: 2027-10-30
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/training-sessions/
@@ -65,4 +65,4 @@ Posting, changing, and removing a session each add an entry to the [activity log
 ## If you don't see the buttons
 
 - You need the **Admin** role, and your account has to have finished [two-factor enrollment](/docs/admins/security-and-mfa/), the same as for the rest of the admin panel.
-- If you're using **View as Regular User**, the buttons are hidden on purpose. Exit that view to get them back.
+- You need to be in [admin mode](/docs/admins/users-and-roles/#admin-mode). Choose **Switch to admin** in your avatar menu.

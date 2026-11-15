@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from app.models import Form, FormDefinition, Net, NetRole, TrafficAction, TrafficLogEntry, User, UserRole
 from app.permissions import FormPermissionResult, check_form_permission
 from app.traffic.log import append_entry
+from tests.conftest import in_admin_mode
 
 
 async def _definition(db) -> FormDefinition:
@@ -101,7 +102,7 @@ async def test_view_granted_to_net_ncs_logger(db, owner, other):
 async def test_view_granted_to_admin(db, owner, admin):
     definition = await _definition(db)
     form = await _form(db, definition, created_by_id=owner.id)
-    assert await check_form_permission(db, form, admin, "view") == FormPermissionResult.GRANTED
+    assert await check_form_permission(db, form, in_admin_mode(admin), "view") == FormPermissionResult.GRANTED
 
 
 # ---------------------------------------------------------------------------

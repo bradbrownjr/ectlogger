@@ -55,6 +55,30 @@ api.interceptors.request.use((config) => {
 // instead of just showing a generic access-denied error.
 export const MFA_SETUP_REQUIRED_DETAIL = 'Set up two-factor authentication to use admin features.';
 
+// ========== ADMIN MODE ==========
+// An admin acts as a regular user until they enter a two-factor code (backend
+// app/admin_mode.py). Matches app.admin_mode.ADMIN_MODE_REQUIRED_DETAIL
+// verbatim -- keep the two in sync.
+export const ADMIN_MODE_REQUIRED_DETAIL = 'Switch to admin to do this.';
+
+// Every response to an admin carries when admin mode closes, or "closed";
+// AuthContext listens for this event to keep its countdown and auto-lock right.
+export const ADMIN_MODE_EVENT = 'ectlogger:admin-mode';
+
+const reportAdminMode = (headers: any) => {
+  const value = headers?.['x-admin-mode-closes-at'];
+  if (value) {
+    window.dispatchEvent(new CustomEvent(ADMIN_MODE_EVENT, { detail: value === 'closed' ? null : value }));
+  }
+};
+
+// Set by AuthContext: asks for the code and resolves true once admin mode is
+// open, false if the admin cancels.
+let adminModePrompt: (() => Promise<boolean>) | null = null;
+export const setAdminModePrompt = (prompt: (() => Promise<boolean>) | null) => {
+  adminModePrompt = prompt;
+};
+
 // Handle responses: persist refreshed token and handle 401 logout
 api.interceptors.response.use(
   (response) => {
@@ -62,9 +86,25 @@ api.interceptors.response.use(
     if (newToken) {
       localStorage.setItem('token', newToken);
     }
+    reportAdminMode(response.headers);
     return response;
   },
-  (error) => {
+  async (error) => {
+    reportAdminMode(error.response?.headers);
+    // Admin mode closed (or was never opened) under an admin action: ask for
+    // the code, then send the same request again. Once only, so a refusal
+    // that a code can't fix doesn't loop.
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.detail === ADMIN_MODE_REQUIRED_DETAIL &&
+      adminModePrompt &&
+      error.config &&
+      !error.config._adminModeRetried
+    ) {
+      if (await adminModePrompt()) {
+        return api.request({ ...error.config, _adminModeRetried: true });
+      }
+    }
     if (error.response?.status === 401) {
       // A 401 with no stored token just means a guest hit a login-required
       // resource while browsing a public net/report page -- that's expected
@@ -114,6 +154,12 @@ export const authApi = {
   mfaReplaceStart: (password: string) => api.post('/auth/mfa/replace/start', { password }),
   mfaReplaceConfirm: (totp_code: string) => api.post('/auth/mfa/replace/confirm', { totp_code }),
   mfaDisable: (password: string) => api.post('/auth/mfa/disable', { password }),
+  // Admin mode (backend routers/auth.py ADMIN MODE). openAdminMode may return
+  // a replacement token, for a session from before admin mode existed.
+  openAdminMode: (totp_code: string) =>
+    api.post<{ admin_mode_open: boolean; admin_mode_closes_at: string | null; access_token: string | null }>(
+      '/auth/admin-mode', { totp_code }),
+  lockAdminMode: () => api.delete('/auth/admin-mode'),
   // Self-service email change: the link goes to the new address, and the
   // change happens only when it is confirmed from that link.
   requestEmailChange: (new_email: string, totp_code?: string) =>

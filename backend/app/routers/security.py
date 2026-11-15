@@ -4,8 +4,8 @@ from pydantic import BaseModel
 import subprocess
 import os
 
-from app.models import User, UserRole
-from app.dependencies import get_current_user
+from app.models import User
+from app.dependencies import get_admin_user
 from app.config import settings
 from app.logger import logger
 
@@ -202,11 +202,9 @@ def get_recent_security_events(limit: int = 50) -> List[SecurityLogEntry]:
 
 @router.get("/info", response_model=SecurityInfo)
 async def get_security_info(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_admin_user)
 ):
     """Get security information including Fail2Ban status (admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin access required")
     
     return SecurityInfo(
         fail2ban=get_fail2ban_status(),
@@ -217,11 +215,9 @@ async def get_security_info(
 @router.post("/unban/{ip}")
 async def unban_ip(
     ip: str,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_admin_user)
 ):
     """Unban an IP address from Fail2Ban (admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin access required")
     
     # Validate IP format (basic check)
     parts = ip.split('.')
