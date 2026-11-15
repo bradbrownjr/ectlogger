@@ -915,6 +915,14 @@ frontend's axios response interceptor (`services/api.ts`) only logs a user out o
 token was actually being sent — a guest hitting a login-required resource should fail that one
 request quietly, not get bounced off a page they're allowed to be on.
 
+**401 means "you are not signed in", and nothing else.** That interceptor signs out any
+user whose request carried a token and got a 401, so a signed-in endpoint must never answer
+401 for a wrong current password or two-factor code: answer 403 with a message the screen
+can show. Until 2026-11-15 Set password, two-factor setup/replace/disable, email change and
+backup addresses all answered 401, and a typo signed the user out.
+`tests/test_no_signed_in_401.py` fails on any 401 in a router outside the two sign-in
+endpoints.
+
 ---
 
 ## Activity log

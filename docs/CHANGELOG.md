@@ -32,6 +32,7 @@ All notable changes to ECTLogger are documented here.
 ## Bug Fixes
 
 * **PDFs: No more lines cut in half** — A page break in an exported PDF now falls between lines of text instead of through one, so a long script or set of announcements reads cleanly from page to page.
+* **Profile: A wrong code no longer signs you out** — Entering a wrong password or authenticator code in Profile > Security signed you out. Now the screen says the code didn't work and you can try again.
 
 ---
 
