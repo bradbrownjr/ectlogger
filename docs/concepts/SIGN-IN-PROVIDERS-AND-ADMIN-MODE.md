@@ -133,7 +133,7 @@ up to 90 days of admin access on that browser.
 - **The redirect URI is `<site>/api/auth/providers/<slug>/callback`**, where the slug
   is `google`, `microsoft`, or one the admin picks for an Other provider. It is keyed
   by slug, not the database id, so an admin can register it in the provider's console
-  before adding the provider here. Beta's test clients (registered 2026-11-15) use
+  before adding the provider here. Beta's test clients use
   `https://ectbeta.lynwood.us/api/auth/providers/google/callback` and
   `.../microsoft/callback`; production adds `https://app.ectlogger.us/...` to the same
   clients when the branch ships.
