@@ -276,8 +276,8 @@ const applyLightModeStyles = (element: HTMLElement): void => {
 };
 
 /**
- * Compute page cut boundaries that avoid splitting elements marked with
- * break-avoid (e.g. table rows).  Instead of cutting at a fixed interval,
+ * Compute page cut boundaries that avoid splitting rows, images, lines of
+ * text and elements marked with break-avoid (see measureAvoidRanges).  Instead of cutting at a fixed interval,
  * we scan upward from the natural cut point until we find a gap between
  * two avoid-break elements.
  *
@@ -286,7 +286,7 @@ const applyLightModeStyles = (element: HTMLElement): void => {
  * @param avoidRanges  Elements whose interior must not be cut
  * @returns Array of Y cut positions: [0, cut1, cut2, ..., totalHeight]
  */
-const computeSmartBoundaries = (
+export const computeSmartBoundaries = (
   totalHeight: number,
   pageHeight: number,
   avoidRanges: { top: number; bottom: number }[]
@@ -302,6 +302,9 @@ const computeSmartBoundaries = (
       adjusted = false;
       safety++;
       for (const range of avoidRanges) {
+        // Something taller than a page has to be cut somewhere; moving the
+        // cut above it would only leave a near-empty page.
+        if (range.bottom - range.top >= pageHeight) continue;
         if (range.top >= cursor && range.top < cutEnd && range.bottom > cutEnd) {
           // The cut would slice through this element; move cut to just before it
           cutEnd = Math.max(cursor + 1, range.top);
@@ -475,14 +478,28 @@ interface CapturedElement {
   avoidRanges: { top: number; bottom: number }[];
 }
 
-// Rows, plus anything a caller opts in with data-pdf-avoid-break (e.g. a map
-// card that would otherwise render as two useless half-images).
+// What a page cut must not pass through: table rows, images, anything a
+// caller opts in with data-pdf-avoid-break (e.g. a map card that would
+// otherwise render as two useless half-images), and every line of text.
+// Text lines are measured from the text itself (one client rect per line),
+// so a paragraph or list item can break between its lines but never through
+// one. Until 2026-11-15 only rows were protected, so the net script PDF cut a
+// list item in half across pages.
 const measureAvoidRanges = (root: HTMLElement, pxScale: number) => {
   const rootTop = root.getBoundingClientRect().top;
-  return Array.from(root.querySelectorAll('tr, [data-pdf-avoid-break]'), (el) => {
-    const r = el.getBoundingClientRect();
-    return { top: (r.top - rootTop) * pxScale, bottom: (r.bottom - rootTop) * pxScale };
-  });
+  const toRange = (r: DOMRect) => ({ top: (r.top - rootTop) * pxScale, bottom: (r.bottom - rootTop) * pxScale });
+  const ranges = Array.from(root.querySelectorAll('tr, img, [data-pdf-avoid-break]'), (el) => toRange(el.getBoundingClientRect()));
+  const doc = root.ownerDocument;
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const textRange = doc.createRange();
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (!node.textContent || !node.textContent.trim()) continue;
+    textRange.selectNodeContents(node);
+    for (const rect of Array.from(textRange.getClientRects())) {
+      if (rect.height > 0) ranges.push(toRange(rect));
+    }
+  }
+  return ranges;
 };
 
 /**
