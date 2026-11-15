@@ -12,6 +12,9 @@ const CommunicationPlanTab: React.FC = () => {
     propagationLoggingEnabled,
     coverageExcludedFrequencyIds, setCoverageExcludedFrequencyIds,
     scheduleId,
+    ics205Enabled, setIcs205Enabled,
+    channelPlan, setChannelPlan,
+    ics205SpecialInstructions, setIcs205SpecialInstructions,
   } = useCreateScheduleContext();
 
   return (
@@ -23,6 +26,11 @@ const CommunicationPlanTab: React.FC = () => {
       context={scheduleId ? { template_id: parseInt(scheduleId) } : undefined}
       coverageExcludedFrequencyIds={propagationLoggingEnabled ? coverageExcludedFrequencyIds : undefined}
       setCoverageExcludedFrequencyIds={propagationLoggingEnabled ? setCoverageExcludedFrequencyIds : undefined}
+      ics205={{
+        enabled: ics205Enabled, setEnabled: setIcs205Enabled,
+        plan: channelPlan, setPlan: setChannelPlan,
+        specialInstructions: ics205SpecialInstructions, setSpecialInstructions: setIcs205SpecialInstructions,
+      }}
     />
   );
 };

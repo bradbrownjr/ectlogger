@@ -105,8 +105,11 @@ import { canOpenLobby, isBeforeScheduledStart } from '../utils/netStart';
 import { canArchiveNet, isLogHeld, isLogOpen, NCS_NEEDED_DETAIL } from '../utils/netLog';
 import HeldLogTimeField from '../components/netview/HeldLogTimeField';
 import { coverageFrequencyLabels } from '../utils/coverageFrequencies';
+import type { FrequencyRadioFields } from '../utils/channelPlan';
 
-interface Frequency {
+// offset, tx_tone, rx_tone and bandwidth: a repeater's details, shown on
+// its chips (utils/channelPlan.ts)
+interface Frequency extends FrequencyRadioFields {
   id: number;
   frequency?: string;
   mode: string;

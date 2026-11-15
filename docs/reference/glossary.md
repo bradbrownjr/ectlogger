@@ -4,7 +4,7 @@ summary: Words this site uses in a particular way, including a few that mean som
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-15
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/glossary/
@@ -46,6 +46,9 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 
 **Grid square**
 : A Maidenhead locator (for example `FN43mr`), a compact way to specify a location that ECTLogger's map can parse directly, with no geocoding needed. See [Location formats](/docs/reference/location-formats/).
+
+**ICS-205**
+: FEMA's Incident Radio Communications Plan form: each radio channel on an incident, its function and assignment, its frequencies and tones, and special instructions. A net builds one when **Build an ICS-205** is on in its Communication Plan tab; signed-in viewers open it from **Reports**. See [The ICS-205 radio plan](/docs/net-managers/reports-and-exports/#the-ics-205-radio-plan).
 
 **ICS-213**
 : FEMA's General Message form, one of the formal traffic types ECTLogger can log and export alongside the ARRL Radiogram and RRI strips.

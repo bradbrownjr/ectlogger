@@ -337,8 +337,8 @@
   },
   "net-managers/create-net-frequencies": {
     "path": "/docs/img/net-managers/create-net-frequencies.png",
-    "alt": "The Communication Plan tab: a filter box with the match and selected counts beside it, a table of frequencies with a checkbox column labelled Use outlined in red, a row for adding a new frequency, and the Per page control under the table.\n",
-    "caption": "Check a frequency's box to make it available on this net; add a new one from the blank row at the bottom.",
+    "alt": "The Communication Plan tab: a filter box with the match and selected counts beside it, a table of frequencies with a checkbox column labelled Use outlined in red, a row for adding a new frequency with a second line for its offset, TX tone, RX tone and N/W, the Per page control under the table, and the Build an ICS-205 switch below it.\n",
+    "caption": "Check a frequency's box to make it available on this net. Add a new one from the blank row at the bottom, with a repeater's offset and tones on the line under it. Build an ICS-205 turns the list into a radio plan.\n",
     "page": "/docs/net-managers/creating-a-net/"
   },
   "net-managers/create-net-tabs": {

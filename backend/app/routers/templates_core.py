@@ -22,6 +22,7 @@ from app.audit import record_schedule_event, user_label
 from app.models import (
     AppSettings,
     CheckIn,
+    Frequency,
     NCSRotationMember,
     NetTemplate,
     NetTemplateSubscription,
@@ -40,6 +41,7 @@ from app.schemas import (
 from app.utils import NET_LOGO_DIR, save_resized_logo, user_callsigns
 from app.services.net_logos import logo_url_for, release_logo
 from app.services.report_sections import dump_sections
+from app.services.channel_plan import apply_channel_plan
 
 # Same limits/pattern as the net logo upload (routers/nets_core.py) and the
 # profile avatar upload (routers/users.py).
@@ -314,6 +316,9 @@ async def create_template(
         self_can_hear_enabled=template_data.self_can_hear_enabled if template_data.self_can_hear_enabled is not None else True,
         coverage_excluded_frequency_ids=json.dumps(template_data.coverage_excluded_frequency_ids) if template_data.coverage_excluded_frequency_ids else None,
         report_sections=dump_sections(template_data.report_sections),
+        ics205_enabled=bool(template_data.ics205_enabled),
+        ics205_special_instructions=template_data.ics205_special_instructions,
+        channel_plan_entries=[],
         traffic_enabled=template_data.traffic_enabled or False,
         traffic_form_types=json.dumps(template_data.traffic_form_types) if template_data.traffic_form_types else None,
         traffic_strip_form_type=template_data.traffic_strip_form_type,
@@ -340,6 +345,9 @@ async def create_template(
                     frequency_id=freq_id
                 )
             )
+    # Channels the schedule doesn't use are dropped (services/channel_plan.py).
+    apply_channel_plan(template, template_data.channel_plan,
+                       await _existing_frequency_ids(db, template_data.frequency_ids or []))
 
     await db.commit()
     await db.refresh(template)
@@ -362,6 +370,14 @@ async def create_template(
     # creator themselves is not actually that template's owner or staff.
     is_owner_or_staff = await check_template_staff_access(db, template, current_user)
     return NetTemplateResponse.from_orm(template, subscriber_count=0, is_subscribed=False, can_manage=True, can_create_net=True, is_owner_or_staff=is_owner_or_staff, signed_in=True, is_owner_or_co_manager=await is_owner_or_co_manager(db, template, current_user))
+
+
+async def _existing_frequency_ids(db: AsyncSession, ids) -> list[int]:
+    """The ids in *ids* that are real frequencies. A schedule's frequency
+    list is saved unchecked, so this is what its channel plan may refer to."""
+    if not ids:
+        return []
+    return list((await db.execute(select(Frequency.id).where(Frequency.id.in_(ids)))).scalars().all())
 
 
 async def _template_response_for_viewer(
@@ -586,6 +602,10 @@ async def update_template(
         template.authenticated = template_data.authenticated
     if template_data.participants_only is not None:
         template.participants_only = template_data.participants_only
+    if template_data.ics205_enabled is not None:
+        template.ics205_enabled = template_data.ics205_enabled
+    if 'ics205_special_instructions' in template_data.model_fields_set:
+        template.ics205_special_instructions = template_data.ics205_special_instructions
 
     # Update owner if provided (owner/admin/co-manager can transfer ownership)
     if template_data.owner_id is not None and template_data.owner_id != template.owner_id:
@@ -621,6 +641,17 @@ async def update_template(
                     frequency_id=freq_id
                 )
             )
+    # Replace the plan when one was sent, and drop lines for any frequency
+    # the schedule no longer uses either way.
+    if template_data.channel_plan is not None or template_data.frequency_ids is not None:
+        if template_data.frequency_ids is not None:
+            selected = await _existing_frequency_ids(db, template_data.frequency_ids)
+        else:
+            selected = (await db.execute(
+                select(net_template_frequencies.c.frequency_id)
+                .where(net_template_frequencies.c.template_id == template_id)
+            )).scalars().all()
+        apply_channel_plan(template, template_data.channel_plan, selected)
     
     await db.commit()
     

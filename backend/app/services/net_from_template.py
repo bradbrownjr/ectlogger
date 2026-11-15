@@ -19,6 +19,7 @@ from datetime import datetime
 from typing import Optional
 
 from app.models import Net, NetStatus, NetTemplate
+from app.services.channel_plan import copy_channel_plan
 
 # Columns both tables have that must NOT be copied from the schedule.
 NOT_COPIED_FROM_TEMPLATE = frozenset({
@@ -57,6 +58,11 @@ def build_net_from_template(
     A None on the schedule (an older row predating a column) leaves the
     net's own column default in place rather than writing None over it.
     Frequencies are a relationship, not a column; the caller copies them.
+    The schedule's ICS-205 channel plan (ChannelPlanEntry rows) is copied
+    here. Saving the schedule already drops lines for frequencies it doesn't
+    use, and the caller gives the net the schedule's frequencies, so every
+    line applies. `template.channel_plan_entries` loads with the template
+    (lazy="selectin").
     """
     net_columns = Net.__table__.columns
     settings = {}
@@ -72,4 +78,5 @@ def build_net_from_template(
         status=status,
         scheduled_start_time=scheduled_start_time,
         topic_of_week_prompt=topic_of_week_prompt,
+        channel_plan_entries=copy_channel_plan(template),
     )

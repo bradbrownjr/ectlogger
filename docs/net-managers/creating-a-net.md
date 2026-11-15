@@ -1,6 +1,6 @@
 ---
 title: Creating a net
-summary: The net form field by field: frequencies, check-in fields, self check-in, polls, the topic of the week, the logo, and the closing email.
+summary: The net form field by field: frequencies and the ICS-205 channel plan, check-in fields, self check-in, polls, the topic of the week, the logo, and the closing email.
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
@@ -62,14 +62,27 @@ A net's staff come from its schedule, so this tab lists the schedule's staff and
 
 <figure>
   <img src="/docs/img/net-managers/create-net-frequencies.png"
-       alt="The Communication Plan tab: a filter box with the match and selected counts beside it, a table of frequencies with a checkbox column labelled Use outlined in red, a row for adding a new frequency, and the Per page control under the table.">
-  <figcaption>Check a frequency's box to make it available on this net; add a new one from the blank row at the bottom.</figcaption>
+       alt="The Communication Plan tab: a filter box with the match and selected counts beside it, a table of frequencies with a checkbox column labelled Use outlined in red, a row for adding a new frequency with a second line for its offset, TX tone, RX tone and N/W, the Per page control under the table, and the Build an ICS-205 switch below it.">
+  <figcaption>Check a frequency's box to make it available on this net. Add a new one from the blank row at the bottom, with a repeater's offset and tones on the line under it. Build an ICS-205 turns the list into a radio plan.</figcaption>
 </figure>
 
 Every net needs at least one frequency or digital talkgroup. Check the boxes in the **Use** column to attach existing ones, or fill in the blank row at the bottom to add a new repeater, simplex frequency, DMR/D-STAR/YSF/P25 network, or GMRS channel and it's added to the shared list for next time. Pressing Enter in any field of that row saves it, same as clicking Add. Turn on **Selected only**, beside the filter box, to see just the frequencies this net uses.
 
 The list shows 25 frequencies a page; change **Per page** under the table to 50 or All. The frequencies this net already uses when you open the tab are listed first. Click a column heading to sort the whole list by that column. The filter box and **Selected only** search every page, and the counts beside them show how many frequencies match and how many are selected. Ticked boxes stay ticked when you change pages, and the blank row for adding a frequency is at the bottom of every page.
  The list is shared by every net on the site. You can fix or delete an entry you added yourself with the pencil and trash icons on its row, until another net or schedule uses it or a station checks in on it. For any other entry, the same icons let you send the change to the admins, who make it in [Shared frequencies](/docs/admins/frequencies/).
+
+#### Repeater offset and tones
+
+Adding or editing a frequency opens a second line under its row with **Offset (MHz)**, **TX tone**, **RX tone**, and **N/W**. Type the offset with its sign, such as -0.600 or +5.000, and leave it blank for simplex. Pick each tone from its list: a CTCSS tone such as 100.0, a DCS code such as D023, or for P25 a network access code such as NAC 293. **N/W** is narrow or wide FM. A DMR, D-STAR or YSF talkgroup has none of these fields, and P25 has only the tones. On the net, a frequency's chips show its offset and tone after the frequency, for example "146.940 MHz FM −0.600 PL 100.0".
+
+#### Build an ICS-205
+
+Turn on **Build an ICS-205**, below the frequency list, to make the net's ICS-205 Incident Radio Communications Plan: the Incident Command System (ICS) form that lists each radio channel and what it is for. Two things appear under the switch.
+
+- **ICS-205 channel plan** lists the selected frequencies in the order they print, as channels 1, 2, 3. Move a channel with its up and down arrows. For each one, pick a **Role** (Primary, Alternate, Contingency, or Emergency, the PACE order, or None) and a **Function** (Command, Tactical, Ground-to-Air, Air-to-Air, Support, or Dispatch; a new channel starts as Tactical), and fill in **Assignment**, such as Net control or Shelters, and **Remarks**. The role prints at the start of the channel's remarks. Ticking a frequency's box adds it to the end of the plan, and unticking it takes it off.
+- **Special instructions** is block 5 of the form, for things like cross-band or linked repeaters, or what stations do when the primary channel fails.
+
+An FM channel that looks like a repeater but has no offset or tone shows a reminder to add them with the pencil on its row. The plan is saved with the net, and a schedule's plan is copied to each net the schedule creates. On a net you're editing, **Open ICS-205** opens the net's form, as last saved, in a new tab. For the form itself, see [The ICS-205 radio plan](/docs/net-managers/reports-and-exports/#the-ics-205-radio-plan).
 
 ### Net script and announcements
 

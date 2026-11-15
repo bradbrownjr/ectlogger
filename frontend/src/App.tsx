@@ -25,6 +25,7 @@ import NetStatistics from './pages/NetStatistics';
 import NetReport from './pages/NetReport';
 import DrillPlanPage from './pages/DrillPlan';
 import Ics214Page from './pages/Ics214';
+import Ics205Page from './pages/Ics205';
 import ScheduleStatistics from './pages/ScheduleStatistics';
 import Unsubscribe from './pages/Unsubscribe';
 import ScheduleHome from './pages/ScheduleHome';
@@ -237,6 +238,14 @@ const AppRoutes: React.FC = () => {
             element={
               <PrivateRoute>
                 <Ics214Page />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/nets/:netId/ics205"
+            element={
+              <PrivateRoute>
+                <Ics205Page />
               </PrivateRoute>
             }
           />

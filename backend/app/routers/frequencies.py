@@ -5,13 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import delete, select, func, and_, or_
 from app.database import get_db
 from app.email_service import EmailService
 from app.logger import logger
 from app.audit import record_event
 from app.models import (
-    CheckIn, Frequency, Net, NetTemplate, User, UserRole, net_frequencies, net_template_frequencies,
+    ChannelPlanEntry, CheckIn, Frequency, Net, NetTemplate, User, UserRole, net_frequencies, net_template_frequencies,
 )
 from app.permissions import check_template_permission, is_admin, may_edit_net, net_access
 from app.schemas import FrequencyChangeRequest, FrequencyCreate, FrequencyResponse, FrequencyWithUsageResponse
@@ -288,6 +288,10 @@ async def create_frequency(
         network=frequency_data.network,
         talkgroup=frequency_data.talkgroup,
         description=frequency_data.description,
+        offset=frequency_data.offset,
+        tx_tone=frequency_data.tx_tone,
+        rx_tone=frequency_data.rx_tone,
+        bandwidth=frequency_data.bandwidth,
         created_by_id=current_user.id,
     )
     
@@ -343,6 +347,10 @@ async def list_frequencies_with_usage(
             network=freq.network,
             talkgroup=freq.talkgroup,
             description=freq.description,
+            offset=freq.offset,
+            tx_tone=freq.tx_tone,
+            rx_tone=freq.rx_tone,
+            bandwidth=freq.bandwidth,
             created_at=freq.created_at,
             net_count=len(u.net_ids),
             schedule_count=len(u.template_ids),
@@ -407,6 +415,10 @@ async def update_frequency(
     frequency.network = frequency_data.network
     frequency.talkgroup = frequency_data.talkgroup
     frequency.description = frequency_data.description
+    frequency.offset = frequency_data.offset
+    frequency.tx_tone = frequency_data.tx_tone
+    frequency.rx_tone = frequency_data.rx_tone
+    frequency.bandwidth = frequency_data.bandwidth
     
     await db.commit()
     await db.refresh(frequency)
@@ -443,6 +455,9 @@ async def delete_frequency(
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=refusal)
         raise HTTPException(status_code=403, detail={"code": FREQUENCY_CHANGE_REFUSED, "message": refusal})
 
+    # Its lines on the form's own ICS-205 go with it. Done here because
+    # SQLite does not enforce the table's ON DELETE CASCADE.
+    await db.execute(delete(ChannelPlanEntry).where(ChannelPlanEntry.frequency_id == frequency.id))
     await db.delete(frequency)
     record_event(db, "frequency.deleted", current_user, target_type="frequency", target_id=frequency.id,
                  target_label=" ".join(p for p in (frequency.frequency, frequency.mode, frequency.network, frequency.talkgroup) if p))
@@ -452,10 +467,24 @@ async def delete_frequency(
 
 
 def _frequency_text(f) -> str:
-    """"3.940 SSB (ME ARES 75m)" for the request email."""
+    """"146.940 FM -0.600 PL 100.0 (Club repeater)" for the request email.
+    The repeater details are included so a proposed tone or offset change
+    is visible to the admin."""
     parts = [f.frequency or f.network or "", f.mode]
     if f.talkgroup:
         parts.append(f"TG {f.talkgroup}")
+    if getattr(f, "offset", None):
+        parts.append(f.offset)
+    tx, rx = getattr(f, "tx_tone", None), getattr(f, "rx_tone", None)
+    if tx and tx == rx:
+        parts.append(f"tone {tx}")
+    else:
+        if tx:
+            parts.append(f"TX tone {tx}")
+        if rx:
+            parts.append(f"RX tone {rx}")
+    if getattr(f, "bandwidth", None):
+        parts.append({"N": "narrow", "W": "wide"}.get(f.bandwidth, f.bandwidth))
     text = " ".join(p for p in parts if p)
     return f"{text} ({f.description})" if f.description else text
 

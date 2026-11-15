@@ -12,6 +12,10 @@ export const PRINT_PAGE_WIDTH = 780; // px; approximates an 8.5in letter page at
 // margins, at PRINT_PAGE_WIDTH: (279.4 - 20) / (215.9 - 20) of the width. A
 // view that lays out its own pages (ICS214PrintView) makes each this tall.
 export const PRINT_PAGE_HEIGHT = Math.floor(PRINT_PAGE_WIDTH * (279.4 - 20) / (215.9 - 20));
+// A landscape Letter page at the same density (ICS205PrintView): the
+// portrait page turned on its side.
+export const LANDSCAPE_PAGE_WIDTH = PRINT_PAGE_HEIGHT;
+export const LANDSCAPE_PAGE_HEIGHT = PRINT_PAGE_WIDTH;
 
 export const printPageStyle: React.CSSProperties = {
   width: PRINT_PAGE_WIDTH,

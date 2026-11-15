@@ -1,6 +1,6 @@
 ---
 title: Reports, ICS-309, and exports
-summary: The net report, the PDF, the ICS-309 Communications Log, the ICS-214, the images for social media, the closing email's sections, and who automatically receives what.
+summary: The net report, the PDF, the ICS-309 Communications Log, the ICS-214, the ICS-205 radio plan, the images for social media, the closing email's sections, and who automatically receives what.
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
@@ -12,7 +12,7 @@ permalink: /docs/net-managers/reports-and-exports/
 
 # Reports, ICS-309, and exports
 
-A closed net's toolbar has one **Reports** button, which opens a menu of everything the net produced. None of it requires reopening the net or changes the record; pulling a copy again doesn't re-send anything.
+A closed net's toolbar has one **Reports** button, which opens a menu of everything the net produced. None of it requires reopening the net or changes the record; pulling a copy again doesn't re-send anything. A net with **Build an ICS-205** on shows the **Reports** button before it closes too, to signed-in viewers, with **ICS-205 radio plan** as its only item.
 
 <figure>
   <img src="/docs/img/net-managers/net-export-toolbar.png"
@@ -24,6 +24,7 @@ A closed net's toolbar has one **Reports** button, which opens a menu of everyth
 - **ICS-309 PDF** downloads the ICS-309 Communications Log as a form-accurate, printable PDF.
 - **ICS-309 CSV** downloads the same log as a spreadsheet. The ICS-309 is a log of radio traffic, so a station checked in [In person](/docs/net-control/logging-check-ins/#checking-someone-in-in-person) isn't listed on it.
 - **ICS-214**, for net control and the net's managers only, opens the net's Activity Log to finish and download. See [The ICS-214 activity log](/docs/net-control/ics-214/).
+- **ICS-205 radio plan**, for signed-in viewers on a net with **Build an ICS-205** on, opens the net's radio plan. See [The ICS-205 radio plan](#the-ics-205-radio-plan) below.
 - **Check-ins CSV** downloads the raw check-in list: every built-in field, the frequency each station checked in on, and each of the net's own fields that somebody filled in, one row per check-in event (including rechecks), in the timezone your own profile prefers. Like the ICS-309 and the net report, anyone can download it; a visitor who isn't signed in gets the same copy with email addresses and phone numbers in free-text fields hidden.
 
 ICS-309 export is available on any closed net regardless of whether that net turned on the **Enable ICS-309 Communications Log format** toggle. That toggle, with the **ICS-309 log** switch on the net's **Reports** tab, decides whether the automatic closing email uses ICS-309 formatting for everyone (see [What the closing email contains](#what-the-closing-email-contains)). Anyone who turned on **Use ICS-309 format** in their own profile gets the closing email as an ICS-309 either way, so turning the net's toggle off doesn't stop it reaching them. The menu's ICS-309 downloads work either way.
@@ -66,6 +67,21 @@ The report's headings, numbers, and graphs take their color from the logo. The c
 No image is taller than a 4:5 portrait, the tallest shape Facebook and Instagram show without cropping in a feed. When a net has more stations than fit, the list carries on to a second image (and a third, if needed), marked "2 of 2" and repeating the header so each image makes sense on its own. A graph with only one category, such as a pie in which every station is "Checked In", is left out of the images because it says nothing in a post; the full report and PDF still show it. Each image carries a small footer crediting ECTLogger with the site's address. The **Export PNG** button on a net's statistics page produces these same images.
 
 This page needs no sign-in to view — callsign and licensee information are already public via the FCC's own license database, and free-text fields are redacted for a signed-out viewer the same way the check-in list and chat already are. That makes the link safe to hand to anyone who needs the record, with or without an ECTLogger account. A net that's still running can be shared the same way; see [Sharing a net with someone who has no account](/docs/operators/finding-a-net/#sharing-a-net-with-someone-who-has-no-account).
+
+## The ICS-205 radio plan
+
+The ICS-205 Incident Radio Communications Plan is the Incident Command System (ICS) form that tells everyone on an incident which channel to use for what. ECTLogger builds it from the net's **Communication Plan** tab once **Build an ICS-205** is on there (see [Creating a net](/docs/net-managers/creating-a-net/#build-an-ics-205)). A plan is handed out before the net, so it's in the **Reports** menu whatever the net's status, for anyone signed in. A visitor who isn't signed in doesn't get it, since its assignments and instructions can name people and places.
+
+The page shows the form's blocks, following FEMA's ICS 205 (version 3.1):
+
+- **1. Incident name** is the net's name.
+- **2. Date/time prepared** is when you download the PDF.
+- **3. Operational period** runs from the net's scheduled start (or the time it started) to the time it closed, which is blank until then.
+- **4. Basic radio channel use** has a row per channel, in the plan's order: a blank Zone Grp to write your radios' zone in, the channel number (the line number on the plan), its function, its name (the frequency's description, or its network and talkgroup), its assignment, the receive and transmit frequencies with N or W, the receive and transmit tones, the mode (A for analog, D for digital), and the remarks, which start with the channel's role. The receive frequency is the one on the frequency list, and the transmit frequency adds the repeater's offset.
+- **5. Special instructions** comes from the Communication Plan tab.
+- **6. Prepared by** names the net's NCS, with a blank signature line. When the net has more than one, it's the first NCS, the one assigned longest ago. Before anyone is NCS, the name is left blank to fill in by hand.
+
+Nothing is edited on this page; **Edit the plan** opens the net's form for whoever can edit the net. **Download PDF** saves the form on US Letter pages in landscape, in print colors. When the channel table runs past one page, each later page repeats blocks 1 to 3, the table's headings, and block 6. Each page's footer reads "ICS 205" with a blank IAP Page for the planning section to number. A net with a [drill plan](/docs/net-managers/drill-plans/) is marked THIS IS AN EXERCISE at the top and bottom of every page.
 
 ## Who automatically gets the closing log by email
 

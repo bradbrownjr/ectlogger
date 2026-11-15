@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, Chip, Menu, MenuItem, Tooltip } from '@mui/material';
 import { formatTimeWithDate } from '../../utils/dateUtils';
 import { StationRow } from '../../utils/stationRows';
+import { withFrequencyDetails } from '../../utils/channelPlan';
 
 // ========== A STATION'S CHANNELS AT ONE PLACE ==========
 // One chip per channel the station has there (utils/stationRows.ts):
@@ -37,7 +38,9 @@ const StationChannels: React.FC<StationChannelsProps> = ({
     const offlineAt = group.offline[frequencyId];
     const isCurrent = frequencyId === current && !offlineAt;
     const ncsColor = worked && !offlineAt ? getNcsColorForFrequency?.(frequencyId) ?? null : null;
-    const label = isCurrent ? `📡 ${formatFrequencyDisplay(freq)}` : formatFrequencyDisplay(freq);
+    // The repeater's offset and tone follow (utils/channelPlan.ts)
+    const text = withFrequencyDetails(formatFrequencyDisplay(freq), freq);
+    const label = isCurrent ? `📡 ${text}` : text;
     const tooltip = offlineAt
       ? `Offline since ${formatTimeWithDate(offlineAt, preferUtc, netStartedAt)}`
       : worked ? 'Checked in on this channel' : 'Listed as reachable; not checked in on yet';

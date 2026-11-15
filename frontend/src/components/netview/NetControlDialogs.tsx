@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import type { UseDialogResult } from '../../hooks/useDialog';
 import WhoRanNetField from './WhoRanNetField';
+import { withFrequencyDetails } from '../../utils/channelPlan';
 
 // ========== NET CONTROL DIALOGS ==========
 // The small NCS/owner net-control modals grouped in one place: Close Net,
@@ -271,7 +272,7 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
                 value.map((option: any, index: number) => (
                   <Chip
                     {...getTagProps({ index })}
-                    label={formatFrequency(option)}
+                    label={withFrequencyDetails(formatFrequency(option), option)}
                     size="small"
                   />
                 ))

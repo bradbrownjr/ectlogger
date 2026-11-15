@@ -2,6 +2,7 @@ import type { FeatureSectionsState } from '../components/forms/NetFeaturesPanel'
 import type { SiteDraft } from '../utils/siteDrafts';
 import { createContext, useContext, Dispatch, SetStateAction } from 'react';
 import { FrequencyItem } from '../components/forms/CommunicationPlanPanel';
+import type { ChannelPlanEntry } from '../utils/channelPlan';
 import { FieldDefinitionItem, FieldConfigEntry } from '../components/forms/CheckInFieldsPanel';
 
 // ---- Shared domain types ----
@@ -71,6 +72,12 @@ export interface CreateNetContextValue {
   // Frequency selection
   frequencies: FrequencyItem[]; setFrequencies: Dispatch<SetStateAction<FrequencyItem[]>>;
   selectedFrequencyIds: number[]; setSelectedFrequencyIds: Dispatch<SetStateAction<number[]>>;
+
+  // Build an ICS-205 (Communication Plan tab). channelPlan follows the
+  // frequency selection (utils/channelPlan.ts::syncChannelPlan).
+  ics205Enabled: boolean; setIcs205Enabled: Dispatch<SetStateAction<boolean>>;
+  channelPlan: ChannelPlanEntry[]; setChannelPlan: Dispatch<SetStateAction<ChannelPlanEntry[]>>;
+  ics205SpecialInstructions: string; setIcs205SpecialInstructions: Dispatch<SetStateAction<string>>;
 
   // Check-in fields
   fieldDefinitions: FieldDefinitionItem[];

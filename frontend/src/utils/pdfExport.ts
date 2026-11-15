@@ -853,21 +853,24 @@ export const exportElementToPng = async (
  * Export a view that lays out its own pages: every element inside the one
  * with this id that carries data-pdf-page becomes one PDF page, captured on
  * its own. Use it for a form whose continuation pages repeat its header
- * (ICS214PrintView), which slicing one tall capture can't do. A page taller
- * than the paper is scaled down to fit rather than cut.
+ * (ICS214PrintView, ICS205PrintView), which slicing one tall capture can't
+ * do. A page taller than the paper is scaled down to fit rather than cut.
+ * Landscape (the ICS-205) lays each page out at the landscape page's width.
  */
 export const exportPagesToPdf = async (
   elementId: string,
-  options: Pick<PdfExportOptions, 'filename' | 'addTimestamp' | 'scale' | 'margin'>
+  options: Pick<PdfExportOptions, 'filename' | 'addTimestamp' | 'scale' | 'margin' | 'orientation'>
 ): Promise<void> => {
   const root = document.getElementById(elementId);
   if (!root) throw new Error(`Element with ID "${elementId}" not found`);
   const pages = Array.from(root.querySelectorAll<HTMLElement>('[data-pdf-page]'));
   if (pages.length === 0) throw new Error(`No pages inside "${elementId}"`);
-  const { filename, addTimestamp = true, scale = 2, margin = 10 } = options;
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
-  const contentWidth = LETTER_MM.width - margin * 2;
-  const contentHeight = LETTER_MM.height - margin * 2;
+  const { filename, addTimestamp = true, scale = 2, margin = 10, orientation = 'portrait' } = options;
+  const pdf = new jsPDF({ orientation, unit: 'mm', format: 'letter' });
+  const paperWidth = orientation === 'portrait' ? LETTER_MM.width : LETTER_MM.height;
+  const paperHeight = orientation === 'portrait' ? LETTER_MM.height : LETTER_MM.width;
+  const contentWidth = paperWidth - margin * 2;
+  const contentHeight = paperHeight - margin * 2;
   for (let i = 0; i < pages.length; i++) {
     if (i > 0) pdf.addPage();
     const { canvas } = await captureElementAsCanvas(pages[i], scale, 'clone', contentWidth * PAPER_PX_PER_MM);

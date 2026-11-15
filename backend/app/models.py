@@ -230,6 +230,14 @@ class Net(Base):
     # set up, and the email stays exactly as it was before the column
     # existed (migration 101). An empty list is a real choice: none of them.
     report_sections = Column(Text, nullable=True)
+    # ICS-205 radio communications plan (migration 102). The switch shows the
+    # channel editor on the Communication Plan tab and the /ics205 page; each
+    # channel's role, ICS function, assignment and remarks are
+    # ChannelPlanEntry rows (services/channel_plan.py). Special instructions
+    # are ICS 205 block 5. Both are seeded from the schedule like every
+    # other shared column (services/net_from_template.py).
+    ics205_enabled = Column(Boolean, nullable=False, default=False)
+    ics205_special_instructions = Column(Text, nullable=True)
     # Opt-in like ics309_enabled/propagation_logging_enabled above. The default
     # only applies to newly inserted rows, so nets created before the settings
     # toggle existed keep their stored True and don't lose the panel.
@@ -327,6 +335,14 @@ class Net(Base):
     coverage_contacts = relationship("CoverageContact", back_populates="net", cascade="all, delete-orphan")
     forms = relationship("Form", back_populates="net")   # no cascade: traffic outlives the net
     drill_plan = relationship("DrillPlan", back_populates="net", uselist=False, cascade="all, delete-orphan")
+    # selectin: NetResponse.from_orm reads it, and it is built from ~20
+    # endpoints; eager by default keeps every one of them from lazy-loading
+    # (which fails under AsyncSession). A small table, one extra query per load.
+    channel_plan_entries = relationship(
+        "ChannelPlanEntry", cascade="all, delete-orphan", lazy="selectin",
+        order_by="ChannelPlanEntry.position",
+        primaryjoin="Net.id == ChannelPlanEntry.net_id",
+    )
 
 
 class NetTemplate(Base):
@@ -353,6 +369,8 @@ class NetTemplate(Base):
     self_can_hear_enabled = Column(Boolean, default=True)  # Seeds Net.self_can_hear_enabled for nets created from this template
     coverage_excluded_frequency_ids = Column(Text, nullable=True)  # Seeds Net.coverage_excluded_frequency_ids (same JSON shape)
     report_sections = Column(Text, nullable=True)  # Seeds Net.report_sections (same JSON shape, null = never set up)
+    ics205_enabled = Column(Boolean, nullable=False, default=False)  # Seeds Net.ics205_enabled
+    ics205_special_instructions = Column(Text, nullable=True)  # Seeds Net.ics205_special_instructions
     traffic_enabled = Column(Boolean, default=False)  # Seeds Net.traffic_enabled for nets created from this template
     # Seed the three per-net traffic settings above; same null semantics.
     traffic_form_types = Column(Text, nullable=True)
@@ -403,6 +421,13 @@ class NetTemplate(Base):
     rotation_members = relationship("NCSRotationMember", back_populates="template", cascade="all, delete-orphan", order_by="NCSRotationMember.position")
     schedule_overrides = relationship("NCSScheduleOverride", back_populates="template", cascade="all, delete-orphan")
     topic_history = relationship("TopicHistory", back_populates="template", cascade="all, delete-orphan")
+    # The schedule's ICS-205 channel plan, copied to each new net
+    # (services/net_from_template.py). Eager for the same reason as Net's.
+    channel_plan_entries = relationship(
+        "ChannelPlanEntry", cascade="all, delete-orphan", lazy="selectin",
+        order_by="ChannelPlanEntry.position",
+        primaryjoin="NetTemplate.id == ChannelPlanEntry.template_id",
+    )
 
 
 class NetTemplateSubscription(Base):
@@ -451,6 +476,14 @@ class Frequency(Base):
     # it while no other net uses it (routers/frequencies.py::change_refusal).
     # Null for rows added before 086, which stay admin-only.
     created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # Repeater details for the ICS-205 and the frequency chips (migration
+    # 102), stored normalized by services/channel_plan.py: offset as signed
+    # MHz ("-0.600", "+5.000", null = simplex), tones as "100.0" (CTCSS),
+    # "D023" (DCS) or "NAC 293" (P25), bandwidth "N" or "W".
+    offset = Column(String(16), nullable=True)
+    tx_tone = Column(String(16), nullable=True)
+    rx_tone = Column(String(16), nullable=True)
+    bandwidth = Column(String(1), nullable=True)
 
     @property
     def band(self):
@@ -461,6 +494,35 @@ class Frequency(Base):
 
     # Relationships
     nets = relationship("Net", secondary=net_frequencies, back_populates="frequencies")
+
+
+class ChannelPlanEntry(Base):
+    """One channel's line on a net's or schedule's ICS-205 (block 4): its
+    PACE role, ICS function, assignment and remarks. Exactly one of net_id /
+    template_id is set. Position is the channel's order on the form.
+
+    A table of its own rather than columns on net_frequencies /
+    net_template_frequencies, because saving the frequency list replaces
+    those rows and would wipe the plan with them. Entries for a frequency
+    the net no longer uses are dropped on save (services/channel_plan.py).
+    No user column, so account merge has nothing to move here.
+    """
+    __tablename__ = "channel_plan_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=True, index=True)
+    template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"), nullable=True, index=True)
+    frequency_id = Column(Integer, ForeignKey("frequencies.id", ondelete="CASCADE"), nullable=False)
+    position = Column(Integer, nullable=False, default=0)
+    plan_role = Column(String(16), nullable=True)     # primary / alternate / contingency / emergency
+    ics_function = Column(String(16), nullable=True)  # command / tactical / ground_to_air / air_to_air / support / dispatch
+    assignment = Column(String(100), nullable=True)
+    remarks = Column(String(255), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint('net_id', 'frequency_id', name='uq_channel_plan_net_frequency'),
+        UniqueConstraint('template_id', 'frequency_id', name='uq_channel_plan_template_frequency'),
+    )
 
 
 class TopicHistory(Base):

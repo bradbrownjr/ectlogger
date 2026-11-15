@@ -35,6 +35,7 @@ import CheckInFieldsPanel from '../components/forms/CheckInFieldsPanel';
 import FormWizardFooter from '../components/forms/FormWizardFooter';
 import ReportsPanel from '../components/forms/ReportsPanel';
 import type { FeatureSectionExpansion } from '../utils/netFeatureSections';
+import { ChannelPlanEntry, channelPlanPayload, syncChannelPlan } from '../utils/channelPlan';
 
 // Tab order. Next walks through every tab, so it is derived from this list
 // rather than a literal (until 2026-11-14 Next stopped at Announcements and
@@ -156,6 +157,16 @@ const CreateNet: React.FC = () => {
   const [frequencies, setFrequencies] = useState<FrequencyItem[]>([]);
   const [selectedFrequencyIds, setSelectedFrequencyIds] = useState<number[]>([]);
 
+  // ---- Build an ICS-205 (Communication Plan tab) ----
+  // The plan follows the frequency selection: a selected frequency joins
+  // the end, an unselected one drops off (utils/channelPlan.ts).
+  const [ics205Enabled, setIcs205Enabled] = useState(false);
+  const [channelPlan, setChannelPlan] = useState<ChannelPlanEntry[]>([]);
+  const [ics205SpecialInstructions, setIcs205SpecialInstructions] = useState('');
+  useEffect(() => {
+    setChannelPlan((plan) => syncChannelPlan(plan, selectedFrequencyIds));
+  }, [selectedFrequencyIds]);
+
   // ---- Reports tab ----
   // Closing email and report page sections; null keeps the default sections
   // (utils/reportSections.ts). Stays null on save unless a switch is changed.
@@ -267,6 +278,9 @@ const CreateNet: React.FC = () => {
       setPollEnabled(net.poll_enabled || false);
       setPollQuestion(net.poll_question || '');
       setReportSections(net.report_sections ?? null);
+      setIcs205Enabled(!!net.ics205_enabled);
+      setChannelPlan(net.channel_plan || []);
+      setIcs205SpecialInstructions(net.ics205_special_instructions || '');
       // Convert UTC from server to local datetime-local format.
       // The server omits the 'Z' suffix; append it so the browser parses as UTC.
       if (net.scheduled_start_time) {
@@ -377,6 +391,9 @@ const CreateNet: React.FC = () => {
     poll_enabled: pollEnabled,
     poll_question: pollQuestion || null,
     report_sections: reportSections,
+    ics205_enabled: ics205Enabled,
+    ics205_special_instructions: ics205SpecialInstructions.trim() || null,
+    channel_plan: channelPlanPayload(syncChannelPlan(channelPlan, selectedFrequencyIds)),
   });
 
   // Sites save separately from the net (PUT /nets/{id}/coverage-sites),
@@ -526,6 +543,9 @@ const CreateNet: React.FC = () => {
     onSaveTimes: handleSaveTimes,
     frequencies, setFrequencies: setFrequencies as React.Dispatch<React.SetStateAction<FrequencyItem[]>>,
     selectedFrequencyIds, setSelectedFrequencyIds,
+    ics205Enabled, setIcs205Enabled,
+    channelPlan, setChannelPlan,
+    ics205SpecialInstructions, setIcs205SpecialInstructions,
     fieldDefinitions,
     fieldConfig, setFieldConfig,
     users,
@@ -594,6 +614,13 @@ const CreateNet: React.FC = () => {
               context={frequencyContext}
               coverageExcludedFrequencyIds={propagationLoggingEnabled ? coverageExcludedFrequencyIds : undefined}
               setCoverageExcludedFrequencyIds={propagationLoggingEnabled ? setCoverageExcludedFrequencyIds : undefined}
+              ics205={{
+                enabled: ics205Enabled, setEnabled: setIcs205Enabled,
+                plan: channelPlan, setPlan: setChannelPlan,
+                specialInstructions: ics205SpecialInstructions, setSpecialInstructions: setIcs205SpecialInstructions,
+                // Edit Net only: the net's saved ICS-205
+                openLink: isEditMode ? `/nets/${netId}/ics205` : undefined,
+              }}
             />
           </TabPanel>
 

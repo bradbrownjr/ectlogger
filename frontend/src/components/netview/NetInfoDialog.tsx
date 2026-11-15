@@ -19,7 +19,7 @@ import { NetBlock, netBlockApi, templateApi, templateStaffApi } from '../../serv
 import { getErrorMessage } from '../../utils/apiErrors';
 import { formatSchedule } from '../scheduler/ScheduleCard';
 import { formatDateTime } from '../../utils/dateUtils';
-import { formatFrequencyDisplay } from '../../utils/frequencyList';
+import { formatFrequencyChip } from '../../utils/frequencyList';
 import { scheduleHomePath, subscribePath } from '../../utils/scheduleLinks';
 import ParticipantsOnlyChip from './ParticipantsOnlyChip';
 
@@ -157,7 +157,7 @@ const NetInfoDialog: React.FC<NetInfoDialogProps> = ({ open, onClose, net, canEd
               <Typography key={f.id} variant="body2">
                 {/* A talkgroup names its network first: "Brandmeister 31234 DMR" */}
                 {!f.frequency && f.network ? `${f.network} ` : ''}
-                {formatFrequencyDisplay(f)}
+                {formatFrequencyChip(f)}
                 {f.description ? <Typography component="span" variant="body2" color="text.secondary"> · {f.description}</Typography> : null}
                 {f.id === net.active_frequency_id && net.status === 'active' && (
                   <Chip size="small" color="primary" label="In use" sx={{ ml: 1, height: 18, fontSize: '0.7rem' }} />

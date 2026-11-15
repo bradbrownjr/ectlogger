@@ -92,6 +92,12 @@ def test_report_sections_are_copied():
     assert 'report_sections' in template_setting_columns()
 
 
+def test_ics205_settings_are_copied():
+    """The ICS-205 switch and block 5 travel as shared columns; the channel
+    plan itself is copied by build_net_from_template (tests/test_ics205.py)."""
+    assert {'ics205_enabled', 'ics205_special_instructions'} <= set(template_setting_columns())
+
+
 @pytest.mark.asyncio
 async def test_auto_created_net_takes_every_setting(db, owner):
     template = await _template_with_every_setting(db, owner.id, "weekly")

@@ -35,6 +35,7 @@ import MapIcon from '@mui/icons-material/Map';
 import HearingIcon from '@mui/icons-material/Hearing';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
 import EditNoteIcon from '@mui/icons-material/EditNote';
+import SettingsInputAntennaIcon from '@mui/icons-material/SettingsInputAntenna';
 // Envelope, matching what Navbar.tsx already uses for the Traffic section.
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import MailIcon from '@mui/icons-material/Mail';
@@ -72,6 +73,7 @@ import { NetActions } from '../../utils/netActions';
 import { canOpenLobby } from '../../utils/netStart';
 import type { TopicPollAction } from './NetControlDialogs';
 import { canArchiveNet, isLogOpen } from '../../utils/netLog';
+import { formatHeaderFrequencyChip } from '../../utils/frequencyList';
 
 // ========== NET VIEW HEADER ==========
 // Title row (name, description, status/stat/frequency chips) plus a full-width
@@ -407,6 +409,10 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   const isActiveOrLobby = net.status === 'active' || net.status === 'lobby';
   const isDraftOrScheduled = net.status === 'draft' || net.status === 'scheduled';
   const isClosedOrArchived = net.status === 'closed' || net.status === 'archived';
+  // The net's ICS-205 radio plan (pages/Ics205.tsx), for signed-in viewers
+  // when Build an ICS-205 is on. Offered at any status, since the plan is
+  // usually handed out before the net.
+  const offerIcs205 = isAuthenticated && !!net.ics205_enabled;
 
   const startingUpNet = canStartNet && isDraftOrScheduled;
   // Open lobby sits beside Start net until the scheduled start time passes
@@ -734,10 +740,12 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       // A closed net's report, logs and spreadsheets in one menu (Brad,
       // 2026-10-30): Export, ICS-309, ICS-309 PDF and Report were four
       // buttons. The ICS-214 is net control's to finish, so only they see it.
+      // Before the net closes the menu shows only when there is an ICS-205
+      // to offer, and holds only that.
       key: 'reports', group: 'management', priority: 2,
-      visible: isClosedOrArchived,
+      visible: isClosedOrArchived || offerIcs205,
       Icon: DescriptionIcon, color: '#009688', label: 'Reports',
-      tooltip: 'Net report, logs and spreadsheets',
+      tooltip: isClosedOrArchived ? 'Net report, logs and spreadsheets' : 'ICS-205 radio plan',
       onClick: (anchor) => setReportsAnchor(anchor ?? null),
     },
     {
@@ -1077,10 +1085,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
                 return (
                   <Tooltip key={freq.id} title={tooltipText} arrow>
                     <Chip
-                      label={freq.frequency
-                        ? `${freq.frequency} MHz ${freq.mode || ''}`.trim()
-                        : `${freq.network || ''}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''} ${freq.mode || ''}`.trim()
-                      }
+                      label={formatHeaderFrequencyChip(freq)}
                       size="small"
                       color={isActive ? 'primary' : isFiltered ? 'info' : 'default'}
                       variant={isFiltered ? 'filled' : 'outlined'}
@@ -1213,17 +1218,25 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
         {managementVisible.map(item => renderGroupItem(item))}
       </Box>
 
-      {/* ========== REPORTS MENU (closed and archived nets) ========== */}
+      {/* ========== REPORTS MENU ========== */}
+      {/* Closed and archived nets: everything. Before that: the ICS-205 only. */}
       <Menu anchorEl={reportsAnchor} open={!!reportsAnchor} onClose={() => setReportsAnchor(null)}>
         {[
-          { key: 'report', label: 'Net report', Icon: AssessmentIcon, onClick: () => navigate(`/nets/${netId}/report`) },
-          { key: 'ics309-pdf', label: 'ICS-309 PDF', Icon: PictureAsPdfIcon, onClick: onExportICS309Pdf },
-          { key: 'ics309', label: 'ICS-309 CSV', Icon: DescriptionIcon, onClick: onExportICS309 },
-          // Net control only, who finish the form before downloading it
-          ...(actions.prepare_ics214
-            ? [{ key: 'ics214', label: 'ICS-214', Icon: EditNoteIcon, onClick: () => navigate(`/nets/${netId}/ics214`) }]
+          ...(isClosedOrArchived ? [
+            { key: 'report', label: 'Net report', Icon: AssessmentIcon, onClick: () => navigate(`/nets/${netId}/report`) },
+            { key: 'ics309-pdf', label: 'ICS-309 PDF', Icon: PictureAsPdfIcon, onClick: onExportICS309Pdf },
+            { key: 'ics309', label: 'ICS-309 CSV', Icon: DescriptionIcon, onClick: onExportICS309 },
+            // Net control only, who finish the form before downloading it
+            ...(actions.prepare_ics214
+              ? [{ key: 'ics214', label: 'ICS-214', Icon: EditNoteIcon, onClick: () => navigate(`/nets/${netId}/ics214`) }]
+              : []),
+          ] : []),
+          ...(offerIcs205
+            ? [{ key: 'ics205', label: 'ICS-205 radio plan', Icon: SettingsInputAntennaIcon, onClick: () => navigate(`/nets/${netId}/ics205`) }]
             : []),
-          { key: 'csv', label: 'Check-ins CSV', Icon: DownloadIcon, onClick: onExportCSV },
+          ...(isClosedOrArchived
+            ? [{ key: 'csv', label: 'Check-ins CSV', Icon: DownloadIcon, onClick: onExportCSV }]
+            : []),
         ].map(({ key, label, Icon, onClick }) => (
           <MenuItem key={key} onClick={() => { setReportsAnchor(null); onClick(); }}>
             <ListItemIcon><Icon sx={{ fontSize: 18 }} /></ListItemIcon>

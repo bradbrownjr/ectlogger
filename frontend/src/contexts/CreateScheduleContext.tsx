@@ -1,5 +1,6 @@
 import type { FeatureSectionsState } from '../components/forms/NetFeaturesPanel';
 import { createContext, useContext, Dispatch, SetStateAction } from 'react';
+import type { ChannelPlanEntry, FrequencyRadioFields } from '../utils/channelPlan';
 
 // ---- Shared domain types (exported for tab components) ----
 
@@ -53,7 +54,7 @@ export interface TemplateSubscriber {
   subscribed_at: string;
 }
 
-export interface Frequency {
+export interface Frequency extends FrequencyRadioFields {
   id: number;
   frequency?: string;
   mode: string;
@@ -152,6 +153,12 @@ export interface CreateScheduleContextValue {
 
   // Frequency selection (Communication Plan tab + submit)
   selectedFrequencyIds: number[]; setSelectedFrequencyIds: Dispatch<SetStateAction<number[]>>;
+
+  // Build an ICS-205 (Communication Plan tab). channelPlan follows the
+  // frequency selection (utils/channelPlan.ts::syncChannelPlan).
+  ics205Enabled: boolean; setIcs205Enabled: Dispatch<SetStateAction<boolean>>;
+  channelPlan: ChannelPlanEntry[]; setChannelPlan: Dispatch<SetStateAction<ChannelPlanEntry[]>>;
+  ics205SpecialInstructions: string; setIcs205SpecialInstructions: Dispatch<SetStateAction<string>>;
 
   // Check-in field config
   fieldConfig: Record<string, FieldConfigEntry>;

@@ -39,18 +39,19 @@ shots:
     section: net-managers
     page: /docs/net-managers/creating-a-net/
     route: /nets/{{net:active}}/edit
-    # 1080 wide: at 1000 the scrollable tab bar cut off after Check-In
-    # Fields, hiding Reports, and at 1200 the bar is 1112px, over the
-    # 1000px figure limit. 1080 gives a ~990px bar that fits all seven
-    # tabs (2026-11-15).
+    # The figure is the tab panel only, not the tab bar, so the width just
+    # has to keep it under the 1000px limit: at 1080 the panel plus its
+    # padding is 1012px. 1040 brings it under (2026-11-15).
     viewport:
-      width: 1080
+      width: 1040
       height: 1000
     as: W1PINE
     wait_for: 'div[aria-label="net configuration tabs"]'
     steps:
       - click: 'div[aria-label="net configuration tabs"] button:has-text("Communication Plan")'
-      - wait_for: 'div[role="tabpanel"]:visible table'
+      # A frequency row's checkbox, not just the table: the table draws
+      # before the frequency list loads, and the figure showed "0 of 0".
+      - wait_for: 'div[role="tabpanel"]:visible tbody input[type="checkbox"]'
     element: 'div[role="tabpanel"]:visible'
     pad: 12
     annotate:
@@ -59,9 +60,13 @@ shots:
     alt: >
       The Communication Plan tab: a filter box with the match and selected
       counts beside it, a table of frequencies with a checkbox column
-      labelled Use outlined in red, a row for adding a new frequency, and
-      the Per page control under the table.
-    caption: Check a frequency's box to make it available on this net; add a new one from the blank row at the bottom.
+      labelled Use outlined in red, a row for adding a new frequency with a
+      second line for its offset, TX tone, RX tone and N/W, the Per page
+      control under the table, and the Build an ICS-205 switch below it.
+    caption: >
+      Check a frequency's box to make it available on this net. Add a new one
+      from the blank row at the bottom, with a repeater's offset and tones on
+      the line under it. Build an ICS-205 turns the list into a radio plan.
 
   # ========== Recurring schedules ==========
   - id: schedule-recurrence-options

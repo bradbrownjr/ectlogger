@@ -696,7 +696,7 @@ async def cancel_net(
         }
     }, net_id)
 
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 @router.post("/{net_id}/restore", response_model=NetResponse)
@@ -741,7 +741,7 @@ async def restore_net(
         }
     }, net_id)
 
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 @router.post("/{net_id}/archive", response_model=NetResponse)
@@ -786,7 +786,7 @@ async def archive_net(
         }
     }, net_id)
 
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 @router.post("/{net_id}/unarchive", response_model=NetResponse)
@@ -826,7 +826,7 @@ async def unarchive_net(
         }
     }, net_id)
 
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 @router.post("/{net_id}/clone", response_model=NetResponse)
@@ -850,7 +850,10 @@ async def clone_net(
         description=original_net.description,
         owner_id=current_user.id,
         field_config=original_net.field_config,
-        status=NetStatus.DRAFT
+        status=NetStatus.DRAFT,
+        # Clone copies only the frequencies and check-in fields, not the
+        # net's other settings, so it starts with no ICS-205 plan.
+        channel_plan_entries=[],
     )
     db.add(new_net)
     await db.flush()
@@ -864,6 +867,6 @@ async def clone_net(
     await db.commit()
     await db.refresh(new_net, ['frequencies'])
     
-    return NetResponse.from_orm(new_net)
+    return NetResponse.from_orm(new_net, signed_in=True)
 
 

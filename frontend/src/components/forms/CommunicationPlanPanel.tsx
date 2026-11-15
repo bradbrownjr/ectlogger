@@ -31,11 +31,16 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import DescriptionIcon from '@mui/icons-material/Description';
+import { Link as RouterLink } from 'react-router-dom';
 import { frequencyApi, FrequencyFormContext } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { getErrorMessage } from '../../utils/apiErrors';
 import { FREQUENCY_MODES, frequencyEntryFor } from '../../utils/frequencyModes';
 import FrequencyChangeRequestDialog, { FrequencyChangeRequest } from './FrequencyChangeRequestDialog';
+import FrequencyRadioFieldsEditor, { EMPTY_RADIO_DRAFT, RadioDraft, radioDraftFrom } from './FrequencyRadioFields';
+import ChannelPlanEditor from './ChannelPlanEditor';
+import { ChannelPlanEntry, FrequencyRadioFields, frequencyDetails, radioFieldsPayload } from '../../utils/channelPlan';
 import {
   FrequencySortField,
   SortDirection,
@@ -53,7 +58,7 @@ import {
 // change_refusal). Anything refused can be sent to the admins as a request
 // (FrequencyChangeRequestDialog).
 
-export interface FrequencyItem {
+export interface FrequencyItem extends FrequencyRadioFields {
   id?: number;
   frequency?: string;
   mode: string;
@@ -65,8 +70,9 @@ export interface FrequencyItem {
   delete_refused?: string | null;
 }
 
-// Fields of the add row and of a row being edited
-interface FrequencyDraft {
+// Fields of the add row and of a row being edited, with the repeater
+// fields (offset, tones, N/W) in FrequencyRadioFields.tsx
+interface FrequencyDraft extends RadioDraft {
   frequency: string;
   mode: string;
   network: string;
@@ -74,7 +80,7 @@ interface FrequencyDraft {
   description: string;
 }
 
-const EMPTY_DRAFT: FrequencyDraft = { frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' };
+const EMPTY_DRAFT: FrequencyDraft = { frequency: '', mode: 'FM', network: '', talkgroup: '', description: '', ...EMPTY_RADIO_DRAFT };
 
 const toPayload = (d: FrequencyDraft) => ({
   frequency: d.frequency || null,
@@ -82,6 +88,7 @@ const toPayload = (d: FrequencyDraft) => ({
   network: d.network || null,
   talkgroup: d.talkgroup || null,
   description: d.description || null,
+  ...radioFieldsPayload(d.mode, d),
 });
 
 const toDraft = (f: FrequencyItem): FrequencyDraft => ({
@@ -90,13 +97,29 @@ const toDraft = (f: FrequencyItem): FrequencyDraft => ({
   network: f.network || '',
   talkgroup: f.talkgroup || '',
   description: f.description || '',
+  ...radioDraftFrom(f),
 });
 
-// "3.940 SSB (ME ARES 75m)"
-const describeFrequency = (f: { frequency?: string | null; network?: string | null; mode: string; talkgroup?: string | null; description?: string | null }) => {
-  const text = [f.frequency || f.network, f.mode, f.talkgroup ? `TG ${f.talkgroup}` : ''].filter(Boolean).join(' ');
+// "3.940 SSB (ME ARES 75m)", "146.940 FM −0.600 PL 100.0 W (Club repeater)"
+const describeFrequency = (f: { frequency?: string | null; network?: string | null; mode: string; talkgroup?: string | null; description?: string | null } & FrequencyRadioFields) => {
+  const text = [f.frequency || f.network, f.mode, f.talkgroup ? `TG ${f.talkgroup}` : '', frequencyDetails(f)]
+    .filter(Boolean).join(' ');
   return f.description ? `${text} (${f.description})` : text;
 };
+
+// The Build an ICS-205 switch and what it shows. The page holds the state
+// (CreateNet, CreateSchedule) and keeps the plan in step with the
+// selection (utils/channelPlan.ts::syncChannelPlan).
+export interface Ics205Settings {
+  enabled: boolean;
+  setEnabled: (enabled: boolean) => void;
+  plan: ChannelPlanEntry[];
+  setPlan: React.Dispatch<React.SetStateAction<ChannelPlanEntry[]>>;
+  specialInstructions: string;
+  setSpecialInstructions: (text: string) => void;
+  // Edit Net only: the net's ICS-205 page
+  openLink?: string;
+}
 
 interface CommunicationPlanPanelProps {
   frequencies: FrequencyItem[];
@@ -112,6 +135,8 @@ interface CommunicationPlanPanelProps {
   // The net or schedule being edited, whose own use of a frequency doesn't
   // stop its creator from fixing it. Omit when creating a new one.
   context?: FrequencyFormContext;
+  // Build an ICS-205. Omit to hide the section.
+  ics205?: Ics205Settings;
 }
 
 const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
@@ -122,12 +147,16 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
   coverageExcludedFrequencyIds,
   setCoverageExcludedFrequencyIds,
   context,
+  ics205,
 }) => {
   const { user } = useAuth();
   const [newFrequency, setNewFrequency] = useState<FrequencyDraft>(EMPTY_DRAFT);
   // Row being edited in place, and its fields
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState<FrequencyDraft>(EMPTY_DRAFT);
+  // The server's reason it refused an add or an edit (a 422), shown under the row
+  const [addError, setAddError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<FrequencyItem | null>(null);
   const [changeRequest, setChangeRequest] = useState<FrequencyChangeRequest | null>(null);
   const [frequencyFilter, setFrequencyFilter] = useState('');
@@ -190,9 +219,10 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
       pinnedFrozen.current = true;
       setPinnedIds((prev) => [...prev, response.data.id]);
       setNewFrequency(EMPTY_DRAFT);
+      setAddError(null);
     } catch (error) {
       console.error('Failed to create frequency:', error);
-      alert('Failed to create frequency. Check that you filled in required fields.');
+      setAddError(getErrorMessage(error, 'Failed to create the frequency. Check that you filled in required fields.'));
     }
   };
 
@@ -221,6 +251,7 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
   const startEdit = (freq: FrequencyItem) => {
     setEditingId(freq.id!);
     setEditDraft(toDraft(freq));
+    setEditError(null);
   };
 
   const handleSaveEdit = async (e?: React.KeyboardEvent) => {
@@ -240,7 +271,7 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
       if (refusal) {
         openChangeRequest(freq, 'edit', refusal);
       } else {
-        alert(getErrorMessage(error, 'Failed to save the frequency.'));
+        setEditError(getErrorMessage(error, 'Failed to save the frequency.'));
       }
     }
   };
@@ -347,29 +378,63 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
     );
   };
 
+  // Second line under the add row and a row being edited: the repeater
+  // fields, and the server's reason when it refused the save.
+  const renderRadioRow = (
+    draft: FrequencyDraft,
+    setDraft: (d: FrequencyDraft) => void,
+    onKeyPress: (e: React.KeyboardEvent) => void,
+    error: string | null,
+  ) => (
+    <TableRow>
+      <TableCell padding="checkbox" sx={{ borderTop: 0 }} />
+      <TableCell colSpan={5} sx={{ pt: 0 }}>
+        {/* On a phone the table scrolls sideways, and this cell is as wide
+            as the whole table. Held to the visible width (100cqw of the
+            TableContainer) and pinned to its left edge, so every field shows. */}
+        <Box sx={{ position: 'sticky', left: 0, maxWidth: 'calc(100cqw - 96px)' }}>
+          <FrequencyRadioFieldsEditor
+            mode={draft.mode}
+            value={draft}
+            onChange={(radio) => setDraft({ ...draft, ...radio })}
+            onKeyPress={onKeyPress}
+          />
+          {/* Shows when the server refused the frequency (a 422) */}
+          {error && (
+            <Typography variant="body2" color="error" role="alert" sx={{ mt: 1 }}>{error}</Typography>
+          )}
+        </Box>
+      </TableCell>
+    </TableRow>
+  );
+
   const renderRow = (freq: FrequencyItem) => {
     // ========== ROW BEING EDITED ==========
     if (freq.id === editingId) {
       return (
-        <TableRow key={freq.id}>
-          <TableCell padding="checkbox">
-            <Checkbox
-              checked={selectedFrequencyIds.includes(freq.id!)}
-              onChange={() => toggleSelection(freq.id!)}
-            />
-          </TableCell>
-          {renderEditorCells(editDraft, setEditDraft, handleSaveEdit)}
-          <TableCell sx={{ whiteSpace: 'nowrap' }}>
-            <Button type="button" size="small" variant="contained" onClick={() => handleSaveEdit()}
-              disabled={!editDraft.frequency && !editDraft.network}
-            >
-              Save
-            </Button>
-            <Button type="button" size="small" onClick={() => setEditingId(null)} sx={{ ml: 1 }}>
-              Cancel
-            </Button>
-          </TableCell>
-        </TableRow>
+        <React.Fragment key={freq.id}>
+          {/* No line between this row and its repeater fields below */}
+          <TableRow sx={{ '& > td': { borderBottom: 0 } }}>
+            <TableCell padding="checkbox">
+              <Checkbox
+                checked={selectedFrequencyIds.includes(freq.id!)}
+                onChange={() => toggleSelection(freq.id!)}
+              />
+            </TableCell>
+            {renderEditorCells(editDraft, setEditDraft, handleSaveEdit)}
+            <TableCell sx={{ whiteSpace: 'nowrap' }}>
+              <Button type="button" size="small" variant="contained" onClick={() => handleSaveEdit()}
+                disabled={!editDraft.frequency && !editDraft.network}
+              >
+                Save
+              </Button>
+              <Button type="button" size="small" onClick={() => setEditingId(null)} sx={{ ml: 1 }}>
+                Cancel
+              </Button>
+            </TableCell>
+          </TableRow>
+          {renderRadioRow(editDraft, setEditDraft, handleSaveEdit, editError)}
+        </React.Fragment>
       );
     }
 
@@ -384,7 +449,15 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
           />
         </TableCell>
         <TableCell>{freq.mode}</TableCell>
-        <TableCell>{getDisplayText(freq)}</TableCell>
+        <TableCell>
+          {getDisplayText(freq)}
+          {/* A repeater's offset, tones and N/W, in the chips' wording */}
+          {frequencyDetails(freq) && (
+            <Typography variant="caption" color="text.secondary" display="block">
+              {frequencyDetails(freq)}
+            </Typography>
+          )}
+        </TableCell>
         <TableCell>{hasTalkgroup && freq.talkgroup ? freq.talkgroup : '-'}</TableCell>
         <TableCell>{freq.description || '-'}</TableCell>
         {/* Offered on every row: one the viewer can't change opens a request to the admins */}
@@ -405,17 +478,20 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
   };
 
   const renderNewRow = () => (
-    <TableRow>
-      <TableCell padding="checkbox"></TableCell>
-      {renderEditorCells(newFrequency, setNewFrequency, handleAddFrequency)}
-      <TableCell>
-        <Button type="button" size="small" variant="contained" onClick={() => handleAddFrequency()}
-          disabled={!newFrequency.frequency && !newFrequency.network}
-        >
-          Add
-        </Button>
-      </TableCell>
-    </TableRow>
+    <>
+      <TableRow sx={{ '& > td': { borderBottom: 0 } }}>
+        <TableCell padding="checkbox"></TableCell>
+        {renderEditorCells(newFrequency, setNewFrequency, handleAddFrequency)}
+        <TableCell>
+          <Button type="button" size="small" variant="contained" onClick={() => handleAddFrequency()}
+            disabled={!newFrequency.frequency && !newFrequency.network}
+          >
+            Add
+          </Button>
+        </TableCell>
+      </TableRow>
+      {renderRadioRow(newFrequency, setNewFrequency, handleAddFrequency, addError)}
+    </>
   );
 
   return (
@@ -454,7 +530,8 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
         </Typography>
       </Box>
 
-      <TableContainer>
+      {/* A size container, so the repeater-fields line can fit the visible width */}
+      <TableContainer sx={{ containerType: 'inline-size' }}>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -491,6 +568,47 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
         rowsPerPageOptions={[25, 50, { label: 'All', value: -1 }]}
         labelRowsPerPage="Per page:"
       />
+
+      {/* ========== BUILD AN ICS-205 ========== */}
+      {/* The switch, and when it's on, the channel plan and block 5 */}
+      {ics205 && (
+        <Box sx={{ mt: 3 }}>
+          <FormControlLabel
+            control={<Switch checked={ics205.enabled} onChange={(e) => ics205.setEnabled(e.target.checked)} />}
+            label="Build an ICS-205"
+          />
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+            Gives each channel a role and an ICS function, and adds the ICS-205 radio plan to the net's Reports menu.
+          </Typography>
+          {/* Edit Net, with the switch on: the net's ICS-205 page */}
+          {ics205.enabled && ics205.openLink && (
+            <Button component={RouterLink} to={ics205.openLink} size="small" target="_blank" rel="noopener" startIcon={<DescriptionIcon />} sx={{ mb: 1 }}>
+              Open ICS-205
+            </Button>
+          )}
+          {/* Shows while the switch is on */}
+          {ics205.enabled && (
+            <>
+              <Typography variant="subtitle2" sx={{ mt: 1 }}>ICS-205 channel plan</Typography>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                The selected frequencies, in the order they print as channels 1, 2, 3.
+              </Typography>
+              <ChannelPlanEditor plan={ics205.plan} setPlan={ics205.setPlan} frequencies={frequencies} />
+              <TextField
+                label="Special instructions"
+                value={ics205.specialInstructions}
+                onChange={(e) => ics205.setSpecialInstructions(e.target.value)}
+                multiline
+                minRows={3}
+                fullWidth
+                sx={{ mt: 2 }}
+                helperText="For example: cross-band repeaters, linked repeaters, or what to do when the primary channel fails."
+                inputProps={{ maxLength: 5000 }}
+              />
+            </>
+          )}
+        </Box>
+      )}
 
       {/* ========== DELETE CONFIRMATION ========== */}
       <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)}>

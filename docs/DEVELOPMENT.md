@@ -565,6 +565,70 @@ exports) can't repeat a header. A net with a drill plan prints the shared
 `ExerciseMarking` at the top and bottom of every page. Recording which copy
 was handed to an agency is the Incident Log's job, not this page's.
 
+## ICS-205 communications plan
+
+The "Build an ICS-205" switch on the Communication Plan tab
+(`Net.ics205_enabled` / `NetTemplate.ics205_enabled`, migration 102) turns on
+a per-channel plan and block 5 (`ics205_special_instructions`). The rules
+live in `services/channel_plan.py`; tests are `tests/test_ics205.py`.
+
+- **Repeater details are on the shared frequency.** `Frequency.offset`,
+  `tx_tone`, `rx_tone` and `bandwidth` are edited wherever frequencies are,
+  under the existing change rule (`routers/frequencies.py::change_refusal`).
+  `FrequencyCreate` normalizes them on input only, so a response never
+  re-validates stored data.
+- **Each channel's line is a `ChannelPlanEntry`**: PACE `plan_role`,
+  `ics_function`, `assignment`, `remarks`, and `position` (the form's
+  order), with exactly one of `net_id` / `template_id`. It is a table of its
+  own, not columns on `net_frequencies`, because saving a frequency list
+  replaces those association rows and would wipe the plan. Unique on
+  (net, frequency) and (schedule, frequency).
+- **Saving.** `channel_plan` in a create or update replaces the plan in list
+  order; null or omitted keeps it. Either way `apply_channel_plan` drops any
+  line whose frequency the net or schedule no longer uses, and updates rows
+  in place by frequency (the unit of work inserts before it deletes, which
+  would trip the unique constraint). Turning the switch off keeps the plan.
+  Deleting a frequency deletes its lines in `delete_frequency`, since SQLite
+  does not enforce the table's `ON DELETE CASCADE`.
+- **Reading.** `channel_plan_response` lists only lines for frequencies the
+  net or schedule currently has, in position order. The relationships are
+  `lazy="selectin"` because `NetResponse.from_orm` is called from about 20
+  endpoints; a new `Net` must be given `channel_plan_entries=[]` (or a copy)
+  before it is built into a response, or the read lazy-loads and fails under
+  `AsyncSession`.
+- **Guests.** `NetResponse.from_orm` takes a required keyword `signed_in`,
+  like the staff-list builders, so no caller can forget it. A signed-out
+  viewer gets each line's `frequency_id` and `plan_role` only, and no
+  special instructions: assignments and remarks can name people, sites and
+  phone numbers. `ics205_enabled` is always sent.
+- **From a schedule.** The switch and block 5 are shared columns, so
+  `build_net_from_template` copies them like every other setting; it also
+  copies the schedule's lines (`copy_channel_plan`) for both the manual
+  Create and the auto-create job. Edit Net's Save to Schedule sends
+  `channel_plan` with the net's `frequency_ids` to `PUT /templates/{id}`;
+  frequencies are one shared list, so the ids match.
+
+**Validators and their sources.**
+
+- **Offset:** signed decimal MHz, stored with 3 decimals and a sign
+  (`-0.6` becomes `-0.600`). An unsigned offset is refused rather than
+  guessed; 0 or blank is simplex, stored as null. The Unicode minus the net
+  view prints is accepted back.
+- **CTCSS:** the 42 tones in CISA's NIFOG v1.6.1A (January 2019), "CTCSS
+  Tones and Codes" p. 62, plus the eight that make the amateur 50-tone list
+  (159.8, 165.5, 171.3, 177.3, 183.5, 189.9, 196.6, 199.5; listed outside the
+  EIA/TIA standard on
+  [repeater-builder.com's CTCSS chart](https://www.repeater-builder.com/tech-info/ctcss/ctcss-chart.html)).
+  `100`, `PL 100` and `100.0 Hz` are stored as `100.0`; NIFOG's "69.4 in some
+  radios" is stored as `69.3`.
+- **DCS:** every code in NIFOG's "DCS Codes" table, p. 63 (104 codes, both
+  columns), stored as `D023`. A bare number is a CTCSS tone unless it starts
+  with 0, so `131` must be written `D131`. No polarity suffix is stored: no
+  published source for a `D023N` / `D023I` format was found.
+- **P25 NAC:** three hex digits (12 bits), stored as `NAC 293`; `$293` (NIFOG's
+  notation, p. 64) is accepted.
+- **Bandwidth:** `N` or `W`.
+
 ## Coverage by site
 
 A coverage drill with sites (an ARES SET) answers "which places can reach

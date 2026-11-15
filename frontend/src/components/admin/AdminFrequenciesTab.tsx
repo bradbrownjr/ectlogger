@@ -34,8 +34,10 @@ import useSortableTable from '../../hooks/useSortableTable';
 import { FREQUENCY_MODES } from '../../utils/frequencyModes';
 import { frequencyApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
+import { FrequencyRadioFields, frequencyDetails, radioFieldsPayload } from '../../utils/channelPlan';
+import FrequencyRadioFieldsEditor, { EMPTY_RADIO_DRAFT, radioDraftFrom } from '../forms/FrequencyRadioFields';
 
-interface Frequency {
+interface Frequency extends FrequencyRadioFields {
   id: number;
   frequency?: string;
   mode: string;
@@ -71,8 +73,11 @@ const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar, initialSearch = ''
     network: '',
     talkgroup: '',
     description: '',
+    ...EMPTY_RADIO_DRAFT,
   });
   const [frequencySaving, setFrequencySaving] = useState(false);
+  // The server's reason it refused the save (a 422), shown in the dialog
+  const [frequencyError, setFrequencyError] = useState<string | null>(null);
   const [deleteFrequencyDialogOpen, setDeleteFrequencyDialogOpen] = useState(false);
   const [frequencyToDelete, setFrequencyToDelete] = useState<Frequency | null>(null);
   const [frequencyFilter, setFrequencyFilter] = useState(initialSearch);
@@ -159,6 +164,7 @@ const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar, initialSearch = ''
         network: frequency.network || '',
         talkgroup: frequency.talkgroup || '',
         description: frequency.description || '',
+        ...radioDraftFrom(frequency),
       });
     } else {
       setEditingFrequency(null);
@@ -168,8 +174,10 @@ const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar, initialSearch = ''
         network: '',
         talkgroup: '',
         description: '',
+        ...EMPTY_RADIO_DRAFT,
       });
     }
+    setFrequencyError(null);
     setFrequencyDialogOpen(true);
   };
 
@@ -187,6 +195,7 @@ const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar, initialSearch = ''
         network: frequencyForm.network || null,
         talkgroup: frequencyForm.talkgroup || null,
         description: frequencyForm.description || null,
+        ...radioFieldsPayload(frequencyForm.mode, frequencyForm),
       };
 
       if (editingFrequency) {
@@ -200,8 +209,7 @@ const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar, initialSearch = ''
       fetchFrequencies();
     } catch (error: any) {
       console.error('Failed to save frequency:', error);
-      const message = getErrorMessage(error, 'Failed to save frequency');
-      showSnackbar(message, 'error');
+      setFrequencyError(getErrorMessage(error, 'Failed to save frequency'));
     } finally {
       setFrequencySaving(false);
     }
@@ -327,7 +335,15 @@ const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar, initialSearch = ''
               ) : (
                 sortedFrequencies.map((freq) => (
                   <TableRow key={freq.id}>
-                    <TableCell>{freq.frequency || '-'}</TableCell>
+                    <TableCell>
+                      {freq.frequency || '-'}
+                      {/* A repeater's offset, tones and N/W */}
+                      {frequencyDetails(freq) && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {frequencyDetails(freq)}
+                        </Typography>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Chip label={freq.mode} size="small" variant="outlined" />
                     </TableCell>
@@ -432,6 +448,15 @@ const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar, initialSearch = ''
               multiline
               rows={2}
             />
+            {/* Offset, tones and N/W, for the modes that have them */}
+            <FrequencyRadioFieldsEditor
+              mode={frequencyForm.mode}
+              value={frequencyForm}
+              onChange={(radio) => setFrequencyForm({ ...frequencyForm, ...radio })}
+              size="medium"
+            />
+            {/* Shows when the server refused the save */}
+            {frequencyError && <Alert severity="error">{frequencyError}</Alert>}
           </Box>
         </DialogContent>
         <DialogActions>

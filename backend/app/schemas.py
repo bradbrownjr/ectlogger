@@ -7,6 +7,10 @@ from app.auth import validate_password_strength
 from app.utils import normalize_email, normalize_spotter_number, looks_like_email_or_url, safe_redirect_path
 from app.logo_accent import logo_accent_colors
 from app.services.report_sections import parse_sections, validate_section_keys
+from app.services.channel_plan import (
+    ICS_FUNCTIONS, PLAN_ROLES, channel_plan_response, check_unique_frequencies, clean_text,
+    normalize_bandwidth, normalize_offset, normalize_tone,
+)
 import json
 import re
 
@@ -492,10 +496,31 @@ class FrequencyBase(BaseModel):
     network: Optional[str] = Field(None, max_length=100)  # e.g., "Wires-X", "Brandmeister", "REF030C"
     talkgroup: Optional[str] = Field(None, max_length=50)  # e.g., "31665", "Room 12345"
     description: Optional[str] = Field(None, max_length=500)
+    # Repeater details for the ICS-205 (migration 102). Normalized on input
+    # only (FrequencyCreate), by services/channel_plan.py.
+    offset: Optional[str] = Field(None, max_length=16)     # "-0.600", "+5.000"; null = simplex
+    tx_tone: Optional[str] = Field(None, max_length=16)    # "100.0", "D023", "NAC 293"
+    rx_tone: Optional[str] = Field(None, max_length=16)
+    bandwidth: Optional[str] = Field(None, max_length=16)  # "N" or "W"
 
 
 class FrequencyCreate(FrequencyBase):
     mode: str = Field(max_length=20, pattern=FREQUENCY_MODE_PATTERN)
+
+    @field_validator('offset')
+    @classmethod
+    def _offset(cls, v):
+        return normalize_offset(v)
+
+    @field_validator('tx_tone', 'rx_tone')
+    @classmethod
+    def _tone(cls, v):
+        return normalize_tone(v)
+
+    @field_validator('bandwidth')
+    @classmethod
+    def _bandwidth(cls, v):
+        return normalize_bandwidth(v)
 
     @model_validator(mode='after')
     def validate_freq_or_network(self):
@@ -581,6 +606,29 @@ def _parse_traffic_form_types(raw) -> Optional[List[str]]:
 ReportSectionList = Annotated[List[str], Field(max_length=20), AfterValidator(validate_section_keys)]
 
 
+class ChannelPlanItem(BaseModel):
+    """One channel's line on the ICS-205 (models.ChannelPlanEntry). The
+    list's order is the channel order. For a signed-out viewer only
+    frequency_id and plan_role are filled in (services/channel_plan.py)."""
+    frequency_id: int
+    plan_role: Optional[Literal[PLAN_ROLES]] = None
+    ics_function: Optional[Literal[ICS_FUNCTIONS]] = None
+    assignment: Optional[str] = Field(None, max_length=100)
+    remarks: Optional[str] = Field(None, max_length=255)
+
+    @field_validator('assignment', 'remarks')
+    @classmethod
+    def _blank_is_none(cls, v):
+        return clean_text(v)
+
+
+# A channel at most once; same 50 cap as a net's frequency_ids.
+ChannelPlanList = Annotated[List[ChannelPlanItem], Field(max_length=50), AfterValidator(check_unique_frequencies)]
+ICS205_INSTRUCTIONS_MAX = 5000
+# ICS 205 block 5. Blank is stored as null.
+Ics205Instructions = Annotated[str, Field(max_length=ICS205_INSTRUCTIONS_MAX), AfterValidator(clean_text)]
+
+
 # Net Schemas
 class NetBase(BaseModel):
     name: str = Field(max_length=200, min_length=1)
@@ -601,6 +649,11 @@ class NetBase(BaseModel):
     coverage_excluded_frequency_ids: Optional[List[int]] = Field(None, max_length=50)
     # The closing email's sections (Reports tab); see ReportSectionList.
     report_sections: Optional[ReportSectionList] = None
+    # ICS-205 (Communication Plan tab): the switch, block 5, and each
+    # channel's line. Entries for frequencies the net doesn't use are dropped.
+    ics205_enabled: Optional[bool] = False
+    ics205_special_instructions: Optional[Ics205Instructions] = None
+    channel_plan: ChannelPlanList = []
     # Opt-in, matching the two EmComm toggles above. Nets created before the
     # settings toggle existed keep their stored True -- see migration 056.
     traffic_enabled: Optional[bool] = False
@@ -658,6 +711,11 @@ class NetUpdate(BaseModel):
     # An explicit null resets to "never set up" (update_net applies every
     # field the request sent); [] turns every optional section off.
     report_sections: Optional[ReportSectionList] = None
+    ics205_enabled: Optional[bool] = None
+    ics205_special_instructions: Optional[Ics205Instructions] = None
+    # Replaces the plan when sent; null or left out keeps it (still pruned to
+    # the net's frequencies when frequency_ids changes).
+    channel_plan: Optional[ChannelPlanList] = None
     traffic_enabled: Optional[bool] = None
     traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
     traffic_strip_form_type: Optional[str] = Field(None, max_length=32)
@@ -755,6 +813,7 @@ class NetResponse(NetBase):
     traffic_form_types: Optional[List[str]] = None
     traffic_strip_form_type: Optional[str] = None
     traffic_strip_template: Optional[str] = None
+    ics205_enabled: bool = False
     scheduled_start_time: Optional[datetime] = None
     started_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
@@ -800,7 +859,7 @@ class NetResponse(NetBase):
     has_drill_plan: bool = False
 
     @classmethod
-    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, actions: dict = None, actions_as_regular_user: dict = None, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, current_user_logger_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None, auto_close_at: datetime = None, has_drill_plan: bool = False):
+    def from_orm(cls, net, *, signed_in: bool, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, actions: dict = None, actions_as_regular_user: dict = None, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, current_user_logger_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None, auto_close_at: datetime = None, has_drill_plan: bool = False):
         import json
         data = {
             'id': net.id,
@@ -827,6 +886,12 @@ class NetResponse(NetBase):
             'self_can_hear_enabled': net.self_can_hear_enabled if net.self_can_hear_enabled is not None else True,
             'coverage_excluded_frequency_ids': _parse_frequency_id_list(net.coverage_excluded_frequency_ids),
             'report_sections': parse_sections(net.report_sections),
+            # signed_in is required (keyword-only) so no caller can forget
+            # it: a guest gets each channel's role only, and no special
+            # instructions (services/channel_plan.py::channel_plan_response).
+            'ics205_enabled': bool(net.ics205_enabled),
+            'ics205_special_instructions': net.ics205_special_instructions if signed_in else None,
+            'channel_plan': channel_plan_response(net, net.frequencies, signed_in),
             'traffic_enabled': net.traffic_enabled if net.traffic_enabled is not None else True,
             'traffic_form_types': _parse_traffic_form_types(net.traffic_form_types),
             'traffic_strip_form_type': net.traffic_strip_form_type,
@@ -892,6 +957,10 @@ class NetTemplateBase(BaseModel):
     self_can_hear_enabled: bool = True  # Seeds self_can_hear_enabled for nets created from this template
     coverage_excluded_frequency_ids: Optional[List[int]] = Field(None, max_length=50)  # Seeds the net's copy
     report_sections: Optional[ReportSectionList] = None  # Seeds the net's copy; see ReportSectionList
+    # Seed the net's ICS-205 switch, block 5 and channel plan; see NetBase.
+    ics205_enabled: bool = False
+    ics205_special_instructions: Optional[Ics205Instructions] = None
+    channel_plan: ChannelPlanList = []
     traffic_enabled: bool = False  # Seeds traffic_enabled for nets created from this template
     # Seed the three per-net traffic settings; same null semantics as NetBase.
     traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
@@ -942,6 +1011,11 @@ class NetTemplateUpdate(BaseModel):
     coverage_excluded_frequency_ids: Optional[List[int]] = Field(None, max_length=50)
     # Applied by model_fields_set: an explicit null resets to "never set up".
     report_sections: Optional[ReportSectionList] = None
+    ics205_enabled: Optional[bool] = None
+    ics205_special_instructions: Optional[Ics205Instructions] = None
+    # Same as NetUpdate.channel_plan. Save to Schedule sends it with the
+    # net's frequency_ids; frequencies are one shared list, so the ids match.
+    channel_plan: Optional[ChannelPlanList] = None
     traffic_enabled: Optional[bool] = None
     traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
     traffic_strip_form_type: Optional[str] = Field(None, max_length=32)
@@ -1018,6 +1092,9 @@ class NetTemplateResponse(NetTemplateBase):
             'self_can_hear_enabled': template.self_can_hear_enabled if template.self_can_hear_enabled is not None else True,
             'coverage_excluded_frequency_ids': _parse_frequency_id_list(template.coverage_excluded_frequency_ids),
             'report_sections': parse_sections(template.report_sections),
+            'ics205_enabled': bool(template.ics205_enabled),
+            'ics205_special_instructions': template.ics205_special_instructions if signed_in else None,
+            'channel_plan': channel_plan_response(template, template.frequencies, signed_in),
             'traffic_enabled': template.traffic_enabled if template.traffic_enabled is not None else True,
             'traffic_form_types': _parse_traffic_form_types(template.traffic_form_types),
             'traffic_strip_form_type': template.traffic_strip_form_type,

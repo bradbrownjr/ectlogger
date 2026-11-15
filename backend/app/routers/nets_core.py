@@ -52,6 +52,7 @@ from app.services.net_closure import close_net_and_notify, compute_auto_close_at
 from app.utils import NET_LOGO_DIR, display_callsign, save_resized_logo
 from app.services.net_logos import logo_url_for, release_logo
 from app.services.report_sections import dump_sections
+from app.services.channel_plan import apply_channel_plan
 from app.services.ncs_attribution import load_ncs_attribution, net_ncs_attribution
 
 # Same limits as the profile avatar upload (routers/users.py) -- square,
@@ -84,6 +85,9 @@ async def create_net(
         self_can_hear_enabled=net_data.self_can_hear_enabled if net_data.self_can_hear_enabled is not None else True,
         coverage_excluded_frequency_ids=json.dumps(net_data.coverage_excluded_frequency_ids) if net_data.coverage_excluded_frequency_ids else None,
         report_sections=dump_sections(net_data.report_sections),
+        ics205_enabled=bool(net_data.ics205_enabled),
+        ics205_special_instructions=net_data.ics205_special_instructions,
+        channel_plan_entries=[],
         traffic_enabled=net_data.traffic_enabled or False,
         traffic_form_types=json.dumps(net_data.traffic_form_types) if net_data.traffic_form_types else None,
         traffic_strip_form_type=net_data.traffic_strip_form_type,
@@ -105,6 +109,7 @@ async def create_net(
     await db.flush()
     
     # Add frequencies using the association table directly to avoid lazy loading
+    frequencies = []
     if net_data.frequency_ids:
         # Verify frequencies exist
         result = await db.execute(
@@ -117,6 +122,8 @@ async def create_net(
             await db.execute(
                 net_frequencies.insert().values(net_id=net.id, frequency_id=freq.id)
             )
+    # Channels the net doesn't use are dropped (services/channel_plan.py).
+    apply_channel_plan(net, net_data.channel_plan, [f.id for f in frequencies])
     
     await db.commit()
     await db.refresh(net, ['frequencies'])
@@ -126,7 +133,7 @@ async def create_net(
         net.active_frequency_id = net.frequencies[0].id
         await db.commit()
     
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 def _actions_for(access):
@@ -249,6 +256,7 @@ async def list_nets(
         user_ran = (net.owner_id == current_user.id) if compute_user_flags else None
         responses.append(NetResponse.from_orm(
             net,
+            signed_in=current_user is not None,
             owner_callsign=net.owner.callsign if net.owner else None,
             owner_name=public_display_name(net.owner.name if net.owner else None, current_user is not None),
             check_in_count=check_in_counts.get(net.id, 0),
@@ -359,6 +367,7 @@ async def get_net(
 
     return NetResponse.from_orm(
         net,
+        signed_in=current_user is not None,
         owner_callsign=net.owner.callsign if net.owner else None,
         owner_name=public_display_name(net.owner.name if net.owner else None, current_user is not None),
         can_manage=can_manage,
@@ -459,8 +468,11 @@ async def update_net(
     
     # Update fields
     import json
-    update_data = net_update.dict(exclude_unset=True, exclude={'frequency_ids'})
+    update_data = net_update.dict(exclude_unset=True, exclude={'frequency_ids', 'channel_plan'})
     for field, value in update_data.items():
+        if field == 'ics205_enabled' and value is None:
+            continue  # NOT NULL; null means "leave it"
+
         # Both of these travel the API as real JSON (dict / list of form_type
         # codes) but live in TEXT columns -- see schemas._parse_traffic_form_types
         # for the read side. An explicit empty list means "no restriction",
@@ -481,6 +493,10 @@ async def update_net(
         )
         frequencies = result.scalars().all()
         net.frequencies = frequencies
+    # Replace the plan when one was sent, and drop lines for any frequency
+    # the net no longer uses either way.
+    if net_update.channel_plan is not None or net_update.frequency_ids is not None:
+        apply_channel_plan(net, net_update.channel_plan, [f.id for f in net.frequencies])
 
     # Record a topic set live by NCS into history right away, rather than
     # only at close -- see app/services/topic_history.py.
@@ -491,7 +507,7 @@ async def update_net(
     await db.commit()
     await db.refresh(net, ['frequencies'])
 
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 @router.post("/{net_id}/logo", response_model=NetResponse)
@@ -531,7 +547,7 @@ async def upload_net_logo(
     if previous != net.logo_url:
         await release_logo(db, previous)
     await db.refresh(net, ['frequencies'])
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 @router.delete("/{net_id}/logo", response_model=NetResponse)
@@ -555,7 +571,7 @@ async def delete_net_logo(
     await db.commit()
     await release_logo(db, previous)
     await db.refresh(net, ['frequencies'])
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 # ========== LINK / UNLINK NET TO A SCHEDULE (TEMPLATE) ==========
@@ -607,7 +623,7 @@ async def link_net_to_template(
     await db.commit()
     await db.refresh(net, ['frequencies'])
 
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 @router.post("/{net_id}/open-lobby", response_model=NetResponse)
@@ -779,7 +795,7 @@ async def _begin_net(net_id: int, current_user: User, db: AsyncSession, *, to_lo
     # harmless - see app/net_start.py.
     await send_net_start_notifications(db, net)
 
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 @router.post("/{net_id}/go-live", response_model=NetResponse)
@@ -837,7 +853,7 @@ async def go_live(
     # announced itself. See docstring above.
     await send_net_start_notifications(db, net)
 
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 @router.put("/{net_id}/active-frequency/{frequency_id}", response_model=NetResponse)
@@ -875,7 +891,7 @@ async def set_active_frequency(
         freq_display = f"{active_freq.frequency} {active_freq.mode or ''}" if active_freq.frequency else f"{active_freq.network} TG{active_freq.talkgroup or ''}"
         await post_system_message(net_id, f"Active frequency changed to {freq_display.strip()}", db)
     
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 @router.delete("/{net_id}/active-frequency", response_model=NetResponse)
@@ -901,7 +917,7 @@ async def clear_active_frequency(
     await db.commit()
     await db.refresh(net, ['frequencies'])
     
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 async def _settle_ncs(db: AsyncSession, net: Net, ncs_check_in_id: Optional[int], actor: User) -> None:
@@ -995,7 +1011,7 @@ async def close_net(
     await close_net_and_notify(db, net, current_user, hold_log=hold_log,
                                background_tasks=background_tasks)
 
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 @router.post("/{net_id}/send-log", response_model=NetResponse)
@@ -1039,4 +1055,4 @@ async def send_held_log(
     schedule_net_log(background_tasks, db, net_id)
 
     await db.refresh(net, ['frequencies'])
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)

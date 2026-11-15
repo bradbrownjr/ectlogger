@@ -4,7 +4,7 @@ summary: What closing generates, who receives it, how to finish the log before i
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-15
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/closing-the-net/
@@ -59,7 +59,7 @@ When the log is complete, click **Send the log** on the banner at the top of the
 
 ## After closing
 
-Once a net is closed, the toolbar's **Reports** menu opens its report and logs to **anyone who can see the net**. **Net report**, **ICS-309 PDF**, **ICS-309 CSV**, and **Check-ins CSV** are open to any viewer, participant included, and to a visitor who isn't signed in. For a visitor, email addresses and phone numbers typed into notes and other free-text fields are hidden, the same as on the check-in list, and the ICS-309 leaves out the off-net log.
+Once a net is closed, the toolbar's **Reports** menu opens its report and logs to **anyone who can see the net**. **Net report**, **ICS-309 PDF**, **ICS-309 CSV**, and **Check-ins CSV** are open to any viewer, participant included, and to a visitor who isn't signed in. For a visitor, email addresses and phone numbers typed into notes and other free-text fields are hidden, the same as on the check-in list, and the ICS-309 leaves out the off-net log. A net with **Build an ICS-205** on also lists the **ICS-205 radio plan**, for anyone signed in.
 
 <figure>
   <img src="/docs/img/net-control/closed-net-exports.png"

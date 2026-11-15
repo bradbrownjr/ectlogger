@@ -261,7 +261,7 @@ async def create_net_from_template(
         # after all, so fall through and create a fresh net instead of handing
         # back the cancelled one.
         if existing_net and existing_net.status != NetStatus.CANCELLED:
-            return NetResponse.from_orm(existing_net)
+            return NetResponse.from_orm(existing_net, signed_in=True)
 
     # Create net from template
     from app.models import net_frequencies as net_freq_table
@@ -323,7 +323,7 @@ async def create_net_from_template(
     )
     net = result.scalar_one()
 
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(net, signed_in=True)
 
 
 

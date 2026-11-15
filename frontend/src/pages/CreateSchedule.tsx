@@ -40,6 +40,7 @@ import CheckInFieldsTab from '../components/create-schedule/CheckInFieldsTab';
 import FormWizardFooter from '../components/forms/FormWizardFooter';
 import ReportsPanel from '../components/forms/ReportsPanel';
 import type { FeatureSectionExpansion } from '../utils/netFeatureSections';
+import { ChannelPlanEntry, channelPlanPayload, syncChannelPlan } from '../utils/channelPlan';
 
 // Tab order. Next and its double-submit guard are derived from this list
 // rather than literal indexes, so adding a tab can't strand the last one.
@@ -142,6 +143,17 @@ const CreateSchedule: React.FC = () => {
 
   // ---- Frequency selection ----
   const [selectedFrequencyIds, setSelectedFrequencyIds] = useState<number[]>([]);
+
+  // ---- Build an ICS-205 (Communication Plan tab) ----
+  // The plan follows the frequency selection: a selected frequency joins
+  // the end, an unselected one drops off (utils/channelPlan.ts). Nets
+  // created from the schedule copy it.
+  const [ics205Enabled, setIcs205Enabled] = useState(false);
+  const [channelPlan, setChannelPlan] = useState<ChannelPlanEntry[]>([]);
+  const [ics205SpecialInstructions, setIcs205SpecialInstructions] = useState('');
+  useEffect(() => {
+    setChannelPlan((plan) => syncChannelPlan(plan, selectedFrequencyIds));
+  }, [selectedFrequencyIds]);
 
   // ---- Check-in field config ----
   const [fieldConfig, setFieldConfig] = useState<Record<string, FieldConfigEntry>>({});
@@ -283,6 +295,9 @@ const CreateSchedule: React.FC = () => {
       setPollEnabled(schedule.poll_enabled || false);
       setPollQuestion(schedule.poll_question || '');
       setReportSections(schedule.report_sections ?? null);
+      setIcs205Enabled(!!schedule.ics205_enabled);
+      setChannelPlan(schedule.channel_plan || []);
+      setIcs205SpecialInstructions(schedule.ics205_special_instructions || '');
       setSelectedFrequencyIds(schedule.frequencies.map((f: any) => f.id));
       setOwnerId(schedule.owner_id);
       setOriginalOwnerId(schedule.owner_id);
@@ -373,6 +388,9 @@ const CreateSchedule: React.FC = () => {
       poll_question: pollQuestion || null,
       announcements: announcements || null,
       report_sections: reportSections,
+      ics205_enabled: ics205Enabled,
+      ics205_special_instructions: ics205SpecialInstructions.trim() || null,
+      channel_plan: channelPlanPayload(syncChannelPlan(channelPlan, selectedFrequencyIds)),
     };
 
     if (isEdit && ownerId && ownerId !== originalOwnerId) {
@@ -462,6 +480,9 @@ const CreateSchedule: React.FC = () => {
     fifthWeekUserId, setFifthWeekUserId,
     fifthWeekCallsign, setFifthWeekCallsign,
     selectedFrequencyIds, setSelectedFrequencyIds,
+    ics205Enabled, setIcs205Enabled,
+    channelPlan, setChannelPlan,
+    ics205SpecialInstructions, setIcs205SpecialInstructions,
     fieldConfig, setFieldConfig,
     pendingNCSUsers, setPendingNCSUsers,
     frequencies, setFrequencies,

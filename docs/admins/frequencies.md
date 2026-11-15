@@ -4,7 +4,7 @@ summary: Maintaining the instance-wide list of repeaters, simplex frequencies, a
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-11-13
+revised: 2026-11-15
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/frequencies/
@@ -23,6 +23,11 @@ Click the **+** button (bottom right) and fill in:
 - **Network** — for a digital mode, the reflector or network name (Brandmeister, Wires-X, REF030C).
 - **Talkgroup/Room** — the talkgroup ID or room number, where the network has one.
 - **Description** — free text; this shows next to the frequency everywhere else in the app, so make it recognizable ("Example County ARES Repeater (PL 100.0)" rather than just "Repeater").
+- **Offset (MHz)** — a repeater's offset with its sign, such as -0.600 or +5.000. Leave it blank for simplex.
+- **TX tone** and **RX tone** — picked from a list: a CTCSS tone such as 100.0, a DCS code such as D023, or for P25 a network access code such as NAC 293. The TX tone is the one a station sends to open the repeater.
+- **N/W** — narrow or wide FM.
+
+Offset and N/W show for a mode entered as a frequency (FM, AM, SSB, CW, GMRS, the data modes, and Other); the tones show for those and for P25. A DMR, D-STAR, YSF, NXDN or M17 entry has none of them. The offset and tone show after the frequency on the net's chips, and all four fill in a net's [ICS-205 radio plan](/docs/net-managers/reports-and-exports/#the-ics-205-radio-plan).
 
 An entry needs a frequency or a network, not necessarily both.
 
