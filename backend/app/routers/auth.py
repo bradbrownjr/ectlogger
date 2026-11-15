@@ -3,7 +3,7 @@ import io
 import json
 
 import qrcode
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from authlib.integrations.starlette_client import OAuth
@@ -14,7 +14,7 @@ from app.database import get_db
 from fastapi.security import HTTPAuthorizationCredentials
 from app.dependencies import get_current_user, security, MFA_SETUP_REQUIRED_DETAIL
 from app.admin_mode import (
-    admin_mode_closes_at, admin_mode_open, close_admin_mode, open_admin_mode,
+    ADMIN_MODE_HEADER, ADMIN_MODE_WRONG_CODE_DETAIL, admin_mode_closes_at, admin_mode_open, close_admin_mode, open_admin_mode,
 )
 from app.models import User, UserEmail, UserRole, Contact
 from app.schemas import (
@@ -905,7 +905,11 @@ async def oauth_callback(
 # An admin acts as a regular user until they enter a code here; see
 # app/admin_mode.py and docs/concepts/SIGN-IN-PROVIDERS-AND-ADMIN-MODE.md.
 
-def _admin_mode_status(user: User, access_token: Optional[str] = None) -> AdminModeStatus:
+def _admin_mode_status(user: User, response: Response, access_token: Optional[str] = None) -> AdminModeStatus:
+    # get_current_user set the header before this request changed anything;
+    # report the state after it, or the app would read the old one.
+    closes = admin_mode_closes_at(user)
+    response.headers[ADMIN_MODE_HEADER] = closes.isoformat() if closes else "closed"
     return AdminModeStatus(
         admin_mode_open=admin_mode_open(user),
         admin_mode_closes_at=admin_mode_closes_at(user),
@@ -917,6 +921,7 @@ def _admin_mode_status(user: User, access_token: Optional[str] = None) -> AdminM
 @_limiter.limit("10/minute")
 async def open_admin_mode_route(
     request: Request,
+    response: Response,
     payload: AdminModeRequest,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     current_user: User = Depends(get_current_user),
@@ -926,8 +931,9 @@ async def open_admin_mode_route(
     mode for this browser session.
 
     403 for a non-admin. MFA_SETUP_REQUIRED_DETAIL for an admin without
-    two-factor (the app sends them to set it up). 401 for a wrong code, which
-    counts toward the failed sign-in alerts like one at sign-in.
+    two-factor (the app sends them to set it up). 403 with
+    ADMIN_MODE_WRONG_CODE_DETAIL for a wrong code, which counts toward the
+    failed sign-in alerts like one at sign-in.
     """
     if current_user.role != UserRole.ADMIN:  # admin-mode-ok: who may open it
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
@@ -941,7 +947,9 @@ async def open_admin_mode_route(
     code = payload.totp_code.strip()
     if not (verify_totp_code(secret, code) or await _consume_backup_code(db, current_user, code)):
         await _record_mfa_failure(db, current_user, code, "admin mode")
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect code.")
+        # 403, not 401: the app signs the browser out on any 401 to a
+        # signed-in request (services/api.ts), and a typo isn't a dead session.
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ADMIN_MODE_WRONG_CODE_DETAIL)
 
     # A token from before admin mode has no session id. Give it one, with
     # the same expiry, so the admin mode opened here belongs to this browser.
@@ -958,11 +966,12 @@ async def open_admin_mode_route(
                           request.headers.get("user-agent"))
     record_event(db, "admin_mode.opened", current_user)
     await db.commit()
-    return _admin_mode_status(current_user, new_token)
+    return _admin_mode_status(current_user, response, new_token)
 
 
 @router.delete("/admin-mode", response_model=AdminModeStatus)
 async def lock_admin_mode_route(
+    response: Response,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -972,7 +981,7 @@ async def lock_admin_mode_route(
     if await close_admin_mode(db, current_user, token_payload.get("sid")):
         record_event(db, "admin_mode.locked", current_user)
     await db.commit()
-    return _admin_mode_status(current_user)
+    return _admin_mode_status(current_user, response)
 
 
 @router.get("/me", response_model=UserResponse)

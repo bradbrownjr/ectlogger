@@ -14,7 +14,7 @@ import pyotp
 import pytest
 from sqlalchemy import select
 
-from app.admin_mode import ADMIN_MODE_IDLE_MINUTES, ADMIN_MODE_REQUIRED_DETAIL
+from app.admin_mode import ADMIN_MODE_IDLE_MINUTES, ADMIN_MODE_REQUIRED_DETAIL, ADMIN_MODE_WRONG_CODE_DETAIL
 from app.auth import create_access_token, encrypt_mfa_secret, hash_backup_code
 from app.dependencies import BACKGROUND_REQUEST_HEADER, MFA_SETUP_REQUIRED_DETAIL
 from app.models import AdminSession, Net, NetStatus, User, UserRole
@@ -66,7 +66,7 @@ async def test_code_opens_admin_mode_for_this_browser_only(client, db, admin):
 async def test_wrong_code_is_refused_and_logged(client, db, admin):
     await _enroll(db, admin)
     r = await _open(client, _headers(admin), code="000000")
-    assert r.status_code == 401
+    assert r.status_code == 403 and r.json()["detail"] == ADMIN_MODE_WRONG_CODE_DETAIL
     assert (await client.get(ADMIN_ONLY, headers=_headers(admin))).status_code == 403
     from app.models import AuditEvent
     actions = (await db.execute(select(AuditEvent.action))).scalars().all()
@@ -76,7 +76,7 @@ async def test_wrong_code_is_refused_and_logged(client, db, admin):
 async def test_backup_code_opens_admin_mode_once(client, db, admin):
     await _enroll(db, admin, backup_codes=["ABCD-EFGH"])
     assert (await _open(client, _headers(admin), code="ABCD-EFGH")).status_code == 200
-    assert (await _open(client, _headers(admin, "browser-b"), code="ABCD-EFGH")).status_code == 401
+    assert (await _open(client, _headers(admin, "browser-b"), code="ABCD-EFGH")).status_code == 403
 
 
 async def test_closes_after_idle_minutes(client, db, admin):
@@ -104,6 +104,16 @@ async def test_requests_keep_it_open_but_background_polls_do_not(client, db, adm
     assert (await client.get("/api/users/me", headers=_headers(admin))).status_code == 200
     await db.refresh(row)
     assert row.last_used_at.replace(tzinfo=timezone.utc) > earlier + timedelta(seconds=30)
+
+
+async def test_switch_and_lock_report_the_new_state(client, db, admin):
+    """The app reads admin mode from this header on every response; the
+    switch and lock responses must describe the state after them."""
+    await _enroll(db, admin)
+    opened = await _open(client, _headers(admin))
+    assert opened.headers["X-Admin-Mode-Closes-At"] != "closed"
+    locked = await client.delete("/api/auth/admin-mode", headers=_headers(admin))
+    assert locked.headers["X-Admin-Mode-Closes-At"] == "closed"
 
 
 async def test_lock_admin_closes_it(client, db, admin):

@@ -42,6 +42,8 @@ export const BACKGROUND_REQUEST_CONFIG = {
 
 // Add token to requests
 api.interceptors.request.use((config) => {
+  // When it was sent, so a stale admin-mode report can be ignored (below).
+  (config as any)._sentAt = Date.now();
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -64,11 +66,18 @@ export const ADMIN_MODE_REQUIRED_DETAIL = 'Switch to admin to do this.';
 // Every response to an admin carries when admin mode closes, or "closed";
 // AuthContext listens for this event to keep its countdown and auto-lock right.
 export const ADMIN_MODE_EVENT = 'ectlogger:admin-mode';
+export interface AdminModeReport {
+  closesAt: string | null;
+  // When the request was sent. A request sent before a switch or lock
+  // reports the state from before it, and must not undo it.
+  sentAt: number;
+}
 
-const reportAdminMode = (headers: any) => {
+const reportAdminMode = (headers: any, config: any) => {
   const value = headers?.['x-admin-mode-closes-at'];
   if (value) {
-    window.dispatchEvent(new CustomEvent(ADMIN_MODE_EVENT, { detail: value === 'closed' ? null : value }));
+    const detail: AdminModeReport = { closesAt: value === 'closed' ? null : value, sentAt: config?._sentAt ?? 0 };
+    window.dispatchEvent(new CustomEvent(ADMIN_MODE_EVENT, { detail }));
   }
 };
 
@@ -86,17 +95,23 @@ api.interceptors.response.use(
     if (newToken) {
       localStorage.setItem('token', newToken);
     }
-    reportAdminMode(response.headers);
+    reportAdminMode(response.headers, response.config);
     return response;
   },
   async (error) => {
-    reportAdminMode(error.response?.headers);
+    reportAdminMode(error.response?.headers, error.config);
     // Admin mode closed (or was never opened) under an admin action: ask for
     // the code, then send the same request again. Once only, so a refusal
     // that a code can't fix doesn't loop.
+    const adminModeRefused = error.response?.status === 403 &&
+      error.response?.data?.detail === ADMIN_MODE_REQUIRED_DETAIL;
+    // The refusal itself means admin mode is closed; the server can't add the
+    // header to an error, so say so here.
+    if (adminModeRefused) {
+      reportAdminMode({ 'x-admin-mode-closes-at': 'closed' }, error.config);
+    }
     if (
-      error.response?.status === 403 &&
-      error.response?.data?.detail === ADMIN_MODE_REQUIRED_DETAIL &&
+      adminModeRefused &&
       adminModePrompt &&
       error.config &&
       !error.config._adminModeRetried

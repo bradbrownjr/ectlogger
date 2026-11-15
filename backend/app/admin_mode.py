@@ -31,6 +31,8 @@ ADMIN_MODE_IDLE_MINUTES = 15
 # Matched verbatim by frontend/src/services/api.ts, which opens the code
 # dialog and retries the request. Keep the two in sync.
 ADMIN_MODE_REQUIRED_DETAIL = "Switch to admin to do this."
+# A wrong code at Switch to admin. Shown as-is in AdminModeDialog.tsx.
+ADMIN_MODE_WRONG_CODE_DETAIL = "That code didn't work. Check the code and try again."
 
 # Response header carrying when admin mode closes (ISO 8601) or "closed",
 # sent to admins on every authenticated request. Exposed through CORS in

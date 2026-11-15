@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import api, { authApi, userApi, ADMIN_MODE_EVENT, BACKGROUND_REQUEST_CONFIG, setAdminModePrompt } from '../services/api';
+import api, { authApi, userApi, ADMIN_MODE_EVENT, AdminModeReport, BACKGROUND_REQUEST_CONFIG, setAdminModePrompt } from '../services/api';
 
 interface User {
   id: number;
@@ -78,6 +78,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [adminPromptOpen, setAdminPromptOpen] = useState(false);
   // Everyone waiting on one code prompt (several requests can be refused at once).
   const promptWaiters = useRef<((opened: boolean) => void)[]>([]);
+  // Send time of the newest request whose admin-mode report was applied, or of
+  // the last switch or lock. Responses arrive out of order, so a report from a
+  // request sent earlier than that describes an older state and is ignored.
+  const adminModeKnownAt = useRef(0);
 
   useEffect(() => {
     // Check for existing token on mount
@@ -147,8 +151,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Every response to an admin says when admin mode closes (api.ts).
   useEffect(() => {
     const onAdminMode = (e: Event) => {
-      const value = (e as CustomEvent<string | null>).detail;
-      setAdminModeClosesAt(value ? new Date(value) : null);
+      const { closesAt, sentAt } = (e as CustomEvent<AdminModeReport>).detail;
+      if (sentAt < adminModeKnownAt.current) return;
+      adminModeKnownAt.current = sentAt;
+      setAdminModeClosesAt(closesAt ? new Date(closesAt) : null);
     };
     window.addEventListener(ADMIN_MODE_EVENT, onAdminMode);
     return () => window.removeEventListener(ADMIN_MODE_EVENT, onAdminMode);
@@ -179,6 +185,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     waiters.forEach((resolve) => resolve(opened));
   }, []);
 
+  // Admin mode can read as closed and then open again without a code, when
+  // two requests cross at the idle limit. Nothing is left to ask for then.
+  useEffect(() => {
+    if (adminPromptOpen && adminModeOpen) finishAdminPrompt(true);
+  }, [adminPromptOpen, adminModeOpen, finishAdminPrompt]);
+
   // api.ts asks for the code when the server refuses an admin action.
   useEffect(() => {
     setAdminModePrompt(isActualAdmin ? requestAdminMode : null);
@@ -187,6 +199,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const switchToAdmin = async (code: string) => {
     const response = await authApi.openAdminMode(code);
+    adminModeKnownAt.current = Date.now();
     if (response.data.access_token) {
       localStorage.setItem('token', response.data.access_token);
       setToken(response.data.access_token);
@@ -196,6 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const lockAdmin = async () => {
     await authApi.lockAdminMode();
+    adminModeKnownAt.current = Date.now();
     setAdminModeClosesAt(null);
   };
 

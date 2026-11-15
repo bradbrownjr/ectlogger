@@ -40,9 +40,7 @@ const AdminModeDialog: React.FC = () => {
       await switchToAdmin(code.trim());
       finishAdminPrompt(true);
     } catch (err: any) {
-      setError(err.response?.status === 401
-        ? "That code didn't work. Check the code and try again."
-        : (err.response?.data?.detail || 'Could not switch to admin. Try again.'));
+      setError(err.response?.data?.detail || 'Could not switch to admin. Try again.');
     } finally {
       setBusy(false);
     }
