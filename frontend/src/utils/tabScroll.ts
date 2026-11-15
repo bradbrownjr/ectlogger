@@ -49,3 +49,20 @@ export function wheelToTabScroll(e: WheelLike, box: ScrollBox): number | null {
 export function isDrag(startX: number, currentX: number): boolean {
   return Math.abs(currentX - startX) > DRAG_THRESHOLD_PX;
 }
+
+/** The parts of a DOMRect these helpers read. */
+export interface Span {
+  left: number;
+  right: number;
+}
+
+/**
+ * How far to scroll the row so the selected tab is fully in view: positive
+ * moves the row left (the tab is cut off on the right), negative moves it
+ * right, 0 when it already fits. A tab wider than the row lines up its start.
+ */
+export function selectedTabOverflow(tab: Span, row: Span): number {
+  if (tab.left < row.left) return tab.left - row.left;
+  if (tab.right > row.right) return Math.min(tab.right - row.right, tab.left - row.left);
+  return 0;
+}

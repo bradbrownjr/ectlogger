@@ -12,7 +12,7 @@
 import { forwardRef, useEffect, useRef } from 'react';
 import { Tabs, TabsProps } from '@mui/material';
 import { useForkRef } from '@mui/material/utils';
-import { isDrag, wheelToTabScroll } from '../../utils/tabScroll';
+import { isDrag, selectedTabOverflow, wheelToTabScroll } from '../../utils/tabScroll';
 
 export type ScrollableTabsProps = Omit<TabsProps, 'variant' | 'scrollButtons'>;
 
@@ -92,6 +92,29 @@ const ScrollableTabs = forwardRef<HTMLDivElement, ScrollableTabsProps>(function 
       if (dragging) e.preventDefault();
     };
 
+    // ---------- Keep the selected tab in view ----------
+    // MUI scrolls the selected tab into view, then shows the arrows, which
+    // take 40 px each from the row: a page opened on a later tab (Admin's
+    // Activity link, a ?tab= link) was left with that tab half hidden behind
+    // the right arrow. Re-check whenever the row's visible width changes, and
+    // again once MUI's own 300 ms scroll animation, aimed at the old width,
+    // has finished, since it would otherwise undo the correction.
+    const keepSelectedInView = () => {
+      const tab = scroller.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+      if (!tab) return;
+      const delta = selectedTabOverflow(tab.getBoundingClientRect(), scroller.getBoundingClientRect());
+      if (delta !== 0) scroller.scrollLeft += delta;
+    };
+    let recheck: number | undefined;
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => {
+        keepSelectedInView();
+        window.clearTimeout(recheck);
+        recheck = window.setTimeout(keepSelectedInView, 400);
+      })
+      : null;
+    resizeObserver?.observe(scroller);
+
     scroller.addEventListener('wheel', onWheel, { passive: false });
     scroller.addEventListener('pointerdown', onPointerDown);
     scroller.addEventListener('pointermove', onPointerMove);
@@ -100,6 +123,8 @@ const ScrollableTabs = forwardRef<HTMLDivElement, ScrollableTabsProps>(function 
     scroller.addEventListener('click', onClickCapture, true);
     scroller.addEventListener('selectstart', onSelectStart);
     return () => {
+      resizeObserver?.disconnect();
+      window.clearTimeout(recheck);
       scroller.removeEventListener('wheel', onWheel);
       scroller.removeEventListener('pointerdown', onPointerDown);
       scroller.removeEventListener('pointermove', onPointerMove);

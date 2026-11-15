@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { wheelToTabScroll, isDrag } from './tabScroll';
+import { wheelToTabScroll, isDrag, selectedTabOverflow } from './tabScroll';
 
 const overflowing = { scrollLeft: 100, scrollWidth: 1000, clientWidth: 400 };
 
@@ -42,5 +42,26 @@ describe('isDrag', () => {
   it('treats a longer move as a drag', () => {
     expect(isDrag(100, 110)).toBe(true);
     expect(isDrag(100, 90)).toBe(true);
+  });
+});
+
+describe('selectedTabOverflow', () => {
+  const row = { left: 88, right: 712 };
+
+  it('scrolls a tab cut off on the right into view', () => {
+    // Admin's Activity tab once the arrows appeared (measured 2026-11-15).
+    expect(selectedTabOverflow({ left: 665, right: 792 }, row)).toBe(80);
+  });
+
+  it('scrolls a tab cut off on the left into view', () => {
+    expect(selectedTabOverflow({ left: 40, right: 160 }, row)).toBe(-48);
+  });
+
+  it('leaves a tab that fits', () => {
+    expect(selectedTabOverflow({ left: 200, right: 320 }, row)).toBe(0);
+  });
+
+  it('lines up the start of a tab wider than the row', () => {
+    expect(selectedTabOverflow({ left: 100, right: 900 }, row)).toBe(12);
   });
 });
