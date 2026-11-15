@@ -25,6 +25,8 @@ up to 90 days of admin access on that browser.
   are, for every account, including one first created through a provider. Turning a
   provider off or unlinking it never locks anyone out: magic link to their address
   still works.
+- **Password and magic-link sign-in keep their code for admins.** An admin with
+  two-factor enters a code at sign-in and again to switch to admin.
 - **GitHub is dropped.** Google, Microsoft, and a generic OIDC provider only.
 - **Microsoft: both account types.** Personal (outlook.com, hotmail.com) and work or
   school accounts, and an "only my organization" option by tenant ID.
@@ -92,7 +94,9 @@ up to 90 days of admin access on that browser.
   and retries the request after a correct code.
 - **Unchanged:** a backup download still needs a fresh code every time, admin mode or
   not. An account with two-factor on still enters its code at password or magic-link
-  sign-in (see open question 1).
+  sign-in, admins included, so such an admin enters a code at sign-in and again to
+  switch to admin. Brad chose to keep both (2026-11-15): the sign-in code protects the
+  regular account, which can still run nets.
 - **Activity log:** `admin_mode.opened` and `admin_mode.locked`, with a label in
   `activityLog.ts`. A wrong code counts toward the existing failed sign-in alerts.
 
@@ -184,16 +188,11 @@ up to 90 days of admin access on that browser.
 
 ## Open questions
 
-1. **Code at sign-in for admins who use password or magic link.** Today an account with
-   two-factor on enters its code at sign-in. With admin mode an admin would enter a
-   code at sign-in and again to switch to admin. Keep both (my default: the sign-in
-   code protects the regular account, which can still run nets), or skip the sign-in
-   code for admins the way provider sign-in does?
-2. **Unverified on Microsoft "any account":** its discovery document gives the issuer
+1. **Unverified on Microsoft "any account":** its discovery document gives the issuer
    as `https://login.microsoftonline.com/{tenantid}/v2.0`, a template. Whether Authlib
    1.7.2 validates `iss` against that template or needs the tenant filled in from the
    token's `tid` must be checked in its source and against a real sign-in.
-3. **Testing needs real client IDs.** Brad registers a test app in Google Cloud Console
+2. **Testing needs real client IDs.** Brad registers a test app in Google Cloud Console
    and in Microsoft Entra, both pointed at beta's redirect URI. A generic OIDC
    provider needs a real server too, for example Authentik or Keycloak in Docker on
    Unraid. A hand-written fake is not evidence of how a real provider behaves.
