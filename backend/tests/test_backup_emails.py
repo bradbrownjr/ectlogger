@@ -185,7 +185,7 @@ async def test_changes_need_the_two_factor_code_and_honour_the_email_lock(client
     for path, email in (("request", "new@example.com"), ("remove", "backup@example.com"),
                         ("make-primary", "backup@example.com")):
         resp = await client.post(f"/api/auth/backup-emails/{path}", json={"email": email}, headers=auth_headers(owner))
-        assert resp.status_code == 401, path
+        assert resp.status_code == 403, path
     ok = await client.post("/api/auth/backup-emails/request",
                            json={"email": "new@example.com", "totp_code": pyotp.TOTP(secret).now()},
                            headers=auth_headers(owner))

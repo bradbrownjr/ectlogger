@@ -236,7 +236,7 @@ async def test_email_change_needs_the_two_factor_code_when_enabled(client, db, o
 
     refused = await client.post("/api/auth/email-change/request", json={"new_email": "new@example.com"},
                                 headers=auth_headers(owner))
-    assert refused.status_code == 401 and sent_links == []
+    assert refused.status_code == 403 and sent_links == []
     ok = await client.post("/api/auth/email-change/request",
                            json={"new_email": "new@example.com", "totp_code": pyotp.TOTP(secret).now()},
                            headers=auth_headers(owner))

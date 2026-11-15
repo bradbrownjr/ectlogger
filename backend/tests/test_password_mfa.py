@@ -104,7 +104,7 @@ async def test_set_password_requires_current_password_when_already_set(client, o
         json={"new_password": "BrandNewPassword1!"},
         headers=auth_headers(owner),
     )
-    assert resp.status_code == 401
+    assert resp.status_code == 403
 
     resp = await client.post(
         "/api/auth/password/set",
@@ -238,7 +238,7 @@ async def test_mfa_setup_confirm_rejects_wrong_code(client, owner):
     headers = auth_headers(owner)
     await client.post("/api/auth/mfa/setup/start", headers=headers)
     resp = await client.post("/api/auth/mfa/setup/confirm", json={"totp_code": "000000"}, headers=headers)
-    assert resp.status_code == 401
+    assert resp.status_code == 403
 
 
 @pytest.mark.asyncio
@@ -297,7 +297,7 @@ async def test_non_admin_mfa_disable_requires_correct_password(client, db, owner
     await _enroll_mfa(db, owner)
 
     resp = await client.post("/api/auth/mfa/disable", json={"password": "wrong"}, headers=auth_headers(owner))
-    assert resp.status_code == 401
+    assert resp.status_code == 403
 
     resp = await client.post("/api/auth/mfa/disable", json={"password": "userpassword1"}, headers=auth_headers(owner))
     assert resp.status_code == 200

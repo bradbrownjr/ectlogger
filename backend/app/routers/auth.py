@@ -518,7 +518,7 @@ async def set_password(
     when the account already has one set."""
     if current_user.password_hash:
         if not payload.current_password or not verify_password(payload.current_password, current_user.password_hash):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current password is incorrect")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Current password is incorrect")
 
     record_event(db, "user.password_changed" if current_user.password_hash else "user.password_set", current_user,
                  target_type="user", target_id=current_user.id, target_label=user_label(current_user))
@@ -549,7 +549,7 @@ async def _require_mfa_code(db: AsyncSession, user: User, totp_code: Optional[st
         record_event(db, "auth.mfa_failed", user, details={"method": method})
         await db.commit()
         await check_failed_sign_ins(db, user, mfa=True)
-        raise HTTPException(status_code=401, detail="That two-factor code is not valid.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="That two-factor code is not valid.")
 
 @router.post("/email-change/request")
 @_limiter.limit("5/hour")
@@ -782,7 +782,7 @@ async def mfa_setup_confirm(
 
     secret = decrypt_mfa_secret(current_user.mfa_secret_encrypted)
     if not secret or not verify_totp_code(secret, payload.totp_code):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect verification code.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Incorrect verification code.")
 
     codes = generate_backup_codes()
     current_user.mfa_backup_codes = json.dumps([hash_backup_code(c) for c in codes])
@@ -805,7 +805,7 @@ async def mfa_replace_start(
     until confirmed, so an abandoned attempt never strands a working secret."""
     _require_non_admin_mfa_self_service(current_user)
     if not current_user.password_hash or not verify_password(payload.password, current_user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Incorrect password")
 
     secret = generate_totp_secret()
     current_user.mfa_pending_secret_encrypted = encrypt_mfa_secret(secret)
@@ -827,7 +827,7 @@ async def mfa_replace_confirm(
 
     secret = decrypt_mfa_secret(current_user.mfa_pending_secret_encrypted)
     if not secret or not verify_totp_code(secret, payload.totp_code):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect verification code.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Incorrect verification code.")
 
     codes = generate_backup_codes()
     current_user.mfa_secret_encrypted = current_user.mfa_pending_secret_encrypted
@@ -851,7 +851,7 @@ async def mfa_disable(
     if not current_user.mfa_enabled:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="MFA is not enabled.")
     if not current_user.password_hash or not verify_password(payload.password, current_user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Incorrect password")
 
     current_user.mfa_enabled = False
     current_user.mfa_secret_encrypted = None
