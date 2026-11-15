@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-11-13
+revised: 2026-11-15
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -21,6 +21,11 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Net forms: Choose what the closing email includes** — A new Reports tab lets the net manager pick the sections of the closing email and the net report, including the net's announcements and each station's answer to the topic of the week.
+* **Communication plan: Build an ICS-205** — Turn on Build an ICS-205 on the Communication Plan tab to give each channel its role, such as primary or alternate, and its function, add special instructions, and download the net's ICS-205 radio plan. Repeater tones and offsets entered on a frequency also show on the net's frequency list.
+
+## Improvements
+
+* **Chat: See who reacted** — Hover over a reaction on a chat message to see the callsigns of everyone who chose it, or press and hold on a phone.
 
 ---
 
