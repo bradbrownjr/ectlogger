@@ -1,8 +1,8 @@
 {
-  "version": "2026.11.15d",
+  "version": "2026.11.15e",
   "entries": [
     {
-      "version": "2026.11.15d",
+      "version": "2026.11.15e",
       "date": "2026-11-15",
       "sections": [
         {
@@ -29,6 +29,16 @@
             },
             {
               "text": "Net View: Every download in the Reports menu — The Paperwork button is now separate Net script, Announcements and Net notes PDFs in the Reports menu, ready before the net starts. Each carries the net's logo, larger text, and the address to get the latest copy. The menu lists what helps run the net first, then the ICS forms, then the net report and spreadsheet.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "PDFs: No more lines cut in half — A page break in an exported PDF now falls between lines of text instead of through one, so a long script or set of announcements reads cleanly from page to page.",
               "userImpact": true
             }
           ]
