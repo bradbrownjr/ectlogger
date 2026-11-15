@@ -28,9 +28,9 @@ import {
   Snackbar,
   ToggleButton,
   ToggleButtonGroup,
-  Tabs,
   Tab,
 } from '@mui/material';
+import ScrollableTabs from '../components/shared/ScrollableTabs';
 import {
   ArrowBack,
   Event,
@@ -564,18 +564,16 @@ const ScheduleStatistics: React.FC = () => {
             {/* ----- TABBED VIEW (on-screen only) ----- */}
             {!exporting && (
               <>
-                <Tabs
+                <ScrollableTabs
                   value={leaderboardTab}
                   onChange={(_, v) => setLeaderboardTab(v)}
-                  variant="scrollable"
-                  scrollButtons="auto"
                   sx={{ mb: 1 }}
                 >
                   <Tab label={`Check-ins (${stats.check_in_leaderboard?.length ?? stats.regular_operators.length})`} />
                   <Tab label={`NCS (${stats.ncs_leaderboard?.length ?? 0})`} />
                   <Tab label={`Logger (${stats.logger_leaderboard?.length ?? 0})`} />
                   <Tab label={`Relay (${stats.relay_leaderboard?.length ?? 0})`} />
-                </Tabs>
+                </ScrollableTabs>
 
                 {leaderboardTab === 0 && (
                   <CheckInLeaderboard data={stats.check_in_leaderboard ?? stats.regular_operators} />

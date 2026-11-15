@@ -6,7 +6,6 @@ import {
   Typography,
   Box,
   Button,
-  Tabs,
   Tab,
   Alert,
   Snackbar,
@@ -16,6 +15,7 @@ import {
   DialogContentText,
   DialogActions,
 } from '@mui/material';
+import ScrollableTabs from '../components/shared/ScrollableTabs';
 import SaveIcon from '@mui/icons-material/Save';
 import { netApi, frequencyApi, userApi, templateApi , coverageSiteApi } from '../services/api';
 import api from '../services/api';
@@ -583,15 +583,13 @@ const CreateNet: React.FC = () => {
           )}
 
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tabs
+            <ScrollableTabs
               value={activeTab}
               onChange={(_, newValue) => setActiveTab(newValue)}
               aria-label="net configuration tabs"
-              variant="scrollable"
-              scrollButtons="auto"
             >
               {NET_TABS.map((label) => <Tab key={label} label={label} />)}
-            </Tabs>
+            </ScrollableTabs>
           </Box>
 
           {/* ========== TAB 0: BASIC INFO ========== */}

@@ -11,7 +11,6 @@ import {
   CardContent,
   Skeleton,
   Alert,
-  Tabs,
   Tab,
   Chip,
   useTheme,
@@ -27,6 +26,7 @@ import {
   ListItemText,
   Link,
 } from '@mui/material';
+import ScrollableTabs from '../components/shared/ScrollableTabs';
 import {
   BarChart as BarChartIcon,
   TrendingUp,
@@ -403,11 +403,9 @@ const Statistics: React.FC = () => {
             ))}
           </Box>
 
-          <Tabs
+          <ScrollableTabs
             value={chartTab}
             onChange={(_, v) => setChartTab(v)}
-            variant="scrollable"
-            scrollButtons={false}
             sx={{
               mb: 2,
               borderBottom: 1,
@@ -416,7 +414,7 @@ const Statistics: React.FC = () => {
             }}
           >
             {charts.map(c => <Tab key={c.key} label={c.tab} />)}
-          </Tabs>
+          </ScrollableTabs>
 
           {/* Active chart. Fixed height so the whole card fits on one
               screen; it used to stretch to a neighbouring column and

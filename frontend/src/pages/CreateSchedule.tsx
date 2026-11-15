@@ -6,11 +6,11 @@ import {
   Typography,
   Box,
   Button,
-  Tabs,
   Tab,
   Snackbar,
   Alert,
 } from '@mui/material';
+import ScrollableTabs from '../components/shared/ScrollableTabs';
 import SaveIcon from '@mui/icons-material/Save';
 import { templateApi, frequencyApi, userApi, templateStaffApi } from '../services/api';
 import api from '../services/api';
@@ -514,14 +514,12 @@ const CreateSchedule: React.FC = () => {
           </Box>
 
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2 }}>
-            <Tabs
+            <ScrollableTabs
               value={activeTab}
               onChange={(_, newValue) => setActiveTab(newValue)}
-              variant="scrollable"
-              scrollButtons="auto"
             >
               {SCHEDULE_TABS.map((label) => <Tab key={label} label={label} />)}
-            </Tabs>
+            </ScrollableTabs>
           </Box>
 
           <Box component="form" onSubmit={handleSubmit}>

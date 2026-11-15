@@ -543,18 +543,28 @@ rendered output can be checked before saving.
 ## Tabs
 
 ### Scrollable tabs (required pattern)
-All `<Tabs>` components must use `variant="scrollable"` with `scrollButtons={false}`.
-This lets the tab bar scroll natively on touch/narrow viewports without visible
-arrow buttons. Pair with responsive `minWidth` and `px` to shrink tabs before
-overflow is needed.
+Every tab row is `<ScrollableTabs>` (`components/shared/ScrollableTabs.tsx`),
+never a bare MUI `<Tabs>`. Tabs stay on one line and never wrap; when they
+don't fit, the row scrolls by whatever the user has:
+
+- **Arrows** at each end (`scrollButtons="auto"`): shown only when the row
+  overflows, and hidden below the `sm` breakpoint, where a finger swipe
+  scrolls the row.
+- **Click and drag** with a mouse. A release after a drag does not switch tabs.
+- **The mouse wheel** while the pointer is over the row. Once the row reaches
+  an end, the wheel scrolls the page again. Shift+wheel and trackpad sideways
+  swipes scroll natively.
+
+The component fixes `variant` and `scrollButtons`, so a page cannot set them.
+Until 2026-11-15 this section required `scrollButtons={false}`, and a mouse
+user could only reach Admin's last tabs with Shift+wheel, which few know;
+four pages had already drifted to `"auto"` on their own.
 
 {% raw %}
 ```tsx
-<Tabs
+<ScrollableTabs
   value={tabValue}
   onChange={(_, v) => setTabValue(v)}
-  variant="scrollable"
-  scrollButtons={false}
   sx={{
     borderBottom: 1,
     borderColor: 'divider',
@@ -564,9 +574,9 @@ overflow is needed.
 ```
 {% endraw %}
 
-Admin uses `minWidth: { xs: 72, sm: 100 }` (6 tabs).
-Profile uses `minWidth: { xs: 80, sm: 120 }` (3 tabs, more room per tab).
-Adjust per tab count — fewer tabs can afford wider minWidth.
+Pair with responsive `minWidth` and `px` to shrink tabs before overflow is
+needed. Admin uses `minWidth: { xs: 72, sm: 100 }`; Profile uses
+`minWidth: { xs: 80, sm: 120 }` (fewer tabs, more room per tab).
 
 ### Swipe-to-switch (required for pages with tabs)
 Wrap the `<Paper>` containing the tabs in touch handlers so users can swipe

@@ -4,7 +4,6 @@ import {
   Container,
   Paper,
   Box,
-  Tabs,
   Tab,
   Badge,
   Typography,
@@ -13,6 +12,7 @@ import {
   Pagination,
   CircularProgress,
 } from '@mui/material';
+import ScrollableTabs from '../components/shared/ScrollableTabs';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import InboxIcon from '@mui/icons-material/Inbox';
 import AddIcon from '@mui/icons-material/Add';
@@ -195,15 +195,13 @@ const Traffic: React.FC = () => {
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       <Paper sx={{ p: { xs: 2, sm: 4 } }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs
+          <ScrollableTabs
             value={tabValue}
             onChange={(_, newValue) => {
               setTabValue(newValue);
               setSearchParams(withNetId(newValue > 0 ? { tab: String(newValue) } : {}));
             }}
             aria-label="traffic tabs"
-            variant="scrollable"
-            scrollButtons={false}
             sx={{ '& .MuiTab-root': { minWidth: { xs: 80, sm: 120 }, px: { xs: 1.5, sm: 2 } } }}
           >
             <Tab icon={<ListAltIcon />} iconPosition="start" label="Browse" id="traffic-tab-0" aria-controls="traffic-tabpanel-0" />
@@ -220,7 +218,7 @@ const Traffic: React.FC = () => {
             />
             <Tab icon={<AddIcon />} iconPosition="start" label="New" id="traffic-tab-2" aria-controls="traffic-tabpanel-2" />
             <Tab icon={<UploadFileIcon />} iconPosition="start" label="Import" id="traffic-tab-3" aria-controls="traffic-tabpanel-3" />
-          </Tabs>
+          </ScrollableTabs>
         </Box>
 
         {definitionsError && <Alert severity="error" sx={{ mt: 2 }}>{definitionsError}</Alert>}

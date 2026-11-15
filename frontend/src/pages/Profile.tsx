@@ -4,9 +4,9 @@ import {
   Container,
   Paper,
   Box,
-  Tabs,
   Tab,
 } from '@mui/material';
+import ScrollableTabs from '../components/shared/ScrollableTabs';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -155,15 +155,13 @@ const Profile: React.FC = () => {
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       <Paper sx={{ p: { xs: 2, sm: 4 } }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs
+          <ScrollableTabs
             value={tabValue}
             onChange={(_, newValue) => {
               setTabValue(newValue);
               setSearchParams(newValue > 0 ? { tab: TAB_NAMES[newValue] } : {});
             }}
             aria-label="profile tabs"
-            variant="scrollable"
-            scrollButtons={false}
             sx={{ '& .MuiTab-root': { minWidth: { xs: 80, sm: 120 }, px: { xs: 1.5, sm: 2 } } }}
           >
             <Tab
@@ -208,7 +206,7 @@ const Profile: React.FC = () => {
               id="profile-tab-5"
               aria-controls="profile-tabpanel-5"
             />
-          </Tabs>
+          </ScrollableTabs>
         </Box>
 
         {/* ========== Profile Tab ========== */}

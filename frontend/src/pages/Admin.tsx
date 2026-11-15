@@ -4,10 +4,10 @@ import {
   Container,
   Paper,
   Typography,
-  Tabs,
   Tab,
   Snackbar,
 } from '@mui/material';
+import ScrollableTabs from '../components/shared/ScrollableTabs';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ContactsIcon from '@mui/icons-material/ContactPhone';
 import EditIcon from '@mui/icons-material/Edit';
@@ -135,11 +135,9 @@ const Admin: React.FC = () => {
           Admin
         </Typography>
 
-        <Tabs
+        <ScrollableTabs
           value={tabValue}
           onChange={(_, newValue) => setTabValue(newValue)}
-          variant="scrollable"
-          scrollButtons={false}
           sx={{
             borderBottom: 1,
             borderColor: 'divider',
@@ -156,7 +154,7 @@ const Admin: React.FC = () => {
           <Tab label="Traffic" id="admin-tab-7" aria-controls="admin-tabpanel-7" icon={<MailIcon />} iconPosition="start" />
           <Tab label="Backups" id="admin-tab-8" aria-controls="admin-tabpanel-8" icon={<BackupIcon />} iconPosition="start" />
           <Tab label="Activity" id="admin-tab-9" aria-controls="admin-tabpanel-9" icon={<HistoryIcon />} iconPosition="start" />
-        </Tabs>
+        </ScrollableTabs>
 
         {/* ========== TAB 0: USERS ========== */}
         <TabPanel value={tabValue} index={0}>

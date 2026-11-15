@@ -9,7 +9,6 @@ import {
   TextField,
   CircularProgress,
   Alert,
-  Tabs,
   Tab,
   useMediaQuery,
   useTheme,
@@ -19,6 +18,7 @@ import {
   InputLabel,
   Snackbar,
 } from '@mui/material';
+import ScrollableTabs from './shared/ScrollableTabs';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import EmailIcon from '@mui/icons-material/Email';
 import { ncsRotationApi, userApi, templateStaffApi, templateApi } from '../services/api';
@@ -839,17 +839,15 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
             </Box>
           ) : (
             <Box>
-              <Tabs
+              <ScrollableTabs
                 value={activeTab}
                 onChange={(_: React.SyntheticEvent, next: number) => setActiveTab(next)}
-                variant={isMobile ? 'scrollable' : 'standard'}
-                scrollButtons="auto"
                 sx={{ mb: 2 }}
               >
                 {visibleTabs.map((tab) => (
                   <Tab key={tab.key} label={tab.label} />
                 ))}
-              </Tabs>
+              </ScrollableTabs>
 
               {visibleTabs[activeTab]?.key === 'ncs' && renderStaffList()}
               {visibleTabs[activeTab]?.key === 'rotation' && renderRotationTab()}
