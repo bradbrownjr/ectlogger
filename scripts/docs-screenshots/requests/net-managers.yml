@@ -19,9 +19,12 @@ shots:
     section: net-managers
     page: /docs/net-managers/creating-a-net/
     route: /nets/{{net:active}}/edit
-    # 1000 wide so the figure reads at full size in the docs column.
+    # 1080 wide: at 1000 the scrollable tab bar cut off after Check-In
+    # Fields, hiding Reports, and at 1200 the bar is 1112px, over the
+    # 1000px figure limit. 1080 gives a ~990px bar that fits all seven
+    # tabs (2026-11-15).
     viewport:
-      width: 1000
+      width: 1080
       height: 1000
     as: W1PINE
     wait_for: 'div[aria-label="net configuration tabs"]'
@@ -36,9 +39,12 @@ shots:
     section: net-managers
     page: /docs/net-managers/creating-a-net/
     route: /nets/{{net:active}}/edit
-    # 1000 wide so the figure reads at full size in the docs column.
+    # 1080 wide: at 1000 the scrollable tab bar cut off after Check-In
+    # Fields, hiding Reports, and at 1200 the bar is 1112px, over the
+    # 1000px figure limit. 1080 gives a ~990px bar that fits all seven
+    # tabs (2026-11-15).
     viewport:
-      width: 1000
+      width: 1080
       height: 1000
     as: W1PINE
     wait_for: 'div[aria-label="net configuration tabs"]'
@@ -131,9 +137,12 @@ shots:
     section: net-managers
     page: /docs/net-managers/scripts-and-announcements/
     route: /nets/{{net:active}}/edit
-    # 1000 wide so the figure reads at full size in the docs column.
+    # 1080 wide: at 1000 the scrollable tab bar cut off after Check-In
+    # Fields, hiding Reports, and at 1200 the bar is 1112px, over the
+    # 1000px figure limit. 1080 gives a ~990px bar that fits all seven
+    # tabs (2026-11-15).
     viewport:
-      width: 1000
+      width: 1080
       height: 1000
     as: W1PINE
     wait_for: 'div[aria-label="net configuration tabs"]'
