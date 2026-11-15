@@ -130,6 +130,13 @@ up to 90 days of admin access on that browser.
   target credentials. Rotating `SECRET_KEY` makes it unreadable, the same as those.
 - **Redirect URI with a Copy button**, built from the request so it is right behind
   Caddy. This is the one value an admin pastes into the provider's console.
+- **The redirect URI is `<site>/api/auth/providers/<slug>/callback`**, where the slug
+  is `google`, `microsoft`, or one the admin picks for an Other provider. It is keyed
+  by slug, not the database id, so an admin can register it in the provider's console
+  before adding the provider here. Beta's test clients (registered 2026-11-15) use
+  `https://ectbeta.lynwood.us/api/auth/providers/google/callback` and
+  `.../microsoft/callback`; production adds `https://app.ectlogger.us/...` to the same
+  clients when the branch ships.
 - **Test** fetches the provider's discovery document and reports what is wrong
   (unreachable, wrong issuer, no authorization endpoint) before anyone tries to sign in.
 - Every change is written to the activity log.
