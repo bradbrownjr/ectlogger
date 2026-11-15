@@ -16,6 +16,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# November 15, 2026
+
+## New Features
+
+* **Net forms: Choose what the closing email includes** — A new Reports tab lets the net manager pick the sections of the closing email and the net report, including the net's announcements and each station's answer to the topic of the week.
+
+---
+
 # November 14, 2026
 
 ## Improvements

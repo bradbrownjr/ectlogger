@@ -1,6 +1,22 @@
 {
-  "version": "2026.11.14b",
+  "version": "2026.11.15",
   "entries": [
+    {
+      "version": "2026.11.15",
+      "date": "2026-11-15",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Net forms: Choose what the closing email includes — A new Reports tab lets the net manager pick the sections of the closing email and the net report, including the net's announcements and each station's answer to the topic of the week.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.11.14b",
       "date": "2026-11-14",
