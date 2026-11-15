@@ -16,6 +16,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from app.config import settings
 from app.email.markdown import markdown_to_email_html
 from app.email.net_logs import (
     ICS309_DEFAULT_SECTIONS,
@@ -55,7 +56,7 @@ ALL_ON = dict(ics309_enabled=True, topic_of_week_enabled=True, poll_enabled=True
 
 def test_catalogue_keys_match_the_contract():
     assert [s.key for s in REPORT_SECTIONS] == [
-        "report_link", "figures", "topic", "poll", "coverage", "traffic", "ics309_log", "announcements", "chat_log",
+        "figures", "topic", "poll", "coverage", "traffic", "ics309_log", "announcements", "report_link", "chat_log",
     ]
     assert all(s.label and s.help for s in REPORT_SECTIONS)
 
@@ -162,15 +163,16 @@ def test_each_switch_removes_its_block_from_the_ics309_email(key):
 def test_plain_email_order():
     html = build_net_log_email(**_full_kwargs(sections=set(SECTION_KEYS) - {"ics309_log"})).html
     positions = [html.index(text) for text in (
-        "Net Summary", "View the full report", "Unique Operators", "Topic of the Week", "Poll Results",
+        "Unique Operators", "Net Summary", "Topic of the Week", "Poll Results",
         "Station Coverage", "Traffic Handled", "<h3>Check-ins</h3>", "Field Day is in June.", "Thanks, all.",
+        "View the full report",
     )]
     assert positions == sorted(positions)
 
 
 def test_ics309_email_keeps_the_form_first():
     html = build_ics309_log_email(**_full_kwargs(sections=set(SECTION_KEYS), ncs_callsign="W1PINE", log_entries=[])).html
-    assert html.index("ICS 309") < html.index("SUBJECT/MESSAGE") < html.index("View the full report") < html.index("Field Day")
+    assert html.index("ICS 309") < html.index("SUBJECT/MESSAGE") < html.index("Field Day") < html.index("View the full report")
 
 
 def test_left_out_sections_give_the_old_email():
@@ -451,6 +453,18 @@ async def test_template_preview_uses_the_latest_closed_net(client, db, owner, ot
 
 
 @pytest.mark.asyncio
+async def test_net_preview_with_no_check_ins_links_to_the_nets_report(client, db, owner, no_sending):
+    net = Net(name="Example Net", owner_id=owner.id, status=NetStatus.LOBBY)
+    db.add(net)
+    await db.commit()
+    resp = await client.post(f"/api/nets/{net.id}/closing-email-preview",
+                             json={"report_sections": ["report_link"]}, headers=auth_headers(owner))
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["source"] == "example"
+    assert f'href="{settings.frontend_url}/nets/{net.id}/report"' in resp.json()["html"]
+
+
+@pytest.mark.asyncio
 async def test_template_preview_with_no_closed_net_uses_example_data(client, db, owner, no_sending):
     template = NetTemplate(name="Example County ARES", owner_id=owner.id, topic_of_week_enabled=True,
                            traffic_enabled=True, announcements="**Drill** on Saturday.")
@@ -467,6 +481,8 @@ async def test_template_preview_with_no_closed_net_uses_example_data(client, db,
     assert "W1PINE" in html and "Topic of the Week" in html and "Traffic Handled" in html
     assert "<strong>Drill</strong> on Saturday." in html
     assert "6 from 5 stations" in html or "Total Check-ins:</strong> 6" in html
+    # The report button goes somewhere real: the schedule's page, as it has no net yet
+    assert f'href="{settings.frontend_url}/scheduler/{template.id}"' in html
     # Nothing was written
     db.expire_all()
     assert (await db.execute(select(Net))).scalars().all() == before

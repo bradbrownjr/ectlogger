@@ -160,6 +160,10 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ reportSections, setReportSe
 // Renders the email the server would send with the switches as they are now
 // (saved or not). The HTML goes in a sandboxed frame: no scripts, no
 // same-origin access, so nothing in a net's text can act on the page.
+// Links open in a new tab: the app refuses to load inside a frame, so a link
+// followed in place left the frame showing "refused to connect".
+const openLinksInNewTab = (html: string): string =>
+  html.replace(/<head(\s[^>]*)?>/i, (tag) => `${tag}<base target="_blank">`);
 
 interface ClosingEmailPreviewDialogProps {
   open: boolean;
@@ -213,18 +217,21 @@ const ClosingEmailPreviewDialog: React.FC<ClosingEmailPreviewDialogProps> = ({ o
             <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
               <strong>Subject:</strong> {preview.subject}
             </Typography>
-            {/* Shows for a schedule with no closed net to render */}
+            {/* Shows when there's no real log to render: a net with no
+                check-ins yet, or a schedule with no closed net */}
             {preview.source === 'example' && (
               <Alert severity="info">
-                This schedule has no past net yet, so the preview uses example data.
+                {target.kind === 'net'
+                  ? 'This net has no check-ins yet, so the preview uses example stations.'
+                  : 'This schedule has no past net yet, so the preview uses example data.'}
               </Alert>
             )}
             {/* Emails are designed on white, so the frame stays white in dark mode */}
             <Box
               component="iframe"
               title="Closing email preview"
-              sandbox=""
-              srcDoc={preview.html}
+              sandbox="allow-popups allow-popups-to-escape-sandbox"
+              srcDoc={openLinksInNewTab(preview.html)}
               sx={{
                 width: '100%',
                 flex: 1,

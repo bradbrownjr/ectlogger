@@ -63,16 +63,19 @@ async def preview_from_example(
     topic_prompt: Optional[str],
     poll_question: Optional[str],
     schedule_announcements: Optional[str],
+    report_url: str,
     tz,
 ) -> dict:
     """The email for a made-up net, built in memory from the example roster
     (docs/DEVELOPMENT.md "Example callsigns"). Nothing is added to the
     session. Used for a schedule with no closed net yet, and for a net
-    with no check-ins."""
+    with no check-ins. report_url is where the email's report button
+    goes: the net's own report, or the schedule's page when there is no
+    net yet."""
     log = await _example_net_log(
         db, source=source, name=name, description=description, frequencies=frequencies,
         topic_prompt=topic_prompt, poll_question=poll_question,
-        schedule_announcements=schedule_announcements,
+        schedule_announcements=schedule_announcements, report_url=report_url,
     )
     return {**_render(log, tz), "source": "example"}
 
@@ -88,7 +91,7 @@ _EXAMPLE_STATIONS = [
 
 
 async def _example_net_log(db, *, source, name, description, frequencies, topic_prompt,
-                           poll_question, schedule_announcements) -> NetLog:
+                           poll_question, schedule_announcements, report_url) -> NetLog:
     closed_at = datetime.utcnow().replace(second=0, microsecond=0)
     started_at = closed_at - timedelta(minutes=45)
     # Plain stand-ins for the net's frequencies, so nothing persistent is
@@ -171,5 +174,5 @@ async def _example_net_log(db, *, source, name, description, frequencies, topic_
         ncs_name="Alex Reed",
         has_sites=False,
         schedule_announcements=schedule_announcements,
-        report_url="#",
+        report_url=report_url,
     )

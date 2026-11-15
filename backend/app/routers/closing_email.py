@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import CheckIn, Net, NetStatus, NetTemplate, User
@@ -70,7 +71,8 @@ async def preview_net_closing_email(
     return await preview_from_example(
         db, source=source, name=net.name, description=net.description, frequencies=net.frequencies,
         topic_prompt=net.topic_of_week_prompt, poll_question=net.poll_question,
-        schedule_announcements=schedule_announcements, tz=tz,
+        schedule_announcements=schedule_announcements,
+        report_url=f"{settings.frontend_url}/nets/{net.id}/report", tz=tz,
     )
 
 
@@ -108,5 +110,6 @@ async def preview_template_closing_email(
     return await preview_from_example(
         db, source=source, name=template.name, description=template.description,
         frequencies=template.frequencies, topic_prompt=template.topic_of_week_prompt,
-        poll_question=template.poll_question, schedule_announcements=template.announcements, tz=tz,
+        poll_question=template.poll_question, schedule_announcements=template.announcements,
+        report_url=f"{settings.frontend_url}/scheduler/{template.id}", tz=tz,
     )

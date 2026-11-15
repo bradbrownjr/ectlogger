@@ -34,11 +34,6 @@ class ReportSection:
 # Display order on the Reports tab, which is also their order in the email.
 REPORT_SECTIONS: List[ReportSection] = [
     ReportSection(
-        key="report_link",
-        label="Link to the full report",
-        help="A button near the top that opens the net's report.",
-    ),
-    ReportSection(
         key="figures",
         label="Headline figures",
         help="Total check-ins, unique operators, re-checks, and how long the net ran.",
@@ -82,6 +77,11 @@ REPORT_SECTIONS: List[ReportSection] = [
         key="announcements",
         label="Announcements and net notes",
         help="The schedule's announcements, then this net's notes, after the log.",
+    ),
+    ReportSection(
+        key="report_link",
+        label="Link to the full report",
+        help="A button at the end that opens the net's report.",
     ),
     ReportSection(
         key="chat_log",

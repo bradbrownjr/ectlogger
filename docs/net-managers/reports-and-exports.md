@@ -79,7 +79,7 @@ Each recipient gets ICS-309 formatting if either the net sends it or that recipi
 
 ### What the closing email contains
 
-Every closing email has the net summary and the check-in log, with the check-ins attached as a spreadsheet. The rest is set on the net's **Reports** tab, or on its schedule's, for every net the schedule creates (see [Creating a net](/docs/net-managers/creating-a-net/#reports)): a link to the full report, the headline figures, the topic of the week with each station's answer, poll results, sites and station coverage, traffic counts, the schedule's announcements and the net's notes, and the chat log as an attached text file. A section tied to a feature is sent only while that feature is on.
+Every closing email has the net summary and the check-in log, with the check-ins attached as a spreadsheet. The rest is set on the net's **Reports** tab, or on its schedule's, for every net the schedule creates (see [Creating a net](/docs/net-managers/creating-a-net/#reports)): the headline figures under the title, the topic of the week with each station's answer, poll results, sites and station coverage, traffic counts, the schedule's announcements and the net's notes, a link to the full report at the end, and the chat log as an attached text file. A section tied to a feature is sent only while that feature is on.
 
 With the **ICS-309 log** switch on, the email carries the ICS-309 Communications Log in place of the check-in table, with the ICS-309 spreadsheet attached. A net or schedule whose switches were never changed sends the email it always has: the topic, poll, coverage, traffic, and chat sections for the regular log, and the ICS-309 when **Enable ICS-309 Communications Log format** is on.
 
