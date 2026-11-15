@@ -4,7 +4,7 @@ summary: Create a net, start it, log a few stations, and close it out with the l
 kind: Tutorial
 audience: Anyone taking a turn at Net Control
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-15
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/start/run-your-first-net/
@@ -22,7 +22,7 @@ You should have [checked into a net](/docs/start/first-check-in/) at least once 
 
 From the dashboard, click the **+** button in the bottom right corner. You land on **Create Net**.
 
-The form has seven tabs across the top, because it is the same form used to set up a recurring schedule. You need two of the tabs and two fields.
+The form has eight tabs across the top, because it is the same form used to set up a recurring schedule. You need two of the tabs and two fields.
 
 On **Basic Info**, put something in **Schedule Name**. It is the net's name, whatever the label says. Call it something that will make sense in a week, such as "Thursday practice" or "KC1HILL test net".
 

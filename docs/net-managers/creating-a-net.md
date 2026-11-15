@@ -1,10 +1,10 @@
 ---
 title: Creating a net
-summary: The net form field by field: frequencies, check-in fields, self check-in, polls, the topic of the week, and the logo.
+summary: The net form field by field: frequencies, check-in fields, self check-in, polls, the topic of the week, the logo, and the closing email.
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-11-14
+revised: 2026-11-15
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/creating-a-net/
@@ -20,12 +20,12 @@ Starting a net and editing one go through two different forms. The dashboard's *
 
 A brand-new account may not be able to do either one right away. See [a brand-new account may have to wait](/docs/net-managers/recurring-schedules/#a-brand-new-account-may-have-to-wait) for the age, participation, and daily-limit rules your instance may enforce.
 
-## The six tabs
+## The seven tabs
 
 <figure>
   <img src="/docs/img/net-managers/create-net-tabs.png"
-       alt="The Edit Net tab bar: Basic Info, Net Staff, Communication Plan, Net Script, Announcements, and Check-In Fields.">
-  <figcaption>Every net, one-time or from a recurring schedule, is edited through these six tabs.</figcaption>
+       alt="The Edit Net tab bar: Basic Info, Net Staff, Communication Plan, Net Script, Announcements, Check-In Fields, and Reports.">
+  <figcaption>Every net, one-time or from a recurring schedule, is edited through these seven tabs.</figcaption>
 </figure>
 
 Only **Net Name** and **at least one frequency** are required. Everything else can be filled in later from **Edit Net**.
@@ -84,9 +84,19 @@ Both are covered in full in [Scripts, notes, and announcements](/docs/net-manage
 
 Callsign is the only field every net always requires. Everything else (Name, Location, Spotter #, Weather Observation, Power Src, Power, Feedback, Notes, Relayed By, and any custom fields your instance's administrator has defined) is switched on or off and marked required or optional independently, per net. See [Check-in fields](/docs/reference/check-in-fields/) for the complete list. Turn on **Relayed By** for a net that regularly uses relay stations; on any other net it still appears by itself once a station is set to Relay. If **Topic of the Week** or **Participant Poll** is on, its response field appears here too, locked on.
 
+### Reports
+
+The **Reports** tab sets what goes into the closing email, the log ECTLogger emails when the net closes (see [who gets it](/docs/net-managers/reports-and-exports/#who-automatically-gets-the-closing-log-by-email)). **Net summary and check-in log** is always included. Below it is a switch for each optional section, such as headline figures, a link to the full report, announcements and net notes, or the chat log as an attached text file. A section tied to a feature shows only while that feature is on: the topic of the week and poll results with those switches on Basic Info, sites and station coverage with coverage logging or sites, traffic with traffic handling, and **ICS-309 log** with **Enable ICS-309 Communications Log format**. With **ICS-309 log** on, the email carries the ICS-309 in place of the check-in table; turn it off to send the regular log instead.
+
+The net's [report page](/docs/net-managers/reports-and-exports/#the-net-report-page) shows and hides the same sections.
+
+Until you change a switch, the net uses the default sections, the ones the closing email has always had, and the switches show them. Once you change one, the net keeps your choice. A default section whose feature is off, such as the topic on a net without Topic of the Week, stays in your choice and appears if you turn that feature on later. **Use the default sections** goes back to the defaults.
+
+**Preview** shows the closing email with the switches as they are on the tab, before you save. The other tabs' settings come from the last save. On a schedule, the preview uses the schedule's most recent closed net, or example data if it has none yet. Preview is available once the net or schedule has been saved.
+
 ## Saving
 
-**Create Net** (or **Save for this Net** when editing) saves changes to this occurrence only. If the net was created from a schedule, editing it also offers **Save to Schedule**, which saves this net and pushes everything on this tab set (name, description, script, the schedule's announcements, frequencies, check-in fields, the check-in, chat, traffic, lobby and auto-close settings, and the ICS-309/topic/poll toggles) back to the schedule so every future net inherits it. This net's own notes and its topic of the week stay on this net. A schedule's default topic, a question every net asks, is set in the schedule's own settings; leave it blank and set each net's question in **Topics** on the net. Net staff and the rotation are managed separately and are never touched by Save to Schedule.
+**Create Net** (or **Save for this Net** when editing) saves changes to this occurrence only. If the net was created from a schedule, editing it also offers **Save to Schedule**, which saves this net and pushes everything on this tab set (name, description, script, the schedule's announcements, frequencies, check-in fields, the check-in, chat, traffic, lobby and auto-close settings, the ICS-309/topic/poll toggles, and the closing email sections) back to the schedule so every future net inherits it. This net's own notes and its topic of the week stay on this net. A schedule's default topic, a question every net asks, is set in the schedule's own settings; leave it blank and set each net's question in **Topics** on the net. Net staff and the rotation are managed separately and are never touched by Save to Schedule.
 
 You can edit a closed or archived net to fix a typo or a wrong setting. Editing updates the record only; it doesn't re-send the closing email or trigger a notification.
 

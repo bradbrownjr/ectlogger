@@ -33,12 +33,13 @@ import AnnouncementsPanel from '../components/forms/AnnouncementsPanel';
 import MarkdownRender from '../components/shared/MarkdownRender';
 import CheckInFieldsPanel from '../components/forms/CheckInFieldsPanel';
 import FormWizardFooter from '../components/forms/FormWizardFooter';
+import ReportsPanel from '../components/forms/ReportsPanel';
 import type { FeatureSectionExpansion } from '../utils/netFeatureSections';
 
 // Tab order. Next walks through every tab, so it is derived from this list
 // rather than a literal (until 2026-11-14 Next stopped at Announcements and
 // Check-In Fields could only be reached by clicking its tab).
-const NET_TABS = ['Basic Info', 'Net Staff', 'Communication Plan', 'Net Script', 'Announcements', 'Check-In Fields'];
+const NET_TABS = ['Basic Info', 'Net Staff', 'Communication Plan', 'Net Script', 'Announcements', 'Check-In Fields', 'Reports'];
 const LAST_TAB = NET_TABS.length - 1;
 
 interface TabPanelProps {
@@ -155,6 +156,11 @@ const CreateNet: React.FC = () => {
   const [frequencies, setFrequencies] = useState<FrequencyItem[]>([]);
   const [selectedFrequencyIds, setSelectedFrequencyIds] = useState<number[]>([]);
 
+  // ---- Reports tab ----
+  // Closing email and report page sections; null keeps the default sections
+  // (utils/reportSections.ts). Stays null on save unless a switch is changed.
+  const [reportSections, setReportSections] = useState<string[] | null>(null);
+
   // ---- Check-in fields ----
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinitionItem[]>([]);
   const [fieldConfig, setFieldConfig] = useState<Record<string, FieldConfigEntry>>({});
@@ -260,6 +266,7 @@ const CreateNet: React.FC = () => {
       }
       setPollEnabled(net.poll_enabled || false);
       setPollQuestion(net.poll_question || '');
+      setReportSections(net.report_sections ?? null);
       // Convert UTC from server to local datetime-local format.
       // The server omits the 'Z' suffix; append it so the browser parses as UTC.
       if (net.scheduled_start_time) {
@@ -369,6 +376,7 @@ const CreateNet: React.FC = () => {
     topic_of_week_enabled: topicOfWeekEnabled,
     poll_enabled: pollEnabled,
     poll_question: pollQuestion || null,
+    report_sections: reportSections,
   });
 
   // Sites save separately from the net (PUT /nets/{id}/coverage-sites),
@@ -658,6 +666,24 @@ const CreateNet: React.FC = () => {
             />
           </TabPanel>
 
+          {/* ========== TAB 6: REPORTS ========== */}
+          {/* Closing email sections, shared with the schedule form */}
+          <TabPanel value={activeTab} index={6}>
+            <ReportsPanel
+              reportSections={reportSections}
+              setReportSections={setReportSections}
+              features={{
+                ics309_enabled: ics309Enabled,
+                topic_of_week_enabled: topicOfWeekEnabled,
+                poll_enabled: pollEnabled,
+                propagation_logging_enabled: propagationLoggingEnabled,
+                has_sites: draftsToPayload(coverageSites).length > 0,
+                traffic_enabled: trafficEnabled,
+              }}
+              previewTarget={netId ? { kind: 'net', id: parseInt(netId) } : null}
+            />
+          </TabPanel>
+
           {/* ========== ACTION BUTTONS ========== */}
           <FormWizardFooter
             cancelLabel="Cancel"
@@ -733,6 +759,7 @@ const CreateNet: React.FC = () => {
                 <li>Check-in field configuration</li>
                 <li>Check-in, chat, traffic, lobby, and auto-close settings</li>
                 <li>ICS-309, Topic of the Week, and Poll settings</li>
+                <li>Closing email sections (Reports tab)</li>
               </ul>
               Future nets opened from this schedule will inherit these values.
               This net's topic stays on this net. Net staff/rotation are managed

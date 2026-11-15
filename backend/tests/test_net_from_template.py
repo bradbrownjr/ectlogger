@@ -27,6 +27,7 @@ from tests.conftest import auth_headers
 JSON_VALUES = {
     'field_config': json.dumps({"name": {"enabled": False, "required": True}}),
     'traffic_form_types': json.dumps(["ICS213"]),
+    'report_sections': json.dumps(["figures", "announcements"]),
 }
 
 
@@ -84,6 +85,11 @@ def test_the_three_settings_that_were_lost_are_copied():
     assert {'chat_grace_period_minutes', 'mobile_priority_sort', 'ics309_hide_muted_stations'} <= set(
         template_setting_columns()
     )
+
+
+def test_report_sections_are_copied():
+    """The Reports tab's choices travel from the schedule to each net."""
+    assert 'report_sections' in template_setting_columns()
 
 
 @pytest.mark.asyncio

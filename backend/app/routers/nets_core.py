@@ -51,6 +51,7 @@ from app.schemas import (
 from app.services.net_closure import close_net_and_notify, compute_auto_close_at, schedule_net_log
 from app.utils import NET_LOGO_DIR, display_callsign, save_resized_logo
 from app.services.net_logos import logo_url_for, release_logo
+from app.services.report_sections import dump_sections
 from app.services.ncs_attribution import load_ncs_attribution, net_ncs_attribution
 
 # Same limits as the profile avatar upload (routers/users.py) -- square,
@@ -82,6 +83,7 @@ async def create_net(
         propagation_logging_enabled=net_data.propagation_logging_enabled or False,
         self_can_hear_enabled=net_data.self_can_hear_enabled if net_data.self_can_hear_enabled is not None else True,
         coverage_excluded_frequency_ids=json.dumps(net_data.coverage_excluded_frequency_ids) if net_data.coverage_excluded_frequency_ids else None,
+        report_sections=dump_sections(net_data.report_sections),
         traffic_enabled=net_data.traffic_enabled or False,
         traffic_form_types=json.dumps(net_data.traffic_form_types) if net_data.traffic_form_types else None,
         traffic_strip_form_type=net_data.traffic_strip_form_type,
@@ -465,6 +467,10 @@ async def update_net(
         # which is the same as null, so it's stored as null.
         if field in ('field_config', 'traffic_form_types', 'coverage_excluded_frequency_ids') and value is not None:
             setattr(net, field, json.dumps(value) if value else None)
+        elif field == 'report_sections':
+            # Unlike the lists above, [] is not null here: [] turns every
+            # optional section off, null goes back to today's email.
+            net.report_sections = dump_sections(value)
         else:
             setattr(net, field, value)
     

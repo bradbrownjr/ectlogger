@@ -287,6 +287,79 @@ behind it:
   or `?export=png`, and `NetReport` exports once the data and map tiles are ready (10 s cap on the tiles), then
   drops the parameter from the address.
 
+### Closing email sections (Reports tab)
+
+- **One catalogue.** `backend/app/services/report_sections.py::REPORT_SECTIONS`
+  lists the closing email's optional sections in display order (which is also
+  their order in the email): `report_link`, `figures`, `topic`, `poll`,
+  `coverage`, `traffic`, `ics309_log`, `announcements`, `chat_log`. Each entry
+  has a label, a help line, `requires_any` (form settings, any one of which
+  makes it available; `has_sites` means the net has any coverage site), and
+  whether it was in the email before the Reports tab (`legacy_plain`,
+  `legacy_ics309`). `GET /api/report-sections` returns it, and the schemas
+  validate against it (`schemas.ReportSectionList`: an unknown key is a 422,
+  and the list is stored in catalogue order).
+- **Storage.** `Net.report_sections` and `NetTemplate.report_sections`
+  (migration 101) hold a JSON list in a TEXT column, and `net_from_template`
+  copies the schedule's to each new net. **Null means never set up**, and
+  `[]` means every optional section off; `dump_sections` keeps the two apart,
+  so never fold `[]` into null the way `traffic_form_types` does. An update
+  that sends `report_sections: null` resets to null (`update_net` applies
+  every field it was sent; `update_template` goes by `model_fields_set`).
+- **Null is today's email, byte for byte.** `resolve_sections` returns the
+  legacy set for the net's own format (topic, poll, coverage, traffic and the
+  chat attachment for the plain email; the ICS-309 log alone for an ICS-309
+  net). A saved list is filtered by what the net has on. Before this shipped,
+  every closed net in beta's copy of production (142 nets, each rendered for a
+  plain and an ICS-309 recipient) was rendered by the old code and by the new
+  code with null, and all 284 emails and their attachments were identical.
+  Keep it that way: a partial that is off renders nothing at all, and the new
+  blocks (report link, figures, announcements, the topic answers list) only
+  appear for a set-up net.
+- **Format per recipient.** `sections_for_recipient` sends the ICS-309 email
+  when the sections include `ics309_log` or the recipient has
+  `User.notify_ics309`. A never-set-up net sends such a recipient the old
+  ICS-309 email. The ICS-309 email keeps its form first, then the sections in
+  the same order. The CSV always goes; the ICS-309 CSV goes with the ICS-309
+  format; the chat `.txt` only with `chat_log` (and, in the ICS-309 email,
+  without net-muted stations, as its log rows already are).
+- **Shared partials.** `email/net_logs.py::_PARTIALS` holds each optional
+  block once, gated on the `sections` set, and both templates include them,
+  so the plain and ICS-309 emails can't drift. The topic, poll, coverage and
+  traffic partials are the plain template's old blocks, lifted verbatim.
+  When a set-up net's topic section is on, the topic box lists each station's
+  latest answer and the email's table drops its Topic column; a section that
+  is off also takes its Topic or Poll column out of the email's table (never
+  out of the CSV).
+- **Build, then send.** `build_net_log_email` and `build_ics309_log_email`
+  return the subject, HTML and attachments; `send_net_log` and
+  `send_ics309_log` call them and send. `services/net_closure.py::load_net_log`
+  reads the net once into a `NetLog`, `NetLog.email_kwargs` makes each
+  recipient's arguments, and `closing_log_recipients` picks the recipients.
+  Figures come from `services/net_figures.py`, the same function behind
+  `GET /statistics/nets/{id}`.
+- **Preview.** `POST /api/nets/{id}/closing-email-preview` (needs
+  `may_edit_net`) and `POST /api/templates/{id}/closing-email-preview` (needs
+  `check_template_permission`) take `report_sections` (or null) and return
+  `subject`, `html`, `format` and `source`. They go through the same
+  `load_net_log`/`email_kwargs`/builder path as a real close, with a copy of
+  the settings carrying the previewed sections (`report_source`), and they
+  never send, write, or change the net. The format is the one a recipient
+  with no ICS-309 preference gets. A schedule previews its most recent closed
+  or archived net with the schedule's own settings; a schedule with none, or
+  a net with no check-ins, previews a made-up net built in memory from the
+  example roster (`source: "example"`).
+- **Announcements are Markdown.** The schedule's announcements, then the
+  net's own notes, go after the check-in log. `email/markdown.py` renders
+  them with markdown-it-py (CommonMark with tables, strikethrough and single
+  line breaks, to match the app's react-markdown, remark-gfm and
+  remark-breaks; raw HTML in the text is escaped), then cleans the result
+  with nh3 to an email allowlist: headings, paragraphs, lists, links,
+  bold/italic, code, blockquote, tables, line breaks and rules. Images become
+  a link to the image, and links keep only http, https and mailto (relative
+  links are stripped, since they break in an email). bleach was not used: it
+  stopped being maintained on 2026-06-05.
+
 ---
 
 ## Net and schedule logos

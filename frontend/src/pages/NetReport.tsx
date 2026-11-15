@@ -131,7 +131,7 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import api, { netApi, statisticsApi, checkInApi, channelMarkApi, netRoleApi, canHearApi, coverageSiteApi } from '../services/api';
+import api, { netApi, statisticsApi, checkInApi, channelMarkApi, netRoleApi, canHearApi, coverageSiteApi, templateApi } from '../services/api';
 import { ChannelMark, groupStationRows } from '../utils/stationRows';
 import { placeChoice, placeChoiceLabel } from '../utils/stationPlace';
 import { DETAIL_FIELDS, logColumnValue, logColumns } from '../utils/checkInFields';
@@ -160,6 +160,9 @@ import { SiteGroups } from '../components/netview/SitesBoard';
 import { netHasSites } from '../components/netview/SiteField';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
 import { checkInTimeText, DRAFT_LOG_NOTICE, isLogHeld } from '../utils/netLog';
+import { REPORT_PAGE_SECTIONS, ReportPageSectionId, reportPageAllows } from '../utils/reportSections';
+import ExportSectionsDialog from '../components/report/ExportSectionsDialog';
+import MarkdownRender from '../components/shared/MarkdownRender';
 
 // ========== INTERFACES ==========
 
@@ -182,6 +185,13 @@ interface Net {
   poll_question?: string;
   logo_url?: string | null;
   logo_accent_colors?: string[];
+  // The schedule it came from, for the Announcements section
+  template_id?: number | null;
+  // Net Notes (this net only)
+  announcements?: string | null;
+  // Closing email / report sections from the Reports tab; null shows all
+  // (utils/reportSections.ts)
+  report_sections?: string[] | null;
   frequencies: Frequency[];
   started_at?: string;
   closed_at?: string;
@@ -281,6 +291,8 @@ const NetReport: React.FC = () => {
   // fields (utils/checkInFields.ts::logColumns).
   const [fieldDefinitions, setFieldDefinitions] = useState<any[]>([]);
   const [ics309LogData, setIcs309LogData] = useState<Ics309LogData | null>(null);
+  // The schedule's standing announcements, for the Announcements section
+  const [scheduleAnnouncements, setScheduleAnnouncements] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -294,10 +306,17 @@ const NetReport: React.FC = () => {
   const [exportingAllPngs, setExportingAllPngs] = useState(false);
   // Mounts SocialSummaryImages off-screen for the length of an Export PNG run.
   const [socialExporting, setSocialExporting] = useState(false);
+  // The sections picked for that run (null = all)
+  const [socialSections, setSocialSections] = useState<ReportPageSectionId[] | null>(null);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   // Opt-in, view-time only (not persisted) - per-station coverage maps make
   // an already-long report substantially longer, so they're off by default.
   const [includeCoverageMaps, setIncludeCoverageMaps] = useState(false);
+  // Export PDF / Export PNG first ask which sections to include
+  // (ExportSectionsDialog). exportPick holds that choice only while a PDF is
+  // being captured, then goes back to null so the page shows what it did.
+  const [exportPicker, setExportPicker] = useState<'pdf' | 'png' | null>(null);
+  const [exportPick, setExportPick] = useState<ReportPageSectionId[] | null>(null);
 
   // The report's maps follow the app theme on screen like the rest of the
   // report; the PDF and PNG exports strip the dark tile class from their
@@ -366,6 +385,12 @@ const NetReport: React.FC = () => {
         coverageSiteApi.listSites(parseInt(netId))
           .then((res) => setSites(res.data))
           .catch((e) => console.error('Failed to fetch sites:', e));
+        // The schedule's announcements (public, like the report). Never fatal to the report.
+        if (netRes.data.template_id) {
+          templateApi.get(netRes.data.template_id)
+            .then((res) => setScheduleAnnouncements(res.data.announcements || ''))
+            .catch((e) => console.error('Failed to fetch schedule announcements:', e));
+        }
         if (netRes.data.propagation_logging_enabled) {
           coverageSiteApi.summary(parseInt(netId))
             .then((res) => setSiteCoverage(res.data))
@@ -461,10 +486,13 @@ const NetReport: React.FC = () => {
 
   // ========== PDF EXPORT ==========
 
-  const handleExportPdf = async () => {
+  // settleMs: how long to let React re-render first. 60 ms hides the expand
+  // buttons; a section the export adds back (a chart among them) needs longer
+  // to lay out and finish its entry animation.
+  const handleExportPdf = async (settleMs = 60) => {
     setExporting(true);
     // Let React re-render (hides expand buttons) before html2canvas captures
-    await new Promise(resolve => setTimeout(resolve, 60));
+    await new Promise(resolve => setTimeout(resolve, settleMs));
     try {
       const filename = net?.name
         ? `${net.name.replace(/[^a-zA-Z0-9]/g, '_')}_Net_Report`
@@ -604,7 +632,11 @@ const NetReport: React.FC = () => {
   // check-in list, split so no image is taller than 4:5 -- and then the map,
   // if the net has one. Sequential with a gap between files: browsers
   // throttle rapid programmatic downloads and silently drop the later ones.
-  const handleExportAllPngs = async () => {
+  // picked: the sections chosen in ExportSectionsDialog; the summary image
+  // leaves out the headline numbers or graphs, and the map image is skipped,
+  // when unticked. Undefined exports everything.
+  const handleExportAllPngs = async (picked?: ReportPageSectionId[]) => {
+    setSocialSections(picked ?? null);
     setExportingAllPngs(true);
     const netLabel = net?.name ? net.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Net';
     try {
@@ -624,7 +656,7 @@ const NetReport: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 400));
       }
       setSocialExporting(false);
-      if (mappedCheckIns.length > 0) {
+      if (mappedCheckIns.length > 0 && (!picked || picked.includes('map'))) {
         await handleExportPng('net-report-map', 'Map');
       }
     } catch (err) {
@@ -637,29 +669,25 @@ const NetReport: React.FC = () => {
 
   // ========== AUTO EXPORT (?export=pdf, ?export=png) ==========
   // The per-net statistics page's Export PDF and Export PNG open this report
-  // with ?export=pdf / ?export=png rather than keeping layouts of their own. Waits for
-  // the data, then for the map tiles (or 10 s, so a blocked tile server can't
-  // strand it), plus a beat for the charts' entry animation to finish.
+  // with ?export=pdf / ?export=png rather than keeping layouts of their own.
+  // Once the data and the map's locations are in, it opens the same Choose
+  // sections step as this page's own buttons. The capture itself waits for
+  // the map tiles (pdfExport.ts::waitForMapTiles).
   const [searchParams, setSearchParams] = useSearchParams();
   const autoExportFormat = searchParams.get('export');
   const autoExportRequested = autoExportFormat === 'pdf' || autoExportFormat === 'png';
   const autoExportStarted = useRef(false);
-  const autoExportReady = mappedCheckIns.length === 0 || mapTilesReady;
   useEffect(() => {
     if (!autoExportRequested || autoExportStarted.current || loading || !net || !stats || mapLoading) return;
-    const timer = setTimeout(() => {
-      autoExportStarted.current = true;
-      setSearchParams((params) => {
-        params.delete('export');
-        return params;
-      }, { replace: true });
-      if (autoExportFormat === 'png') handleExportAllPngs();
-      else handleExportPdf();
-    }, autoExportReady ? 1500 : 10000);
-    return () => clearTimeout(timer);
-    // handleExportPdf is recreated every render; the inputs it reads are listed.
+    autoExportStarted.current = true;
+    setSearchParams((params) => {
+      params.delete('export');
+      return params;
+    }, { replace: true });
+    setExportPicker(autoExportFormat === 'png' ? 'png' : 'pdf');
+    // setSearchParams is stable enough here; the effect runs once per request.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoExportRequested, loading, net, stats, mapLoading, autoExportReady]);
+  }, [autoExportRequested, loading, net, stats, mapLoading]);
 
   // ========== LOADING & ERROR STATES ==========
 
@@ -754,6 +782,51 @@ const NetReport: React.FC = () => {
   const userChatMessages = chatMessages.filter(m => !m.is_system);
   const systemLogMessages = chatMessages.filter(m => m.is_system);
 
+  // ========== WHICH SECTIONS SHOW ==========
+  // A section shows when it has something in it and is allowed: by the net's
+  // saved Reports tab switches on the page (utils/reportSections.ts), or by
+  // the Choose sections pick while a PDF is being captured. Section headings
+  // carry no numbers, so a hidden section leaves no gap.
+  const allowed = (id: ReportPageSectionId) =>
+    exportPick ? exportPick.includes(id) : reportPageAllows(id, net.report_sections);
+  const netNotes = net.announcements?.trim() ? net.announcements : '';
+  const hasContent: Record<ReportPageSectionId, boolean> = {
+    figures: true,
+    graphs: chartCount > 0,
+    map: mappedCheckIns.length > 0,
+    coverage: siteBoard.length > 0 || !!net.propagation_logging_enabled,
+    checkins: true,
+    announcements: !!scheduleAnnouncements.trim() || !!netNotes,
+    topic: !!topicPrompt,
+    poll: !!pollQuestion && pollResults.length > 0,
+    chat: userChatMessages.length > 0,
+    ics309: !!net.ics309_enabled && !!ics309LogData,
+    activity: systemLogMessages.length > 0,
+  };
+  // What Choose sections lists: this net's sections, and for the images only
+  // the parts the images carry.
+  const pickerSections = REPORT_PAGE_SECTIONS.filter((section) =>
+    hasContent[section.id] && (exportPicker !== 'png' || section.inImages));
+  const pickerInitial = pickerSections.filter((section) => reportPageAllows(section.id, net.report_sections)).map((section) => section.id);
+
+  // Runs the export the dialog was opened for, with the sections picked.
+  const handlePickedExport = async (picked: ReportPageSectionId[]) => {
+    const format = exportPicker;
+    setExportPicker(null);
+    if (format === 'png') {
+      await handleExportAllPngs(picked);
+      return;
+    }
+    // A section the page was hiding needs time to render before the capture
+    const addsSections = picked.some((id) => !reportPageAllows(id, net.report_sections));
+    setExportPick(picked);
+    try {
+      await handleExportPdf(addsSections ? 1500 : 60);
+    } finally {
+      setExportPick(null);
+    }
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* ========== HEADER (outside PDF content) ========== */}
@@ -769,7 +842,7 @@ const NetReport: React.FC = () => {
         <Tooltip title="Export to PDF">
           <Button
             variant="contained"
-            onClick={handleExportPdf}
+            onClick={() => setExportPicker('pdf')}
             disabled={exporting || exportingAllPngs}
             startIcon={exporting ? <CircularProgress size={16} /> : <PictureAsPdf />}
           >
@@ -781,7 +854,7 @@ const NetReport: React.FC = () => {
         <Tooltip title={mappedCheckIns.length > 0 ? "Download images for social media: a summary and the map" : "Download a summary image for social media"}>
           <Button
             variant="contained"
-            onClick={handleExportAllPngs}
+            onClick={() => setExportPicker('png')}
             disabled={exporting || exportingAllPngs}
             startIcon={exportingAllPngs ? <CircularProgress size={16} /> : <ImageIcon />}
           >
@@ -868,10 +941,16 @@ const NetReport: React.FC = () => {
         )}
 
         {/* ========== SECTION 2: STATISTICS SUMMARY ========== */}
-        <ReportFigures
-          figures={reportFigures}
-        />
+        {/* Reports tab switch "figures" */}
+        {allowed('figures') && (
+          <ReportFigures
+            figures={reportFigures}
+          />
+        )}
 
+        {/* ========== SECTION 3: GRAPHS ========== */}
+        {/* Always on the page; an export can leave them out */}
+        {allowed('graphs') && (<>
         <ReportSectionTitle>Graphs</ReportSectionTitle>
 
         {/* Charts Row — all three charts fit one row */}
@@ -1000,9 +1079,11 @@ const NetReport: React.FC = () => {
           )}
         </Grid>
         </Box>
+        </>)}
 
-        {/* ========== SECTION 3: CHECK-IN MAP (if locations available) ========== */}
-        {mappedCheckIns.length > 0 && (
+        {/* ========== SECTION 4: CHECK-IN MAP (if locations available) ========== */}
+        {/* Always on the page; an export can leave it out */}
+        {allowed('map') && mappedCheckIns.length > 0 && (
           <Box sx={{ position: 'relative' }}>
           {/* Progress sits OUTSIDE #net-report-map: the map's heading row is
               inside the captured element, so a spinner in that row lands in the
@@ -1252,7 +1333,7 @@ const NetReport: React.FC = () => {
           </Box>
           </Box>
         )}
-        {mapLoading && (
+        {allowed('map') && mapLoading && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <CircularProgress size={16} />
             <Typography variant="body2" color="text.secondary">Loading map locations...</Typography>
@@ -1263,7 +1344,7 @@ const NetReport: React.FC = () => {
         {/* No location on file, an unparseable location, or a geocode that
             came back empty -- listed explicitly rather than just vanishing
             from the map with no explanation. */}
-        {!mapLoading && unmappedCheckIns.length > 0 && (
+        {allowed('map') && !mapLoading && unmappedCheckIns.length > 0 && (
           <Box sx={{ mb: 3 }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
               Not mapped due to insufficient location information: {unmappedCheckIns.map((c) => c.callsign).join(', ')}
@@ -1274,10 +1355,11 @@ const NetReport: React.FC = () => {
         {/* Section order (Brad, 2026-10-24): what the net achieved first (sites and
             coverage), then the check-in log and responses, then chat, with the
             ICS-309 second to last and the Activity Log last. */}
-        {/* ========== SECTION 4: SITES (nets with sites) ========== */}
+        {/* Sections 5 to 7 (sites and coverage) follow the Reports tab switch "coverage" */}
+        {/* ========== SECTION 5: SITES (nets with sites) ========== */}
         {/* Who was at each site, home or deployed over the whole net: every
             check-in row, so a station that moved shows at each place. */}
-        {siteBoard.length > 0 && (
+        {allowed('coverage') && siteBoard.length > 0 && (
           <>
             <ReportSectionTitle sx={{ mb: 1 }}>Sites</ReportSectionTitle>
             <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
@@ -1286,11 +1368,11 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 5: COVERAGE BY SITE (drills with sites) ========== */}
+        {/* ========== SECTION 6: COVERAGE BY SITE (drills with sites) ========== */}
         {/* The place-to-place results a drill's after-action report needs:
             reach to the primary sites, between sites, repeaters and nodes,
             counties reached. Ahead of the station-by-station list. */}
-        {net.propagation_logging_enabled && (
+        {allowed('coverage') && net.propagation_logging_enabled && (
           siteCoverage.nodes.some((n) => n.kind === 'site') || siteCoverage.targets.length > 0 || siteCoverage.contacts.length > 0
         ) && (
           <>
@@ -1305,11 +1387,11 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 6: STATION COVERAGE (if propagation logging enabled) ========== */}
+        {/* ========== SECTION 7: STATION COVERAGE (if propagation logging enabled) ========== */}
         {/* Deliberately a separate section from the ICS-309 below, not merged into
             it - coverage reports are not radio traffic, so they don't belong
             in a communications log format (see docs/ROADMAP.md Phase 3). */}
-        {net.propagation_logging_enabled && (
+        {allowed('coverage') && net.propagation_logging_enabled && (
           <>
             <ReportSectionTitle
               sx={{ mb: 2 }}
@@ -1421,7 +1503,8 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 7: CHECK-IN LOG ========== */}
+        {/* ========== SECTION 8: CHECK-IN LOG ========== */}
+        {/* Always shown, and in every export */}
         {/* Details: the net's fields that it turned on and somebody filled
             in, Spotter # through Relayed By then its own fields such as
             FLDIGI (utils/checkInFields.ts::logColumns), one "Label: value"
@@ -1518,8 +1601,36 @@ const NetReport: React.FC = () => {
         )}
         </Box>
 
-        {/* ========== SECTION 8: TOPIC OF THE WEEK (if enabled and responses exist) ========== */}
-        {topicPrompt && (
+        {/* ========== SECTION 9: ANNOUNCEMENTS (schedule announcements and net notes) ========== */}
+        {/* Reports tab switch "announcements". The schedule's standing
+            announcements, then this net's own Notes, in the app's Markdown.
+            The bordered style keeps headings in the text color: report text
+            never takes the theme's primary color (docs/DESIGN.md "Reports"). */}
+        {allowed('announcements') && hasContent.announcements && (
+          <>
+            <ReportSectionTitle sx={{ mb: 2 }}>Announcements</ReportSectionTitle>
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              {/* Shows when the schedule has announcements */}
+              {scheduleAnnouncements.trim() && (
+                <Box sx={{ mb: netNotes ? 3 : 0 }}>
+                  <Typography variant="subtitle1" fontWeight="medium" gutterBottom>Schedule announcements</Typography>
+                  <MarkdownRender content={scheduleAnnouncements} emptyText="" variant="bordered" />
+                </Box>
+              )}
+              {/* Shows when this net has notes of its own */}
+              {netNotes && (
+                <Box>
+                  <Typography variant="subtitle1" fontWeight="medium" gutterBottom>Notes</Typography>
+                  <MarkdownRender content={netNotes} emptyText="" variant="bordered" />
+                </Box>
+              )}
+            </Paper>
+          </>
+        )}
+
+        {/* ========== SECTION 10: TOPIC OF THE WEEK (if enabled and responses exist) ========== */}
+        {/* Reports tab switch "topic" */}
+        {allowed('topic') && topicPrompt && (
           <>
             <ReportSectionTitle sx={{ mb: 2 }}>
               Topic of the Week ({topicResponses.length} response{topicResponses.length !== 1 ? 's' : ''})
@@ -1557,8 +1668,9 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 9: POLL RESULTS (if poll enabled and responses exist) ========== */}
-        {pollQuestion && pollResults.length > 0 && (
+        {/* ========== SECTION 11: POLL RESULTS (if poll enabled and responses exist) ========== */}
+        {/* Reports tab switch "poll" */}
+        {allowed('poll') && pollQuestion && pollResults.length > 0 && (
           <>
             <ReportSectionTitle sx={{ mb: 2 }}>
               Poll Results ({pollResults.reduce((s, r) => s + r.count, 0)} response{pollResults.reduce((s, r) => s + r.count, 0) !== 1 ? 's' : ''})
@@ -1608,8 +1720,9 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 10: CHAT MESSAGES (operator messages only) ========== */}
-        {userChatMessages.length > 0 && (
+        {/* ========== SECTION 12: CHAT MESSAGES (operator messages only) ========== */}
+        {/* Reports tab switch "chat_log" */}
+        {allowed('chat') && userChatMessages.length > 0 && (
           <>
             <ReportSectionTitle sx={{ mb: 2 }}>
               Chat Messages ({userChatMessages.length} message{userChatMessages.length !== 1 ? 's' : ''})
@@ -1644,13 +1757,14 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 11: ICS-309 FORMAT (if enabled) ========== */}
+        {/* ========== SECTION 13: ICS-309 FORMAT (if enabled) ========== */}
+        {/* Reports tab switch "ics309_log" */}
         {/* Same ICS309PrintView used by NetView's standalone "ICS-309 PDF"
             button, fed by the same GET .../export/ics309?format=json data --
             one accurate rendering of this form, not a second approximation
             built from checkIns/net directly. See TRAFFIC-HANDLING-DESIGN.md
             section 4.5. */}
-        {net.ics309_enabled && ics309LogData && (
+        {allowed('ics309') && net.ics309_enabled && ics309LogData && (
           <>
             <ReportSectionTitle sx={{ mb: 2 }}>
               ICS-309 Communications Log
@@ -1662,8 +1776,9 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 12: ACTIVITY LOG (automated event entries only) ========== */}
-        {systemLogMessages.length > 0 && (
+        {/* ========== SECTION 14: ACTIVITY LOG (automated event entries only) ========== */}
+        {/* Always on the page; an export can leave it out */}
+        {allowed('activity') && systemLogMessages.length > 0 && (
           <>
             <ReportSectionTitle sx={{ mb: 2 }}>
               Activity Log ({systemLogMessages.length} event{systemLogMessages.length !== 1 ? 's' : ''})
@@ -1714,8 +1829,21 @@ const NetReport: React.FC = () => {
           frequencyCounts={stats.check_ins_by_frequency}
           rows={socialRows}
           draftNotice={draftNotice}
+          showFigures={!socialSections || socialSections.includes('figures')}
+          showGraphs={!socialSections || socialSections.includes('graphs')}
         />
       )}
+
+      {/* ========== EXPORT: CHOOSE SECTIONS ========== */}
+      {/* Opens from Export PDF / Export PNG, and from ?export= (statistics page) */}
+      <ExportSectionsDialog
+        open={exportPicker !== null}
+        format={exportPicker ?? 'pdf'}
+        sections={pickerSections}
+        initial={pickerInitial}
+        onCancel={() => setExportPicker(null)}
+        onExport={handlePickedExport}
+      />
 
       {/* ========== FULLSCREEN EXPAND DIALOG ========== */}
       <Dialog fullScreen open={expandedCard !== null} onClose={() => setExpandedCard(null)}>

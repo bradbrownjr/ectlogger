@@ -62,6 +62,9 @@ interface SocialSummaryImagesProps {
   rows: SocialRosterRow[];
   /** Draft-copy note while the net's log hasn't been sent (ReportMasthead). */
   draftNotice?: string;
+  /** False when the export's Choose sections step left these out. */
+  showFigures?: boolean;
+  showGraphs?: boolean;
 }
 
 interface PageSlice {
@@ -178,7 +181,7 @@ const PageShell = React.forwardRef<HTMLDivElement, { children: React.ReactNode; 
 PageShell.displayName = 'PageShell';
 
 const SocialSummaryImages: React.FC<SocialSummaryImagesProps> = (props) => {
-  const { accentColors, logoUrl, title, when, whenDetail, figures, rows, draftNotice } = props;
+  const { accentColors, logoUrl, title, when, whenDetail, figures, rows, draftNotice, showFigures = true, showGraphs = true } = props;
   const firstProbe = useRef<HTMLDivElement>(null);
   const nextProbe = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<PageSlice[] | null>(null);
@@ -188,8 +191,8 @@ const SocialSummaryImages: React.FC<SocialSummaryImagesProps> = (props) => {
   );
   const firstTop = (
     <>
-      <ReportFigures compact figures={figures} />
-      <SocialGraphs timeline={props.timeline} binSize={props.binSize} statusCounts={props.statusCounts} frequencyCounts={props.frequencyCounts} />
+      {showFigures && <ReportFigures compact figures={figures} />}
+      {showGraphs && <SocialGraphs timeline={props.timeline} binSize={props.binSize} statusCounts={props.statusCounts} frequencyCounts={props.frequencyCounts} />}
     </>
   );
   const listTitle = (text: string) => <ReportSectionTitle sx={{ mt: 0 }} fontSize={15}>{text}</ReportSectionTitle>;

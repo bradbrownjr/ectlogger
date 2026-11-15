@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { CoverageSitePayload } from '../utils/siteDrafts';
+import type { ReportSectionEntry } from '../utils/reportSections';
 
 // Default includes /api suffix for backend routes
 // For LAN development: http://localhost:8000/api
@@ -244,6 +245,23 @@ export const netApi = {
     return api.post(`/nets/${id}/logo`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
   deleteLogo: (id: number) => api.delete(`/nets/${id}/logo`),
+  // The closing email as it would go out with these report sections (null =
+  // the default sections), from the net's saved settings otherwise.
+  closingEmailPreview: (id: number, reportSections: string[] | null) =>
+    api.post<ClosingEmailPreview>(`/nets/${id}/closing-email-preview`, { report_sections: reportSections }),
+};
+
+// Closing email sections (services/report_sections.py). The catalogue drives
+// the Reports tab on the net and schedule forms; see utils/reportSections.ts.
+export interface ClosingEmailPreview {
+  subject: string;
+  html: string;
+  format: 'plain' | 'ics309';
+  // "example" when a schedule has no closed net yet to render
+  source: 'net' | 'example';
+}
+export const reportSectionsApi = {
+  list: () => api.get<ReportSectionEntry[]>('/report-sections'),
 };
 
 // Logo library (routers/net_logos.py): reuse a logo already on the site,
@@ -479,6 +497,9 @@ export const templateApi = {
     return api.post(`/templates/${id}/logo`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
   deleteLogo: (id: number) => api.delete(`/templates/${id}/logo`),
+  // Renders the schedule's most recent closed net, or example data if none.
+  closingEmailPreview: (id: number, reportSections: string[] | null) =>
+    api.post<ClosingEmailPreview>(`/templates/${id}/closing-email-preview`, { report_sections: reportSections }),
 };
 
 

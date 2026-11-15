@@ -4,7 +4,7 @@ summary: Turning a net into a schedule, the recurrence options, what each net it
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-11-13
+revised: 2026-11-15
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/recurring-schedules/
@@ -42,7 +42,7 @@ Whichever type creates nets automatically, each occurrence starts unstaffed unle
 
 ## What a new net inherits
 
-A net created from a schedule starts with a copy of everything the schedule has set: name, description, info and stream URLs, script, announcements, frequencies, check-in field configuration, ICS-309/topic/poll settings, traffic settings, and the [auto-lobby and auto-close](/docs/net-managers/lobby-and-auto-close/) defaults. From that point on the two are independent: editing the net changes that occurrence only, and [Save to Schedule](/docs/net-managers/creating-a-net/) is the only thing that pushes an edit back the other way. It saves the net you're editing too.
+A net created from a schedule starts with a copy of everything the schedule has set: name, description, info and stream URLs, script, announcements, frequencies, check-in field configuration, ICS-309/topic/poll settings, traffic settings, the closing email sections from the **Reports** tab, and the [auto-lobby and auto-close](/docs/net-managers/lobby-and-auto-close/) defaults. From that point on the two are independent: editing the net changes that occurrence only, and [Save to Schedule](/docs/net-managers/creating-a-net/) is the only thing that pushes an edit back the other way. It saves the net you're editing too.
 
 Net staff, the rotation, and subscribers are never copied onto the net as a one-time snapshot. They stay on the schedule and are read each time a net needs an NCS assignment or a notification goes out.
 

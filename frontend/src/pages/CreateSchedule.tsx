@@ -38,11 +38,12 @@ import NetScriptTab from '../components/create-schedule/NetScriptTab';
 import AnnouncementsTab from '../components/create-schedule/AnnouncementsTab';
 import CheckInFieldsTab from '../components/create-schedule/CheckInFieldsTab';
 import FormWizardFooter from '../components/forms/FormWizardFooter';
+import ReportsPanel from '../components/forms/ReportsPanel';
 import type { FeatureSectionExpansion } from '../utils/netFeatureSections';
 
 // Tab order. Next and its double-submit guard are derived from this list
 // rather than literal indexes, so adding a tab can't strand the last one.
-const SCHEDULE_TABS = ['Basic Info', 'Schedule', 'Net Staff', 'Communication Plan', 'Net Script', 'Announcements', 'Check-In Fields'];
+const SCHEDULE_TABS = ['Basic Info', 'Schedule', 'Net Staff', 'Communication Plan', 'Net Script', 'Announcements', 'Check-In Fields', 'Reports'];
 const LAST_TAB = SCHEDULE_TABS.length - 1;
 
 interface TabPanelProps {
@@ -118,6 +119,11 @@ const CreateSchedule: React.FC = () => {
   const [topicOfWeekPrompt, setTopicOfWeekPrompt] = useState('');
   const [pollEnabled, setPollEnabled] = useState(false);
   const [pollQuestion, setPollQuestion] = useState('');
+
+  // ---- Reports tab ----
+  // Closing email and report page sections; null keeps the default sections
+  // (utils/reportSections.ts). Stays null on save unless a switch is changed.
+  const [reportSections, setReportSections] = useState<string[] | null>(null);
 
   // ---- Schedule status ----
   const [isActive, setIsActive] = useState(true);
@@ -276,6 +282,7 @@ const CreateSchedule: React.FC = () => {
       setTopicOfWeekPrompt(schedule.topic_of_week_prompt || '');
       setPollEnabled(schedule.poll_enabled || false);
       setPollQuestion(schedule.poll_question || '');
+      setReportSections(schedule.report_sections ?? null);
       setSelectedFrequencyIds(schedule.frequencies.map((f: any) => f.id));
       setOwnerId(schedule.owner_id);
       setOriginalOwnerId(schedule.owner_id);
@@ -365,6 +372,7 @@ const CreateSchedule: React.FC = () => {
       poll_enabled: pollEnabled,
       poll_question: pollQuestion || null,
       announcements: announcements || null,
+      report_sections: reportSections,
     };
 
     if (isEdit && ownerId && ownerId !== originalOwnerId) {
@@ -529,6 +537,25 @@ const CreateSchedule: React.FC = () => {
             {/* ========== TAB 6: CHECK-IN FIELDS ========== */}
             <TabPanel value={activeTab} index={6}>
               <CheckInFieldsTab />
+            </TabPanel>
+
+            {/* ========== TAB 7: REPORTS ========== */}
+            {/* Closing email sections, shared with the net form. A schedule
+                has no sites of its own, so has_sites is always false. */}
+            <TabPanel value={activeTab} index={7}>
+              <ReportsPanel
+                reportSections={reportSections}
+                setReportSections={setReportSections}
+                features={{
+                  ics309_enabled: ics309Enabled,
+                  topic_of_week_enabled: topicOfWeekEnabled,
+                  poll_enabled: pollEnabled,
+                  propagation_logging_enabled: propagationLoggingEnabled,
+                  has_sites: false,
+                  traffic_enabled: trafficEnabled,
+                }}
+                previewTarget={scheduleId ? { kind: 'schedule', id: Number(scheduleId) } : null}
+              />
             </TabPanel>
 
             {/* ========== NAVIGATION BUTTONS ========== */}

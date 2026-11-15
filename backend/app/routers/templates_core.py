@@ -39,6 +39,7 @@ from app.schemas import (
 )
 from app.utils import NET_LOGO_DIR, save_resized_logo, user_callsigns
 from app.services.net_logos import logo_url_for, release_logo
+from app.services.report_sections import dump_sections
 
 # Same limits/pattern as the net logo upload (routers/nets_core.py) and the
 # profile avatar upload (routers/users.py).
@@ -312,6 +313,7 @@ async def create_template(
         propagation_logging_enabled=template_data.propagation_logging_enabled or False,
         self_can_hear_enabled=template_data.self_can_hear_enabled if template_data.self_can_hear_enabled is not None else True,
         coverage_excluded_frequency_ids=json.dumps(template_data.coverage_excluded_frequency_ids) if template_data.coverage_excluded_frequency_ids else None,
+        report_sections=dump_sections(template_data.report_sections),
         traffic_enabled=template_data.traffic_enabled or False,
         traffic_form_types=json.dumps(template_data.traffic_form_types) if template_data.traffic_form_types else None,
         traffic_strip_form_type=template_data.traffic_strip_form_type,
@@ -553,6 +555,10 @@ async def update_template(
         template.coverage_excluded_frequency_ids = (
             json.dumps(template_data.coverage_excluded_frequency_ids) if template_data.coverage_excluded_frequency_ids else None
         )
+    # null resets to "never set up" (today's email); [] turns every optional
+    # section off, so it is stored as "[]", not folded into null.
+    if 'report_sections' in template_data.model_fields_set:
+        template.report_sections = dump_sections(template_data.report_sections)
     if 'traffic_form_types' in template_data.model_fields_set:
         template.traffic_form_types = (
             json.dumps(template_data.traffic_form_types) if template_data.traffic_form_types else None

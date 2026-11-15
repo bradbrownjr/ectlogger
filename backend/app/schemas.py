@@ -1,10 +1,12 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
-from typing import Optional, List, Literal, Dict, Any, Union
+from typing import Annotated, Optional, List, Literal, Dict, Any, Union
+from pydantic import AfterValidator
 from datetime import datetime, timezone
 from app.models import LOCKABLE_USER_FIELDS, UserRole, NetStatus, StationStatus, FormDisposition, TrafficAction, RelayMethod, TrafficTestCategory
 from app.auth import validate_password_strength
 from app.utils import normalize_email, normalize_spotter_number, looks_like_email_or_url, safe_redirect_path
 from app.logo_accent import logo_accent_colors
+from app.services.report_sections import parse_sections, validate_section_keys
 import json
 import re
 
@@ -573,6 +575,12 @@ def _parse_traffic_form_types(raw) -> Optional[List[str]]:
     return parsed if isinstance(parsed, list) else None
 
 
+# report_sections: the closing email's optional sections, as keys from
+# services/report_sections.py. Unknown keys are a 422; the list comes back in
+# the catalogue's order. Null = never set up (today's email), [] = none.
+ReportSectionList = Annotated[List[str], Field(max_length=20), AfterValidator(validate_section_keys)]
+
+
 # Net Schemas
 class NetBase(BaseModel):
     name: str = Field(max_length=200, min_length=1)
@@ -591,6 +599,8 @@ class NetBase(BaseModel):
     # The net's frequencies that don't collect coverage reports; see
     # models.Net.coverage_excluded_frequency_ids. Empty = every frequency.
     coverage_excluded_frequency_ids: Optional[List[int]] = Field(None, max_length=50)
+    # The closing email's sections (Reports tab); see ReportSectionList.
+    report_sections: Optional[ReportSectionList] = None
     # Opt-in, matching the two EmComm toggles above. Nets created before the
     # settings toggle existed keep their stored True -- see migration 056.
     traffic_enabled: Optional[bool] = False
@@ -645,6 +655,9 @@ class NetUpdate(BaseModel):
     propagation_logging_enabled: Optional[bool] = None
     self_can_hear_enabled: Optional[bool] = None
     coverage_excluded_frequency_ids: Optional[List[int]] = Field(None, max_length=50)
+    # An explicit null resets to "never set up" (update_net applies every
+    # field the request sent); [] turns every optional section off.
+    report_sections: Optional[ReportSectionList] = None
     traffic_enabled: Optional[bool] = None
     traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
     traffic_strip_form_type: Optional[str] = Field(None, max_length=32)
@@ -813,6 +826,7 @@ class NetResponse(NetBase):
             'propagation_logging_enabled': net.propagation_logging_enabled or False,
             'self_can_hear_enabled': net.self_can_hear_enabled if net.self_can_hear_enabled is not None else True,
             'coverage_excluded_frequency_ids': _parse_frequency_id_list(net.coverage_excluded_frequency_ids),
+            'report_sections': parse_sections(net.report_sections),
             'traffic_enabled': net.traffic_enabled if net.traffic_enabled is not None else True,
             'traffic_form_types': _parse_traffic_form_types(net.traffic_form_types),
             'traffic_strip_form_type': net.traffic_strip_form_type,
@@ -877,6 +891,7 @@ class NetTemplateBase(BaseModel):
     propagation_logging_enabled: bool = False  # Seeds propagation_logging_enabled for nets created from this template
     self_can_hear_enabled: bool = True  # Seeds self_can_hear_enabled for nets created from this template
     coverage_excluded_frequency_ids: Optional[List[int]] = Field(None, max_length=50)  # Seeds the net's copy
+    report_sections: Optional[ReportSectionList] = None  # Seeds the net's copy; see ReportSectionList
     traffic_enabled: bool = False  # Seeds traffic_enabled for nets created from this template
     # Seed the three per-net traffic settings; same null semantics as NetBase.
     traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
@@ -925,6 +940,8 @@ class NetTemplateUpdate(BaseModel):
     propagation_logging_enabled: Optional[bool] = None
     self_can_hear_enabled: Optional[bool] = None
     coverage_excluded_frequency_ids: Optional[List[int]] = Field(None, max_length=50)
+    # Applied by model_fields_set: an explicit null resets to "never set up".
+    report_sections: Optional[ReportSectionList] = None
     traffic_enabled: Optional[bool] = None
     traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
     traffic_strip_form_type: Optional[str] = Field(None, max_length=32)
@@ -1000,6 +1017,7 @@ class NetTemplateResponse(NetTemplateBase):
             'propagation_logging_enabled': template.propagation_logging_enabled or False,
             'self_can_hear_enabled': template.self_can_hear_enabled if template.self_can_hear_enabled is not None else True,
             'coverage_excluded_frequency_ids': _parse_frequency_id_list(template.coverage_excluded_frequency_ids),
+            'report_sections': parse_sections(template.report_sections),
             'traffic_enabled': template.traffic_enabled if template.traffic_enabled is not None else True,
             'traffic_form_types': _parse_traffic_form_types(template.traffic_form_types),
             'traffic_strip_form_type': template.traffic_strip_form_type,
@@ -1060,6 +1078,32 @@ class TemplateMergeConflict(BaseModel):
     source_value: Optional[str] = None
     source_template_name: str
     source_template_id: Optional[int] = None
+
+
+class ReportSectionInfo(BaseModel):
+    """GET /report-sections: one optional section of the closing email
+    (services/report_sections.py::REPORT_SECTIONS)."""
+    key: str
+    label: str
+    help: str
+    requires_any: List[str] = []
+    legacy_plain: bool = False
+    legacy_ics309: bool = False
+
+
+class ClosingEmailPreviewRequest(BaseModel):
+    """POST /nets/{id}/closing-email-preview and
+    /templates/{id}/closing-email-preview: the sections to preview, null
+    for a never-set-up net's email."""
+    report_sections: Optional[ReportSectionList] = None
+
+
+class ClosingEmailPreview(BaseModel):
+    subject: str
+    html: str
+    format: Literal["plain", "ics309"]
+    # "net": a real net's data; "example": made-up stations
+    source: Literal["net", "example"]
 
 
 class TemplateMergePreview(BaseModel):

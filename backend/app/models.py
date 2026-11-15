@@ -225,6 +225,11 @@ class Net(Base):
     # 2026-10-21. An exclusion list rather than an inclusion list so a
     # frequency added to the net later collects reports by default.
     coverage_excluded_frequency_ids = Column(Text, nullable=True)
+    # JSON array of the closing email's optional sections, set on the
+    # Reports tab (services/report_sections.py holds the keys). Null = never
+    # set up, and the email stays exactly as it was before the column
+    # existed (migration 101). An empty list is a real choice: none of them.
+    report_sections = Column(Text, nullable=True)
     # Opt-in like ics309_enabled/propagation_logging_enabled above. The default
     # only applies to newly inserted rows, so nets created before the settings
     # toggle existed keep their stored True and don't lose the panel.
@@ -347,6 +352,7 @@ class NetTemplate(Base):
     propagation_logging_enabled = Column(Boolean, default=False)  # Seeds Net.propagation_logging_enabled for nets created from this template
     self_can_hear_enabled = Column(Boolean, default=True)  # Seeds Net.self_can_hear_enabled for nets created from this template
     coverage_excluded_frequency_ids = Column(Text, nullable=True)  # Seeds Net.coverage_excluded_frequency_ids (same JSON shape)
+    report_sections = Column(Text, nullable=True)  # Seeds Net.report_sections (same JSON shape, null = never set up)
     traffic_enabled = Column(Boolean, default=False)  # Seeds Net.traffic_enabled for nets created from this template
     # Seed the three per-net traffic settings above; same null semantics.
     traffic_form_types = Column(Text, nullable=True)

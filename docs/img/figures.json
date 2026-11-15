@@ -343,8 +343,8 @@
   },
   "net-managers/create-net-tabs": {
     "path": "/docs/img/net-managers/create-net-tabs.png",
-    "alt": "The Edit Net tab bar: Basic Info, Net Staff, Communication Plan, Net Script, Announcements, and Check-In Fields.\n",
-    "caption": "Every net -- ad hoc or created from a schedule -- is edited through these six tabs.",
+    "alt": "The Edit Net tab bar: Basic Info, Net Staff, Communication Plan, Net Script, Announcements, Check-In Fields, and Reports.\n",
+    "caption": "Every net -- ad hoc or created from a schedule -- is edited through these seven tabs.",
     "page": "/docs/net-managers/creating-a-net/"
   },
   "net-managers/csv-import-dialog": {

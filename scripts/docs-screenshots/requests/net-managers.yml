@@ -29,8 +29,8 @@ shots:
     pad: 4
     alt: >
       The Edit Net tab bar: Basic Info, Net Staff, Communication Plan, Net
-      Script, Announcements, and Check-In Fields.
-    caption: Every net -- ad hoc or created from a schedule -- is edited through these six tabs.
+      Script, Announcements, Check-In Fields, and Reports.
+    caption: Every net -- ad hoc or created from a schedule -- is edited through these seven tabs.
 
   - id: create-net-frequencies
     section: net-managers

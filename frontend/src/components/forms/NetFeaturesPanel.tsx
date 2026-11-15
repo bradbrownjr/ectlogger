@@ -275,7 +275,7 @@ const NetFeaturesPanel: React.FC<NetFeaturesPanelProps> = ({
         >
           <FeatureSwitch
             label="Enable ICS-309 Communications Log format"
-            caption="When on, everyone who gets the closing log receives it as an ICS-309, the form used by ARES, RACES, and served agencies. When off, they get the plain check-in log, except anyone who chose ICS-309 in their own profile, who still gets one."
+            caption="When on, everyone who gets the closing log receives it as an ICS-309, the form used by ARES, RACES, and served agencies, unless you turn that off on the Reports tab. When off, they get the plain check-in log, except anyone who chose ICS-309 in their own profile, who still gets one."
             checked={fields.ics309Enabled}
             onChange={fields.setIcs309Enabled}
           />

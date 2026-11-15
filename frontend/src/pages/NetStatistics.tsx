@@ -175,8 +175,8 @@ const NetStatistics: React.FC = () => {
   );
 
   // PDF and PNG exports are the net report's: one layout for a single net,
-  // not a second set built here. ?export=pdf / ?export=png starts the export
-  // once the report loads.
+  // not a second set built here. ?export=pdf / ?export=png opens the report's
+  // Choose sections step once it loads, then exports.
   const handleExportPdf = () => {
     if (stats) navigate(`/nets/${stats.net_id}/report?export=pdf`);
   };

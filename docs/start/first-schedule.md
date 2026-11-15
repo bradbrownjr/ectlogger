@@ -4,7 +4,7 @@ summary: Turn a net somebody creates by hand every week into a schedule that cre
 kind: Tutorial
 audience: Whoever is responsible for a club or ARES net existing
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-15
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/start/first-schedule/
@@ -30,7 +30,7 @@ Almost every question that starts "how do I make this happen every week" is answ
 
 Click **Schedule** in the top navigation bar, then the **+** button in the bottom right.
 
-The form has seven tabs. You need four of them. Everything else has a default and can wait.
+The form has eight tabs. You need four of them. Everything else has a default and can wait.
 
 Give it a name on **Basic Info**. Use the name your club says on the air. It shows on every net it creates, in every log, and in everyone's email.
 

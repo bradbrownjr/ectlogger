@@ -1,10 +1,10 @@
 ---
 title: Reports, ICS-309, and exports
-summary: The net report, the PDF, the ICS-309 Communications Log, the ICS-214, the per-section images, and who automatically receives what.
+summary: The net report, the PDF, the ICS-309 Communications Log, the ICS-214, the images for social media, the closing email's sections, and who automatically receives what.
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-15
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/reports-and-exports/
@@ -26,7 +26,7 @@ A closed net's toolbar has one **Reports** button, which opens a menu of everyth
 - **ICS-214**, for net control and the net's managers only, opens the net's Activity Log to finish and download. See [The ICS-214 activity log](/docs/net-control/ics-214/).
 - **Check-ins CSV** downloads the raw check-in list: every built-in field, the frequency each station checked in on, and each of the net's own fields that somebody filled in, one row per check-in event (including rechecks), in the timezone your own profile prefers. Like the ICS-309 and the net report, anyone can download it; a visitor who isn't signed in gets the same copy with email addresses and phone numbers in free-text fields hidden.
 
-ICS-309 export is available on any closed net regardless of whether that net turned on the **Enable ICS-309 Communications Log format** toggle — that toggle only decides whether the automatic closing email uses ICS-309 formatting for everyone. Anyone who turned on **Use ICS-309 format** in their own profile gets the closing email as an ICS-309 either way, so turning the net's toggle off doesn't stop it reaching them. The menu's ICS-309 downloads work either way.
+ICS-309 export is available on any closed net regardless of whether that net turned on the **Enable ICS-309 Communications Log format** toggle. That toggle, with the **ICS-309 log** switch on the net's **Reports** tab, decides whether the automatic closing email uses ICS-309 formatting for everyone (see [What the closing email contains](#what-the-closing-email-contains)). Anyone who turned on **Use ICS-309 format** in their own profile gets the closing email as an ICS-309 either way, so turning the net's toggle off doesn't stop it reaching them. The menu's ICS-309 downloads work either way.
 
 ### Keeping spam out of the record you hand to a served agency
 
@@ -40,7 +40,13 @@ The ICS-309 log is the copy that leaves your group and reaches a served agency, 
   <figcaption>The report page needs no sign-in. Export PNG saves a summary image and the map, ready to post.</figcaption>
 </figure>
 
-This page puts everything about the net into one document, in this order: check-in statistics and a map, who was at each site (if the net has [sites](/docs/net-managers/sites/)) and station-to-station coverage (if the net used it), the check-in log (one row per station per place, with every [field](/docs/reference/check-in-fields/#in-reports-and-exports) the net used), chat, the ICS-309 log, and last, the activity log. **Export PDF** saves the whole thing as one file. The **Export PDF** button on a net's statistics page produces this same report.
+This page puts everything about the net into one document, in this order: check-in statistics and a map, who was at each site (if the net has [sites](/docs/net-managers/sites/)) and station-to-station coverage (if the net used it), the check-in log (one row per station per place, with every [field](/docs/reference/check-in-fields/#in-reports-and-exports) the net used), the schedule's announcements and the net's notes, the topic of the week and poll results, chat, the ICS-309 log, and last, the activity log. **Export PDF** saves it as one file. The **Export PDF** button on a net's statistics page produces this same report.
+
+The page follows the switches on the net's **Reports** tab (see [Creating a net](/docs/net-managers/creating-a-net/#reports)): turn off a section there, such as the headline figures or chat, and the page leaves it out too. A net whose switches were never changed shows every section. The graphs, the map, the check-in log, and the activity log aren't on the Reports tab and always show.
+
+### Choosing sections when you export
+
+**Export PDF** and **Export PNG** first open **Choose sections**, a list of the sections this net's report has, ticked to match what the page shows. Untick what you don't want in the file, or tick a section the page is hiding, then click **Export PDF** or **Export PNG**. The choice is for that one file: it isn't saved, and the page looks the same afterward. The check-in log is always included. For the images, the list is the parts the images carry: the headline figures, the graphs, the check-in list, and the map.
 
 In the check-in log, a station that checked in more than once at a place has one row, whose time reads how many check-ins it made and when the last one was. Its **Channels** column lists each channel the station checked in on, with the ones it only listed as reachable in brackets and any marked offline struck through. The ICS-309 and the CSV export still list every check-in.
 
@@ -69,7 +75,13 @@ When a net closes, ECTLogger emails the log to:
 - anyone explicitly **subscribed** to the schedule the net came from, with the same preference on;
 - and every **active NCS, Logger, or Relay on that net itself**, again subject to their own preference — so staff who ran the net get a copy even if they never separately subscribed to the schedule.
 
-Each recipient gets ICS-309 formatting if either the net turned it on or that recipient's own profile prefers it.
+Each recipient gets ICS-309 formatting if either the net sends it or that recipient's own profile prefers it.
+
+### What the closing email contains
+
+Every closing email has the net summary and the check-in log, with the check-ins attached as a spreadsheet. The rest is set on the net's **Reports** tab, or on its schedule's, for every net the schedule creates (see [Creating a net](/docs/net-managers/creating-a-net/#reports)): a link to the full report, the headline figures, the topic of the week with each station's answer, poll results, sites and station coverage, traffic counts, the schedule's announcements and the net's notes, and the chat log as an attached text file. A section tied to a feature is sent only while that feature is on.
+
+With the **ICS-309 log** switch on, the email carries the ICS-309 Communications Log in place of the check-in table, with the ICS-309 spreadsheet attached. A net or schedule whose switches were never changed sends the email it always has: the topic, poll, coverage, traffic, and chat sections for the regular log, and the ICS-309 when **Enable ICS-309 Communications Log format** is on.
 
 ## Related
 
