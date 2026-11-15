@@ -4,7 +4,7 @@ summary: What is planned, what is being considered, and what was found along the
 kind: Explanation
 audience: Everyone
 owner: KC1JMH
-revised: 2026-10-30
+revised: 2026-11-15
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/ROADMAP/
@@ -12,7 +12,7 @@ permalink: /docs/ROADMAP/
 
 # Roadmap
 
-*Last updated: 2026-10-30*  
+*Last updated: 2026-11-15*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, N1GSK, N1KWG, NA1T, KC1JMH*
 
 ## At a glance
@@ -21,6 +21,8 @@ This page lists what may come to ECTLogger next. It is a list of intentions, not
 
 | Feature | What it means for you | Stage | Design notes |
 |---|---|---|---|
+| [Admin mode](#admin-mode) | Admins use the app as a regular user and enter their two-factor code to switch to admin, which closes again after 15 idle minutes. | Planned | [Design notes](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/SIGN-IN-PROVIDERS-AND-ADMIN-MODE.md) |
+| [Sign in with Google or Microsoft](#sign-in-with-google-or-microsoft) | Sign in with a Google, Microsoft, or organization account, alongside email links and passwords, once an administrator sets it up. | Planned | [Design notes](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/SIGN-IN-PROVIDERS-AND-ADMIN-MODE.md) |
 | [Public Service Event Support](#public-service-event-support) | Run a parade, race, or other public event with posts, volunteer shifts, and tactical callsigns, all in one place. | Designing | [Design notes](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/PUBLIC-SERVICE-EVENTS.md) |
 | [Optional supporter page (Ko-fi)](#supporter--funding-integration) | A hosted instance can show a Support page and credit the people who help pay for it. | Planned | — |
 | [Add a net to your calendar](#schedule-visibility--calendar) | Put a net on your own calendar with one click, and later subscribe to a schedule so it stays current. | Planned | — |
@@ -562,6 +564,45 @@ Teams phase M6 already plans versioning, approval, and issued snapshots for the 
 - **A licence is not required and must not be implied anywhere.** Registration today is callsign-centred; this principal has no callsign, and nothing in the interface should ask for one, generate a placeholder, or display an empty callsign field where a station identifier normally goes.
 
 **Open questions.** Does the EMA's own policy permit its staff to hold accounts in a volunteer organization's system, and who decides that — her, her director, or county IT? Is one liaison per incident realistic, or does a real activation need several with different agencies? And if she contributes an observation that later proves wrong, whose correction is it — hers, or the team's log's?
+
+### Admin Mode
+
+**🔒 Admins act as regular users until they enter their two-factor code** *(KC1JMH)*
+
+**Model:** Opus. It changes every admin permission check on the server.
+
+Admins start every session as a regular user, so they see what everyone else sees.
+**Switch to admin** asks for the two-factor code and opens admin mode for that browser
+only. It closes after 15 minutes with no admin action, or with **Lock admin**. The
+server enforces it: without admin mode, an admin's requests are answered as a regular
+user's. This replaces **View as Regular User**, which changed only what the app showed.
+Built first, because it is what lets an admin sign in with Google or Microsoft without
+a code.
+
+Full design: [`docs/concepts/SIGN-IN-PROVIDERS-AND-ADMIN-MODE.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/SIGN-IN-PROVIDERS-AND-ADMIN-MODE.md)
+
+**Docs:** Administrators (admin mode on the admin pages), Reference (roles and
+permissions, activity log events).
+
+### Sign In with Google or Microsoft
+
+**✨ Sign in with Google, Microsoft, or any OpenID Connect provider** *(KC1JMH; replaces
+[issue #11](https://github.com/bradbrownjr/ectlogger/issues/11))*
+
+**Model:** Opus for account linking and the sign-in flow; Sonnet for the Admin and
+Profile screens.
+
+An administrator adds a provider under Admin, Security, with no server files to edit.
+The login page then shows a button for it beside the email and password options, which
+keep working for every account. A first sign-in creates an account, as a first email
+link does, and anyone can link or unlink a provider under Profile, Security. GitHub
+sign-in and the unfinished OAuth code it shipped with are removed.
+
+Full design: [`docs/concepts/SIGN-IN-PROVIDERS-AND-ADMIN-MODE.md`](https://github.com/bradbrownjr/ectlogger/blob/main/docs/concepts/SIGN-IN-PROVIDERS-AND-ADMIN-MODE.md)
+
+**Docs:** Administrators (a how-to for each provider), Get started and Operators
+(signing in with a provider, linking one), About (clear the OAuth row from Known
+Issues).
 
 ### Account Deletion, Anonymization & Right to Erasure
 
