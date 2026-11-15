@@ -602,7 +602,7 @@ shots:
     pad: 10
     alt: >
       The Reports menu open on a closed net, as seen by a station with no
-      staff role: Net report, ICS-309 PDF, ICS-309 CSV, and Check-ins CSV.
+      staff role: ICS-309 PDF and ICS-309 CSV, then Net report and Check-ins CSV.
     caption: Once a net is closed, its report and logs are open to anyone who can see the net -- only Archive and Delete stay staff-only.
 
   # ========== The ICS-214 activity log ==========

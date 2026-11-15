@@ -145,7 +145,7 @@ export const NET_CONTROL_STEPS: WalkthroughStep[] = [
     icon: 'desk',
     title: 'The net control desk',
     body:
-      'The toolbar holds the net\'s tools: Map, Traffic, Off-net, Script, Notes, Paperwork and more. ' +
+      'The toolbar holds the net\'s tools: Map, Traffic, Off-net, Script, Notes, Reports and more. ' +
       'Roles assigns NCS and Logger to other operators.',
     learnMore: '/docs/net-control/the-net-control-desk/',
   },

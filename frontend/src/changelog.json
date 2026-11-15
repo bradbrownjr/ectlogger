@@ -1,8 +1,8 @@
 {
-  "version": "2026.11.15b",
+  "version": "2026.11.15c",
   "entries": [
     {
-      "version": "2026.11.15b",
+      "version": "2026.11.15c",
       "date": "2026-11-15",
       "sections": [
         {
@@ -25,6 +25,10 @@
           "items": [
             {
               "text": "Chat: See who reacted — Hover over a reaction on a chat message to see the callsigns of everyone who chose it, or press and hold on a phone.",
+              "userImpact": true
+            },
+            {
+              "text": "Net View: Every download in the Reports menu — The Paperwork button is now separate Net script, Announcements and Net notes PDFs in the Reports menu, ready before the net starts. The menu lists what helps run the net first, then the ICS forms, then the net report and spreadsheet.",
               "userImpact": true
             }
           ]

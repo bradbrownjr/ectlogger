@@ -13,7 +13,7 @@ import RoleAssignmentDialog from '../components/netview/RoleAssignmentDialog';
 import CheckInFormDialog, { CheckInFormState } from '../components/netview/CheckInFormDialog';
 import NetControlDialogs, { type ClosingAction, type TopicPollAction } from '../components/netview/NetControlDialogs';
 import EarlyStartDialog from '../components/EarlyStartDialog';
-import NetViewHeader from '../components/netview/NetViewHeader';
+import NetViewHeader, { NetDocKind } from '../components/netview/NetViewHeader';
 import AutoCloseWarningBanner from '../components/netview/AutoCloseWarningBanner';
 import DraftLogBanner from '../components/netview/DraftLogBanner';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
@@ -1309,29 +1309,38 @@ const NetView: React.FC = () => {
   // schedule's announcements, the net's notes) -- the same print layout each
   // panel's own PDF button uses (utils/markdownDocsPdf.tsx). The schedule's
   // announcements aren't part of the net, so they are fetched at click time.
-  const handleExportNetPaperworkPdf = async () => {
+  // ========== NET DOCUMENT PDFs (Reports menu) ==========
+  // The schedule's announcements live on the schedule, not the net, so they
+  // are loaded once here: the Reports menu offers "Announcements PDF" only
+  // when there is something to print.
+  const [scheduleAnnouncementsText, setScheduleAnnouncementsText] = useState('');
+  useEffect(() => {
+    setScheduleAnnouncementsText('');
+    if (!net?.template_id) return;
+    let alive = true;
+    templateApi.get(net.template_id)
+      .then((res) => { if (alive) setScheduleAnnouncementsText(res.data.announcements || ''); })
+      .catch(() => { /* no announcements item rather than an error */ });
+    return () => { alive = false; };
+  }, [net?.template_id]);
+
+  // One document per download, the same PDF its panel's own button makes.
+  const handleExportNetDocPdf = async (doc: NetDocKind) => {
     if (!net) return;
+    const { title, content } = {
+      script: { title: 'Net Script', content: net.script || '' },
+      announcements: { title: 'Announcements', content: scheduleAnnouncementsText },
+      notes: { title: 'Net Notes', content: net.announcements || '' },
+    }[doc];
     try {
-      let scheduleAnnouncementsText = '';
-      if (net.template_id) {
-        try {
-          scheduleAnnouncementsText = (await templateApi.get(net.template_id)).data.announcements || '';
-        } catch {
-          // Export what the net itself has rather than nothing.
-        }
-      }
       await exportMarkdownDocsPdf({
         netName: net.name,
-        label: 'Net Paperwork',
-        sections: [
-          { title: 'Net Script', content: net.script || '' },
-          { title: 'Announcements', content: scheduleAnnouncementsText },
-          { title: 'Net Notes', content: net.announcements || '' },
-        ],
-        filename: `${pdfFileStem(net.name)}_Paperwork`,
+        label: title,
+        sections: [{ title, content }],
+        filename: `${pdfFileStem(net.name)}_${pdfFileStem(title)}`,
       });
     } catch (error) {
-      console.error('Failed to export net paperwork PDF:', error);
+      console.error(`Failed to export ${title} PDF:`, error);
     }
   };
 
@@ -1843,7 +1852,12 @@ const NetView: React.FC = () => {
         onExportCSV={handleExportCSV}
         onExportICS309={handleExportICS309}
         onExportICS309Pdf={handleExportICS309Pdf}
-        onExportNetPaperworkPdf={handleExportNetPaperworkPdf}
+        netDocs={{
+          script: !!net.script?.trim(),
+          announcements: !!scheduleAnnouncementsText.trim(),
+          notes: !!net.announcements?.trim(),
+        }}
+        onExportNetDocPdf={handleExportNetDocPdf}
         onArchive={handleArchive}
         onUnarchive={handleUnarchive}
         onDelete={handleDelete}

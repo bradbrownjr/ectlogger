@@ -59,11 +59,11 @@ When the log is complete, click **Send the log** on the banner at the top of the
 
 ## After closing
 
-Once a net is closed, the toolbar's **Reports** menu opens its report and logs to **anyone who can see the net**. **Net report**, **ICS-309 PDF**, **ICS-309 CSV**, and **Check-ins CSV** are open to any viewer, participant included, and to a visitor who isn't signed in. For a visitor, email addresses and phone numbers typed into notes and other free-text fields are hidden, the same as on the check-in list, and the ICS-309 leaves out the off-net log. A net with **Build an ICS-205** on also lists the **ICS-205 radio plan**, for anyone signed in.
+Once a net is closed, the toolbar's **Reports** menu opens its report and logs to **anyone who can see the net**. **ICS-309 PDF**, **ICS-309 CSV**, **Net report**, and **Check-ins CSV** are open to any viewer, participant included, and to a visitor who isn't signed in. For a visitor, email addresses and phone numbers typed into notes and other free-text fields are hidden, the same as on the check-in list, and the ICS-309 leaves out the off-net log. A net with **Build an ICS-205** on also lists the **ICS-205 radio plan**, for anyone signed in.
 
 <figure>
   <img src="/docs/img/net-control/closed-net-exports.png"
-       alt="The Reports menu open on a closed net, as seen by a station with no staff role: Net report, ICS-309 PDF, ICS-309 CSV, and Check-ins CSV.">
+       alt="The Reports menu open on a closed net, as seen by a station with no staff role: ICS-309 PDF and ICS-309 CSV, then Net report and Check-ins CSV.">
   <figcaption>Once a net is closed, its report and logs are open to anyone who can see the net; only Archive and Delete stay staff-only.</figcaption>
 </figure>
 

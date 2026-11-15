@@ -697,12 +697,16 @@ block (`actions.block_station`).
 hand (hidden for the acting NCS — doesn't make sense to raise a hand to get
 your own attention), Step away, Role switch (labelled "Role: NCS" / "Role:
 Standard" depending on current state — click to toggle), Check out, Check in, Go live, Close
-net, Reports, Archive, Unarchive, Delete. **Reports** (closed and archived
-nets) opens a menu rather than acting itself: Net report, ICS-309 PDF,
-ICS-309 CSV, ICS-214 (only with `actions.prepare_ics214`), and Check-ins CSV.
-It replaced four buttons (Export, ICS-309, ICS-309 PDF, Report) on
-2026-10-31; a closed net's other downloads belong in that menu, not on the
-bar. Paperwork stays its own button, since it is used while the net runs. Same visibility
+net, Reports, Archive, Unarchive, Delete. **Reports** opens a menu rather
+than acting itself, holding every download the net has, in three groups split
+by a divider and ordered by when they're useful (Brad, 2026-11-15): running
+the net (Net script PDF, Announcements PDF, Net notes PDF, each only when it
+has content, at any status), the EMA or an incident (ICS-205 radio plan, then
+on a closed net ICS-214 with `actions.prepare_ics214`, ICS-309 PDF and
+ICS-309 CSV), and after the net (Net report, Check-ins CSV). The button shows
+whenever a group has something in it. It replaced four buttons (Export,
+ICS-309, ICS-309 PDF, Report) on 2026-10-31 and the combined Paperwork button
+on 2026-11-15; a net's downloads belong in that menu, not on the bar. Same visibility
 conditions as before the redesign (see `NetViewHeader.tsx` — each button's
 condition is unchanged, only the visual treatment and grouping moved), except
 Step Away: if the acting NCS is the only currently-active NCS on the net,

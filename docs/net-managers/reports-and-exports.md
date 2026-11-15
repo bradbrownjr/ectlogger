@@ -12,7 +12,7 @@ permalink: /docs/net-managers/reports-and-exports/
 
 # Reports, ICS-309, and exports
 
-A closed net's toolbar has one **Reports** button, which opens a menu of everything the net produced. None of it requires reopening the net or changes the record; pulling a copy again doesn't re-send anything. A net with **Build an ICS-205** on shows the **Reports** button before it closes too, to signed-in viewers, with **ICS-205 radio plan** as its only item.
+A net's toolbar has one **Reports** button, which opens a menu of everything the net has to download. It lists the documents for running the net first (the script, the schedule's announcements, and the net's notes, as PDFs), then the incident forms (ICS-205, ICS-214, ICS-309), then the net report and the check-ins spreadsheet. Before the net closes it holds only what applies then: the three documents, and the ICS-205 when **Build an ICS-205** is on. None of it requires reopening the net or changes the record; pulling a copy again doesn't re-send anything.
 
 <figure>
   <img src="/docs/img/net-managers/net-export-toolbar.png"

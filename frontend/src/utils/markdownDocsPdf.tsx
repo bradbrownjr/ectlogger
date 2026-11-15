@@ -13,7 +13,7 @@ export const pdfFileStem = (text: string): string => text.replace(/[^a-zA-Z0-9]/
  *
  * Renders NetPaperworkPrintView into a throwaway off-screen node, captures it,
  * and removes it again, so every caller (each panel's own PDF button, the
- * toolbar's combined Paperwork button, a popped-out window) shares one print
+ * Reports menu, a popped-out window) shares one print
  * layout without mounting a hidden copy of it permanently. Empty sections are
  * dropped; with nothing left, nothing is saved.
  */

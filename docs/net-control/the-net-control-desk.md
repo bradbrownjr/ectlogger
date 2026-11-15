@@ -40,7 +40,6 @@ Every button is gated by who you are and what state the net is in, so a Standard
 - **Drill plan** — opens the net's [drill plan](/docs/net-managers/drill-plans/) in a new tab, when it has one.
 - **Script** / **Announcements** / **Notes** / **Stats** — read-only views of the net script, the schedule's announcements, this net's own notes, and this net's statistics page.
 - **Topics** — this net's topic of the week and the schedule's [prior topics](/docs/operators/chat-and-polls/#prior-topics). Set or change tonight's question here with **Set This Net's Topic**.
-- **Paperwork** — saves the script, the schedule's announcements, and this net's notes as one PDF to print. See [Scripts, notes, and announcements](/docs/net-managers/scripts-and-announcements/).
 - **Audio** and **Website**, when the net has a stream URL or an info URL set, open those in a new tab.
 
 ### Management (right side)
@@ -62,7 +61,7 @@ Every button is gated by who you are and what state the net is in, so a Standard
 - **I hear** — records which stations you can hear, if the net has coverage logging on and allows self-reporting. See [Reporting what you hear](/docs/operators/reporting-what-you-hear/).
 - **Close net** — ends the session. See [Closing the net](/docs/net-control/closing-the-net/) for what it does and doesn't undo.
 
-Once a net is closed or archived, the management group swaps to **Reports** and (staff only) **Archive** or **Delete**. **Reports** opens a menu with the net report, the ICS-309 Communications Log as a PDF or CSV, net control's [ICS-214](/docs/net-control/ics-214/), and the check-in spreadsheet. These are covered in [Closing the net](/docs/net-control/closing-the-net/). Before the net closes, a net with **Build an ICS-205** on shows **Reports** to anyone signed in, with the [ICS-205 radio plan](/docs/net-managers/reports-and-exports/#the-ics-205-radio-plan) as its only item.
+**Reports** opens a menu of the net's downloads, in three groups. At the top are the documents for running the net: **Net script PDF**, **Announcements PDF**, and **Net notes PDF**, each listed when it has something in it, at any stage of the net. In the middle are the incident forms: the [ICS-205 radio plan](/docs/net-managers/reports-and-exports/#the-ics-205-radio-plan) for anyone signed in, when the net has **Build an ICS-205** on, and once the net is closed, net control's [ICS-214](/docs/net-control/ics-214/) and the ICS-309 Communications Log as a PDF or CSV. At the bottom, once the net is closed, are the net report and the check-in spreadsheet. These are covered in [Closing the net](/docs/net-control/closing-the-net/). Once a net is closed or archived, staff also get **Archive** or **Delete**.
 
 ## The title row
 

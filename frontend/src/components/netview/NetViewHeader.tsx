@@ -22,6 +22,7 @@ import {
   DialogActions,
   Popover,
   Avatar,
+  Divider,
 } from '@mui/material';
 import { keyframes } from '@mui/system';
 import EditIcon from '@mui/icons-material/Edit';
@@ -186,6 +187,16 @@ interface ToolbarItemDef {
   iconOverride?: React.ReactNode;
 }
 
+// The net's own documents, each downloadable from the Reports menu.
+export type NetDocKind = 'script' | 'announcements' | 'notes';
+
+interface ReportMenuItem {
+  key: string;
+  label: string;
+  Icon: React.ElementType;
+  onClick: () => void;
+}
+
 interface NetViewHeaderProps {
   net: any;
   netId: string | undefined;
@@ -264,7 +275,10 @@ interface NetViewHeaderProps {
   onExportCSV: () => void;
   onExportICS309: () => void;
   onExportICS309Pdf: () => void;
-  onExportNetPaperworkPdf: () => void;
+  // Which of the net's documents have something to print, and the download
+  // for each (Reports menu).
+  netDocs: Record<NetDocKind, boolean>;
+  onExportNetDocPdf: (doc: NetDocKind) => void;
   onArchive: () => void;
   onUnarchive: () => void;
   onDelete: () => void;
@@ -386,7 +400,8 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   onExportCSV,
   onExportICS309,
   onExportICS309Pdf,
-  onExportNetPaperworkPdf,
+  netDocs,
+  onExportNetDocPdf,
   onArchive,
   onUnarchive,
   onDelete,
@@ -413,6 +428,33 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   // when Build an ICS-205 is on. Offered at any status, since the plan is
   // usually handed out before the net.
   const offerIcs205 = isAuthenticated && !!net.ics205_enabled;
+
+  // ========== REPORTS MENU CONTENTS ==========
+  // Three groups, in the order they're useful (Brad, 2026-11-15):
+  // 1. Running the net: its script, announcements and notes, at any status.
+  // 2. For the EMA or an incident: the ICS-205, and once closed the ICS-214
+  //    (net control only, who finish it before downloading) and ICS-309.
+  // 3. After the net: the net report and the check-ins spreadsheet.
+  // Empty groups are dropped; the Reports button hides when all three are.
+  const reportGroups: ReportMenuItem[][] = [
+    [
+      ...(netDocs.script ? [{ key: 'script-pdf', label: 'Net script PDF', Icon: ArticleIcon, onClick: () => onExportNetDocPdf('script') }] : []),
+      ...(netDocs.announcements ? [{ key: 'announcements-pdf', label: 'Announcements PDF', Icon: CampaignIcon, onClick: () => onExportNetDocPdf('announcements') }] : []),
+      ...(netDocs.notes ? [{ key: 'notes-pdf', label: 'Net notes PDF', Icon: SpeakerNotesIcon, onClick: () => onExportNetDocPdf('notes') }] : []),
+    ],
+    [
+      ...(offerIcs205 ? [{ key: 'ics205', label: 'ICS-205 radio plan', Icon: SettingsInputAntennaIcon, onClick: () => navigate(`/nets/${netId}/ics205`) }] : []),
+      ...(isClosedOrArchived && actions.prepare_ics214 ? [{ key: 'ics214', label: 'ICS-214', Icon: EditNoteIcon, onClick: () => navigate(`/nets/${netId}/ics214`) }] : []),
+      ...(isClosedOrArchived ? [
+        { key: 'ics309-pdf', label: 'ICS-309 PDF', Icon: PictureAsPdfIcon, onClick: onExportICS309Pdf },
+        { key: 'ics309', label: 'ICS-309 CSV', Icon: DescriptionIcon, onClick: onExportICS309 },
+      ] : []),
+    ],
+    isClosedOrArchived ? [
+      { key: 'report', label: 'Net report', Icon: AssessmentIcon, onClick: () => navigate(`/nets/${netId}/report`) },
+      { key: 'csv', label: 'Check-ins CSV', Icon: DownloadIcon, onClick: onExportCSV },
+    ] : [],
+  ].filter((group) => group.length > 0);
 
   const startingUpNet = canStartNet && isDraftOrScheduled;
   // Open lobby sits beside Start net until the scheduled start time passes
@@ -547,16 +589,6 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       visible: !!net.template_id && (checkInsCount > 0 || (actions.edit && !!net.topic_of_week_enabled)),
       Icon: HistoryIcon, color: neutralIconColor, label: 'Topics',
       tooltip: 'View prior topics', onClick: () => topicHistory.onOpen(),
-    },
-    {
-      // Combined script + announcements export -- doesn't capture either
-      // docked/floating panel's DOM (see NetPaperworkPrintView.tsx), so it
-      // doesn't need either one open, and works during a live net as well as
-      // the closed/archived-only exports in the management group below.
-      key: 'net-paperwork-pdf', group: 'info', priority: 1,
-      visible: checkInsCount > 0 && (!!net.script || !!net.announcements),
-      Icon: PictureAsPdfIcon, color: neutralIconColor, label: 'Paperwork',
-      tooltip: 'Download net script and notes as PDF', onClick: onExportNetPaperworkPdf,
     },
     {
       key: 'stats', group: 'info', priority: 3,
@@ -737,15 +769,14 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       tooltip: 'Close net', onClick: () => closeNetDialog.onOpen(),
     },
     {
-      // A closed net's report, logs and spreadsheets in one menu (Brad,
-      // 2026-10-30): Export, ICS-309, ICS-309 PDF and Report were four
-      // buttons. The ICS-214 is net control's to finish, so only they see it.
-      // Before the net closes the menu shows only when there is an ICS-205
-      // to offer, and holds only that.
+      // Every download for this net in one menu (Brad, 2026-10-30: Export,
+      // ICS-309, ICS-309 PDF and Report were four buttons; 2026-11-15: the
+      // Paperwork button became one item per document). Shown whenever the
+      // menu has something in it; see REPORTS MENU below for what and when.
       key: 'reports', group: 'management', priority: 2,
-      visible: isClosedOrArchived || offerIcs205,
+      visible: reportGroups.length > 0,
       Icon: DescriptionIcon, color: '#009688', label: 'Reports',
-      tooltip: isClosedOrArchived ? 'Net report, logs and spreadsheets' : 'ICS-205 radio plan',
+      tooltip: 'Reports and downloads',
       onClick: (anchor) => setReportsAnchor(anchor ?? null),
     },
     {
@@ -1219,30 +1250,18 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       </Box>
 
       {/* ========== REPORTS MENU ========== */}
-      {/* Closed and archived nets: everything. Before that: the ICS-205 only. */}
+      {/* Grouped by when each download is useful (reportGroups), with a line
+          between groups. */}
       <Menu anchorEl={reportsAnchor} open={!!reportsAnchor} onClose={() => setReportsAnchor(null)}>
-        {[
-          ...(isClosedOrArchived ? [
-            { key: 'report', label: 'Net report', Icon: AssessmentIcon, onClick: () => navigate(`/nets/${netId}/report`) },
-            { key: 'ics309-pdf', label: 'ICS-309 PDF', Icon: PictureAsPdfIcon, onClick: onExportICS309Pdf },
-            { key: 'ics309', label: 'ICS-309 CSV', Icon: DescriptionIcon, onClick: onExportICS309 },
-            // Net control only, who finish the form before downloading it
-            ...(actions.prepare_ics214
-              ? [{ key: 'ics214', label: 'ICS-214', Icon: EditNoteIcon, onClick: () => navigate(`/nets/${netId}/ics214`) }]
-              : []),
-          ] : []),
-          ...(offerIcs205
-            ? [{ key: 'ics205', label: 'ICS-205 radio plan', Icon: SettingsInputAntennaIcon, onClick: () => navigate(`/nets/${netId}/ics205`) }]
-            : []),
-          ...(isClosedOrArchived
-            ? [{ key: 'csv', label: 'Check-ins CSV', Icon: DownloadIcon, onClick: onExportCSV }]
-            : []),
-        ].map(({ key, label, Icon, onClick }) => (
-          <MenuItem key={key} onClick={() => { setReportsAnchor(null); onClick(); }}>
-            <ListItemIcon><Icon sx={{ fontSize: 18 }} /></ListItemIcon>
-            <ListItemText>{label}</ListItemText>
-          </MenuItem>
-        ))}
+        {reportGroups.flatMap((group, i) => [
+          ...(i > 0 ? [<Divider key={`divider-${i}`} />] : []),
+          ...group.map(({ key, label, Icon, onClick }) => (
+            <MenuItem key={key} onClick={() => { setReportsAnchor(null); onClick(); }}>
+              <ListItemIcon><Icon sx={{ fontSize: 18 }} /></ListItemIcon>
+              <ListItemText>{label}</ListItemText>
+            </MenuItem>
+          )),
+        ])}
       </Menu>
 
       <Dialog open={stepAwayConfirmOpen} onClose={() => setStepAwayConfirmOpen(false)}>
