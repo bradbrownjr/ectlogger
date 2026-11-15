@@ -17,6 +17,7 @@ from app.audit import private_actor_code, record_net_event, user_label
 from app.security_alerts import check_mutes
 from app.models import ChatMessage, ChatMute, ChatNetMute, ChatReaction, ChatImage, CheckIn, Net, NetStatus, User
 from app.schemas import (
+    build_reaction_maps,
     ChatMessageCreate,
     ChatMessageEdit,
     ChatMessageResponse,
@@ -70,7 +71,7 @@ MENTION_TOKEN_PATTERN = re.compile(r'@([A-Za-z0-9/_-]+)')
 # preview. Lazy-loading any of these blows up under async SQLAlchemy.
 CHAT_MESSAGE_LOADS = (
     selectinload(ChatMessage.user),
-    selectinload(ChatMessage.reactions),
+    selectinload(ChatMessage.reactions).selectinload(ChatReaction.user),
     selectinload(ChatMessage.images),
     selectinload(ChatMessage.reply_to).selectinload(ChatMessage.user),
 )
@@ -405,15 +406,16 @@ ALLOWED_EMOJIS = {'👍', '🙂', '🤣', '🙁', '❤️', '✅'}
 
 
 async def _get_message_reactions(db: AsyncSession, message_id: int) -> dict:
-    """Return emoji->list[user_id] dict for a message."""
+    """Return {"reactions": emoji->user_ids, "reactors": emoji->callsigns}
+    for a message, the same shape ChatMessageResponse carries."""
     result = await db.execute(
-        select(ChatReaction).where(ChatReaction.message_id == message_id)
+        select(ChatReaction)
+        .options(selectinload(ChatReaction.user))
+        .where(ChatReaction.message_id == message_id)
+        .order_by(ChatReaction.id)
     )
-    reactions: dict = {}
-    for r in result.scalars().all():
-        reactions.setdefault(r.emoji, [])
-        reactions[r.emoji].append(r.user_id)
-    return reactions
+    reactions, reactors = build_reaction_maps(result.scalars().all())
+    return {"reactions": reactions, "reactors": reactors}
 
 
 @router.post("/nets/{net_id}/messages/{message_id}/reactions", status_code=status.HTTP_204_NO_CONTENT)
@@ -461,10 +463,10 @@ async def add_reaction(
 
     # Broadcast updated reactions for this message
     from app.main import manager
-    reactions = await _get_message_reactions(db, message_id)
+    reaction_maps = await _get_message_reactions(db, message_id)
     await manager.broadcast({
         "type": "chat_reaction",
-        "data": {"message_id": message_id, "reactions": reactions},
+        "data": {"message_id": message_id, **reaction_maps},
         "timestamp": datetime.now(UTC).isoformat()
     }, net_id)
     return None

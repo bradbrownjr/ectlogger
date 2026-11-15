@@ -4,7 +4,7 @@ summary: Talking alongside the net without talking over it: replying, editing, m
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-11-08
+revised: 2026-11-15
 review_by: 2027-10-23
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/chat-and-polls/
@@ -32,7 +32,7 @@ Type into the box at the bottom and press Enter. You can:
 
 ## Reacting to a message
 
-Hovering over someone else's message shows a small row of emoji reactions. Click one to add it; the count appears under the message, and clicking a reaction you've already added removes it. You can't react to your own messages, so the reaction row appears only on someone else's.
+Hovering over someone else's message shows a small row of emoji reactions. Click one to add it; the count appears under the message, and clicking a reaction you've already added removes it. Hover over a reaction, or press and hold on a phone, to see who chose it. You can't react to your own messages, so the reaction row appears only on someone else's.
 
 ## Editing and muting
 

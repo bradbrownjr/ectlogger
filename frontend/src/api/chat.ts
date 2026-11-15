@@ -20,6 +20,8 @@ export interface ChatMessage {
   edited_at?: string | null;
   is_system: boolean;
   reactions?: Record<string, number[]>;  // emoji -> [user_ids]
+  // emoji -> callsigns, same order as reactions[emoji]. Missing on an older server.
+  reactors?: Record<string, string[]>;
   avatar_url?: string | null;
   mentioned_user_ids?: number[];
   reply_to_message_id?: number | null;
@@ -150,3 +152,13 @@ export const chatApi = {
   netUnmute: (netId: number, mutedUserId: number) =>
     api.delete(`/chat/nets/${netId}/net-mutes/${mutedUserId}`),
 };
+
+/** Tooltip text for a reaction chip: "👍 KC1JMH, W1PINE", or the count when
+ *  the server did not send names (older server, or a list that fell out of
+ *  step with the count). */
+export function reactionTooltip(emoji: string, count: number, names?: string[]): string {
+  if (names && names.length === count && count > 0) {
+    return `${emoji} ${names.join(', ')}`;
+  }
+  return `${count} reaction${count !== 1 ? 's' : ''}`;
+}

@@ -1492,9 +1492,31 @@ def build_reply_preview(parent, redact: bool = False) -> Optional[dict]:
         text = text[:REPLY_PREVIEW_MAX_CHARS] + '...'
     return {
         'id': parent.id,
-        'callsign': parent.user.callsign if parent.user and parent.user.callsign else ('System' if parent.is_system else 'Unknown'),
+        'callsign': chat_user_label(parent.user, parent.is_system),
         'message': text,
     }
+
+
+def chat_user_label(user, is_system: bool = False) -> str:
+    """The name chat shows for an account: its callsign, else a placeholder.
+    Never an email address or a real name."""
+    if user and user.callsign:
+        return user.callsign
+    return 'System' if is_system else 'Unknown'
+
+
+def build_reaction_maps(reactions) -> tuple[dict, dict]:
+    """Group ChatReaction rows into (reactions, reactors), both keyed by emoji
+    and in the same order: reactions is a list of user_ids, reactors the
+    matching callsigns. The one builder for the REST response and the
+    chat_reaction broadcast, so the two cannot disagree. Each row's `user`
+    must be eager-loaded."""
+    ids: dict = {}
+    names: dict = {}
+    for r in reactions or []:
+        ids.setdefault(r.emoji, []).append(r.user_id)
+        names.setdefault(r.emoji, []).append(chat_user_label(r.user))
+    return ids, names
 
 
 class ChatMessageCreate(BaseModel):
@@ -1560,6 +1582,7 @@ class ChatMessageResponse(BaseModel):
     created_at: datetime
     edited_at: Optional[datetime] = None
     reactions: dict = {}  # emoji -> list of user_ids
+    reactors: dict = {}  # emoji -> callsigns, same order as reactions[emoji]
     avatar_url: Optional[str] = None
     mentioned_user_ids: List[int] = []
     reply_to_message_id: Optional[int] = None
@@ -1571,11 +1594,8 @@ class ChatMessageResponse(BaseModel):
     @classmethod
     def from_orm(cls, obj, redact: bool = False):
         from app.utils import get_avatar_url, redact_contact_info
-        # Build reactions dict: emoji -> sorted list of user_ids
-        reactions: dict = {}
-        for r in (obj.reactions if hasattr(obj, 'reactions') and obj.reactions else []):
-            reactions.setdefault(r.emoji, [])
-            reactions[r.emoji].append(r.user_id)
+        # emoji -> user_ids, and emoji -> callsigns in the same order
+        reactions, reactors = build_reaction_maps(getattr(obj, 'reactions', None))
 
         # Compute avatar URL from user relationship (None for system messages)
         avatar_url = None
@@ -1590,12 +1610,13 @@ class ChatMessageResponse(BaseModel):
             'id': obj.id,
             'net_id': obj.net_id,
             'user_id': obj.user_id,
-            'callsign': obj.user.callsign if obj.user and obj.user.callsign else ('System' if obj.is_system else 'Unknown'),
+            'callsign': chat_user_label(obj.user, obj.is_system),
             'message': redact_contact_info(obj.message) if redact else obj.message,
             'is_system': obj.is_system if hasattr(obj, 'is_system') else False,
             'created_at': obj.created_at,
             'edited_at': getattr(obj, 'edited_at', None),
             'reactions': reactions,
+            'reactors': reactors,
             'avatar_url': avatar_url,
             'mentioned_user_ids': decode_mentioned_user_ids(getattr(obj, 'mentioned_user_ids', None)),
             'reply_to_message_id': getattr(obj, 'reply_to_message_id', None),

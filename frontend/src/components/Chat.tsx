@@ -37,7 +37,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
 import ReplyIcon from '@mui/icons-material/Reply';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
-import { chatApi, ChatMessage, ChatImagePayload, ChatReplyPreview, ChatNetMute, formatChatMessageText } from '../api/chat';
+import { chatApi, ChatMessage, ChatImagePayload, ChatReplyPreview, ChatNetMute, formatChatMessageText, reactionTooltip } from '../api/chat';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTimeWithDate } from '../utils/dateUtils';
 import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS } from './netview/sneakInHighlight';
@@ -249,9 +249,11 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
 
     // Listen for reaction updates dispatched from NetView WebSocket
     const handleReactionUpdate = (event: any) => {
-      const { message_id, reactions } = event.detail;
+      // reactors (who chose each emoji) is absent from an older server; keep
+      // it in step with reactions so a tooltip never names a stale list.
+      const { message_id, reactions, reactors } = event.detail;
       setMessages((prev) =>
-        prev.map((msg) => msg.id === message_id ? { ...msg, reactions } : msg)
+        prev.map((msg) => msg.id === message_id ? { ...msg, reactions, reactors } : msg)
       );
     };
 
@@ -997,14 +999,15 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                             </Box>
                           );
                         })()}
-                        {/* Reaction counts */}
+                        {/* Reaction counts. Hover shows who chose each one; on touch, press and hold does, and a plain tap still toggles via the chip's onClick */}
                         {message.reactions && Object.keys(message.reactions).length > 0 && (
                           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
                             {Object.entries(message.reactions).map(([emoji, userIds]) =>
                               userIds.length > 0 ? (
                                 <Tooltip
                                   key={emoji}
-                                  title={`${userIds.length} reaction${userIds.length !== 1 ? 's' : ''}`}
+                                  title={reactionTooltip(emoji, userIds.length, message.reactors?.[emoji])}
+                                  enterTouchDelay={400}
                                 >
                                   <Box
                                     component="span"
