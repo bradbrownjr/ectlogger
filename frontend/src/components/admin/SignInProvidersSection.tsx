@@ -37,6 +37,7 @@ import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import LoginIcon from '@mui/icons-material/Login';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   SignInProviderAdmin,
   SignInProviderPayload,
@@ -49,6 +50,23 @@ import { providerIcon } from '../SignInProviderButtons';
 const DOCS_URL = 'https://ectlogger.us/docs/admins/sign-in-providers/';
 type Kind = SignInProviderPublic['kind'];
 const KIND_NAMES: Record<Kind, string> = { google: 'Google', microsoft: 'Microsoft', oidc: 'Other (OpenID Connect)' };
+// The section of the admin page covering each provider's setup. The anchors
+// are the page's own headings (docs/admins/sign-in-providers.md).
+const KIND_DOCS: Record<Kind, string> = {
+  google: `${DOCS_URL}#add-google`,
+  microsoft: `${DOCS_URL}#add-microsoft`,
+  oidc: `${DOCS_URL}#add-another-openid-connect-provider`,
+};
+const REMOVE_DOCS = `${DOCS_URL}#change-or-remove-a-provider`;
+
+/** A help link that opens the docs in a new tab, so the form keeps what was typed. */
+const DocsLink: React.FC<{ href: string; children: React.ReactNode }> = ({ href, children }) => (
+  <Link href={href} target="_blank" rel="noopener noreferrer"
+        sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+    {children}
+    <OpenInNewIcon sx={{ fontSize: '1rem' }} aria-label="(opens in a new tab)" />
+  </Link>
+);
 
 interface FormState {
   kind: Kind;
@@ -279,7 +297,7 @@ const SignInProvidersSection: React.FC = () => {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Let people sign in with an account they already have. Email links and passwords keep working.
           Each one needs an app registered with the provider first.{' '}
-          <Link href={DOCS_URL} target="_blank" rel="noopener noreferrer">How to set one up</Link>
+          <DocsLink href={DOCS_URL}>How to set one up</DocsLink>
         </Typography>
 
         {loadError && <Alert severity="error" sx={{ mb: 2 }}>{loadError}</Alert>}
@@ -331,6 +349,10 @@ const SignInProvidersSection: React.FC = () => {
           <Box component="form" onSubmit={handleSave}>
             <DialogTitle>{editing ? `Edit ${editing.label}` : `Add ${KIND_NAMES[form.kind]}`}</DialogTitle>
             <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
+              {/* Setup steps for this provider, in a new tab */}
+              <Typography variant="body2">
+                <DocsLink href={KIND_DOCS[form.kind]}>Setup steps for {form.kind === 'oidc' ? 'another provider' : KIND_NAMES[form.kind]}</DocsLink>
+              </Typography>
               {formError && <Alert severity="error">{formError}</Alert>}
 
               {/* Other only: the short name forms the redirect address */}
@@ -432,6 +454,9 @@ const SignInProvidersSection: React.FC = () => {
             Its button leaves the sign-in page, and {removing?.linked_accounts === 1 ? 'the 1 account' : `the ${removing?.linked_accounts ?? 0} accounts`} linked
             to it are unlinked. Those people can still sign in with an email link or password.
           </DialogContentText>
+          <Typography variant="body2" sx={{ mt: 2 }}>
+            <DocsLink href={REMOVE_DOCS}>Removing compared with turning a provider off</DocsLink>
+          </Typography>
         </DialogContent>
         <DialogActions sx={{ flexWrap: 'wrap', justifyContent: 'flex-end', gap: 1, px: 3, pb: 2 }} disableSpacing>
           <Button variant="outlined" color="inherit" onClick={() => setRemoving(null)} disabled={saving}>Cancel</Button>
