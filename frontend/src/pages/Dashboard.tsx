@@ -1205,18 +1205,18 @@ const Dashboard: React.FC = () => {
                 sx={{ mb: 1 }}
               />
             </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2 }}>
+            <DialogActions sx={{ flexWrap: 'wrap', justifyContent: 'flex-end', gap: 1, px: 3, pb: 2 }} disableSpacing>
               <Button
                 onClick={() => setDeleteConfirmOpen(false)}
-                variant="contained"
-                color="primary"
+                variant="outlined"
+                color="inherit"
               >
                 Keep Net
               </Button>
               <Button
                 onClick={handleCancelConfirm}
                 variant="contained"
-                color="warning"
+                color="error"
                 startIcon={<ReportIcon />}
               >
                 Cancel Net
@@ -1250,16 +1250,17 @@ const Dashboard: React.FC = () => {
                 </Typography>
               )}
             </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2 }}>
-              {/* Blue Cancel — keep on the left, the safe default */}
+            {/* Wraps onto more lines on a phone (DESIGN.md "Dialog Button Colors") */}
+            <DialogActions sx={{ flexWrap: 'wrap', justifyContent: 'flex-end', gap: 1, px: 3, pb: 2 }} disableSpacing>
+              {/* Outlined Cancel — keep on the left, the safe default */}
               <Button
                 onClick={() => setDeleteConfirmOpen(false)}
-                variant="contained"
-                color="primary"
+                variant="outlined"
+                color="inherit"
               >
                 Cancel
               </Button>
-              {/* Yellow Close & Archive — for active/lobby nets, runs close */}
+              {/* Green Close & Archive — for active/lobby nets, runs close */}
               {/* (which emails the full log to the owner) then archive in one */}
               {/* shot. Saves the manager from a two-step "close, then archive" */}
               {/* dance when they realize mid-net they want to keep the record. */}
@@ -1287,13 +1288,13 @@ const Dashboard: React.FC = () => {
                     }
                   }}
                   variant="contained"
-                  color="warning"
+                  color="success"
                   startIcon={<ArchiveIcon />}
                 >
                   Close &amp; Archive
                 </Button>
               )}
-              {/* Yellow Archive — only valid for closed nets (the only state */}
+              {/* Blue Archive — only valid for closed nets (the only state */}
               {/* the existing archive endpoint accepts) */}
               {canArchiveNet(netToDelete) && (
                 <Button
@@ -1305,7 +1306,7 @@ const Dashboard: React.FC = () => {
                     await handleArchiveNet(id);
                   }}
                   variant="contained"
-                  color="warning"
+                  color="primary"
                   startIcon={<ArchiveIcon />}
                 >
                   Archive Instead

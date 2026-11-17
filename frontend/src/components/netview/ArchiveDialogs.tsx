@@ -142,11 +142,11 @@ const ArchiveDialogs: React.FC<ArchiveDialogsProps> = ({
             </Typography>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ flexWrap: 'wrap', justifyContent: 'flex-end', gap: 1, px: 3, pb: 2 }} disableSpacing>
           <Button
             onClick={archiveDeleteConfirm.onClose}
-            variant="contained"
-            color="primary"
+            variant="outlined"
+            color="inherit"
           >
             Cancel
           </Button>
@@ -158,7 +158,7 @@ const ArchiveDialogs: React.FC<ArchiveDialogsProps> = ({
                 onArchive();
               }}
               variant="contained"
-              color="warning"
+              color="primary"
               startIcon={<ArchiveIcon />}
             >
               Archive Instead
