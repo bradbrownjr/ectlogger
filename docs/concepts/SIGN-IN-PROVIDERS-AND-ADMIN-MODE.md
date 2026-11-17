@@ -234,6 +234,14 @@ up to 90 days of admin access on that browser.
    and in Microsoft Entra, both pointed at beta's redirect URI. A generic OIDC
    provider needs a real server too, for example Authentik or Keycloak in Docker on
    Unraid. A hand-written fake is not evidence of how a real provider behaves.
+4. **Decided 2026-11-17: work and school Microsoft accounts ship untested.** Brad has
+   only a personal Microsoft account to test with, so a work or school sign-in is first
+   seen in a real report. They take the same path as a personal account (subject
+   `tid:oid`, email trusted only with `xms_edov`); the parts only an organization can
+   show are its consent policy (staff may need their admin's approval, which the admin
+   page already says) and whether its tokens carry `xms_edov`. If one can't reach an
+   existing account by email, linking from Profile > Security still works. Treat a
+   report about either as a bug to fix, not a known gap.
 
 ## Documentation paths
 
