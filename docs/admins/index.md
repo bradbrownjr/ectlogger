@@ -4,7 +4,7 @@ summary: The admin panel of a running instance: who gets in, what the check-in f
 kind: Explanation
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-17
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/
@@ -25,6 +25,7 @@ This path is for whoever holds the **Admin** role on an ECTLogger instance. Ever
 - Set the instance's logo and default color theme
 - Put a banner across the top of the site for everyone
 - Set the security policy: lockouts, session length, and what MFA is required for
+- Let people sign in with Google, Microsoft or another OpenID Connect provider
 - Decide which traffic form types the instance offers
 - Schedule encrypted backups of the whole instance and send copies off-site
 - See who deleted, cancelled, or changed a net, schedule, or account, and from what address
@@ -49,6 +50,8 @@ This path is for whoever holds the **Admin** role on an ECTLogger instance. Ever
 **[The maintenance banner](/docs/admins/maintenance-banner/)** — Telling everyone the site is about to go down, and the difference between that and the update notice a user sees after a deploy.
 
 **[Security, MFA, and lockouts](/docs/admins/security-and-mfa/)** — MFA enrollment and reset, failed-login lockouts, session length, and recovering an admin account that has lost its authenticator.
+
+**[Sign in with Google, Microsoft and others](/docs/admins/sign-in-providers/)** — Adding a Google, Microsoft or other OpenID Connect sign-in button, registering it with the provider, and which account a sign-in reaches.
 
 **[Traffic handling settings](/docs/admins/traffic-settings/)** — Which formal message types the instance offers, and defining a custom RRI strip type once so every net can use it.
 

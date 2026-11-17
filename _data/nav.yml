@@ -130,6 +130,8 @@
       url: /docs/admins/maintenance-banner/
     - title: Security, MFA, and lockouts
       url: /docs/admins/security-and-mfa/
+    - title: Sign in with Google, Microsoft and others
+      url: /docs/admins/sign-in-providers/
     - title: Traffic handling settings
       url: /docs/admins/traffic-settings/
     - title: The contact directory

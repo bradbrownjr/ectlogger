@@ -56,10 +56,20 @@ The ECT Net Logger application implements comprehensive security measures to pro
 - Token expiration (90 days default, admin-configurable in Admin → Security → Session Settings)
 - Token verification on all protected endpoints
 
-**OAuth2 Integration:**
-- Google, Microsoft, GitHub client registration exists (`routers/auth.py`), but the
-  authorization-code exchange in the callback route is not implemented (`HTTPException(501)`)
-  — magic link and password are the only working sign-in methods today.
+**Sign in with Google, Microsoft or another OpenID Connect provider:**
+- Set up by an admin in Admin → Security; nothing is configured in `.env`
+  (`routers/sign_in_providers.py`, `services/sign_in_providers.py`).
+- Authorization code flow with PKCE and a nonce; the ID token's signature,
+  audience, nonce and issuer are checked. Microsoft's multi-tenant issuer is
+  matched against the token's own tenant.
+- An account is reached by the provider's permanent id once linked, and by
+  email only when the provider says it verified that address (Google
+  `email_verified`, Microsoft `xms_edov`). An unverified address never reaches
+  or creates an account.
+- The token never appears in a URL: the callback hands the app a two-minute,
+  single-use code, stored as a hash, which the app trades for the token.
+- Client secrets are encrypted with a key derived from `SECRET_KEY` and never
+  sent back to the browser.
 
 **Magic Link Email:**
 - Time-limited tokens via `itsdangerous`

@@ -32,7 +32,7 @@ from slowapi.util import get_remote_address
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.audit import record_event, user_label
+from app.audit import field_changes, record_event, user_label
 from app.auth import create_access_token
 from app.config import settings
 from app.database import get_db
@@ -384,32 +384,35 @@ async def admin_update(request: Request, provider_id: int, payload: SignInProvid
     if provider is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
 
-    changes = payload.model_dump(exclude_unset=True)
-    changed = []
-    secret = changes.pop("client_secret", None)
+    values = payload.model_dump(exclude_unset=True)
+    secret = values.pop("client_secret", None)
+    if "allowed_domains" in values:
+        values["allowed_domains"] = sip.dump_domains(values["allowed_domains"])
+    if provider.kind != "oidc":
+        values.pop("issuer_url", None)
+    if provider.kind != "microsoft":
+        values.pop("microsoft_tenant", None)
+    for field in ("label", "client_id", "enabled", "allow_signup"):
+        if field in values and values[field] is None:
+            values.pop(field)  # required fields: leaving one out keeps it
+    if "label" in values:
+        values["label"] = values["label"].strip()
+    if "client_id" in values:
+        values["client_id"] = values["client_id"].strip()
+
+    # Read the changes before applying them (audit.field_changes). The secret
+    # is never logged, only that it was replaced.
+    changes = field_changes(provider, values, values.keys())
+    for field in changes:
+        setattr(provider, field, values[field])
     if secret:
         provider.client_secret_encrypted = sip.encrypt_client_secret(secret.strip())
-        changed.append("client_secret")
-    if "allowed_domains" in changes:
-        changes["allowed_domains"] = sip.dump_domains(changes["allowed_domains"])
-    if provider.kind != "oidc":
-        changes.pop("issuer_url", None)
-    if provider.kind != "microsoft":
-        changes.pop("microsoft_tenant", None)
-    for field, value in changes.items():
-        if field in ("label", "client_id") and value is not None:
-            value = value.strip()
-        if field in ("label", "client_id", "enabled", "allow_signup") and value is None:
-            continue
-        if getattr(provider, field) != value:
-            setattr(provider, field, value)
-            changed.append(field)
+        changes["client_secret"] = ["(saved)", "(replaced)"]
 
     _require_readable_secret_to_enable(provider)
-    if changed:
-        # Never the secret itself: only that it was replaced.
+    if changes:
         record_event(db, "admin.sign_in_provider_changed", admin, target_type="sign_in_provider",
-                     target_id=provider.id, target_label=provider.label, details={"fields": changed})
+                     target_id=provider.id, target_label=provider.label, details={"changes": changes})
     await db.commit()
     await db.refresh(provider)
     counts = await _linked_counts(db)

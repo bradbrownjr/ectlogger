@@ -17,6 +17,7 @@ import { authApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getErrorMessage } from '../utils/apiErrors';
 import { safeRedirectPath } from '../utils/redirectPath';
+import SignInProviderButtons from '../components/SignInProviderButtons';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -117,6 +118,9 @@ const Login: React.FC = () => {
           <Typography variant="body1" gutterBottom align="center" color="text.secondary">
             Emergency Communications Team Net Logger
           </Typography>
+
+          {/* Google, Microsoft or other sign-in, when an admin turned one on */}
+          <SignInProviderButtons redirect={redirect} />
 
           {mode === 'magic-link' ? (
             <Box component="form" onSubmit={handleRequestMagicLink} sx={{ mt: 3 }}>

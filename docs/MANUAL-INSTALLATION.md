@@ -25,7 +25,7 @@ ECTLogger is a modern web-based net logger for Emergency Communications Teams an
 - **Backend**: Python FastAPI with SQLAlchemy ORM
 - **Frontend**: React with TypeScript and Material-UI (MUI)
 - **Database**: SQLite (default), PostgreSQL or MySQL supported
-- **Authentication**: OAuth2 (Google, Microsoft, GitHub) + Magic Link email authentication
+- **Authentication**: Magic link email, optional password and two-factor authentication, and optional sign-in with Google, Microsoft or another OpenID Connect provider
 - **Real-time**: WebSockets for live updates
 
 ## Prerequisites
@@ -104,14 +104,6 @@ SMTP_PASSWORD=your-app-password
 SMTP_FROM_EMAIL=noreply@ectlogger.com
 SMTP_FROM_NAME=ECTLogger
 
-# OAuth Providers (Optional - configure as needed)
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-MICROSOFT_CLIENT_ID=your-microsoft-client-id
-MICROSOFT_CLIENT_SECRET=your-microsoft-client-secret
-GITHUB_CLIENT_ID=your-github-client-id
-GITHUB_CLIENT_SECRET=your-github-client-secret
-
 # Frontend Serving (Production only)
 # Set to true when using Caddy/Nginx to serve static files from frontend/dist/
 # SKIP_VITE=true
@@ -120,7 +112,7 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 **Important Notes:**
 - Generate a secure SECRET_KEY using: `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`
 - For Gmail SMTP, you need to create an "App Password" in your Google Account settings
-- OAuth providers are optional and can be added later
+- Sign in with Google or Microsoft is set up later, in the admin panel, not in `.env`
 
 #### Initialize Database
 
@@ -206,40 +198,11 @@ chmod +x *.sh
 5. Click the link to sign in
 6. Your account will be created automatically
 
-## Setting Up OAuth Providers (Optional)
+## Sign in with Google or Microsoft (Optional)
 
-> **Not currently functional.** Client registration for Google/Microsoft/GitHub exists
-> (`backend/app/routers/auth.py`), but the callback route that exchanges the authorization
-> code for a token is an unimplemented stub (`HTTPException(501)`). Configuring the values
-> below registers the client but sign-in via any of these providers will fail at the
-> callback step. Magic link and password (see [PASSWORD-MFA.md](PASSWORD-MFA.md)) are the
-> only working sign-in methods today. See [SECURITY.md](SECURITY.md) for detail, and [Known issues](/docs/about/known-issues/#oauth-sign-in).
+Set these up after your first sign-in, in **Admin → Security → Sign in with Google, Microsoft and others**. Nothing goes in `.env`. The form shows the redirect address to register with the provider. [Sign in with Google, Microsoft and others](/docs/admins/sign-in-providers/) has the steps for each provider.
 
-### Google OAuth
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing one
-3. Enable Google+ API
-4. Create OAuth 2.0 credentials
-5. Add authorized redirect URI: `http://localhost:8000/auth/oauth/google/callback`
-6. Copy Client ID and Secret to `.env` file
-
-### Microsoft OAuth
-
-1. Go to [Azure Portal](https://portal.azure.com/)
-2. Navigate to Azure Active Directory > App registrations
-3. Register new application
-4. Add redirect URI: `http://localhost:8000/auth/oauth/microsoft/callback`
-5. Create client secret
-6. Copy Application (client) ID and secret to `.env` file
-
-### GitHub OAuth
-
-1. Go to GitHub Settings > Developer settings > OAuth Apps
-2. Create new OAuth App
-3. Set callback URL: `http://localhost:8000/auth/oauth/github/callback`
-4. Copy Client ID and generate Client Secret
-5. Add to `.env` file
+The `GOOGLE_`, `MICROSOFT_` and `GITHUB_CLIENT_ID`/`_SECRET` lines older copies of `.env` carry are ignored, and can be deleted.
 
 ## Database Options
 
@@ -354,7 +317,7 @@ Update these settings:
 - Configure production SMTP server
 - Set `FRONTEND_URL` to your domain
 - Enable HTTPS
-- Configure OAuth redirect URIs for your domain
+- If you use Google or Microsoft sign-in, register the redirect address Admin → Security shows for your domain
 
 ## Troubleshooting
 

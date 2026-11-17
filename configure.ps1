@@ -70,41 +70,9 @@ Write-Host ""
 Write-Host "✓ Email configuration saved" -ForegroundColor Green
 
 Write-Host ""
-Write-Host "🔑 OAuth Configuration (Optional)" -ForegroundColor Cyan
-Write-Host "-----------------------------------" -ForegroundColor Cyan
-$configureOAuth = Read-Host "Do you want to configure OAuth providers now? (y/N)"
-
-if ($configureOAuth -eq "y" -or $configureOAuth -eq "Y") {
-    Write-Host ""
-    Write-Host "Google OAuth:" -ForegroundColor Yellow
-    $googleClientId = Read-Host "Google Client ID (press Enter to skip)"
-    if (-not [string]::IsNullOrWhiteSpace($googleClientId)) {
-        $googleSecret = Read-Host "Google Client Secret"
-        (Get-Content backend\.env) -replace 'GOOGLE_CLIENT_ID=.*', "GOOGLE_CLIENT_ID=$googleClientId" | Set-Content backend\.env
-        (Get-Content backend\.env) -replace 'GOOGLE_CLIENT_SECRET=.*', "GOOGLE_CLIENT_SECRET=$googleSecret" | Set-Content backend\.env
-        Write-Host "✓ Google OAuth configured" -ForegroundColor Green
-    }
-
-    Write-Host ""
-    Write-Host "Microsoft OAuth:" -ForegroundColor Yellow
-    $msClientId = Read-Host "Microsoft Client ID (press Enter to skip)"
-    if (-not [string]::IsNullOrWhiteSpace($msClientId)) {
-        $msSecret = Read-Host "Microsoft Client Secret"
-        (Get-Content backend\.env) -replace 'MICROSOFT_CLIENT_ID=.*', "MICROSOFT_CLIENT_ID=$msClientId" | Set-Content backend\.env
-        (Get-Content backend\.env) -replace 'MICROSOFT_CLIENT_SECRET=.*', "MICROSOFT_CLIENT_SECRET=$msSecret" | Set-Content backend\.env
-        Write-Host "✓ Microsoft OAuth configured" -ForegroundColor Green
-    }
-
-    Write-Host ""
-    Write-Host "GitHub OAuth:" -ForegroundColor Yellow
-    $ghClientId = Read-Host "GitHub Client ID (press Enter to skip)"
-    if (-not [string]::IsNullOrWhiteSpace($ghClientId)) {
-        $ghSecret = Read-Host "GitHub Client Secret"
-        (Get-Content backend\.env) -replace 'GITHUB_CLIENT_ID=.*', "GITHUB_CLIENT_ID=$ghClientId" | Set-Content backend\.env
-        (Get-Content backend\.env) -replace 'GITHUB_CLIENT_SECRET=.*', "GITHUB_CLIENT_SECRET=$ghSecret" | Set-Content backend\.env
-        Write-Host "✓ GitHub OAuth configured" -ForegroundColor Green
-    }
-}
+Write-Host "🔑 Sign in with Google or Microsoft (Optional)" -ForegroundColor Cyan
+Write-Host "-----------------------------------------------" -ForegroundColor Cyan
+Write-Host "Set these up after the first sign-in, in Admin > Security. Nothing goes in .env."
 
 Write-Host ""
 Write-Host "💾 Database Configuration" -ForegroundColor Cyan

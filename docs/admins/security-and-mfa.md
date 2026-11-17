@@ -4,7 +4,7 @@ summary: Two-factor enrollment and reset, failed-login lockouts, session length,
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-11-15
+revised: 2026-11-17
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/security-and-mfa/
@@ -77,8 +77,9 @@ Set how many days a signed-in session lasts before someone has to sign in again,
 
 ## Also on this tab
 
-Two more controls are on the Security tab:
+Three more controls are on the Security tab:
 
+- **Sign in with Google, Microsoft and others** — sign-in buttons for Google, Microsoft, or another OpenID Connect provider. Setting one up has its own page: [Sign in with Google, Microsoft and others](/docs/admins/sign-in-providers/). A provider sign-in doesn't ask for the six-digit code, but switching to admin mode still does.
 - **Profile photos (Gravatar)** — turns off third-party avatar lookups. When it's off, no browser on this instance ever contacts gravatar.com; everyone without an uploaded photo just gets their initials instead. Uploaded profile photos keep working either way. Turn it off on an isolated or restricted network, such as an emergency operations center or agency network, where outbound contact to a public third party isn't wanted.
 - **Schedule creation limits** — minimum account age, minimum number of nets checked into, and a daily cap, all for who may create a schedule. This covers every schedule type, including the one-time occurrence the dashboard's **+** button creates when someone starts a net. Admins bypass all three; the per-account early-access override in [Users and roles](/docs/admins/users-and-roles/#early-access-to-schedule-creation) bypasses only the age and participation requirements, never the daily cap.
 

@@ -18,7 +18,7 @@ You can look at the [dashboard](/docs/operators/finding-a-net/), a net, the sche
 
 Type your email address on the sign-in page, click **Send Magic Link**, and click the link in the email. If nobody has ever signed in with that address, that creates your account on the spot.
 
-You can also add backup email addresses that sign you in if you lose your main one, set a password as a fallback for when email delivery is down, and turn on two-factor authentication on top of any of them. All of these live on the Profile page's **Security** tab, and all are covered in [signing in](/docs/operators/signing-in/).
+You can also add backup email addresses that sign you in if you lose your main one, set a password as a fallback for when email delivery is down, link a Google or Microsoft account if your instance offers one, and turn on two-factor authentication. All of these live on the Profile page's **Security** tab, and all are covered in [signing in](/docs/operators/signing-in/).
 
 <figure>
   <img src="/docs/img/operators/account-profile-tab.png"

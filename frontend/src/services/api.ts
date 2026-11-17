@@ -790,3 +790,77 @@ export const backupApi = {
     api.post(`/backups/targets/${id}/trust-host-key`, { host_key: hostKey }),
   regenerateTargetKey: (id: number) => api.post(`/backups/targets/${id}/regenerate-key`),
 };
+
+// ========== SIGN-IN PROVIDERS (Google, Microsoft, other OpenID Connect) ==========
+// backend routers/sign_in_providers.py; screens and wording in
+// utils/signInProviders.ts.
+
+/** The address that starts a provider sign-in. A full page load, not an
+ *  API call: the browser goes to the provider and comes back. */
+export const providerStartUrl = (slug: string) =>
+  `${API_BASE_URL}/auth/providers/${encodeURIComponent(slug)}/start`;
+
+export interface SignInProviderPublic {
+  slug: string;
+  label: string;
+  kind: 'google' | 'microsoft' | 'oidc';
+}
+
+export interface LinkedSignIn {
+  id: number;
+  provider_slug: string;
+  provider_label: string;
+  kind: SignInProviderPublic['kind'];
+  email_at_link: string | null;
+  linked_at: string | null;
+  last_used_at: string | null;
+}
+
+export interface SignInProviderAdmin {
+  id: number;
+  slug: string;
+  kind: SignInProviderPublic['kind'];
+  label: string;
+  enabled: boolean;
+  client_id: string;
+  has_client_secret: boolean;
+  client_secret_readable: boolean;
+  issuer_url: string | null;
+  microsoft_tenant: string | null;
+  allowed_domains: string[];
+  allow_signup: boolean;
+  redirect_uri: string;
+  linked_accounts: number;
+}
+
+export interface SignInProviderPayload {
+  kind?: SignInProviderPublic['kind'];
+  slug?: string | null;
+  label?: string;
+  enabled?: boolean;
+  client_id?: string;
+  /** Leave out to keep the saved secret. */
+  client_secret?: string;
+  issuer_url?: string | null;
+  microsoft_tenant?: string | null;
+  allowed_domains?: string[];
+  allow_signup?: boolean;
+}
+
+export const signInProvidersApi = {
+  list: () => api.get<SignInProviderPublic[]>('/auth/providers'),
+  exchange: (code: string) => api.post('/auth/providers/exchange', { code }),
+  linkStart: (slug: string) => api.post<{ url: string }>(`/auth/providers/${encodeURIComponent(slug)}/link`),
+  linked: () => api.get<LinkedSignIn[]>('/auth/providers/linked'),
+  unlink: (id: number) => api.delete(`/auth/providers/linked/${id}`),
+
+  adminList: () => api.get<SignInProviderAdmin[]>('/admin/sign-in-providers'),
+  adminRedirectUri: (slug: string) =>
+    api.get<{ redirect_uri: string }>(`/admin/sign-in-providers/redirect-uri/${encodeURIComponent(slug)}`),
+  adminCreate: (payload: SignInProviderPayload) => api.post<SignInProviderAdmin>('/admin/sign-in-providers', payload),
+  adminUpdate: (id: number, payload: SignInProviderPayload) =>
+    api.put<SignInProviderAdmin>(`/admin/sign-in-providers/${id}`, payload),
+  adminDelete: (id: number) => api.delete(`/admin/sign-in-providers/${id}`),
+  adminTest: (id: number) =>
+    api.post<{ ok: boolean; problems: string[]; issuer: string | null }>(`/admin/sign-in-providers/${id}/test`),
+};

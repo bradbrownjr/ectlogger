@@ -30,6 +30,7 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import api from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
+import SignInProvidersSection from './SignInProvidersSection';
 
 interface Fail2BanStatus {
   installed: boolean;
@@ -224,6 +225,9 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
           Refresh
         </Button>
       </Box>
+
+      {/* ========== SIGN-IN PROVIDERS CARD ========== */}
+      <SignInProvidersSection />
 
       {/* ========== PROFILE PHOTO PRIVACY CARD ========== */}
       {/* Lives on Security rather than Branding because the reason to turn

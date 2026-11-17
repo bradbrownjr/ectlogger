@@ -966,6 +966,82 @@ made themselves (Brad, 2026-11-15; design in
 - **Docs screenshots** switch the demo admin to admin mode in
   `capture.mjs::tokenFor`.
 
+## Sign in with Google, Microsoft and other OpenID Connect providers
+
+Admins set providers up in **Admin → Security** (`components/admin/SignInProvidersSection.tsx`,
+`/api/admin/sign-in-providers`, admin mode). Nothing is configured in `.env`. Code:
+`routers/sign_in_providers.py` (routes), `services/sign_in_providers.py` (rules),
+`models.py` `SignInProvider`, `UserIdentity`, `ProviderSignInCode` (migration 104).
+Design and the decisions behind it: `docs/concepts/SIGN-IN-PROVIDERS-AND-ADMIN-MODE.md`.
+
+**The flow.** The sign-in page's button (`components/SignInProviderButtons.tsx`) is a
+full page load to `/api/auth/providers/<slug>/start`, which redirects to the provider.
+The provider sends the browser to `.../<slug>/callback`, which finds the account and
+redirects to the app's `/auth/provider?code=...` (`pages/ProviderSignIn.tsx`). The app
+trades that code at `POST /auth/providers/exchange` for the usual token. **The token is
+never put in a URL**: the code is single-use, good for two minutes, and stored only as a
+hash. Where to return after sign-in is kept in the browser's `sessionStorage`
+(`utils/signInProviders.ts`), never on the server.
+
+**Which account a sign-in reaches** (`resolve_account`): the linked `UserIdentity`, else
+the account whose primary or backup address matches a **verified** address, else a new
+account through `routers/auth.py::get_or_create_user` (the first-magic-link path, keyed
+`oauth_provider="email"` so a later magic link finds it), else nothing. Rules that must
+not regress:
+
+- **Never reach or create an account from an unverified address.** Google:
+  `email_verified`. Microsoft: `xms_edov`, never `email_verified`, and the subject is
+  `tid:oid`, never the email (an organization's admin can put any address on an
+  account). Flags arrive as `true`, `1`, `"1"` or `"true"`.
+- **`UserIdentity` is separate from `User.oauth_provider`/`oauth_id`**, which hold the
+  magic-link address and are unique; reusing them would break the next magic link.
+- **Linking from Profile** (`POST /auth/providers/<slug>/link`) returns a start address
+  carrying a ten-minute single-use code, because the start address is a page load that
+  can't see the user's token. The callback then links whatever address the provider
+  holds, and refuses a provider account already linked to someone else.
+
+**Authlib 1.6.5 gotchas** (the version on beta and production; read in its source):
+
+- `parse_id_token` compares `iss` to the discovery document's `issuer` word for word
+  unless `claims_options` is passed. Microsoft's multi-tenant issuer is a template
+  (`https://login.microsoftonline.com/{tenantid}/v2.0`), so every real Microsoft token
+  would fail. The callback always passes `issuer_claims_options`, which fills in
+  `{tenantid}` from the token's `tid`. Passing `claims_options` drops Authlib's own
+  `iss` check, so pass it for every provider, never only Microsoft.
+- `authorize_access_token` verifies the ID token only when the saved state has a nonce.
+  The callback refuses a sign-in whose response has no `userinfo`.
+- PKCE is sent only when the client is registered with `code_challenge_method="S256"`.
+- Authlib keeps state, nonce and the PKCE verifier in `request.session`, so `main.py`
+  adds Starlette's `SessionMiddleware`: cookie `ectlogger_signin`, path `/api/auth`, ten
+  minutes, `SameSite=Lax` (the return from the provider is a cross-site page load),
+  signed with a key derived from `SECRET_KEY`.
+
+**The redirect address** is `<site>/api/auth/providers/<slug>/callback`, built by
+`callback_url` from `X-Forwarded-Proto`/`X-Forwarded-Host`. uvicorn trusts forwarding
+headers only from 127.0.0.1, and beta's proxy is on another host, so `request.url` alone
+reads `http://`. Trusting the headers here is safe: the provider only sends people to an
+address registered in its console, and the admin sees the exact address on screen.
+
+**Two-factor.** A provider sign-in asks for no code (Brad, 2026-11-15: the provider
+carries the second factor). An admin with no authenticator gets `mfa_setup_required`,
+and still needs a code to open admin mode.
+
+**Other details.**
+- The client secret is encrypted with `fernet_for_purpose` and never returned; the admin
+  list says only whether one is saved and readable. A provider whose secret can't be read
+  (after a `SECRET_KEY` change) is left off the sign-in page.
+- Removing a provider deletes its `UserIdentity` and code rows explicitly: SQLite
+  doesn't enforce the `ON DELETE CASCADE`.
+- `GOOGLE_`/`MICROSOFT_`/`GITHUB_CLIENT_ID`/`_SECRET` stay in `config.py`, ignored:
+  pydantic-settings refuses unknown `.env` keys (`extra='forbid'`), and most installs
+  still carry `.env.example`'s placeholders. `main.py` warns at startup when one holds a
+  real value.
+- No route here answers 401: a refused exchange is 400, a locked account 403 (`tests/test_no_signed_in_401.py`).
+
+Tests: `backend/tests/test_sign_in_providers.py`, `frontend/src/utils/signInProviders.test.ts`.
+How a real provider behaves is only shown by a real sign-in; see the design doc's open
+questions.
+
 ## Activity log
 
 `models.AuditEvent` (migration 088) is the admin-only record of who did what, from

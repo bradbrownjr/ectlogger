@@ -1,10 +1,10 @@
 ---
 title: Signing in
-summary: The magic link, changing the address it goes to, backup addresses, the password fallback for when email is down, and two-factor authentication.
+summary: The magic link, Google or Microsoft sign-in, changing the address it goes to, backup addresses, the password fallback for when email is down, and two-factor authentication.
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-17
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/operators/signing-in/
@@ -12,9 +12,9 @@ permalink: /docs/operators/signing-in/
 
 # Signing in
 
-There are two ways into your account and one optional thing that sits on top of both. The magic link is the normal way and needs nothing set up. A password is a fallback you turn on yourself, for the night email isn't working. Two-factor authentication adds a six-digit code to whichever of those you used.
+The magic link is the normal way into your account and needs nothing set up. A password is a fallback you turn on yourself, for the night email isn't working. If your instance's admin has turned it on, the sign-in page also has a **Sign in with Google** or **Sign in with Microsoft** button. Two-factor authentication adds a six-digit code to a magic link or password sign-in.
 
-You don't choose one and give up the others. All three can be live on the same account at once.
+You don't choose one and give up the others. All of them can be live on the same account at once.
 
 ## Sign in with a magic link
 
@@ -29,6 +29,26 @@ The link stays valid for 30 days, so nobody gets signed out at three in the morn
 After 30 days the link stops working. Opening it then shows **This sign-in link has expired** with a **Send me a new link** button: it emails a fresh link to the same address. Keep the new email in place of the old one. A link that was cut off when it was copied or forwarded shows **This sign-in link didn't work** instead, and needs a new one from the sign-in page.
 
 If the message has not arrived in a minute or two, check your spam folder. If your club runs its own instance and no message ever arrives, that is the server's mail configuration; tell whoever runs it.
+
+## Sign in with Google or Microsoft
+
+When your instance's admin has turned one on, the sign-in page shows a button for it above the email field. Click it, sign in with your Google or Microsoft account, and you come back signed in to ECTLogger.
+
+- **The first time**, ECTLogger looks for an account with the same email address as your Google or Microsoft account, and signs you in to it. If there isn't one, it makes one, the same as a first magic link.
+- **After that**, it finds your account through the link it made, even if your address with Google or Microsoft changes.
+- **It doesn't ask for your two-factor code.** Google's or Microsoft's own sign-in is the second step.
+
+If the page says it can't tell which account is yours, Google or Microsoft didn't confirm the email address, or it isn't one on your ECTLogger account. Sign in with the magic link, then link the account as below.
+
+### Link Google or Microsoft to your account
+
+Use this when the button signs you in to the wrong place, or can't find your account because your Google or Microsoft address isn't the one ECTLogger knows.
+
+1. Sign in with the magic link or your password.
+2. Open **Profile**, then the **Security** tab.
+3. Under **Google, Microsoft and other sign-ins**, click **Link Google** or **Link Microsoft** and sign in there.
+
+From then on that button signs you in to this account, whatever address it holds. **Unlink** in the same place undoes it. Your magic link and password keep working either way.
 
 ## If your callsign already has an account
 
@@ -139,7 +159,7 @@ Turn it on if your account can do damage: you run a net, you own a schedule, or 
 
 ## What changes once it is on
 
-- **Every sign-in asks for a code, including a magic link.** After you click the link, the page asks for the six digits before it finishes signing you in.
+- **Every magic link and password sign-in asks for a code.** After you click the link, the page asks for the six digits before it finishes signing you in. A Google or Microsoft sign-in doesn't: their own sign-in is the second step.
 - **A backup code works anywhere the app's code does**, once each. You get eight.
 - **Replace Authenticator**, on the same Security tab, moves your account to a new phone. It asks for your password, then runs the same scan-and-confirm and issues a fresh set of backup codes, which retires the old set.
 - **Disable** turns it off again, and also asks for your password.

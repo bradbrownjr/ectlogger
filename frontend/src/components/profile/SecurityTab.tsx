@@ -22,6 +22,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { authApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import BackupEmailsSection from './BackupEmailsSection';
+import LinkedSignInsSection from './LinkedSignInsSection';
 
 // ========== SECURITY TAB ==========
 // Password fallback (for when magic-link email is down) and optional TOTP
@@ -262,6 +263,9 @@ const SecurityTab: React.FC = () => {
       <BackupEmailsSection onPrimaryChanged={refreshUser} />
 
       <Divider sx={{ my: 3 }} />
+
+      {/* Google, Microsoft and other sign-ins; draws its own divider below */}
+      <LinkedSignInsSection />
 
       {/* ========== PASSWORD ========== */}
       <Typography variant="h6" gutterBottom>

@@ -1121,6 +1121,10 @@ async def delete_user(
     # SQLite doesn't enforce the CASCADE either, and a backup address left
     # behind would keep signing in to whatever account reuses the id.
     await db.execute(sql_delete(UserEmail).where(UserEmail.user_id == user.id))
+    # Same for a linked Google/Microsoft sign-in, and any unused sign-in code.
+    from app.models import ProviderSignInCode, UserIdentity
+    await db.execute(sql_delete(UserIdentity).where(UserIdentity.user_id == user.id))
+    await db.execute(sql_delete(ProviderSignInCode).where(ProviderSignInCode.user_id == user.id))
     # Its starred schedules too, or the account that reuses the id has them.
     from app.models import ScheduleFavorite
     await db.execute(sql_delete(ScheduleFavorite).where(ScheduleFavorite.user_id == user.id))

@@ -380,7 +380,9 @@ async def test_admin_adds_changes_and_removes_a_provider(client, db, admin, owne
     assert changed.json()["label"] == "Sign in with Google"
     event = (await db.execute(select(AuditEvent).where(
         AuditEvent.action == "admin.sign_in_provider_changed"))).scalars().one()
-    assert set(json.loads(event.details)["fields"]) == {"label", "client_secret"} and "n3w" not in event.details
+    changes = json.loads(event.details)["changes"]
+    assert changes["label"] == ["Google", "Sign in with Google"]
+    assert set(changes) == {"label", "client_secret"} and "n3w" not in event.details
 
     db.add(UserIdentity(provider_id=body["id"], user_id=owner.id, subject="g-1"))
     await db.commit()
@@ -406,3 +408,19 @@ async def test_other_provider_needs_a_name_and_https_issuer(client, admin):
                              json={"kind": "oidc", "slug": "club", "label": "Club", "client_id": "id",
                                    "issuer_url": "http://auth.example.org"})
     assert no_slug.status_code == 422 and http.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_deleting_an_account_removes_its_provider_links(client, db, admin, owner):
+    # SQLite gives a deleted account's id to the next one, so a link left
+    # behind would sign its Google account in to that stranger's account.
+    provider = await _provider(db)
+    db.add(UserIdentity(provider_id=provider.id, user_id=owner.id, subject="g-1"))
+    await db.commit()
+    await sip.issue_code(db, purpose="signin", user_id=owner.id, minutes=2, provider_id=provider.id, login_status="ok")
+    await db.commit()
+
+    response = await client.delete(f"/api/users/{owner.id}", headers=auth_headers(admin))
+    assert response.status_code in (200, 204)
+    assert (await db.execute(select(UserIdentity))).scalars().all() == []
+    assert (await db.execute(select(ProviderSignInCode))).scalars().all() == []

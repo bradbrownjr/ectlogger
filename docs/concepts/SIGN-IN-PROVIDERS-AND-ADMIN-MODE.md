@@ -145,7 +145,7 @@ up to 90 days of admin access on that browser.
 
 - Login page: one button per enabled provider, listed by a public
   `GET /auth/providers`. The email field and password option stay.
-- `GET /api/auth/providers/{id}/start` redirects to the provider. Authlib keeps the
+- `GET /api/auth/providers/{slug}/start` redirects to the provider. Authlib keeps the
   `state`, `nonce`, and PKCE `code_verifier` in `request.session`
   (`authlib/integrations/starlette_client/apps.py`, Authlib 1.6.5, the version on beta and production), so `main.py` adds
   Starlette's `SessionMiddleware`: signed with a key derived from `SECRET_KEY`,
@@ -180,14 +180,19 @@ up to 90 days of admin access on that browser.
      (contact prefill, invited callsign, first account becomes admin).
   4. Otherwise the sign-in is refused with a message saying to sign in another way
      and link the provider from Profile.
-- **Profile, Security tab:** linked sign-ins, with Link and Unlink. Linking while
+- **Profile, Security tab:** linked sign-ins, with Link and Unlink. Link asks the
+  server for a start address carrying a ten-minute single-use code
+  (`ProviderSignInCode`, purpose `link`), since the start address is a page load that
+  can't see the user's token. Linking while
   signed in covers every case step 2 refuses.
 - **Account merge** (`services/account_merge.py`) moves `UserIdentity` rows by its
   foreign key, which `test_account_merge.py` already enforces for new user columns.
 - **Two-factor:** an account with two-factor on is not asked for its code after a
   provider sign-in. For an admin, admin mode (Phase 1) still is.
-- Ban and delete revoke sign-in as they do today. Activity log: `auth.provider_signin`,
-  `auth.provider_linked`, `auth.provider_unlinked`, `auth.provider_failed`.
+- Ban and delete revoke sign-in as they do today. Activity log: a provider sign-in is
+  `auth.signed_in` with the provider's label as its method, plus `auth.provider_linked`,
+  `auth.provider_unlinked`, `auth.provider_failed`, and
+  `admin.sign_in_provider_added`/`_changed`/`_removed` (in the Site settings group).
 
 ### Cleanup
 

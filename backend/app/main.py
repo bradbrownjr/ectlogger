@@ -119,8 +119,10 @@ print("ECTLogger Backend Starting")
 print(f"{'='*60}")
 print(f"Log Level: {settings.log_level.upper()}")
 print(f"CORS Origins: {', '.join(allowed_origins)}")
+# A real key, not .env.example's "your-..." placeholder, which most installs
+# still carry and which never did anything.
 _old_oauth = [name.upper() for name in ("google_client_id", "microsoft_client_id", "github_client_id")
-              if getattr(settings, name)]
+              if getattr(settings, name) and not getattr(settings, name).startswith("your-")]
 if _old_oauth:
     print(f"WARNING: {', '.join(_old_oauth)} in .env no longer do anything. Set up Google or Microsoft "
           "sign-in in Admin > Security, and remove the *_CLIENT_ID/*_CLIENT_SECRET lines from .env.")

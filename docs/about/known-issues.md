@@ -4,7 +4,7 @@ summary: Confirmed, currently open problems and limitations, with a workaround f
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-11-16
+revised: 2026-11-17
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/about/known-issues/
@@ -14,23 +14,7 @@ permalink: /docs/about/known-issues/
 
 This page lists confirmed problems and limitations that are open, each with a workaround. Problems that have been fixed are listed under Bug Fixes in the [changelog](/docs/CHANGELOG/), and planned work is on the [Roadmap](/docs/ROADMAP/).
 
-<div class="table-scroll" markdown="1">
-
-| Problem | Who it affects | Workaround | Tracking |
-|---|---|---|---|
-| [Google, Microsoft and GitHub sign-in](#oauth-sign-in) | Self-hosted servers whose administrator configures one of these providers | Sign in with an emailed link or a password | [#11](https://github.com/bradbrownjr/ectlogger/issues/11) |
-
-</div>
-
-Every row is also an open issue on GitHub, labelled [known-issue](https://github.com/bradbrownjr/ectlogger/issues?q=is%3Aopen+label%3Aknown-issue).
-
-## Google, Microsoft and GitHub sign-in {#oauth-sign-in}
-
-A self-hosted server can be given Google, Microsoft or GitHub sign-in keys, but the final step of signing in with them returns an error, so no one can complete it. The app doesn't show sign-in buttons for these providers, so on the hosted app nobody will run into it; it affects only an administrator who configures the keys expecting them to work.
-
-**Workaround:** sign in with an emailed link or a password.
-
-See [Manual installation](/docs/MANUAL-INSTALLATION/).
+No confirmed problems are open. When there is one, it gets a row here with a workaround, and an open issue on GitHub labelled [known-issue](https://github.com/bradbrownjr/ectlogger/issues?q=is%3Aopen+label%3Aknown-issue).
 
 ## If what you've hit isn't here
 
