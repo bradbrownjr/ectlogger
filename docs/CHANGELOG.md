@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-11-15
+revised: 2026-11-16
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,15 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# November 16, 2026
+
+## Bug Fixes
+
+* **Profile: A wrong code no longer signs you out** — Entering a wrong password or authenticator code in Profile > Security signed you out. Now the screen says the code didn't work and you can try again.
+* **Nets: Delete and cancel windows fit on a phone** — On a narrow screen their buttons ran into each other. Now they wrap onto a second line, and Close & Archive is green like the other buttons that send the log.
 
 ---
 
@@ -32,7 +41,6 @@ All notable changes to ECTLogger are documented here.
 ## Bug Fixes
 
 * **PDFs: No more lines cut in half** — A page break in an exported PDF now falls between lines of text instead of through one, so a long script or set of announcements reads cleanly from page to page.
-* **Profile: A wrong code no longer signs you out** — Entering a wrong password or authenticator code in Profile > Security signed you out. Now the screen says the code didn't work and you can try again.
 
 ---
 
