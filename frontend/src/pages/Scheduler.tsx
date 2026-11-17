@@ -1059,11 +1059,11 @@ const Scheduler: React.FC = () => {
             This cannot be undone.
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ flexWrap: 'wrap', justifyContent: 'flex-end', gap: 1, px: 3, pb: 2 }} disableSpacing>
           <Button
             onClick={() => setDeleteConfirmOpen(false)}
-            variant="contained"
-            color="primary"
+            variant="outlined"
+            color="inherit"
           >
             Cancel
           </Button>
