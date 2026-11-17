@@ -4,7 +4,7 @@ summary: Maintaining the instance-wide list of repeaters, simplex frequencies, a
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-11-15
+revised: 2026-11-17
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/frequencies/
@@ -31,11 +31,15 @@ Offset and N/W show for a mode entered as a frequency (FM, AM, SSB, CW, GMRS, th
 
 An entry needs a frequency or a network, not necessarily both.
 
+Repeaters far apart often share a frequency. Add each one as its own entry, with a description that says which repeater it is, such as its callsign and town. The list refuses only an entry that matches an existing one in every field: frequency, mode, network, talkgroup, description, offset, and tones.
+
 ## Editing and deleting
 
 Editing an entry updates it everywhere it's used, so you can fix a typo without touching every net that picked it. Deleting is only possible once nothing references the entry at all: no net or schedule lists it, and no station's check-in was logged on it. The **Nets Using** column shows the net count, and the delete icon stays greyed out while any of the three is in use, with a tooltip saying so. Admins can edit any entry.
 
-Everyone else who creates nets can add to the list and pick from it. They can also edit or delete an entry **they added themselves**, from the net or schedule form, until another net or schedule uses it or a station checks in on it. Only an admin can change entries added before 2026-10-22, which have no record of who added them.
+Everyone else who creates nets can add to the list and pick from it. They can also edit or delete an entry **they added themselves**, from the net or schedule form, until another net or schedule uses it or a station checks in on it.
+
+A net or schedule manager can also edit, but not delete, an entry their form uses when every net, schedule, and check-in using it is theirs, whoever added it. A schedule's past nets count as the schedule manager's. This lets a club fill in offsets and tones on its own repeaters for an ICS-205. Only an admin can change any other entry, such as one another club's nets also use.
 
 When someone can't make a change, the form offers to send it to you instead. Every admin gets an email naming the entry, what they want it changed to (or that they want it deleted), which nets and schedules use it, and their note. Its **Open the Frequencies tab** button opens this list filtered to that entry. Make the change here; there is nothing to approve in the app.
 

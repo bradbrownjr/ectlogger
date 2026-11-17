@@ -171,10 +171,27 @@ async def test_naming_someone_elses_net_does_not_excuse_it(client, db, owner, ot
     assert r.status_code == 403
 
 
-async def test_check_ins_on_it_refuse_even_on_own_net(client, db, owner):
+async def test_check_ins_on_own_net_allow_edit_but_refuse_delete(client, db, owner):
+    # Check-ins on a net of yours are yours (all_uses_yours), so an edit is
+    # fine; deleting would leave them pointing at nothing.
     freq = await _freq(db, created_by_id=owner.id)
     net = await _attach_net(db, freq, owner.id)
     db.add(CheckIn(net_id=net.id, callsign="W1PINE", name="Alex Reed", location="Bridgton, ME", frequency_id=freq.id))
+    await db.commit()
+    r = await client.put(f"/api/frequencies/{freq.id}?net_id={net.id}", json=PAYLOAD, headers=auth_headers(owner))
+    assert r.status_code == 200
+    r = await client.delete(f"/api/frequencies/{freq.id}?net_id={net.id}", headers=auth_headers(owner))
+    assert r.status_code == 403
+    assert "1 check-in" in r.json()["detail"]["message"]
+
+
+async def test_check_ins_on_someone_elses_net_refuse_edit(client, db, owner, other):
+    freq = await _freq(db, created_by_id=owner.id)
+    net = await _attach_net(db, freq, owner.id)
+    theirs = Net(name="Other club", owner_id=other.id)
+    db.add(theirs)
+    await db.flush()
+    db.add(CheckIn(net_id=theirs.id, callsign="W1PINE", name="Alex Reed", location="Bridgton, ME", frequency_id=freq.id))
     await db.commit()
     r = await client.put(f"/api/frequencies/{freq.id}?net_id={net.id}", json=PAYLOAD, headers=auth_headers(owner))
     assert r.status_code == 403
@@ -216,3 +233,60 @@ async def test_change_request_only_when_refused(client, db, owner, other, admin,
     # An edit request must say what to change it to.
     r = await client.post(f"/api/frequencies/{freq.id}/change-request", json={"action": "edit"}, headers=auth_headers(other))
     assert r.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# A frequency whose every net, schedule and check-in is the user's may be
+# edited (not deleted) from their form, whoever added it (2026-11-17, issue
+# #14: a schedule's manager couldn't add tones to his own repeaters, entries
+# from before created_by_id, because his schedule's past nets counted as
+# "other nets").
+# ---------------------------------------------------------------------------
+
+async def _schedule_with_history(db, freq, manager_id, net_owner_ids):
+    """A schedule managed by *manager_id* using *freq*, plus one past net per
+    owner in *net_owner_ids* (staff who created an occurrence own that net),
+    each with a check-in on *freq*."""
+    tpl = NetTemplate(name="Weekly ARES Net", owner_id=manager_id)
+    db.add(tpl)
+    await db.flush()
+    await db.execute(insert(net_template_frequencies).values(template_id=tpl.id, frequency_id=freq.id))
+    await db.commit()
+    for owner_id in net_owner_ids:
+        net = await _attach_net(db, freq, owner_id, template_id=tpl.id)
+        db.add(CheckIn(net_id=net.id, callsign="W1PINE", name="Alex Reed", location="Bridgton, ME", frequency_id=freq.id))
+    await db.commit()
+    return tpl
+
+
+async def test_schedule_manager_edits_an_old_entry_only_their_nets_use(client, db, owner, other):
+    freq = await _freq(db)  # added before created_by_id was recorded
+    tpl = await _schedule_with_history(db, freq, owner.id, [owner.id, other.id])
+
+    r = await client.get(f"/api/frequencies?template_id={tpl.id}", headers=auth_headers(owner))
+    row = next(row for row in r.json() if row["id"] == freq.id)
+    assert row["edit_refused"] is None
+    assert row["delete_refused"]
+
+    edit = {**PAYLOAD, "offset": "+0.600", "tx_tone": "100.0", "rx_tone": "100.0"}
+    r = await client.put(f"/api/frequencies/{freq.id}?template_id={tpl.id}", json=edit, headers=auth_headers(owner))
+    assert r.status_code == 200
+    assert r.json()["tx_tone"] == "100.0"
+
+    r = await client.delete(f"/api/frequencies/{freq.id}?template_id={tpl.id}", headers=auth_headers(owner))
+    assert r.status_code == 403
+
+
+async def test_not_yours_once_another_club_uses_it(client, db, owner, other):
+    freq = await _freq(db)
+    tpl = await _schedule_with_history(db, freq, owner.id, [owner.id])
+    await _attach_net(db, freq, other.id, name="Other club")
+    r = await client.put(f"/api/frequencies/{freq.id}?template_id={tpl.id}", json=PAYLOAD, headers=auth_headers(owner))
+    assert r.status_code == 403
+
+
+async def test_not_yours_without_naming_the_form(client, db, owner):
+    freq = await _freq(db)
+    await _schedule_with_history(db, freq, owner.id, [owner.id])
+    r = await client.put(f"/api/frequencies/{freq.id}", json=PAYLOAD, headers=auth_headers(owner))
+    assert r.status_code == 403
