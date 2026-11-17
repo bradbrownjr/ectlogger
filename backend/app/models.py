@@ -1889,3 +1889,82 @@ class AdminSession(Base):
     closed_at = Column(DateTime(timezone=True), nullable=True)
     ip = Column(String(64), nullable=True)
     user_agent = Column(String(255), nullable=True)
+
+
+class SignInProvider(Base):
+    """A Google, Microsoft or other OpenID Connect sign-in an admin set up in
+    Admin > Security (migration 104). Read from the database on each sign-in,
+    so a change applies at once. The redirect address the provider sends
+    people back to is /api/auth/providers/<slug>/callback, keyed by slug so it
+    can be registered in the provider's console first. The client secret is
+    stored encrypted (services/sign_in_providers.py) and never sent back to
+    the app. See docs/concepts/SIGN-IN-PROVIDERS-AND-ADMIN-MODE.md."""
+    __tablename__ = "sign_in_providers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slug = Column(String(40), nullable=False, unique=True, index=True)
+    kind = Column(String(20), nullable=False)  # "google", "microsoft" or "oidc"
+    label = Column(String(60), nullable=False)
+    enabled = Column(Boolean, nullable=False, default=False)
+    client_id = Column(String(255), nullable=False)
+    client_secret_encrypted = Column(Text, nullable=True)
+    # Other (OIDC) only: the issuer, whose discovery document is at
+    # <issuer>/.well-known/openid-configuration.
+    issuer_url = Column(String(255), nullable=True)
+    # Microsoft only: null for any Microsoft account (the "common" endpoint),
+    # or one organization's tenant ID.
+    microsoft_tenant = Column(String(64), nullable=True)
+    # JSON list of email domains a first sign-in may create an account for;
+    # null or empty allows any.
+    allowed_domains = Column(Text, nullable=True)
+    allow_signup = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    @property
+    def allowed_domain_list(self) -> list:
+        try:
+            value = json.loads(self.allowed_domains) if self.allowed_domains else []
+        except (TypeError, ValueError):
+            return []
+        return [d for d in value if isinstance(d, str) and d]
+
+
+class UserIdentity(Base):
+    """One provider account linked to one ECTLogger account (migration 104).
+    `subject` is the provider's own permanent id for the person: the ID
+    token's `sub`, or for Microsoft its tenant and object ids (`tid:oid`),
+    never an email address. Kept apart from User.oauth_provider/oauth_id,
+    which hold the magic-link address."""
+    __tablename__ = "user_identities"
+    __table_args__ = (UniqueConstraint("provider_id", "subject", name="uq_user_identity_provider_subject"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider_id = Column(Integer, ForeignKey("sign_in_providers.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    subject = Column(String(255), nullable=False)
+    email_at_link = Column(String(255), nullable=True)
+    linked_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class ProviderSignInCode(Base):
+    """A short-lived, single-use code (migration 104), stored as a hash.
+
+    purpose "signin": the provider callback hands the app this code in the
+    address bar, and the app trades it for the usual token at
+    POST /auth/providers/exchange, so the token itself never goes in a URL.
+    purpose "link": a signed-in user asks to link a provider from Profile, and
+    the browser carries this code to the provider's start address, which
+    cannot see the user's token."""
+    __tablename__ = "provider_sign_in_codes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code_hash = Column(String(64), nullable=False, unique=True, index=True)
+    purpose = Column(String(10), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    provider_id = Column(Integer, ForeignKey("sign_in_providers.id", ondelete="CASCADE"), nullable=True)
+    login_status = Column(String(30), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used_at = Column(DateTime(timezone=True), nullable=True)

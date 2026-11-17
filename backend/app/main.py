@@ -9,7 +9,7 @@ from app.config import settings
 from app.database import init_db, AsyncSessionLocal
 from app.routers import auth, users, nets, check_ins, frequencies, templates, chat, ncs_rotation, security, statistics, geocode, contacts, feedback, can_hear, coverage_sites, drill_plans, traffic, feeds, backups, off_net_log, audit, net_blocks, channel_marks, ics214
 from app.routers import settings as app_settings_router
-from app.routers import schedule_favorites, training, net_logos, closing_email
+from app.routers import schedule_favorites, training, net_logos, closing_email, sign_in_providers
 from app.security import sanitize_html, get_client_ip
 from app.ncs_reminder_service import ncs_reminder_service
 from app.whats_new_service import whats_new_service
@@ -119,6 +119,11 @@ print("ECTLogger Backend Starting")
 print(f"{'='*60}")
 print(f"Log Level: {settings.log_level.upper()}")
 print(f"CORS Origins: {', '.join(allowed_origins)}")
+_old_oauth = [name.upper() for name in ("google_client_id", "microsoft_client_id", "github_client_id")
+              if getattr(settings, name)]
+if _old_oauth:
+    print(f"WARNING: {', '.join(_old_oauth)} in .env no longer do anything. Set up Google or Microsoft "
+          "sign-in in Admin > Security, and remove the *_CLIENT_ID/*_CLIENT_SECRET lines from .env.")
 print(f"{'='*60}\n")
 
 app.add_middleware(
@@ -128,6 +133,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["X-New-Token", "X-Admin-Mode-Closes-At"],
+)
+
+# ========== SIGN-IN PROVIDER COOKIE ==========
+# Authlib keeps a sign-in's state, nonce and PKCE verifier in request.session
+# between /api/auth/providers/<slug>/start and its callback
+# (routers/sign_in_providers.py). The cookie lives ten minutes and is sent
+# only to /api/auth. SameSite=Lax because the return from the provider is a
+# cross-site page load. Signed with a key derived from SECRET_KEY, never the
+# key itself.
+import hashlib
+from starlette.middleware.sessions import SessionMiddleware
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=hashlib.sha256(b"ectlogger-sign-in-session:" + settings.secret_key.encode()).hexdigest(),
+    session_cookie="ectlogger_signin",
+    max_age=600,
+    path="/api/auth",
+    same_site="lax",
+    https_only=settings.frontend_url.startswith("https://"),
 )
 
 # Security middleware for request sanitization
@@ -148,6 +172,8 @@ async def security_middleware(request: Request, call_next):
 # Include routers with /api prefix for reverse proxy compatibility
 # Caddy forwards /api/* to the backend, so all routes need this prefix
 app.include_router(auth.router, prefix="/api")
+app.include_router(sign_in_providers.router, prefix="/api")
+app.include_router(sign_in_providers.admin_router, prefix="/api")
 # Before users.router, so /users/me/... is never read as a user id.
 app.include_router(schedule_favorites.router, prefix="/api")
 app.include_router(users.router, prefix="/api")

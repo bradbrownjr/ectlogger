@@ -147,7 +147,7 @@ up to 90 days of admin access on that browser.
   `GET /auth/providers`. The email field and password option stay.
 - `GET /api/auth/providers/{id}/start` redirects to the provider. Authlib keeps the
   `state`, `nonce`, and PKCE `code_verifier` in `request.session`
-  (`authlib/integrations/starlette_client/apps.py`, Authlib 1.7.2), so `main.py` adds
+  (`authlib/integrations/starlette_client/apps.py`, Authlib 1.6.5, the version on beta and production), so `main.py` adds
   Starlette's `SessionMiddleware`: signed with a key derived from `SECRET_KEY`,
   `SameSite=Lax` (the return from the provider is a cross-site page load), HTTPS-only
   on production, path `/api/auth`.
@@ -195,7 +195,7 @@ up to 90 days of admin access on that browser.
   import-time `oauth.register` calls).
 - **Keep the six `*_CLIENT_ID`/`*_CLIENT_SECRET` settings in `config.py`, marked
   deprecated and ignored.** pydantic-settings refuses unknown `.env` keys
-  (`extra_forbidden`, checked against 2.14.2), and production's `.env` and every
+  (`extra='forbid'` in `pydantic_settings/main.py`, checked against 2.12.0, the version on beta and production), and production's `.env` and every
   self-hoster's copy of `.env.example` still has them, so deleting them would stop
   the server from starting. Log a warning at startup when one is set to a real value.
   Remove them from `.env.example`.
@@ -203,11 +203,29 @@ up to 90 days of admin access on that browser.
 
 ## Open questions
 
-1. **Unverified on Microsoft "any account":** its discovery document gives the issuer
-   as `https://login.microsoftonline.com/{tenantid}/v2.0`, a template. Whether Authlib
-   1.7.2 validates `iss` against that template or needs the tenant filled in from the
-   token's `tid` must be checked in its source and against a real sign-in.
-2. **Testing needs real client IDs.** Brad registers a test app in Google Cloud Console
+1. **Resolved 2026-11-17: Microsoft "any account" needs our own issuer check.** Its
+   discovery document gives the issuer as
+   `https://login.microsoftonline.com/{tenantid}/v2.0`, a template. Authlib 1.6.5
+   (`base_client/async_openid.py::parse_id_token`) compares `iss` to the discovery
+   `issuer` word for word unless the caller passes `claims_options`, so every real
+   Microsoft token would fail. The callback passes its own `iss` rule for every
+   provider: the discovery issuer, with `{tenantid}` replaced by the token's `tid`
+   when it has one. Passing `claims_options` drops Authlib's default `iss` check, so
+   the rule must always be passed, never only for Microsoft.
+   Also from that source: `authorize_access_token` verifies the ID token only when the
+   saved state has a nonce (`starlette_client/apps.py`), and PKCE is sent only when the
+   client is registered with `code_challenge_method="S256"`. The callback refuses a
+   sign-in with no verified `userinfo` rather than trusting the response.
+   Still to confirm against a real Microsoft sign-in.
+2. **Unverified: does a personal Microsoft account carry `xms_edov`?** Microsoft's
+   optional claims reference documents it as a Boolean and doesn't say whether
+   personal accounts get it. Community reports (searched 2026-11-17) disagree: one saw
+   the string `"1"` in a real personal-account token, another says personal accounts
+   never carry it. The code accepts `true`, `1`, `"1"` and `"true"`, and treats
+   anything else as unverified, which means a personal account without it can neither
+   reach an existing account by email nor create one. Brad's first sign-in with a
+   personal account decides whether that needs changing.
+3. **Testing needs real client IDs.** Brad registers a test app in Google Cloud Console
    and in Microsoft Entra, both pointed at beta's redirect URI. A generic OIDC
    provider needs a real server too, for example Authentik or Keycloak in Docker on
    Unraid. A hand-written fake is not evidence of how a real provider behaves.

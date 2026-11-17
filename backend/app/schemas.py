@@ -3795,3 +3795,149 @@ class LogoApplyResponse(BaseModel):
     logo_url: str
     updated_nets: int
     updated_schedules: int
+
+
+# ========== SIGN-IN PROVIDERS (Google, Microsoft, other OpenID Connect) ==========
+# services/sign_in_providers.py, routers/sign_in_providers.py.
+
+_PROVIDER_KINDS = ("google", "microsoft", "oidc")
+_SLUG_RE = r"^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$"
+_DOMAIN_RE = r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$"
+_TENANT_RE = r"^[A-Za-z0-9.-]{1,64}$"
+
+
+def _clean_domains(value: Optional[List[str]]) -> Optional[List[str]]:
+    import re
+    if value is None:
+        return None
+    cleaned = []
+    for raw in value:
+        domain = (raw or "").strip().lower().lstrip("@")
+        if not domain:
+            continue
+        if not re.match(_DOMAIN_RE, domain):
+            raise ValueError(f"{raw!r} isn't a domain, like example.org")
+        if domain not in cleaned:
+            cleaned.append(domain)
+    return cleaned
+
+
+def _clean_tenant(value: Optional[str]) -> Optional[str]:
+    import re
+    value = (value or "").strip()
+    if not value or value.lower() == "common":
+        return None
+    if not re.match(_TENANT_RE, value):
+        raise ValueError("Enter the tenant ID, or the organization's domain, like contoso.onmicrosoft.com")
+    return value
+
+
+def _clean_issuer(value: Optional[str]) -> Optional[str]:
+    value = (value or "").strip().rstrip("/")
+    if not value:
+        return None
+    if not value.startswith("https://") or any(ch.isspace() for ch in value):
+        raise ValueError("The issuer address must start with https://")
+    return value
+
+
+class SignInProviderPublic(BaseModel):
+    """What the sign-in page and Profile show: enabled providers only."""
+    slug: str
+    label: str
+    kind: str
+
+
+class SignInProviderAdmin(BaseModel):
+    """A provider as Admin > Security shows it. The client secret is never
+    sent back, only whether one is set and still readable."""
+    id: int
+    slug: str
+    kind: str
+    label: str
+    enabled: bool
+    client_id: str
+    has_client_secret: bool
+    client_secret_readable: bool
+    issuer_url: Optional[str] = None
+    microsoft_tenant: Optional[str] = None
+    allowed_domains: List[str] = []
+    allow_signup: bool
+    redirect_uri: str
+    linked_accounts: int = 0
+
+
+class SignInProviderCreate(BaseModel):
+    kind: Literal["google", "microsoft", "oidc"]
+    # Google and Microsoft default to their own name. Other needs one.
+    slug: Optional[str] = Field(None, pattern=_SLUG_RE)
+    label: str = Field(..., min_length=1, max_length=60)
+    enabled: bool = False
+    client_id: str = Field(..., min_length=1, max_length=255)
+    client_secret: Optional[str] = Field(None, max_length=1000)
+    issuer_url: Optional[str] = None
+    microsoft_tenant: Optional[str] = None
+    allowed_domains: List[str] = []
+    allow_signup: bool = True
+
+    _domains = field_validator("allowed_domains")(_clean_domains)
+    _tenant = field_validator("microsoft_tenant")(_clean_tenant)
+    _issuer = field_validator("issuer_url")(_clean_issuer)
+
+    @model_validator(mode="after")
+    def _kind_rules(self):
+        self.label = self.label.strip()
+        self.client_id = self.client_id.strip()
+        if self.client_secret is not None:
+            self.client_secret = self.client_secret.strip() or None
+        if self.kind in ("google", "microsoft"):
+            self.slug = self.slug or self.kind
+            self.issuer_url = None
+        elif not self.slug:
+            raise ValueError("Give this provider a short name for its address, like authentik")
+        elif not self.issuer_url:
+            raise ValueError("Enter the provider's issuer address")
+        if self.kind != "microsoft":
+            self.microsoft_tenant = None
+        return self
+
+
+class SignInProviderUpdate(BaseModel):
+    """Every field optional. client_secret: leave out to keep the one saved."""
+    label: Optional[str] = Field(None, min_length=1, max_length=60)
+    enabled: Optional[bool] = None
+    client_id: Optional[str] = Field(None, min_length=1, max_length=255)
+    client_secret: Optional[str] = Field(None, max_length=1000)
+    issuer_url: Optional[str] = None
+    microsoft_tenant: Optional[str] = None
+    allowed_domains: Optional[List[str]] = None
+    allow_signup: Optional[bool] = None
+
+    _domains = field_validator("allowed_domains")(_clean_domains)
+    _tenant = field_validator("microsoft_tenant")(_clean_tenant)
+    _issuer = field_validator("issuer_url")(_clean_issuer)
+
+
+class SignInProviderTestResult(BaseModel):
+    ok: bool
+    problems: List[str] = []
+    issuer: Optional[str] = None
+
+
+class ProviderExchangeRequest(BaseModel):
+    code: str = Field(..., min_length=10, max_length=200)
+
+
+class ProviderLinkStart(BaseModel):
+    """The address the browser opens to link a provider to this account."""
+    url: str
+
+
+class LinkedSignIn(BaseModel):
+    id: int
+    provider_slug: str
+    provider_label: str
+    kind: str
+    email_at_link: Optional[str] = None
+    linked_at: Optional[datetime] = None
+    last_used_at: Optional[datetime] = None

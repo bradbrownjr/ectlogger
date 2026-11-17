@@ -68,7 +68,9 @@ def _reset_rate_limiters():
     from app.routers.auth import _limiter as auth_limiter
     from app.routers.feedback import _limiter as feedback_limiter
     from app.routers.templates_core import _limiter as templates_limiter
+    from app.routers.sign_in_providers import _limiter as sign_in_limiter
     auth_limiter.reset()
+    sign_in_limiter.reset()
     feedback_limiter.reset()
     templates_limiter.reset()
     yield

@@ -26,7 +26,12 @@ class Settings(BaseSettings):
     # Frontend
     frontend_url: str = "http://localhost:3000"
     
-    # OAuth Providers
+    # Deprecated and ignored (2026-11-17). Google, Microsoft and other OpenID
+    # Connect sign-in are set up in Admin > Security instead
+    # (routers/sign_in_providers.py). Kept only because pydantic-settings
+    # refuses unknown .env keys (extra='forbid'), so deleting them would stop a
+    # server whose .env still has them from starting. main.py logs a warning
+    # when one is set.
     google_client_id: Optional[str] = None
     google_client_secret: Optional[str] = None
     microsoft_client_id: Optional[str] = None

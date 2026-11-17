@@ -48,6 +48,9 @@ export const ACTION_LABELS: Record<string, string> = {
   'auth.password_failed': 'Wrong password',
   'auth.mfa_failed': 'Wrong two-factor code',
   'auth.banned_sign_in_refused': 'Banned account tried to sign in',
+  'auth.provider_failed': 'Provider sign-in failed',
+  'auth.provider_linked': 'Linked a sign-in option',
+  'auth.provider_unlinked': 'Unlinked a sign-in option',
   'admin_mode.opened': 'Switched to admin',
   'admin_mode.locked': 'Locked admin',
 
@@ -121,6 +124,9 @@ export const ACTION_LABELS: Record<string, string> = {
   'admin.field_changed': 'Check-in field changed',
   'admin.field_archived': 'Check-in field archived',
   'admin.emailed_all_users': 'Emailed all users',
+  'admin.sign_in_provider_added': 'Sign-in option added',
+  'admin.sign_in_provider_changed': 'Sign-in option changed',
+  'admin.sign_in_provider_removed': 'Sign-in option removed',
   'frequency.deleted': 'Frequency deleted',
   'contact.deleted': 'Contact deleted',
 
