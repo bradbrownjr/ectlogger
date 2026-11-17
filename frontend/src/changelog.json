@@ -1,8 +1,28 @@
 {
-  "version": "2026.11.15g",
+  "version": "2026.11.16",
   "entries": [
     {
-      "version": "2026.11.15g",
+      "version": "2026.11.16",
+      "date": "2026-11-16",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Profile: A wrong code no longer signs you out — Entering a wrong password or authenticator code in Profile > Security signed you out. Now the screen says the code didn't work and you can try again.",
+              "userImpact": true
+            },
+            {
+              "text": "Nets: Delete and cancel windows fit on a phone — On a narrow screen their buttons ran into each other. Now they wrap onto a second line, and Close & Archive is green like the other buttons that send the log.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "2026.11.15f",
       "date": "2026-11-15",
       "sections": [
         {
@@ -43,10 +63,6 @@
           "items": [
             {
               "text": "PDFs: No more lines cut in half — A page break in an exported PDF now falls between lines of text instead of through one, so a long script or set of announcements reads cleanly from page to page.",
-              "userImpact": true
-            },
-            {
-              "text": "Profile: A wrong code no longer signs you out — Entering a wrong password or authenticator code in Profile > Security signed you out. Now the screen says the code didn't work and you can try again.",
               "userImpact": true
             }
           ]
