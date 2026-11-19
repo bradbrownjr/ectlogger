@@ -4,7 +4,7 @@ summary: Owning a net or a schedule. Recurrence, staffing, rotation, and everyth
 kind: Explanation
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-11-07
+revised: 2026-11-19
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/
@@ -45,6 +45,8 @@ Create a net or a recurring schedule, decide who is allowed to run it and in wha
 **[Cancelling, archiving, and restoring](/docs/net-managers/cancelling-and-archiving/)** — Calling off a week without the schedule recreating it, archiving what is finished, and getting something back that should not have gone.
 
 **[Reports, ICS-309, and exports](/docs/net-managers/reports-and-exports/)** — The net report, the PDF, the ICS-309 Communications Log, the individual images, and who automatically receives what.
+
+**[Send the reminder and log to a group](/docs/net-managers/distribution-list/)** — One group address, such as a groups.io list, that gets each net's reminder the day before and its log after it closes, and how to let the group accept them.
 
 **[Importing check-ins](/docs/net-managers/importing-check-ins/)** — Bringing a net that ran on paper or in another program into ECTLogger, row by row, with its real times, so it counts toward everyone's attendance.
 

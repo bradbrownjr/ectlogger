@@ -4,7 +4,7 @@ summary: Every message ECTLogger sends, what triggers it, who gets it, and how t
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-11-14
+revised: 2026-11-19
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/emails/
@@ -42,12 +42,14 @@ Most of these respect two layers of preference: the "Enable email notifications"
 | Email | Trigger | Recipients | To stop it |
 |---|---|---|---|
 | Net starting | The first moment a net becomes visible to check into — a human opening its lobby, or it going live directly. An automatically opened lobby stays silent until a person confirms the net is happening. Names the NCS on duty, as the reminders do | The net's manager, plus every subscriber to that schedule | Profile setting "Net start notifications" (on by default), and the master switch. |
-| Net closure log | The net closes | The net's manager, every subscriber to that schedule, and every active NCS, Logger, and Relay on that specific net, so running a net you never subscribed to still gets you the log | Profile setting "Net close notifications (with log)" (on by default), and the master switch, checked per recipient |
+| Net closure log | The net closes | The net's manager, every subscriber to that schedule, and every active NCS, Logger, and Relay on that specific net, so running a net you never subscribed to still gets you the log. Also the net's [distribution list](/docs/net-managers/distribution-list/), if it has one, with contact details hidden | Profile setting "Net close notifications (with log)" (on by default), and the master switch, checked per recipient |
+| Net log, sent again | Net control chooses **Email log again** on a closed net | The person who chose it, or everyone who gets the closure log, or the net's distribution list, as they picked | Nothing to turn off. **Me** is sent even with "Net close notifications (with log)" off, since you asked for it |
 | Net log waiting to be sent | Once a day while a net closed with **Finish the log later** still hasn't sent its log | The net's manager, the schedule's manager and co-managers, and whoever closed it | Send the log. The master switch also stops it |
 | Who ran this net? | Auto-close closed a net with nobody recorded as NCS, and held its log | The same people as the reminder above, once | Send the log and choose who ran it. If nobody does within 24 hours, the log goes out with NCS: Not recorded |
 | Duty reminder (NCS) | 24 hours and 1 hour before your scheduled rotation slot | The rotation member on duty for that occurrence | The master switch only; there is no separate toggle |
 | Duty reminder (staff) | 1 hour before a net from a schedule you're active staff on, whether or not you've separately subscribed. Names the NCS on duty (see below) | Every active staff member for that schedule, skipped if you already got the NCS or subscriber reminder for the same net | The master switch only, same reasoning as the NCS reminder |
 | Subscriber reminder | 1 hour before a net you've subscribed to, if you opted into reminders specifically. Names the NCS on duty (see below) | Subscribers with the reminder preference on | Profile setting "Net reminder (1 hour before)" (off by default; subscribing to a schedule does not turn it on), and the master switch |
+| Distribution list reminder | A net with a distribution list is a day or less from its start time. Once per net | The net's distribution list | The net's manager clears the address in **Edit Net** or **Edit Schedule** |
 | Duty roster changed | The pre-assigned NCS for an upcoming, not-yet-started net changes because the rotation roster was edited | Both the previously-assigned and the newly-assigned operator | Sent regardless of your email preferences |
 | Net cancelled | A specific date on the schedule is marked cancelled with no replacement NCS | The operator who would have been on duty, plus every subscriber to that schedule | Sent regardless of your email preferences |
 

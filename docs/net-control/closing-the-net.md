@@ -4,7 +4,7 @@ summary: What closing generates, who receives it, how to finish the log before i
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-11-15
+revised: 2026-11-19
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/closing-the-net/
@@ -40,7 +40,7 @@ If stations logged off-net activity that nobody has accepted yet, the dialog say
 ## What happens the moment it closes
 
 - A system message posts to the net's chat noting it closed.
-- Unless you chose **Finish the log later**, a log email goes out to the net's manager (if they've opted in), anyone explicitly subscribed to this schedule, and every active NCS, Logger, and Relay who worked this occurrence and hasn't opted out. Running a net is enough to get a copy of its log, without a separate subscription.
+- Unless you chose **Finish the log later**, a log email goes out to the net's manager (if they've opted in), anyone explicitly subscribed to this schedule, and every active NCS, Logger, and Relay who worked this occurrence and hasn't opted out. Running a net is enough to get a copy of its log, without a separate subscription. A net with a [distribution list](/docs/net-managers/distribution-list/) also sends it to that group address.
 - If the net has **ICS-309** turned on, that email uses the formal ICS-309 log format and folds in any traffic logged on the net as metadata rows (never the message text itself), plus the net's accepted off-net log entries; otherwise it's a plain net-log email, which lists one row per station per place with how many times it checked in there, and attaches a spreadsheet of every check-in. A recipient with their own preference for ICS-309 gets that format regardless of the net's own setting.
 - Formal traffic filed on the net isn't touched by closing it. Forms keep whatever disposition their own chain of custody says, and you can keep logging handoffs against them after the net closes. See [Handling traffic](/docs/net-control/handling-traffic/).
 
@@ -68,6 +68,16 @@ Once a net is closed, the toolbar's **Reports** menu opens its report and logs t
 </figure>
 
 Net control, meaning NCS, Logger, and the net's managers, also get **ICS-214** in the menu: the net's Activity Log, filled in from what was logged, for you to finish and download. See [The ICS-214 activity log](/docs/net-control/ics-214/).
+
+### Sending the log again
+
+Net control can email a closed net's log again from the **Reports** menu: choose **Email log again**, pick who gets it, and click **Send**. The log is built from the net as it stands now, so fixes made after closing are in it.
+
+- **Me** sends it to your own address, even if you've turned off the closing email in your profile.
+- **Subscribers** sends it to everyone who gets it at close.
+- **Distribution list** shows when the net has one, and sends it to that group.
+
+**Subscribers** and **Distribution list** can each be sent once every 10 minutes. A log held with **Finish the log later** isn't in this menu until you send it with **Send the log**.
 
 **Archive** and **Delete** stay restricted to staff. Right after closing, or after you send a held log, a reminder appears offering to archive the net. Archiving hides it from the active dashboard and keeps every check-in, chat message, statistic, and report, searchable in the Archived Nets list; Unarchive undoes it. Deleting is permanent: it removes the net and everything in it, including its statistics. The net drops out of the schedule's statistics and leaderboards and out of every operator's activity history, and its report and ICS-309 can't be produced again. Nobody can bring it back, not even an admin, and the confirmation says so before anything happens. The net's manager, an admin, an active NCS, and the schedule's manager or co-managers can delete a draft, closed, or archived net.
 

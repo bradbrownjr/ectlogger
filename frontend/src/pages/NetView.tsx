@@ -12,6 +12,7 @@ import ArchiveDialogs from '../components/netview/ArchiveDialogs';
 import RoleAssignmentDialog from '../components/netview/RoleAssignmentDialog';
 import CheckInFormDialog, { CheckInFormState } from '../components/netview/CheckInFormDialog';
 import NetControlDialogs, { type ClosingAction, type TopicPollAction } from '../components/netview/NetControlDialogs';
+import ResendLogDialog from '../components/netview/ResendLogDialog';
 import EarlyStartDialog from '../components/EarlyStartDialog';
 import NetViewHeader, { NetDocKind } from '../components/netview/NetViewHeader';
 import AutoCloseWarningBanner from '../components/netview/AutoCloseWarningBanner';
@@ -219,6 +220,8 @@ const NetView: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<string>('NCS');
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string>('');
+  // Email log again (Reports menu, closed nets)
+  const [resendLogOpen, setResendLogOpen] = useState(false);
   // Live presence signal from BulkCheckIn.tsx (see useNetWebSocket.ts's
   // 'bulk_check_in_status' handling) -- drives the "may arrive in bursts"
   // notice below the check-in table.
@@ -1833,6 +1836,7 @@ const NetView: React.FC = () => {
         onOpenEditCheckIn={setEditOwnCheckInId}
         onGoLive={handleGoLiveClick}
         onExportCSV={handleExportCSV}
+        onResendLog={() => setResendLogOpen(true)}
         onExportICS309={handleExportICS309}
         onExportICS309Pdf={handleExportICS309Pdf}
         netDocs={{
@@ -2804,6 +2808,17 @@ const NetView: React.FC = () => {
         )}
 
       </Paper>
+
+      {/* Email log again: opened from the Reports menu on a closed net */}
+      {net && (
+        <ResendLogDialog
+          open={resendLogOpen}
+          netId={net.id}
+          hasDistributionList={!!net.has_distribution_list}
+          onClose={() => setResendLogOpen(false)}
+          onDone={setToastMessage}
+        />
+      )}
 
       {/* Close Net Confirmation Dialog */}
       <NetControlDialogs

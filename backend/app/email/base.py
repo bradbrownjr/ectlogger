@@ -65,6 +65,17 @@ def get_unsubscribe_url(unsubscribe_token: str, list_name: Optional[str] = None)
         base += f"&list={list_name}"
     return base
 
+def get_distribution_list_footer() -> str:
+    """Footer for a copy sent to a net's distribution list (a group address,
+    not an account), in place of get_unsubscribe_footer: there is no
+    personal unsubscribe link to give a whole group."""
+    return f'''
+    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center;">
+        <p>This email went to this group from {settings.app_name}. To stop these emails, ask the net's manager to remove this address from the net's settings.</p>
+    </div>
+    '''
+
+
 def get_unsubscribe_footer(unsubscribe_token: str, list_name: Optional[str] = None,
                             list_label: Optional[str] = None) -> str:
     """Generate HTML footer with unsubscribe link for email compliance.

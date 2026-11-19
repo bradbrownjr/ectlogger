@@ -360,6 +360,53 @@ behind it:
   links are stripped, since they break in an email). bleach was not used: it
   stopped being maintained on 2026-06-05.
 
+### Distribution list and sending the log again
+
+GitHub #15 (2026-11-19). One group address per net or schedule, such as a
+groups.io list, gets the net's reminder the day before and its log.
+
+- **Storage.** `Net.distribution_list`, `NetTemplate.distribution_list` and
+  `Net.list_reminder_sent_at` (migration 105). `net_from_template` copies the
+  schedule's address to each new net. `schemas.DistributionList` validates one
+  address, normalizes it with `normalize_email`, and stores a blank as null.
+- **Who sees it.** `NetResponse.distribution_list` is filled only when
+  `actions.edit`, and `NetTemplateResponse.distribution_list` only when
+  `can_manage` (the update permission). Anyone else gets null; a signed-in
+  viewer gets `has_distribution_list`, so net control can resend to the list
+  without seeing the address. Every change writes
+  `net.distribution_list_changed` or `schedule.distribution_list_changed` to
+  the activity log (`services/distribution_list.py::record_distribution_list_change`).
+- **The list's copy is a guest's copy.** `send_net_log` sends the list's copy
+  after the people (`_send_list_copy`): `NetLog.email_kwargs(..., redact=True)`
+  scrubs email addresses and phone numbers from check-in free text and chat
+  (`utils.redact_contact_info`, as every guest read does), and leaves the
+  off-net log out of the ICS-309 rows. Format follows the net (no
+  `notify_ics309`), times follow the schedule's time zone (`list_time_zone`),
+  and `get_distribution_list_footer` replaces the unsubscribe footer: a group
+  can't be given one person's unsubscribe link. Before this shipped, every
+  closed net in beta's copy of production (149 nets, plain and ICS-309, 298
+  emails) rendered identically on main and on the branch.
+- **Reminder.** `ncs_reminder_service._check_and_send_list_reminders` calls
+  `send_due_list_reminders` each tick: DRAFT or SCHEDULED nets with an address
+  that start within 24 hours and have no `list_reminder_sent_at`. DRAFT
+  counts, since a net created by hand from a schedule stays a draft. The stamp
+  is set even when the send fails, so a bad address isn't retried every
+  minute. The email shares `email/reminders.py::_UPCOMING_NET_TEMPLATE` with
+  the subscriber reminder.
+- **Sending again.** `POST /nets/{id}/resend-log` (`may_close_net`) with
+  `to` = `me` (the requester, regardless of `notify_net_close`),
+  `subscribers` (`closing_log_recipients`, no list) or `list`. Closed or
+  archived nets only, never a held log. A second `subscribers` or `list`
+  resend within 10 minutes is a 429, read from the `net.log_resent` events.
+  `schedule_net_log(..., audience=)` runs every one of these in the
+  background, as the close does.
+- **groups.io.** Free groups can only invite, and an invitee has to click or
+  reply, which an unmonitored sending address can't; paid groups can Direct
+  Add it and set "Override: not moderated". A free group has to allow
+  nonmember posts, each moderated. `DistributionListField.tsx` shows the
+  sending address from `GET /settings` (`email_from_address`). Tests:
+  `backend/tests/test_distribution_list.py`.
+
 ---
 
 ## Net and schedule logos

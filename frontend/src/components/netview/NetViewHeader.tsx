@@ -66,6 +66,7 @@ import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import CellTowerIcon from '@mui/icons-material/CellTower';
+import ForwardToInboxIcon from '@mui/icons-material/ForwardToInbox';
 import PlaceIcon from '@mui/icons-material/Place';
 import ParticipantsOnlyChip from './ParticipantsOnlyChip';
 import type { UseDialogResult } from '../../hooks/useDialog';
@@ -273,6 +274,8 @@ interface NetViewHeaderProps {
   onOpenEditCheckIn: (checkInId: number) => void;
   onGoLive: () => void;
   onExportCSV: () => void;
+  // Opens Email log again (ResendLogDialog), for a closed net whose log went out
+  onResendLog: () => void;
   onExportICS309: () => void;
   onExportICS309Pdf: () => void;
   // Which of the net's documents have something to print, and the download
@@ -398,6 +401,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   onOpenEditCheckIn,
   onGoLive,
   onExportCSV,
+  onResendLog,
   onExportICS309,
   onExportICS309Pdf,
   netDocs,
@@ -453,6 +457,10 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     isClosedOrArchived ? [
       { key: 'report', label: 'Net report', Icon: AssessmentIcon, onClick: () => navigate(`/nets/${netId}/report`) },
       { key: 'csv', label: 'Check-ins CSV', Icon: DownloadIcon, onClick: onExportCSV },
+      // Net control, once the log has gone out (a held log uses Send log)
+      ...(actions.close && !net.log_held_since ? [
+        { key: 'resend-log', label: 'Email log again', Icon: ForwardToInboxIcon, onClick: onResendLog },
+      ] : []),
     ] : [],
   ].filter((group) => group.length > 0);
 

@@ -38,7 +38,7 @@ from app.services.net_figures import net_figures
 from app.services.report_sections import is_legacy, sections_for_recipient
 from app.traffic.ics309 import get_ics309_muted_user_ids, get_net_traffic_log_entries
 from app.traffic.log import compute_net_traffic_counts
-from app.utils import check_in_time_for_net, display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
+from app.utils import check_in_time_for_net, display_callsign, format_time_for_net, redact_contact_info, resolve_display_tz, to_display_tz
 
 logger = logging.getLogger(__name__)
 
@@ -183,8 +183,13 @@ async def close_net_and_notify(
         await send_net_log(db, net)
 
 
-def schedule_net_log(background_tasks: BackgroundTasks, db: AsyncSession, net_id: int) -> None:
+def schedule_net_log(background_tasks: BackgroundTasks, db: AsyncSession, net_id: int,
+                     audience: str = "close", user_id: Optional[int] = None) -> None:
     """Email the net's log once the response has gone out.
+
+    audience: "close" (everyone who gets it at close, and the distribution
+    list), or for POST /nets/{id}/resend-log "me" (user_id's own address),
+    "subscribers" (the close recipients without the list) or "list".
 
     Sending is one SMTP conversation per recipient, so a net with many
     subscribers kept Close and send the log waiting for tens of seconds with
@@ -193,10 +198,10 @@ def schedule_net_log(background_tasks: BackgroundTasks, db: AsyncSession, net_id
     Now. The request's own session is closed by the time background tasks
     run, so this opens a new one on the same engine.
     """
-    background_tasks.add_task(_send_net_log_by_id, db.bind, net_id)
+    background_tasks.add_task(_send_net_log_by_id, db.bind, net_id, audience, user_id)
 
 
-async def _send_net_log_by_id(bind, net_id: int) -> None:
+async def _send_net_log_by_id(bind, net_id: int, audience: str = "close", user_id: Optional[int] = None) -> None:
     try:
         async with AsyncSession(bind, expire_on_commit=False) as db:
             net = (await db.execute(
@@ -205,16 +210,31 @@ async def _send_net_log_by_id(bind, net_id: int) -> None:
                     selectinload(Net.check_ins).selectinload(CheckIn.frequency),
                 ).where(Net.id == net_id)
             )).scalar_one_or_none()
-            if net is not None:
+            if net is None:
+                return
+            if audience == "me":
+                user = await db.get(User, user_id)
+                if user is not None and user.email:
+                    await send_net_log(db, net, people=[(user.email, user)], to_list=False)
+            elif audience == "subscribers":
+                await send_net_log(db, net, to_list=False)
+            elif audience == "list":
+                await send_net_log(db, net, people=[], to_list=True)
+            else:
                 await send_net_log(db, net)
     except Exception:
         logger.exception("Failed to send the log for net %s", net_id)
 
 
-async def send_net_log(db: AsyncSession, net: Net) -> None:
-    """Email *net*'s log (plain or ICS-309) to its owner, its schedule's
-    subscribers and its active NCS/Logger/Relay. Sent at close, or later from
-    POST /nets/{id}/send-log for a net closed with hold_log.
+async def send_net_log(db: AsyncSession, net: Net, *, people: Optional[list] = None,
+                       to_list: bool = True) -> None:
+    """Email *net*'s log (plain or ICS-309). Sent at close, later from
+    POST /nets/{id}/send-log for a net closed with hold_log, or again from
+    POST /nets/{id}/resend-log.
+
+    people: the (email, user) pairs to send to; None means everyone who gets
+    it at close (closing_log_recipients). to_list: also send the copy for
+    the net's distribution list, when it has one.
 
     The caller loads net.frequencies and net.check_ins with CheckIn.frequency.
     A failed send to one address is logged and skipped, never raised.
@@ -225,7 +245,7 @@ async def send_net_log(db: AsyncSession, net: Net) -> None:
     path as the Reports tab's preview (routers/closing_email_preview.py).
     """
     log = await load_net_log(db, net)
-    recipients_to_notify = await closing_log_recipients(db, net)
+    recipients_to_notify = await closing_log_recipients(db, net) if people is None else people
 
     for email, recipient in recipients_to_notify:
         try:
@@ -248,6 +268,28 @@ async def send_net_log(db: AsyncSession, net: Net) -> None:
             # Log error with traceback but don't fail the close operation
             import traceback
             print(f"Failed to send net log email to {email}: {e}\n{traceback.format_exc()}")
+
+    if to_list and net.distribution_list:
+        await _send_list_copy(db, net, log)
+
+
+async def _send_list_copy(db: AsyncSession, net: Net, log: "NetLog") -> None:
+    """The distribution list's copy: what a signed-out visitor can see
+    (NetLog.payload's redact), in the net's own format and the schedule's
+    time zone, with a footer that names no account."""
+    from app.email.base import get_distribution_list_footer
+    from app.services.distribution_list import list_time_zone
+    try:
+        fmt, sections = sections_for_recipient(net, log.has_sites, False)
+        kwargs = log.email_kwargs(await list_time_zone(db, net), fmt, sections, redact=True)
+        kwargs['footer_html'] = get_distribution_list_footer()
+        email_service = EmailService()
+        if fmt == "ics309":
+            await email_service.send_ics309_log(email=net.distribution_list, **kwargs)
+        else:
+            await email_service.send_net_log(email=net.distribution_list, **kwargs)
+    except Exception:
+        logger.exception("Failed to send net %s's log to its distribution list", net.id)
 
 
 async def closing_log_recipients(db: AsyncSession, net: Net) -> list:
@@ -345,16 +387,22 @@ class NetLog:
     def freq_map(self) -> dict:
         return {f.id: f for f in self.net.frequencies}
 
-    def payload(self, tz):
+    def payload(self, tz, redact: bool = False):
         """The recipient-timezone-dependent rows, cached per timezone so
         recipients sharing a display preference (the common case: everyone
-        on UTC/no-timezone-set) don't redo the work."""
-        cache_key = tz.key if tz else None
+        on UTC/no-timezone-set) don't redo the work.
+
+        redact: the copy for a reader with no account (the distribution
+        list), built as a signed-out visitor sees the net: email addresses
+        and phone numbers scrubbed from free text, as utils.redact_contact_info
+        does for every guest read, and no off-net log entries (nets_export.py
+        leaves them out of a guest's ICS-309 too)."""
+        cache_key = (tz.key if tz else None, redact)
         if cache_key not in self._payload_cache:
-            self._payload_cache[cache_key] = self._build_payload(tz)
+            self._payload_cache[cache_key] = self._build_payload(tz, redact)
         return self._payload_cache[cache_key]
 
-    def _build_payload(self, tz):
+    def _build_payload(self, tz, redact: bool = False):
         net = self.net
         freq_map = self.freq_map
         format_freq = format_frequency
@@ -363,24 +411,31 @@ class NetLog:
         started_at_local = to_display_tz(net.started_at, tz)
         closed_at_local = to_display_tz(net.closed_at, tz)
 
+        def text(value):
+            """Free text as this copy's reader may see it."""
+            return redact_contact_info(value) if redact and isinstance(value, str) else value
+
+        def field_text(check_in, field):
+            return text(field_value(check_in, field))
+
         check_ins_data = []
         for check_in in self.sorted_check_ins:
             check_ins_data.append({
                 'time': check_in_time_for_net(check_in, tz, started_at_local, closed_at_local),
                 'callsign': check_in.callsign,
                 'name': check_in.name,
-                'location': check_in.location,
+                'location': text(check_in.location),
                 'frequency': checked_in_frequency(check_in, freq_map),
                 'frequencies': available_frequencies(check_in, freq_map),
                 'skywarn_number': check_in.skywarn_number or '',
-                'weather_observation': check_in.weather_observation or '',
+                'weather_observation': text(check_in.weather_observation) or '',
                 'power_source': check_in.power_source or '',
                 'power': check_in.power or '',
-                'feedback': check_in.feedback or '',
-                'notes': check_in.notes or '',
-                'topic_response': check_in.topic_response or '',
+                'feedback': text(check_in.feedback) or '',
+                'notes': text(check_in.notes) or '',
+                'topic_response': text(check_in.topic_response) or '',
                 'poll_response': check_in.poll_response or '',
-                'fields': {field.name: field_value(check_in, field) for field in log_fields},
+                'fields': {field.name: field_text(check_in, field) for field in log_fields},
                 'status': check_in.status.value if check_in.status else ''
             })
 
@@ -389,7 +444,7 @@ class NetLog:
             chat_messages_data.append({
                 'timestamp': format_time_for_net(to_display_tz(msg.created_at, tz), started_at_local, closed_at_local),
                 'callsign': msg.user.callsign if msg.user and msg.user.callsign else ('System' if msg.is_system else 'Unknown'),
-                'message': msg.message,
+                'message': text(msg.message),
                 # Used to leave net-muted stations out of the ICS-309
                 # email's chat attachment (email_kwargs).
                 'user_id': msg.user_id,
@@ -409,11 +464,12 @@ class NetLog:
             check_ins=self.sorted_check_ins,
             chat_messages=self.chat_messages,
             traffic_entries=self.traffic_log_entries_for_ics309,
-            off_net_entries=self.off_net_entries,
+            off_net_entries=() if redact else self.off_net_entries,
             muted_user_ids=self.muted_user_ids,
             tz=tz,
             started_at=started_at_local,
             closed_at=closed_at_local,
+            redact=redact,
         )
 
         stations_data = []
@@ -435,9 +491,9 @@ class NetLog:
                 'check_in_count': len(rows),
                 'frequency': ", ".join(channels),
                 'frequencies': ", ".join(listed),
-                'topic_response': latest(lambda r: r.topic_response),
+                'topic_response': text(latest(lambda r: r.topic_response)),
                 'poll_response': latest(lambda r: r.poll_response),
-                'fields': {field.name: latest(lambda r, f=field: field_value(r, f)) for field in log_fields},
+                'fields': {field.name: text(latest(lambda r, f=field: field_value(r, f))) for field in log_fields},
                 'status': newest.status.value if newest.status else '',
             })
 
@@ -453,12 +509,12 @@ class NetLog:
             'stations': stations_data,
         }
 
-    def email_kwargs(self, tz, fmt: str, sections: set) -> dict:
+    def email_kwargs(self, tz, fmt: str, sections: set, redact: bool = False) -> dict:
         """Arguments for email/net_logs.py's build_/send_ net log (fmt
         "plain") or ICS-309 log (fmt "ics309"), minus the address and the
-        unsubscribe token."""
+        unsubscribe token. redact: see payload."""
         net, source = self.net, self.source
-        payload = self.payload(tz)
+        payload = self.payload(tz, redact)
         chat_messages_data = payload['chat_messages']
         configured = not is_legacy(source)
 

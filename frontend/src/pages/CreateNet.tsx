@@ -118,6 +118,7 @@ const CreateNet: React.FC = () => {
   const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
   const [selfCheckinEnabled, setSelfCheckinEnabled] = useState(true);
   const [participantsOnly, setParticipantsOnly] = useState(false);
+  const [distributionList, setDistributionList] = useState('');
   // Auto-open lobby: inherited from the schedule when the net was created, and
   // overridable here for this net alone. Off by default.
   const [autoLobbyEnabled, setAutoLobbyEnabled] = useState(false);
@@ -262,6 +263,7 @@ const CreateNet: React.FC = () => {
       if (grace) setChatGracePeriodMinutes(grace);
       setSelfCheckinEnabled(net.self_checkin_enabled !== false);
       setParticipantsOnly(net.participants_only || false);
+      setDistributionList(net.distribution_list || '');
       const autoLobby = net.auto_lobby_minutes;
       setAutoLobbyEnabled(!!autoLobby);
       if (autoLobby) setAutoLobbyMinutes(autoLobby);
@@ -385,6 +387,7 @@ const CreateNet: React.FC = () => {
     chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
     self_checkin_enabled: selfCheckinEnabled,
     participants_only: participantsOnly,
+    distribution_list: distributionList.trim() || null,
     auto_lobby_minutes: autoLobbyEnabled ? autoLobbyMinutes : null,
     auto_close_after_minutes: autoCloseEnabled ? autoCloseAfterMinutes : null,
     topic_of_week_enabled: topicOfWeekEnabled,
@@ -529,6 +532,7 @@ const CreateNet: React.FC = () => {
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
     selfCheckinEnabled, setSelfCheckinEnabled,
     participantsOnly, setParticipantsOnly,
+    distributionList, setDistributionList,
     autoLobbyEnabled, setAutoLobbyEnabled,
     autoLobbyMinutes, setAutoLobbyMinutes,
     autoCloseEnabled, setAutoCloseEnabled,

@@ -119,6 +119,7 @@ export interface CreateScheduleContextValue {
   chatGracePeriodMinutes: number; setChatGracePeriodMinutes: Dispatch<SetStateAction<number>>;
   selfCheckinEnabled: boolean; setSelfCheckinEnabled: Dispatch<SetStateAction<boolean>>;
   participantsOnly: boolean; setParticipantsOnly: Dispatch<SetStateAction<boolean>>;
+  distributionList: string; setDistributionList: Dispatch<SetStateAction<string>>;
   // Auto-open lobby: presentation varies by scheduleType (see ScheduleTab), but all
   // collapse to the same nullable auto_lobby_minutes on the schedule/net (null =
   // disabled; 0 = "enabled, no offset" for ad-hoc and a one-time net with no start time).

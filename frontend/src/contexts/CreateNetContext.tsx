@@ -48,6 +48,7 @@ export interface CreateNetContextValue {
   chatGracePeriodMinutes: number; setChatGracePeriodMinutes: Dispatch<SetStateAction<number>>;
   selfCheckinEnabled: boolean; setSelfCheckinEnabled: Dispatch<SetStateAction<boolean>>;
   participantsOnly: boolean; setParticipantsOnly: Dispatch<SetStateAction<boolean>>;
+  distributionList: string; setDistributionList: Dispatch<SetStateAction<string>>;
   // Auto-open lobby for this net only; sent as a nullable auto_lobby_minutes
   autoLobbyEnabled: boolean; setAutoLobbyEnabled: Dispatch<SetStateAction<boolean>>;
   autoLobbyMinutes: number; setAutoLobbyMinutes: Dispatch<SetStateAction<number>>;

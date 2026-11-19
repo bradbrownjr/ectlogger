@@ -266,6 +266,14 @@ class Net(Base):
     # removes anyone else with NetBlock. Not enforcement on its own.
     participants_only = Column(Boolean, default=False)
 
+    # One group address, such as a groups.io list, that gets the reminder the
+    # day before (list_reminder_sent_at makes that a single send) and the
+    # closing log. Its copies carry only what a signed-out visitor can see
+    # (services/net_closure.py, distribution_list_*). Shown only to people
+    # who can edit the net. Migration 105.
+    distribution_list = Column(String(254), nullable=True)
+    list_reminder_sent_at = Column(DateTime(timezone=True), nullable=True)
+
     # Auto-open lobby: minutes before scheduled_start_time that the scheduler
     # moves this net to LOBBY on its own. Null = disabled (the default). Copied
     # from the template at auto-create time; the per-net value is authoritative
@@ -382,6 +390,7 @@ class NetTemplate(Base):
     self_checkin_enabled = Column(Boolean, default=True)  # If False, nets from this schedule accept only NCS/logger-entered check-ins
     authenticated = Column(Boolean, default=False)  # Seeds Net.authenticated for nets created from this template
     participants_only = Column(Boolean, default=False)  # Seeds Net.participants_only
+    distribution_list = Column(String(254), nullable=True)  # Seeds Net.distribution_list
     # Default auto-open-lobby offset for nets created from this schedule, in
     # minutes before the scheduled start. Null = disabled (the default).
     auto_lobby_minutes = Column(Integer, nullable=True)

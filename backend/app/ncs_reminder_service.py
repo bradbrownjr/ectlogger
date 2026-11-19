@@ -124,6 +124,7 @@ class NCSReminderService:
                 await self._check_and_send_ncs_reminders()
                 await self._check_and_send_staff_reminders()
                 await self._check_and_send_subscriber_reminders()
+                await self._check_and_send_list_reminders()
                 await self._check_and_archive_stale_scheduled_nets()
                 await self._check_and_close_inactive_nets()
                 await self._check_and_send_log_hold_reminders()
@@ -1012,6 +1013,15 @@ class NCSReminderService:
         never becoming eligible for auto-close at all.
         """
         return await get_last_activity_at(db, net_id, started_at)
+
+    async def _check_and_send_list_reminders(self):
+        """The day-before reminder to each net's distribution list
+        (services/distribution_list.py)."""
+        from app.services.distribution_list import send_due_list_reminders
+        async with AsyncSessionLocal() as db:
+            sent = await send_due_list_reminders(db)
+            if sent:
+                logger.info("LIST_REMINDER", f"Sent {sent} distribution list reminder(s)")
 
     async def _check_and_send_log_hold_reminders(self):
         """Daily reminder for nets closed with their log held, and the

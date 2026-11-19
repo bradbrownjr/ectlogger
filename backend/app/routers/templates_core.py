@@ -20,6 +20,7 @@ from app.email_service import EmailService
 from app.logger import logger
 from app.services.callsign_people import resolve_person
 from app.audit import record_schedule_event, user_label
+from app.services.distribution_list import record_distribution_list_change
 from app.models import (
     AppSettings,
     CheckIn,
@@ -333,9 +334,11 @@ async def create_template(
         poll_question=template_data.poll_question,
         authenticated=template_data.authenticated or False,
         participants_only=template_data.participants_only or False,
+        distribution_list=template_data.distribution_list,
     )
     db.add(template)
     await db.flush()
+    record_distribution_list_change(db, current_user, template, None, template.distribution_list)
     
     # Add frequencies
     if template_data.frequency_ids:
@@ -539,6 +542,11 @@ async def update_template(
     for field in CLEARABLE_TEXT_FIELDS:
         if field in template_data.model_fields_set:
             setattr(template, field, getattr(template_data, field))
+    # Clearable too, and every change goes in the activity log
+    if 'distribution_list' in template_data.model_fields_set:
+        record_distribution_list_change(db, current_user, template, template.distribution_list,
+                                        template_data.distribution_list)
+        template.distribution_list = template_data.distribution_list
     if template_data.field_config is not None:
         template.field_config = json.dumps(template_data.field_config)
     if template_data.is_active is not None:

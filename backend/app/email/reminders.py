@@ -136,29 +136,7 @@ async def send_ncs_reminder(
         unsubscribe_token=unsubscribe_token
     )
 
-async def send_subscriber_reminder(
-    to_email: str,
-    recipient_name: str,
-    recipient_callsign: str,
-    net_name: str,
-    net_date: str,
-    net_time: str,
-    frequencies: list,
-    net_url: str,
-    unsubscribe_token: str = None,
-    ncs_name: str = None,
-    ncs_callsign: str = None,
-):
-    """Send net reminder to subscriber 1 hour before net starts.
-
-    ncs_name/ncs_callsign: who is on duty as NCS, when the net has one (the
-    same line the staff reminder shows).
-    """
-    logger.info("EMAIL", f"Sending subscriber reminder to {to_email} for {net_name}")
-    
-    freq_list = _frequency_items(frequencies)
-    
-    html_template = Template("""
+_UPCOMING_NET_TEMPLATE = Template("""
     <!DOCTYPE html>
     <html>
     <head>
@@ -183,16 +161,16 @@ async def send_subscriber_reminder(
     </head>
     <body>
         <div class="container">
-            <h2>""" + LOGO_SVG + """ Net Starting Soon!</h2>
+            <h2>""" + LOGO_SVG + """ {{ heading }}</h2>
             
             <div class="alert">
-                <strong>A net you're subscribed to starts in about 1 hour.</strong>
+                <strong>{{ alert }}</strong>
             </div>
             
-            <p>Hello {{ recipient_name }} ({{ recipient_callsign }}),</p>
-            
+            {% if recipient_name %}<p>Hello {{ recipient_name }} ({{ recipient_callsign }}),</p>
+
             <p>A net you've subscribed to is starting soon.</p>
-            
+            {% endif %}
             <div class="details">
                 <h3>Net Details</h3>
                 <p><strong>Net:</strong> {{ net_name }}</p>
@@ -209,18 +187,43 @@ async def send_subscriber_reminder(
             
             <a href="{{ net_url }}" class="button" style="color: #ffffff;">View Net</a>
             
-            <div class="footer">
+            {% if recipient_name %}<div class="footer">
                 <p>This is an automated reminder from {{ app_name }}.</p>
                 <p>You can disable these reminders in your profile settings.</p>
             </div>
-            
+            {% endif %}
             {{ unsubscribe_footer }}
         </div>
     </body>
     </html>
     """)
+
+
+async def send_subscriber_reminder(
+    to_email: str,
+    recipient_name: str,
+    recipient_callsign: str,
+    net_name: str,
+    net_date: str,
+    net_time: str,
+    frequencies: list,
+    net_url: str,
+    unsubscribe_token: str = None,
+    ncs_name: str = None,
+    ncs_callsign: str = None,
+):
+    """Send net reminder to subscriber 1 hour before net starts.
+
+    ncs_name/ncs_callsign: who is on duty as NCS, when the net has one (the
+    same line the staff reminder shows).
+    """
+    logger.info("EMAIL", f"Sending subscriber reminder to {to_email} for {net_name}")
     
-    html_content = html_template.render(
+    freq_list = _frequency_items(frequencies)
+
+    html_content = _UPCOMING_NET_TEMPLATE.render(
+        heading="Net Starting Soon!",
+        alert="A net you're subscribed to starts in about 1 hour.",
         recipient_name=recipient_name,
         recipient_callsign=recipient_callsign,
         net_name=net_name,
@@ -240,6 +243,44 @@ async def send_subscriber_reminder(
         html_content=html_content,
         unsubscribe_token=unsubscribe_token
     )
+
+async def send_list_reminder(
+    to_email: str,
+    net_name: str,
+    net_date: str,
+    net_time: str,
+    frequencies: list,
+    net_url: str,
+    ncs_name: str = None,
+    ncs_callsign: str = None,
+):
+    """The day-before reminder to a net's distribution list
+    (services/distribution_list.py). The subscriber reminder's layout, with
+    no greeting, no profile-settings line, and the list's footer in place of
+    an unsubscribe link."""
+    from app.email.base import get_distribution_list_footer
+    logger.info("EMAIL", f"Sending distribution list reminder to {to_email} for {net_name}")
+    html_content = _UPCOMING_NET_TEMPLATE.render(
+        heading="Net Reminder",
+        alert=f"{net_name} is on {net_date} at {net_time}.",
+        recipient_name=None,
+        recipient_callsign=None,
+        net_name=net_name,
+        net_date=net_date,
+        net_time=net_time,
+        freq_list=_frequency_items(frequencies),
+        net_url=net_url,
+        ncs_name=ncs_name,
+        ncs_callsign=ncs_callsign,
+        app_name=settings.app_name,
+        unsubscribe_footer=get_distribution_list_footer(),
+    )
+    await send_email(
+        to_email=to_email,
+        subject=f"📻 Reminder: {net_name} - {net_date} at {net_time}",
+        html_content=html_content,
+    )
+
 
 async def send_ncs_duty_correction(
     to_email: str,

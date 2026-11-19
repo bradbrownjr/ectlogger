@@ -8,6 +8,7 @@ import {
   Typography,
 } from '@mui/material';
 import FoldingFormSection from './FoldingFormSection';
+import DistributionListField from './DistributionListField';
 import { StripSettings, TrafficHandlingSettings, TrafficSettingsFields } from './TrafficSettingsPanel';
 import { useFormDefinitions } from '../../hooks/useFormDefinitions';
 import {
@@ -42,6 +43,7 @@ export interface NetFeatureFields extends TrafficSettingsFields {
   mobilePrioritySort: boolean; setMobilePrioritySort: (v: boolean) => void;
   selfCheckinEnabled: boolean; setSelfCheckinEnabled: (v: boolean) => void;
   participantsOnly: boolean; setParticipantsOnly: (v: boolean) => void;
+  distributionList: string; setDistributionList: (v: string) => void;
   topicOfWeekEnabled: boolean; setTopicOfWeekEnabled: (v: boolean) => void;
   topicOfWeekPrompt: string; setTopicOfWeekPrompt: (v: string) => void;
   pollEnabled: boolean; setPollEnabled: (v: boolean) => void;
@@ -180,6 +182,13 @@ const NetFeaturesPanel: React.FC<NetFeaturesPanelProps> = ({
         caption="For the stations taking part in an event or incident, such as a drill's deployed teams. Self check-in can stay open. The net shows a red Participants only label, and the check-in form tells stations it is for those taking part. Net control can remove and block anyone else."
         checked={fields.participantsOnly}
         onChange={fields.setParticipantsOnly}
+      />
+
+      {/* One group address for the reminder and the log (models.Net.distribution_list) */}
+      <DistributionListField
+        scope={scope}
+        value={fields.distributionList}
+        onChange={fields.setDistributionList}
       />
 
       {/* Net form only: chat grace, lobby and auto-close */}

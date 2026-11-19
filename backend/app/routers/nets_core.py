@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from typing import List, Optional
 
@@ -13,6 +13,7 @@ from app.permissions import is_admin as acts_as_admin
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
 from app.audit import record_net_event
+from app.services.distribution_list import record_distribution_list_change
 from app.models import (
     CheckIn,
     DrillPlan,
@@ -42,6 +43,8 @@ from app.permissions import (
 )
 from app.schemas import (
     CloseNetRequest,
+    ResendLogRequest,
+    ResendLogResponse,
     SendLogRequest,
     NetCreate,
     NetResponse,
@@ -104,10 +107,12 @@ async def create_net(
         poll_question=net_data.poll_question,
         authenticated=net_data.authenticated or False,
         participants_only=net_data.participants_only or False,
+        distribution_list=net_data.distribution_list,
         scheduled_start_time=net_data.scheduled_start_time,
     )
     db.add(net)
     await db.flush()
+    record_distribution_list_change(db, current_user, net, None, net.distribution_list)
     
     # Add frequencies using the association table directly to avoid lazy loading
     frequencies = []
@@ -463,6 +468,8 @@ async def update_net(
     # Update fields
     import json
     update_data = net_update.dict(exclude_unset=True, exclude={'frequency_ids', 'channel_plan'})
+    if 'distribution_list' in update_data:
+        record_distribution_list_change(db, current_user, net, net.distribution_list, update_data['distribution_list'])
     for field, value in update_data.items():
         if field == 'ics205_enabled' and value is None:
             continue  # NOT NULL; null means "leave it"
@@ -502,6 +509,58 @@ async def update_net(
     await db.refresh(net, ['frequencies'])
 
     return NetResponse.from_orm(net, signed_in=True)
+
+
+# A second Subscribers or Distribution list resend this soon after the last
+# is refused, so a double click doesn't email a whole club twice.
+RESEND_GROUP_WINDOW = timedelta(minutes=10)
+
+
+@router.post("/{net_id}/resend-log", response_model=ResendLogResponse, status_code=202)
+async def resend_log(
+    net_id: int,
+    body: ResendLogRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email a closed net's log again, built from the log as it stands now:
+    to the requester ("me"), to everyone who gets it at close
+    ("subscribers"), or to the net's distribution list ("list"). Same people
+    as Close net (may_close_net). A held log is sent with send-log instead.
+    Request: {"to": "me" | "subscribers" | "list"}. Response 202 {"to": ...};
+    400 when the log is held or the net has no distribution list, 429 for a
+    second group resend within RESEND_GROUP_WINDOW."""
+    net = (await db.execute(select(Net).where(Net.id == net_id))).scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    if not may_close_net(await net_access(db, net, current_user)):
+        raise HTTPException(status_code=403, detail="Not authorized to send this net's log")
+    if net.status not in (NetStatus.CLOSED, NetStatus.ARCHIVED):
+        raise HTTPException(status_code=400, detail="The log can be sent again once the net is closed")
+    if net.log_held_since is not None:
+        raise HTTPException(status_code=400, detail="This net's log hasn't been sent yet. Use Send log.")
+    if body.to == "list" and not net.distribution_list:
+        raise HTTPException(status_code=400, detail="This net has no distribution list")
+    if body.to == "me" and not current_user.email:
+        raise HTTPException(status_code=400, detail="Your account has no email address")
+
+    if body.to in ("subscribers", "list"):
+        from app.models import AuditEvent
+        recent = (await db.execute(
+            select(AuditEvent.details).where(
+                AuditEvent.action == "net.log_resent",
+                AuditEvent.net_id == net_id,
+                AuditEvent.created_at >= datetime.utcnow() - RESEND_GROUP_WINDOW,
+            )
+        )).scalars().all()
+        if any(json.loads(d or "{}").get("to") == body.to for d in recent):
+            raise HTTPException(status_code=429, detail="The log went to them a few minutes ago. Try again later.")
+
+    record_net_event(db, "net.log_resent", current_user, net, details={"to": body.to})
+    await db.commit()
+    schedule_net_log(background_tasks, db, net_id, audience=body.to, user_id=current_user.id)
+    return ResendLogResponse(to=body.to)
 
 
 @router.post("/{net_id}/logo", response_model=NetResponse)

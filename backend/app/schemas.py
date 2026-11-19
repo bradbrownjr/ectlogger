@@ -636,6 +636,23 @@ ICS205_INSTRUCTIONS_MAX = 5000
 Ics205Instructions = Annotated[str, Field(max_length=ICS205_INSTRUCTIONS_MAX), AfterValidator(clean_text)]
 
 
+def _clean_distribution_list(value: Optional[str]) -> Optional[str]:
+    """A blank box clears the address; anything else must be one email
+    address, stored the way every other address is (normalize_email)."""
+    if value is None or not value.strip():
+        return None
+    from pydantic import TypeAdapter
+    try:
+        TypeAdapter(EmailStr).validate_python(value.strip())
+    except Exception:
+        raise ValueError("Enter one email address, such as yourgroup@groups.io")
+    return normalize_email(value)
+
+
+# models.Net.distribution_list: one group address, or null.
+DistributionList = Annotated[Optional[str], Field(max_length=254), AfterValidator(_clean_distribution_list)]
+
+
 # Net Schemas
 class NetBase(BaseModel):
     name: str = Field(max_length=200, min_length=1)
@@ -687,6 +704,8 @@ class NetBase(BaseModel):
     authenticated: Optional[bool] = False
     # For the stations taking part only (models.Net.participants_only)
     participants_only: Optional[bool] = False
+    # One group address for the reminder and the log (models.Net.distribution_list)
+    distribution_list: DistributionList = None
     # Scheduled start time for countdown display
     scheduled_start_time: Optional[datetime] = None
 
@@ -739,6 +758,8 @@ class NetUpdate(BaseModel):
     poll_question: Optional[str] = Field(None, max_length=500)
     authenticated: Optional[bool] = None
     participants_only: Optional[bool] = None
+    # An explicit null or "" clears it; left out keeps it
+    distribution_list: DistributionList = None
     # Scheduled start time for countdown display
     scheduled_start_time: Optional[datetime] = None
     # Allow NCS/admin to adjust actual start/end timestamps
@@ -765,6 +786,18 @@ class CloseNetRequest(BaseModel):
 class SendLogRequest(BaseModel):
     """POST /nets/{id}/send-log. Same ncs_check_in_id as CloseNetRequest."""
     ncs_check_in_id: Optional[int] = None
+
+
+class ResendLogRequest(BaseModel):
+    """POST /nets/{id}/resend-log: who gets the log again. "me" is the
+    signed-in user's own address; "subscribers" everyone who gets it at
+    close (services/net_closure.py::closing_log_recipients); "list" the
+    net's distribution list."""
+    to: Literal["me", "subscribers", "list"]
+
+
+class ResendLogResponse(BaseModel):
+    to: str
 
 
 class NetActions(BaseModel):
@@ -862,6 +895,7 @@ class NetResponse(NetBase):
     # Whether the net has a drill plan (routers/drill_plans.py), so the
     # toolbar can offer it. Like auto_close_at, only get_net fills it in.
     has_drill_plan: bool = False
+    has_distribution_list: bool = False
 
     @classmethod
     def from_orm(cls, net, *, signed_in: bool, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, actions: dict = None, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, current_user_logger_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None, auto_close_at: datetime = None, has_drill_plan: bool = False):
@@ -912,6 +946,12 @@ class NetResponse(NetBase):
             'poll_question': net.poll_question,
             'authenticated': net.authenticated or False,
             'participants_only': net.participants_only or False,
+            # A group's address is for the people who can edit the net, not
+            # every viewer (it would hand anyone a way to mail the group).
+            'distribution_list': net.distribution_list if (actions or {}).get('edit') else None,
+            # Whether there is one, for Email log again (net control can send
+            # to it without being able to edit the net)
+            'has_distribution_list': bool(net.distribution_list) and signed_in,
             'scheduled_start_time': net.scheduled_start_time,
             'started_at': net.started_at,
             'closed_at': net.closed_at,
@@ -986,6 +1026,7 @@ class NetTemplateBase(BaseModel):
     poll_question: Optional[str] = Field(None, max_length=500)
     authenticated: Optional[bool] = False
     participants_only: Optional[bool] = False
+    distribution_list: DistributionList = None  # Seeds Net.distribution_list
 
 
 class NetTemplateCreate(NetTemplateBase):
@@ -1036,6 +1077,7 @@ class NetTemplateUpdate(BaseModel):
     poll_question: Optional[str] = Field(None, max_length=500)
     authenticated: Optional[bool] = None
     participants_only: Optional[bool] = None
+    distribution_list: DistributionList = None
 
 
 class NetTemplateResponse(NetTemplateBase):
@@ -1114,6 +1156,8 @@ class NetTemplateResponse(NetTemplateBase):
             'poll_question': template.poll_question,
             'authenticated': template.authenticated or False,
             'participants_only': template.participants_only or False,
+            # Only for the people who can edit the schedule (see NetResponse)
+            'distribution_list': template.distribution_list if can_manage else None,
             'is_active': template.is_active,
             'created_at': template.created_at,
             'frequencies': [FrequencyResponse.model_validate(f) for f in template.frequencies],
@@ -1877,6 +1921,9 @@ class CustomTheme(BaseModel):
 class AppSettingsResponse(BaseModel):
     default_field_config: dict
     field_labels: dict
+    # The address the app's email comes from (SMTP_FROM_EMAIL), for the
+    # Distribution list note: a group has to accept mail from it.
+    email_from_address: Optional[str] = None
     # Schedule creation limits
     schedule_min_account_age_days: int = 7
     schedule_min_net_participations: int = 1

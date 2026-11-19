@@ -278,6 +278,9 @@ export const netApi = {
     api.post(`/nets/${id}/close`, { hold_log: holdLog, ncs_check_in_id: ncsCheckInId ?? null }),
   sendLog: (id: number, ncsCheckInId?: number | null) =>
     api.post(`/nets/${id}/send-log`, { ncs_check_in_id: ncsCheckInId ?? null }),
+  // A closed net's log again: to me, the subscribers, or the distribution list
+  resendLog: (id: number, to: 'me' | 'subscribers' | 'list') =>
+    api.post(`/nets/${id}/resend-log`, { to }),
   ncsNeeded: (id: number) => api.get<{ needed: boolean }>(`/nets/${id}/ncs-needed`),
   archive: (id: number) => api.post(`/nets/${id}/archive`),
   unarchive: (id: number) => api.post(`/nets/${id}/unarchive`),

@@ -84,6 +84,8 @@ export const ACTION_LABELS: Record<string, string> = {
 
   'net.closed': 'Net closed',
   'net.log_sent': 'Net log sent',
+  'net.log_resent': 'Net log sent again',
+  'net.distribution_list_changed': 'Distribution list changed',
   'net.auto_closed': 'Net closed automatically',
   'net.cancelled': 'Net cancelled',
   'net.restored': 'Net restored',
@@ -99,6 +101,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'schedule.merged': 'Schedules merged into this one',
   'schedule.merged_away': 'Schedule merged into another',
   'schedule.manager_changed': 'Schedule handed to a new manager',
+  'schedule.distribution_list_changed': 'Distribution list changed',
   'schedule.staff_added': 'Staff added',
   'schedule.staff_removed': 'Staff removed',
   'schedule.staff_changed': 'Staff changed',

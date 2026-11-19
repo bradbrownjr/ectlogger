@@ -611,8 +611,12 @@ def build_net_log_email(
     report_url: str = None,
     announcements: list = None,
     topic_answers: list = None,
+    footer_html: str = None,
 ) -> RenderedEmail:
     """The net log email, with the check-ins table, CSV attachment, and chat log.
+
+    footer_html replaces the account footer (unsubscribe link, profile
+    settings) for a copy that goes to no account: the distribution list's.
 
     traffic_summary: the dict returned by app.traffic.log.compute_net_traffic_counts
     (draft/pending/relayed/delivered/cancelled/outstanding), rendered as a
@@ -695,7 +699,7 @@ def build_net_log_email(
         frequencies=frequencies or [],
         table_rows=table_rows,
         borrow_section_css=False,
-        unsubscribe_footer=get_unsubscribe_footer(unsubscribe_token),
+        unsubscribe_footer=footer_html if footer_html is not None else get_unsubscribe_footer(unsubscribe_token),
         **context,
     )
 
@@ -757,6 +761,7 @@ def build_ics309_log_email(
     figures: dict = None,
     report_url: str = None,
     announcements: list = None,
+    footer_html: str = None,
 ) -> RenderedEmail:
     """The ICS-309 Communications Log email.
 
@@ -806,7 +811,7 @@ def build_ics309_log_email(
         message_count=message_count,
         # The topic, poll, coverage and traffic boxes use the plain email's styles.
         borrow_section_css=bool(sections & {"topic", "poll", "coverage", "traffic"}),
-        unsubscribe_footer=get_unsubscribe_footer(unsubscribe_token),
+        unsubscribe_footer=footer_html if footer_html is not None else get_unsubscribe_footer(unsubscribe_token),
         **context,
     )
 

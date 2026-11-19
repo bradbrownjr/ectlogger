@@ -7,6 +7,7 @@ from io import BytesIO
 from PIL import Image, ImageOps
 import json
 
+from app.config import settings as app_config
 from app.database import get_db
 from app.audit import record_event
 from app.models import AppSettings, User, UserRole, FieldDefinition
@@ -104,6 +105,7 @@ def _build_settings_response(settings: AppSettings) -> AppSettingsResponse:
         mute_alert_enabled=settings.mute_alert_enabled is not False,
         mute_alert_threshold=settings.mute_alert_threshold or 3,
         mute_alert_window_days=settings.mute_alert_window_days or 30,
+        email_from_address=app_config.smtp_from_email,
     )
 
 
