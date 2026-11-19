@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import delete, select, func, and_, or_
+from sqlalchemy import delete, select, func
 from app.database import get_db
 from app.email_service import EmailService
 from app.logger import logger
@@ -13,7 +13,7 @@ from app.audit import record_event
 from app.models import (
     ChannelPlanEntry, CheckIn, Frequency, Net, NetTemplate, User, UserRole, net_frequencies, net_template_frequencies,
 )
-from app.permissions import check_template_permission, is_admin, may_edit_net, net_access
+from app.permissions import check_template_permission, is_admin, load_net_access, may_edit_net, net_access
 from app.schemas import FrequencyChangeRequest, FrequencyCreate, FrequencyResponse, FrequencyWithUsageResponse
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 
@@ -21,68 +21,48 @@ router = APIRouter(prefix="/frequencies", tags=["frequencies"])
 _limiter = Limiter(key_func=get_remote_address)
 
 
+def _same(column, value: Optional[str], fold: bool = False):
+    """column equals value, with None and "" alike; *fold* also ignores case
+    and surrounding spaces (the description)."""
+    value = (value or "").strip()
+    stored = func.trim(func.coalesce(column, ""))
+    if fold:
+        return func.lower(stored) == value.lower()
+    return stored == value
+
+
 async def check_duplicate_frequency(
-    db: AsyncSession,
-    frequency: Optional[str],
-    mode: str,
-    network: Optional[str],
-    talkgroup: Optional[str],
-    exclude_id: Optional[int] = None
+    db: AsyncSession, data: FrequencyCreate, exclude_id: Optional[int] = None
 ) -> Optional[Frequency]:
+    """Return an entry identical to *data*, or None.
+
+    Identical means every field a person can tell two entries apart by:
+    frequency, mode, network, talkgroup, description, offset and both tones.
+    Repeaters far apart share frequencies, so two entries on 147.090 FM with
+    different names or tones are different repeaters. Until 2026-11-17 the
+    description, offset and tones weren't compared, so the second repeater on
+    a frequency was refused as a duplicate (issue #14).
     """
-    Check if a duplicate frequency already exists.
-    A duplicate is defined as matching: frequency + mode + network + talkgroup
-    (since the same frequency could be used by different repeaters across the country,
-    we need all 4 fields to match to be considered a true duplicate)
-    """
-    # Build conditions for the query
     conditions = [
-        # Handle None vs empty string - treat them as equal for comparison
-        or_(
-            and_(Frequency.frequency == frequency, frequency is not None),
-            and_(Frequency.frequency.is_(None), frequency is None),
-            and_(Frequency.frequency == '', frequency == ''),
-            and_(Frequency.frequency.is_(None), frequency == ''),
-            and_(Frequency.frequency == '', frequency is None)
-        ),
-        Frequency.mode == mode,
-        or_(
-            and_(Frequency.network == network, network is not None),
-            and_(Frequency.network.is_(None), network is None),
-            and_(Frequency.network == '', network == ''),
-            and_(Frequency.network.is_(None), network == ''),
-            and_(Frequency.network == '', network is None)
-        ),
-        or_(
-            and_(Frequency.talkgroup == talkgroup, talkgroup is not None),
-            and_(Frequency.talkgroup.is_(None), talkgroup is None),
-            and_(Frequency.talkgroup == '', talkgroup == ''),
-            and_(Frequency.talkgroup.is_(None), talkgroup == ''),
-            and_(Frequency.talkgroup == '', talkgroup is None)
-        ),
+        _same(Frequency.frequency, data.frequency),
+        Frequency.mode == data.mode,
+        _same(Frequency.network, data.network),
+        _same(Frequency.talkgroup, data.talkgroup),
+        _same(Frequency.description, data.description, fold=True),
+        _same(Frequency.offset, data.offset),
+        _same(Frequency.tx_tone, data.tx_tone),
+        _same(Frequency.rx_tone, data.rx_tone),
     ]
-    
-    # Exclude a specific ID (for updates)
     if exclude_id is not None:
         conditions.append(Frequency.id != exclude_id)
-    
-    result = await db.execute(
-        select(Frequency).where(and_(*conditions))
-    )
-    return result.scalar_one_or_none()
+    return (await db.execute(select(Frequency).where(*conditions).limit(1))).scalars().first()
 
 
 def format_duplicate_error(freq: Frequency) -> str:
-    """Format a user-friendly error message for duplicate frequency"""
-    parts = []
-    if freq.frequency:
-        parts.append(freq.frequency)
-    parts.append(freq.mode)
-    if freq.network:
-        parts.append(f"on {freq.network}")
-    if freq.talkgroup:
-        parts.append(f"TG {freq.talkgroup}")
-    return f"A frequency with these details already exists: {' '.join(parts)}"
+    """The 409 message for an identical entry. To add another repeater on the
+    same frequency, give it its own description."""
+    return (f"This frequency is already in the list: {_frequency_text(freq)}. "
+            "For a different repeater on the same frequency, give it its own description.")
 
 
 # =============================================================================
@@ -92,9 +72,10 @@ def format_duplicate_error(freq: Frequency) -> str:
 # from one net's form lands on every other net using the same row. The rule:
 # an admin may edit anything; anyone else may edit or delete only a
 # frequency they added themselves (Frequency.created_by_id), and only while
-# no other net or schedule uses it and no station has checked in on it. The
-# net or schedule whose form is open does not count as "other", so a mistake
-# can still be fixed after the net was saved. Everything refused can be sent
+# no other net or schedule uses it and no station has checked in on it, or
+# edit (never delete) one whose every use is a net or schedule they may edit
+# (all_uses_yours). The net or schedule whose form is open does not count as
+# "other", so a mistake can still be fixed after the net was saved. Everything refused can be sent
 # to the admins as a request (POST /frequencies/{id}/change-request).
 
 
@@ -103,6 +84,8 @@ class FrequencyUses:
     net_ids: Set[int] = field(default_factory=set)
     template_ids: Set[int] = field(default_factory=set)
     check_in_count: int = 0
+    # The nets those check-ins were logged on.
+    check_in_net_ids: Set[int] = field(default_factory=set)
 
     @property
     def in_use(self) -> bool:
@@ -144,12 +127,14 @@ async def frequency_uses(db: AsyncSession, frequency_ids: Optional[Iterable[int]
     )).all():
         if freq_id is not None:
             uses.setdefault(freq_id, FrequencyUses()).template_ids.add(template_id)
-    for freq_id, count in (await db.execute(
-        select(CheckIn.frequency_id, func.count(CheckIn.id))
+    for freq_id, net_id, count in (await db.execute(
+        select(CheckIn.frequency_id, CheckIn.net_id, func.count(CheckIn.id))
         .where(CheckIn.frequency_id.is_not(None), *_only(CheckIn.frequency_id))
-        .group_by(CheckIn.frequency_id)
+        .group_by(CheckIn.frequency_id, CheckIn.net_id)
     )).all():
-        uses.setdefault(freq_id, FrequencyUses()).check_in_count += count
+        u = uses.setdefault(freq_id, FrequencyUses())
+        u.check_in_count += count
+        u.check_in_net_ids.add(net_id)
     return uses
 
 
@@ -187,6 +172,45 @@ async def form_context(
     return FormContext(frozenset(nets), frozenset(templates))
 
 
+async def all_uses_yours(
+    db: AsyncSession, user: Optional[User], uses: Dict[int, FrequencyUses], ctx: FormContext
+) -> Set[int]:
+    """Ids of the frequencies the form's own net or schedule uses whose every
+    net, schedule and check-in is on a net or schedule *user* may edit.
+
+    Such a frequency only matters to that user's own nets, so they may edit
+    it whoever added it (change_refusal). Added 2026-11-17 (issue #14): a
+    schedule's manager couldn't add tones to his own repeaters for an
+    ICS-205, because 30 past nets from his schedules counted as "other nets"
+    and the entries predated created_by_id. Limited to the form's
+    frequencies so the list never loads every net on the site.
+    """
+    if user is None or not (ctx.net_ids or ctx.template_ids):
+        return set()
+    candidates = {
+        fid: u for fid, u in uses.items()
+        if (u.net_ids & ctx.net_ids) or (u.template_ids & ctx.template_ids)
+    }
+    if not candidates:
+        return set()
+    net_ids = set().union(*(u.net_ids | u.check_in_net_ids for u in candidates.values()))
+    template_ids = set().union(*(u.template_ids for u in candidates.values()))
+
+    nets = (await db.execute(select(Net).where(Net.id.in_(net_ids)))).scalars().all() if net_ids else []
+    editable_nets = {nid for nid, a in (await load_net_access(db, user, nets)).items() if may_edit_net(a)}
+    editable_templates = set(ctx.template_ids)
+    for tpl in (await db.execute(
+        select(NetTemplate).where(NetTemplate.id.in_(template_ids - editable_templates))
+    )).scalars().all():
+        if await check_template_permission(db, tpl, user):
+            editable_templates.add(tpl.id)
+
+    return {
+        fid for fid, u in candidates.items()
+        if (u.net_ids | u.check_in_net_ids) <= editable_nets and u.template_ids <= editable_templates
+    }
+
+
 def _count(n: int, word: str) -> str:
     return f"{n} {word}{'s' if n != 1 else ''}"
 
@@ -209,14 +233,19 @@ OLD_ENTRY = "This frequency was added before the site recorded who added each on
 
 
 def change_refusal(
-    freq: Frequency, user: Optional[User], uses: FrequencyUses, ctx: FormContext, deleting: bool
+    freq: Frequency, user: Optional[User], uses: FrequencyUses, ctx: FormContext, deleting: bool,
+    yours: bool = False,
 ) -> Optional[str]:
     """Why *user* may not edit (or delete) *freq* from this form, or None.
 
-    Admins may edit any frequency. Deleting one still in use is refused even
-    for an admin, since it would vanish from every net and schedule using it.
+    Admins may edit any frequency. Anyone may edit one when everything using
+    it is theirs (*yours*, from all_uses_yours). Deleting one still in use is
+    refused even for an admin, since it would vanish from every net and
+    schedule using it.
     """
     admin = user is not None and is_admin(user)
+    if yours and not deleting:
+        return None
     if not admin:
         if user is None or freq.created_by_id is None:
             return OLD_ENTRY if user is not None else NOT_YOURS
@@ -241,9 +270,11 @@ def change_refusal(
 FREQUENCY_CHANGE_REFUSED = "frequency_change_refused"
 
 
-def _response(freq: Frequency, user: Optional[User], uses: FrequencyUses, ctx: FormContext) -> FrequencyResponse:
+def _response(
+    freq: Frequency, user: Optional[User], uses: FrequencyUses, ctx: FormContext, yours: bool = False
+) -> FrequencyResponse:
     response = FrequencyResponse.from_orm(freq)
-    response.edit_refused = change_refusal(freq, user, uses, ctx, deleting=False)
+    response.edit_refused = change_refusal(freq, user, uses, ctx, deleting=False, yours=yours)
     response.delete_refused = change_refusal(freq, user, uses, ctx, deleting=True)
     return response
 
@@ -269,13 +300,7 @@ async def create_frequency(
 ):
     """Create a new frequency, recording who added it (see change_refusal)."""
     # Check for duplicates
-    existing = await check_duplicate_frequency(
-        db,
-        frequency=frequency_data.frequency,
-        mode=frequency_data.mode,
-        network=frequency_data.network,
-        talkgroup=frequency_data.talkgroup
-    )
+    existing = await check_duplicate_frequency(db, frequency_data)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -324,8 +349,12 @@ async def list_frequencies(
     frequencies = result.scalars().all()
     uses = await frequency_uses(db, [f.id for f in frequencies])
     ctx = await form_context(db, current_user, net_id, template_id)
+    yours = await all_uses_yours(db, current_user, uses, ctx)
 
-    return [_response(freq, current_user, uses.get(freq.id, FrequencyUses()), ctx) for freq in frequencies]
+    return [
+        _response(freq, current_user, uses.get(freq.id, FrequencyUses()), ctx, yours=freq.id in yours)
+        for freq in frequencies
+    ]
 
 
 @router.get("/admin/with-usage", response_model=List[FrequencyWithUsageResponse])
@@ -390,19 +419,13 @@ async def update_frequency(
     frequency = await _load(db, frequency_id)
     uses = await _uses_of(db, frequency_id)
     ctx = await form_context(db, current_user, net_id, template_id)
-    refusal = change_refusal(frequency, current_user, uses, ctx, deleting=False)
+    yours = frequency_id in await all_uses_yours(db, current_user, {frequency_id: uses}, ctx)
+    refusal = change_refusal(frequency, current_user, uses, ctx, deleting=False, yours=yours)
     if refusal:
         raise HTTPException(status_code=403, detail={"code": FREQUENCY_CHANGE_REFUSED, "message": refusal})
     
     # Check for duplicates (excluding this frequency)
-    existing = await check_duplicate_frequency(
-        db,
-        frequency=frequency_data.frequency,
-        mode=frequency_data.mode,
-        network=frequency_data.network,
-        talkgroup=frequency_data.talkgroup,
-        exclude_id=frequency_id
-    )
+    existing = await check_duplicate_frequency(db, frequency_data, exclude_id=frequency_id)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -423,7 +446,7 @@ async def update_frequency(
     await db.commit()
     await db.refresh(frequency)
     
-    return _response(frequency, current_user, uses, ctx)
+    return _response(frequency, current_user, uses, ctx, yours=yours)
 
 
 @router.delete("/{frequency_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -514,7 +537,8 @@ async def request_frequency_change(
     frequency = await _load(db, frequency_id)
     uses = await _uses_of(db, frequency_id)
     ctx = await form_context(db, current_user, data.net_id, data.template_id)
-    refusal = change_refusal(frequency, current_user, uses, ctx, deleting=data.action == "delete")
+    yours = frequency_id in await all_uses_yours(db, current_user, {frequency_id: uses}, ctx)
+    refusal = change_refusal(frequency, current_user, uses, ctx, deleting=data.action == "delete", yours=yours)
     if not refusal:
         raise HTTPException(status_code=400, detail="You can make this change yourself.")
 

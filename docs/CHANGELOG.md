@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-11-16
+revised: 2026-11-17
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,15 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# November 17, 2026
+
+## Bug Fixes
+
+* **Frequencies: Repeaters that share a frequency** — A second repeater on a frequency already in the list, with its own name and tone, can now be added. Until now it was refused as a duplicate.
+* **Frequencies: Edit your own schedule's frequencies** — A schedule's manager can now edit a frequency, such as its offset and tones for an ICS-205, when only their own nets and schedules use it. Until now only an administrator could edit one that past nets used.
 
 ---
 
