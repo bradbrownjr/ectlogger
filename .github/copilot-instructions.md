@@ -414,6 +414,12 @@ item under Bug Fixes.
 
 Both files must be updated together and must tell the same story.
 
+**Exception: admin-only changes go in `docs/CHANGELOG.md` only.** A change only an
+administrator sees (admin tools, admin mode, Admin panel settings) is never added to
+`changelog.json`, so it raises no badge and sends no What's New email. If the change
+also affects what end users see or do, it is not admin-only: it goes in both files
+(Brad, 2026-11-19, for admin mode).
+
 **Always get Brad's approval on changelog wording before it ships.** Draft the
 items, show them to Brad as plain text in the conversation, and commit or deploy
 them only after he approves. This applies to every item in

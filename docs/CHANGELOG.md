@@ -16,6 +16,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# November 19, 2026
+
+## New Features
+
+* **Admin: Admin mode** — Admins now use the app as a regular user and choose Switch to admin, with their two-factor code, when they need admin tools. Admin mode closes after 15 minutes without an admin action, or when you choose Lock admin, so a screen left open in a public place no longer carries admin access.
+
+---
+
 # November 17, 2026
 
 ## Bug Fixes
