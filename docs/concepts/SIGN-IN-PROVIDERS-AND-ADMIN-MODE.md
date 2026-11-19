@@ -1,9 +1,12 @@
 # Sign-in Providers and Admin Mode
 
-Last updated: 2026-11-15
+Last updated: 2026-11-19
 
-Status: design agreed with Brad on 2026-11-15. Phase 1 (admin mode) built on the
-branch; Phase 2 not started. Branch `feature/oidc-sign-in`.
+Status: both phases merged to main 2026-11-19. Admin mode is in use. Sign-in providers
+are shipped but no provider is set up on production yet, and no real Google or
+Microsoft sign-in has been tested; its changelog item waits for that (Brad,
+2026-11-19). Admin mode is admin-only, so it goes in `docs/CHANGELOG.md` and not in
+the in-app changelog or the What's New email.
 Replaces [issue #11](https://github.com/bradbrownjr/ectlogger/issues/11) (OAuth sign-in
 is a 501 stub).
 
