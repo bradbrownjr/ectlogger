@@ -20,6 +20,8 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
+* **Net log: Send it again** — Net control can email a closed net's log again to themselves, the subscribers, or the distribution list.
+* **Net settings: Distribution list** — A net can send its reminder the day before and its log to one group address, such as a groups.io list.
 * **Admin: Admin mode** — Admins now use the app as a regular user and choose Switch to admin, with their two-factor code, when they need admin tools. Admin mode closes after 15 minutes without an admin action, or when you choose Lock admin, so a screen left open in a public place no longer carries admin access.
 
 ---

@@ -1,6 +1,28 @@
 {
-  "version": "2026.11.17",
+  "version": "2026.11.19",
   "entries": [
+    {
+      "version": "2026.11.19",
+      "date": "2026-11-19",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Net log: Send it again — Net control can email a closed net's log again to themselves, the subscribers, or the distribution list.",
+              "userImpact": true,
+              "docs": "/docs/net-control/closing-the-net/#sending-the-log-again"
+            },
+            {
+              "text": "Net settings: Distribution list — A net can send its reminder the day before and its log to one group address, such as a groups.io list.",
+              "userImpact": true,
+              "docs": "/docs/net-managers/distribution-list/"
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.11.17",
       "date": "2026-11-17",
